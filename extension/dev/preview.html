@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/media/panel.css">
+<title>Everything Search — Preview</title>
+<style>
+  /* preview-only chrome, not part of the webview UI */
+  body { margin: 0; }
+  #toolbar { position: sticky; top: 0; }
+  /* fake vscode theme vars so panel.css resolves like in the IDE */
+  :root {
+    --vscode-font-family: 'Segoe UI', sans-serif;
+    --vscode-font-size: 13px;
+    --vscode-foreground: #cccccc;
+    --vscode-editor-background: #1e1e1e;
+    --vscode-input-background: #3c3c3c;
+    --vscode-input-foreground: #cccccc;
+    --vscode-input-border: #3c3c3c;
+    --vscode-input-placeholderForeground: #a6a6a6;
+    --vscode-focusBorder: #007fd4;
+    --vscode-list-hoverBackground: #2a2d2e;
+    --vscode-list-activeSelectionBackground: #094771;
+    --vscode-list-activeSelectionForeground: #ffffff;
+    --vscode-descriptionForeground: #989898;
+    --vscode-button-background: #0e639c;
+    --vscode-button-foreground: #ffffff;
+  }
+  html { color-scheme: dark; }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <input id="q" type="text" autocomplete="off" spellcheck="false"
+           placeholder="Search everything&hellip; (ext:py;txt, size:&gt;10mb, dm:today, folder:)">
+  </div>
+  <div id="status">Type to search&hellip;</div>
+  <div id="resultsWrap">
+    <table id="results">
+      <thead>
+        <tr>
+          <th class="icon"></th>
+          <th data-sort="name">Name <span class="arrow"></span></th>
+          <th data-sort="path">Path <span class="arrow"></span></th>
+          <th data-sort="size" class="num">Size <span class="arrow"></span></th>
+          <th data-sort="date">Modified <span class="arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="ctxMenu" class="hidden">
+    <div class="item" data-act="open">Open</div>
+    <div class="item" data-act="copyPath">Copy Path</div>
+    <div class="item" data-act="openContaining">Open Containing Folder</div>
+    <div class="item" data-act="reveal">Reveal in Explorer</div>
+  </div>
+<script>
+// Stub of the vscode webview API — proxies to serve_preview.py so the REAL
+// panel.js runs against the REAL Everything index in a plain browser.
+window.acquireVsCodeApi = function () {
+  return {
+    postMessage: function (msg) {
+      if (msg.type === 'search') {
+        fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: msg.query, sort: msg.sort,
+            descending: msg.descending, max_results: 500,
+          }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (payload) {
+            window.postMessage({ type: 'results', seq: msg.seq, payload: payload, renderCap: 500 }, '*');
+          })
+          .catch(function (e) {
+            window.postMessage({ type: 'error', seq: msg.seq, message: String(e) }, '*');
+          });
+      } else if (msg.type === 'copyPath') {
+        if (navigator.clipboard) navigator.clipboard.writeText(msg.path).catch(function () {});
+      } else if (msg.type === 'open' || msg.type === 'openContaining' || msg.type === 'reveal') {
+        fetch('/api/act', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(msg),
+        }).catch(function () {});
+      }
+    },
+    getState: function () { return null; },
+    setState: function () {},
+  };
+};
+</script>
+<script src="/media/panel.js"></script>
+</body>
+</html>
