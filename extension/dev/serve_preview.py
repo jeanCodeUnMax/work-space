@@ -115,11 +115,23 @@ def do_browse(body):
     p = body.get("path") or ""
     try:
         if not p:
-            # PC level: existing drive letters
+            # PC level: drive letters (fixed, USB, network) + cloud/shell dirs
             import string
-            results = [{"name": L + ":", "path": L + ":\\", "dir": True, "size": 0}
-                       for L in string.ascii_uppercase
+            results = [{"name": L + ":", "path": L + ":\\", "dir": True,
+                        "size": 0, "ico": "💾"}
+                       for L in string.ascii_uppercase[2:]
                        if os.path.exists(L + ":\\")]
+            try:
+                import re
+                home = os.path.expanduser("~")
+                for n in os.listdir(home):
+                    fp = os.path.join(home, n)
+                    if re.match(r'(?i)^(onedrive|google drive|dropbox|icloud)', n) \
+                            and os.path.isdir(fp):
+                        results.append({"name": n, "path": fp, "dir": True,
+                                        "size": 0, "ico": "☁"})
+            except OSError:
+                pass
             return {"results": results, "total": len(results)}
         results = []
         with os.scandir(p) as it:

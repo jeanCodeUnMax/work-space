@@ -329,7 +329,6 @@
     const p = (e.dataTransfer.getData('text/plain') || '').trim();
     if (p) vscode.postMessage({ type: 'statPath', path: p }); // host stats -> fav
   });
-  renderCrumbs();
 
   // ---------------- rendering ----------------
 
@@ -424,7 +423,7 @@
 
       const icon = document.createElement('td');
       icon.className = 'icon';
-      icon.textContent = it.dir ? '📁' : '📄';
+      icon.textContent = it.ico || (it.dir ? '📁' : '📄');
       tr.appendChild(icon);
 
       const name = document.createElement('td');

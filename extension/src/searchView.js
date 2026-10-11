@@ -4,6 +4,7 @@
 
 const { execFile } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const vscode = require('vscode');
 const { McpClient } = require('./mcpClient'); // eslint-disable-line no-unused-vars -- JSDoc type
@@ -163,10 +164,19 @@ class SearchViewProvider {
     const p = msg.path || '';
     try {
       if (!p) {
-        // PC level: enumerate existing drive letters
+        // PC level: drive letters (fixed, USB, network-mapped) + cloud/shell dirs
         const results = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
           .filter((L) => fs.existsSync(L + ':\\'))
-          .map((L) => ({ name: L + ':', path: L + ':\\', dir: true, size: 0 }));
+          .map((L) => ({ name: L + ':', path: L + ':\\', dir: true, size: 0, ico: '💾' }));
+        try {
+          const home = os.homedir();
+          for (const n of fs.readdirSync(home)) {
+            const fp = path.join(home, n);
+            if (/^(onedrive|google drive|dropbox|icloud)/i.test(n) && fs.statSync(fp).isDirectory()) {
+              results.push({ name: n, path: fp, dir: true, size: 0, ico: '☁' });
+            }
+          }
+        } catch { /* */ }
         this._post({ type: 'browse', seq: msg.seq, payload: { results, total: results.length } });
         return;
       }
