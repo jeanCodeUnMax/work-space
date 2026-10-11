@@ -317,17 +317,30 @@
   });
 
   // drag & drop a folder/file ONTO the crumbs bar -> quick favorite
+  // (folders -> nav tiles, files -> bottom dropdown via host stat)
+  let dragDepth = 0;
+  crumbsEl.addEventListener('dragenter', () => { dragDepth += 1; });
   crumbsEl.addEventListener('dragover', (e) => {
-    if (!e.dataTransfer) return;
+    if (!e.dataTransfer || e.dataTransfer.types.includes('text/x-ecol')) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'link';
+    // MUST match the row drag's effectAllowed:'copy' — 'link' gets the
+    // drop silently rejected by the browser
+    e.dataTransfer.dropEffect = 'copy';
     crumbsEl.classList.add('dropok');
   });
-  crumbsEl.addEventListener('dragleave', () => crumbsEl.classList.remove('dropok'));
+  crumbsEl.addEventListener('dragleave', () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) crumbsEl.classList.remove('dropok');
+  });
   crumbsEl.addEventListener('drop', (e) => {
     e.preventDefault();
+    dragDepth = 0;
     crumbsEl.classList.remove('dropok');
-    const p = (e.dataTransfer.getData('text/plain') || '').trim();
+    let p = (e.dataTransfer.getData('text/plain') || '').trim();
+    // external drag (Explorer): File.path exists in Electron webviews
+    if (!p && e.dataTransfer.files && e.dataTransfer.files.length) {
+      p = e.dataTransfer.files[0].path || '';
+    }
     if (p) vscode.postMessage({ type: 'statPath', path: p }); // host stats -> fav
   });
 
