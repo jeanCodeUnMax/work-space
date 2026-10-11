@@ -12,10 +12,6 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onView:everything-search.searchView",
-    "onCommand:everything-search.openSearch"
-  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
