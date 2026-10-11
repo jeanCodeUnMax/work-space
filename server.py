@@ -98,11 +98,14 @@ def tool_search(args: dict) -> dict:
             "attrs": it.get("attributes"),
         }
         for it in r["results"]
+        if fs_tools.path_allowed(it["full_path"])
     ]
+    filtered = len(r["results"]) - len(results)
     return {
         "total": r["total"],
         "offset": offset,
         "results": results,
+        "filtered_by_policy": filtered or None,
         "query": raw,
         "elapsed_ms": round((time.time() - t0) * 1000, 1),
         "backend": "everything-ipc",

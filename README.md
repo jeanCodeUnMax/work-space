@@ -38,6 +38,16 @@ cold, <50 ms warm).
 
 - `EVERYTHING_EXE` — path to Everything.exe (default `C:\Program Files\Everything\Everything.exe`)
 
+## Access control
+
+`.mcp-access` (gitignore-style) assigns per-agent profiles selected via the
+`EVERYTHING_MCP_AGENT` env var in each client's MCP config. Missing var =
+`[default]` profile (unrestricted — local trusted agents). The `[external]`
+profile (used by mcp-mux) grants bounded read-only access with secrets and
+system paths denied. See `docs/GUIDE.md` for the rule syntax.
+
+Transport is **stdio only — the server opens no network port**, by design.
+
 ## Requirements
 
 - Windows, Everything.exe running (the Everything service maintains the index)

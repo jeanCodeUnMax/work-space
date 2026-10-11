@@ -71,5 +71,23 @@ Filesystem (parité complète avec le serveur `filesystem` officiel) :
 `fs_create_directory`, `fs_move`, `fs_delete`, `fs_search_files` (traversal —
 lent, fallback hors-index), `fs_list_allowed_roots`.
 
-Sécurité : `EVERYTHING_MCP_ROOTS` (env, `;`-séparé) restreint les outils fs_*
-à une whitelist de répertoires — vide = sans restriction.
+Sécurité — deux couches :
+
+1. `.mcp-access` (à la racine du projet) : politique par agent, style
+   gitignore. Le profil actif = env `EVERYTHING_MCP_AGENT` (posée par la config
+   MCP du client ; absente = `[default]` = accès total — Devin/Antigravity).
+   Actions : `allow:` `read:` `write:` `deny-write:` `deny:` — dernier match
+   gagne, patterns glob sur chemins forward-slash. Le profil `[external]`
+   (mux) = lecture bornée (F:/Promgramation-teste, servers, Desktop), secrets
+   et AppData refusés, écriture totalement interdite.
+   Override du fichier : env `EVERYTHING_MCP_ACCESS_FILE`.
+2. `EVERYTHING_MCP_ROOTS` (env, `;`-séparé) : allowlist brute additionnelle
+   sur les fs_* — vide = sans restriction.
+
+Les résultats de `everything_search` / `fs_search_files` / `fs_list_directory`
+/ `fs_directory_tree` sont filtrés par la politique (champ
+`filtered_by_policy` dans les réponses de recherche).
+
+Transport : le serveur n'écoute sur **aucun port** — stdio uniquement. Ne
+jamais ajouter de socket d'écoute ; si un transport réseau devient
+nécessaire (extension distante), bind 127.0.0.1 + token obligatoires.

@@ -10,6 +10,7 @@ from __future__ import annotations
 import difflib
 import fnmatch
 import os
+import re
 import shutil
 import sys
 import time
@@ -20,6 +21,82 @@ def allowed_roots() -> list[str]:
     if not raw:
         return []
     return [os.path.normcase(os.path.abspath(p)) for p in raw.split(";") if p.strip()]
+
+
+# ---------------------------------------------------------------------------
+# Per-agent access policy (.mcp-access, gitignore-style profiles)
+# ---------------------------------------------------------------------------
+
+_ACCESS_FILE = os.environ.get(
+    "EVERYTHING_MCP_ACCESS_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".mcp-access"),
+)
+
+_policy: dict[str, list[tuple[str, str]]] | None = None
+
+
+def agent_profile() -> str:
+    """Active profile = EVERYTHING_MCP_AGENT env (set by the client's MCP
+    config). Missing => 'default' (unrestricted local agents)."""
+    return os.environ.get("EVERYTHING_MCP_AGENT", "default").strip() or "default"
+
+
+def _load_policy() -> dict[str, list[tuple[str, str]]]:
+    global _policy
+    if _policy is not None:
+        return _policy
+    _policy = {}
+    try:
+        cur = None
+        with open(_ACCESS_FILE, encoding="utf-8") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                m = re.match(r"\[(?:profile:)?([^\]]+)\]", line)
+                if m:
+                    cur = m.group(1).strip()
+                    _policy.setdefault(cur, [])
+                    continue
+                if cur and ":" in line:
+                    action, pat = line.split(":", 1)
+                    _policy[cur].append(
+                        (action.strip().lower(),
+                         pat.strip().replace("\\", "/").lower()))
+    except OSError:
+        pass
+    return _policy
+
+
+def path_allowed(path: str, write: bool = False) -> bool:
+    """Last-match-wins evaluation of the agent's .mcp-access profile.
+    No rules for the profile => unrestricted (local trusted agents)."""
+    rules = _load_policy().get(agent_profile())
+    if not rules:
+        return True
+    np = os.path.abspath(path).replace("\\", "/").lower()
+    grant = False
+    for action, pat in rules:
+        if not fnmatch.fnmatchcase(np, pat):
+            continue
+        if action == "deny":
+            grant = False
+        elif action == "deny-write":
+            if write:
+                grant = False
+        elif action == "read":
+            if not write:
+                grant = True
+        elif action in ("write", "allow"):
+            grant = True
+    return grant
+
+
+def filter_paths(paths):
+    """Yield paths the active agent may read (for search result filtering)."""
+    for p in paths:
+        if path_allowed(p):
+            yield p
 
 
 def _check(path: str, write: bool = False) -> str:
@@ -34,6 +111,10 @@ def _check(path: str, write: bool = False) -> str:
                 break
         if not ok:
             raise PermissionError(f"path outside allowed roots: {p}")
+    if not path_allowed(p, write):
+        raise PermissionError(
+            f"agent '{agent_profile()}': "
+            f"{'write' if write else 'read'} denied by .mcp-access: {p}")
     return p
 
 
@@ -70,6 +151,8 @@ def fs_list_directory(path: str, max_entries: int = 1000) -> dict:
             if i >= max_entries:
                 truncated = True
                 break
+            if not path_allowed(e.path):
+                continue
             try:
                 st = e.stat()
                 entries.append({
@@ -210,6 +293,8 @@ def fs_directory_tree(path: str, max_depth: int = 8,
             if counter[0] >= max_entries:
                 e["truncated"] = True
                 break
+            if not path_allowed(child.path):
+                continue
             e["children"].append(node(child.path, child.name, depth + 1))
         return e
 
@@ -251,7 +336,9 @@ def fs_search_files(path: str, pattern: str,
             if isdir:
                 stack.append(e.path)
             if pat in nl:
-                hits.append(e.path[4:] if e.path.startswith("\\\\?\\") else e.path)
+                hp = e.path[4:] if e.path.startswith("\\\\?\\") else e.path
+                if path_allowed(hp):
+                    hits.append(hp)
                 if len(hits) >= max_results:
                     break
     return {"path": p, "pattern": pattern, "matches": hits,
@@ -262,6 +349,12 @@ def fs_search_files(path: str, pattern: str,
 
 def fs_list_allowed_roots() -> dict:
     roots = allowed_roots()
+    profile = agent_profile()
+    rules = _load_policy().get(profile, [])
     return {"allowed_roots": roots,
             "unrestricted": not roots,
-            "env_var": "EVERYTHING_MCP_ROOTS"}
+            "env_var": "EVERYTHING_MCP_ROOTS",
+            "agent": profile,
+            "policy_file": _ACCESS_FILE,
+            "policy_rules": len(rules),
+            "restricted": rules != [("allow", "**")]}
