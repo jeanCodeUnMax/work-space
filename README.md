@@ -339,3 +339,20 @@ faciliter l'instrumentation.
   [art-qalam.fr](https://art-qalam.fr) ; organisation publique **ArchNext**.
 - Ancienne architecture (énumération MFT/USN → SQLite) conservée dans
   `_obsolete/` à titre de référence historique.
+
+---
+
+<p align="center">
+  <img src="extension/media/hephaistos-kit_banderole.jpg" alt="Hephaistos-Kit" width="70%" />
+</p>
+
+**Everything Search** est un module du **[Hephaistos-Kit](https://github.com/art-qalam-fr/Hephaistos-Kit)** — le forgeron des environnements de développement agentiques — développé par l'organisation **[art-qalam.fr](https://art-qalam.fr)**.
+
+### ☕ Offrir un café
+
+Le projet est gratuit et open source (MIT). S'il vous fait gagner du temps :
+
+<p align="center">
+  <img src="extension/media/paypal-qr.png" alt="QR Code PayPal — offrir un café" width="180"/>
+  <br/><sub>Scannez pour offrir un café via PayPal</sub>
+</p>
