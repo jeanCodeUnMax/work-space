@@ -226,14 +226,17 @@ body.col-resize * { cursor: col-resize !important; }
   align-items: center;
   overflow: hidden;
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 55%;
 }
-/* pinned dir-favorite tiles on the right — icon on top, name below */
+/* pinned dir-favorite tiles — flow left-to-right right after the crumbs */
 #dirFavChips {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   align-items: stretch;
-  margin-left: auto;
+  justify-content: flex-start;
+  margin-left: 6px;
   padding-left: 6px;
   border-left: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
   overflow-x: auto;

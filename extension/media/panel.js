@@ -837,7 +837,9 @@
   const colKeys = ['icon', 'name', 'path', 'size', 'date'];
   const persisted = (vscode.getState && vscode.getState()) || {};
   if (persisted.colW) {
-    colKeys.forEach((k, i) => { if (persisted.colW[k] && cols[i]) cols[i].style.width = persisted.colW[k] + 'px'; });
+    // last column (date) stays flexible — it absorbs leftover space so
+    // resizing one column never disturbs the others proportionally
+    colKeys.forEach((k, i) => { if (persisted.colW[k] && cols[i] && i < cols.length - 1) cols[i].style.width = persisted.colW[k] + 'px'; });
   }
   const resultsWrap = document.getElementById('resultsWrap');
   if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
@@ -873,6 +875,8 @@
   }
 
   document.querySelectorAll('#results thead th').forEach((th, idx) => {
+    // icon column fixed at left; last column flexes — no resize on either
+    if (idx === 0 || idx === cols.length - 1) return;
     th.addEventListener('mousemove', (e) => {
       const r = th.getBoundingClientRect();
       th.classList.toggle('resize-hint', r.right - e.clientX < 6);
