@@ -14,12 +14,15 @@ html, body {
 }
 
 #toolbar {
+  display: flex;
+  gap: 4px;
   padding: 6px;
   flex: 0 0 auto;
 }
 
 #q {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   box-sizing: border-box;
   padding: 4px 8px;
   color: var(--vscode-input-foreground);
@@ -29,6 +32,19 @@ html, body {
   outline: none;
 }
 #q:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+#filter {
+  flex: 0 0 auto;
+  width: 96px;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, transparent);
+  border-radius: 2px;
+  outline: none;
+}
+#filter:focus {
   border-color: var(--vscode-focusBorder);
 }
 
@@ -44,8 +60,13 @@ html, body {
 }
 
 #resultsWrap {
-  flex: 1 1 auto;
-  overflow: auto;
+  flex: 0 0 auto;
+  height: clamp(240px, 55vh, 400px);
+  margin: 0 8px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.35));
+  border-radius: 4px;
 }
 
 #results {

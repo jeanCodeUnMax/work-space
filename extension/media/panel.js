@@ -5,9 +5,24 @@
   const vscode = acquireVsCodeApi();
 
   const q = document.getElementById('q');
+  const filterEl = document.getElementById('filter');
   const statusEl = document.getElementById('status');
   const tbody = document.getElementById('tbody');
   const ctxMenu = document.getElementById('ctxMenu');
+
+  // Everything's default filter dropdown (Everything.exe built-ins).
+  // Only folder:/file: are native IPC functions — the named filters are
+  // ext: lists compiled into the app; we replicate them here.
+  const FILTERS = {
+    '': '',
+    audio: 'ext:aac;ac3;aif;aiff;ape;au;cda;flac;m4a;mid;midi;mp3;ogg;ra;wav;wma',
+    compressed: 'ext:7z;ace;arj;bz2;cab;gz;gzip;jar;lz4;rar;tar;tgz;xz;z;zip;zipx;zst',
+    doc: 'ext:csv;doc;docm;docx;epub;md;ods;odt;pdf;ppt;pptx;rtf;txt;xls;xlsm;xlsx',
+    exe: 'ext:bat;cmd;com;exe;msi;ps1;scr;vbs',
+    folder: 'folder:',
+    image: 'ext:ai;bmp;dds;gif;heic;ico;jfif;jpe;jpeg;jpg;png;psd;svg;tga;tif;tiff;webp',
+    video: 'ext:3gp;asf;avi;flv;m2ts;m4v;mkv;mov;mp4;mpe;mpeg;mpg;mts;ts;vob;webm;wmv',
+  };
 
   const state = {
     seq: 0,
@@ -34,12 +49,19 @@
     else if (e.key === 'ArrowUp') { moveSel(-1); e.preventDefault(); }
   });
 
+  filterEl.addEventListener('change', () => { search(); q.focus(); });
+
+  function effectiveQuery() {
+    const frag = FILTERS[filterEl.value] || '';
+    return frag ? frag + ' ' + q.value : q.value;
+  }
+
   function search() {
     state.seq += 1;
     vscode.postMessage({
       type: 'search',
       seq: state.seq,
-      query: q.value,
+      query: effectiveQuery(),
       sort: state.sort,
       descending: state.descending,
     });
