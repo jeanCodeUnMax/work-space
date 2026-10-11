@@ -1,0 +1,53 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+
+# ---- Virtualenvs ----
+.venv/
+venv/
+env/
+
+# ---- Agent / IDE workspace ----
+.agent/
+.vscode/
+*.code-workspace
+.idea/
+.cursor/
+
+# ---- Workspace symlinks / local data ----
+memory-database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ---- Logs / locks / temp ----
+*.log
+*.lock
+*.tmp
+*.bak
+*~
+tmp/
+temp/
+
+# ---- OS junk ----
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# ---- Secrets (parano) ----
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+credentials.*
