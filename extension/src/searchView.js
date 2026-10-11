@@ -113,25 +113,52 @@ class SearchViewProvider {
     return this._lenField(1, item).toString('base64');
   }
 
+  /* Native file-mention item — same proto as Devin's drag-to-Cascade:
+       TextOrScopeItem { oneof chunk: item = field2 -> ContextScopeItem {
+         oneof scope_item: file = field1 | directory = field2 -> {
+           absolute_uri = field1 } } }
+     Sent via actionType 'fileMention' (routed "lastActive"), one
+     serialized item per payload entry — produces real file chips in
+     the composer, exactly like dropping files on the chat panel. */
+  _scopeItemMention(absolutePath, isDir) {
+    const uri = vscode.Uri.file(absolutePath).toString();
+    const fileMsg = this._lenField(1, Buffer.from(uri, 'utf8'));   // {absolute_uri}
+    const scope = this._lenField(isDir ? 2 : 1, fileMsg);          // CSI{file|directory}
+    return this._lenField(2, scope).toString('base64');            // TSI{item}
+  }
+
   async _submitToAgent(paths) {
     if (!paths.length) return;
-    const text = `[Everything Search] ${paths.length} item(s) submitted for review:\n`
-      + paths.join('\n');
-    const payload = this._chatPayload(text);
-    const sendAction = (actionType) => vscode.commands.executeCommand(
+    const sendAction = (actionType, payload) => vscode.commands.executeCommand(
       'devin.sendChatActionMessage',
-      JSON.stringify({ actionType, payload: actionType === 'openChatPanel' ? [] : [payload] }));
+      JSON.stringify({ actionType, payload: payload || [] }));
     // Routing map (workbench 2026-10): sendCascadeInput is NOT routed for
-    // extensions — silently dropped. addCascadeInput lands the paths in
-    // the composer of the main conversation (user presses Enter to send);
-    // sendCascadeInputNewConversation fires a real turn in a fresh conv.
+    // extensions — silently dropped. fileMention -> lastActive chat client
+    // (native drag-to-Cascade path); addCascadeInput -> main composer;
+    // sendCascadeInputNewConversation -> real turn in a fresh conv.
     try {
-      await sendAction('addCascadeInput');
+      const items = paths.map((p) => {
+        let dir = false;
+        try { dir = fs.statSync(p).isDirectory(); } catch { /* */ }
+        return this._scopeItemMention(p, dir);
+      });
+      try { await sendAction('openChatPanel'); } catch { /* already open */ }
+      await new Promise((r) => setTimeout(r, 400));
+      await sendAction('fileMention', items);
+      this._post({ type: 'status', message: `${paths.length} file(s) attached to chat — press Enter to send` });
+      return;
+    } catch { /* fall through */ }
+    try {
+      const text = `[Everything Search] ${paths.length} item(s) submitted for review:\n`
+        + paths.join('\n');
+      await sendAction('addCascadeInput', [this._chatPayload(text)]);
       this._post({ type: 'status', message: `${paths.length} path(s) in chat composer — press Enter to submit` });
       return;
     } catch { /* not routed either */ }
     try {
-      await sendAction('sendCascadeInputNewConversation');
+      const text = `[Everything Search] ${paths.length} item(s) submitted for review:\n`
+        + paths.join('\n');
+      await sendAction('sendCascadeInputNewConversation', [this._chatPayload(text)]);
       this._post({ type: 'status', message: `${paths.length} path(s) submitted (new conversation)` });
       return;
     } catch { /* */ }
