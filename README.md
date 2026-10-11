@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="extension/media/banner.png" alt="Everything Search — Sherlock traquant vos fichiers" width="100%">
+</p>
+
 # everything-search MCP
 
 > Recherche de fichiers **instantanée sur tout le PC** pour agents IA —
