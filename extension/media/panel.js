@@ -453,50 +453,50 @@
   // ---------------- favorites ----------------
 
   const favList = document.getElementById('favList');
-  let favScope = null; // currently applied scope dir
+  // persisted.favs = [{path, dir}] — shortcuts: select navigates straight
+  // into the dir (browse mode); files open directly. Legacy string entries
+  // are migrated to {path, dir:true}.
 
   function populateFavs() {
     const cur = favList.value;
     favList.innerHTML = '<option value="">★ Favorites</option>';
     (persisted.favs || []).forEach((f) => {
       const o = document.createElement('option');
-      o.value = f;
-      o.textContent = f;
+      o.value = f.path;
+      o.textContent = f.path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || f.path;
+      o.title = f.path;
       favList.appendChild(o);
     });
     favList.value = [...favList.options].some((o) => o.value === cur) ? cur : '';
   }
 
-  function applyFavScope(f) {
-    if (favScope && q.value.startsWith(`"${favScope}"`)) {
-      q.value = q.value.slice(favScope.length + 2).trim();
-    }
-    favScope = f || null;
-    if (favScope) q.value = `"${favScope}" ` + q.value;
-  }
-
   favList.addEventListener('change', () => {
-    applyFavScope(favList.value);
-    search();
+    const fav = (persisted.favs || []).find((f) => f.path === favList.value);
+    if (fav) {
+      if (fav.dir) navTo(fav.path);
+      else vscode.postMessage({ type: 'open', path: fav.path, dir: false });
+    }
     q.focus();
   });
   document.getElementById('actFavAdd').addEventListener('click', () => {
     const items = selectedItems();
-    const dir = items.length ? parentDirOf(items[0]) : null;
-    if (!dir) { statusEl.textContent = 'Select a row to favorite its folder'; return; }
+    const it = items[0];
+    if (!it) { statusEl.textContent = 'Select a row to favorite'; return; }
     persisted.favs = persisted.favs || [];
-    if (persisted.favs.includes(dir)) { statusEl.textContent = 'Already a favorite'; return; }
-    persisted.favs.push(dir);
-    persisted.favs.sort((a, b) => a.localeCompare(b));
+    if (persisted.favs.some((f) => f.path === it.path)) {
+      statusEl.textContent = 'Already a favorite';
+      return;
+    }
+    persisted.favs.push({ path: it.path, dir: !!it.dir });
+    persisted.favs.sort((a, b) => a.path.localeCompare(b.path));
     persistState();
     populateFavs();
-    statusEl.textContent = '★ ' + dir;
+    statusEl.textContent = '★ ' + it.path;
   });
   document.getElementById('actFavDel').addEventListener('click', () => {
     const f = favList.value;
     if (!f) { statusEl.textContent = 'Pick a favorite to remove'; return; }
-    persisted.favs = (persisted.favs || []).filter((x) => x !== f);
-    if (favScope === f) { applyFavScope(''); favList.value = ''; search(); }
+    persisted.favs = (persisted.favs || []).filter((x) => x.path !== f);
     persistState();
     populateFavs();
     statusEl.textContent = 'Removed ' + f;
@@ -571,7 +571,9 @@
   const resultsWrap = document.getElementById('resultsWrap');
   if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
   if (persisted.prevH) previewWrap.style.height = persisted.prevH + 'px';
-  persisted.favs = persisted.favs || [];
+  // migrate legacy string favorites -> {path, dir:true}
+  persisted.favs = (persisted.favs || []).map((f) =>
+    typeof f === 'string' ? { path: f, dir: true } : f);
   populateFavs();
 
   function persistState() {
