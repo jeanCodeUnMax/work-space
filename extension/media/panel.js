@@ -686,9 +686,12 @@
       const chip = document.createElement('span');
       chip.className = 'chip';
       chip.title = p;
+      const ico = document.createElement('span');
+      ico.className = 'ico';
+      ico.textContent = '📁';
       const lbl = document.createElement('span');
       lbl.className = 'lbl';
-      lbl.textContent = '📁 ' + (p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p);
+      lbl.textContent = p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p;
       const x = document.createElement('span');
       x.className = 'x';
       x.textContent = '✕';
@@ -700,7 +703,8 @@
         renderDirChips();
         statusEl.textContent = t('sRemoved', { p });
       });
-      lbl.addEventListener('click', () => navTo(p));
+      chip.addEventListener('click', () => navTo(p));
+      chip.appendChild(ico);
       chip.appendChild(lbl);
       chip.appendChild(x);
       dirFavChips.appendChild(chip);
