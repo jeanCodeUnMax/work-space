@@ -11,11 +11,13 @@ Requires Everything.exe (1.4.1+) to be running.
 
 import ctypes
 import ctypes.wintypes as w
+import os
 import struct
 import threading
 import time
 
 user32 = ctypes.windll.user32
+kernel32 = ctypes.windll.kernel32
 
 WM_COPYDATA = 0x004A
 WM_USER = 0x0400
@@ -93,6 +95,63 @@ user32.FindWindowW.argtypes = [w.LPCWSTR, w.LPCWSTR]
 user32.FindWindowW.restype = w.HWND
 user32.CreateWindowExW.restype = w.HWND
 user32.PostQuitMessage.argtypes = [ctypes.c_int]
+user32.GetWindowThreadProcessId.argtypes = [w.HWND, ctypes.POINTER(w.DWORD)]
+user32.GetWindowThreadProcessId.restype = w.DWORD
+kernel32.QueryFullProcessImageNameW.argtypes = [
+    w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD)]
+kernel32.QueryFullProcessImageNameW.restype = w.BOOL
+kernel32.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
+kernel32.OpenProcess.restype = w.HANDLE
+kernel32.CloseHandle.argtypes = [w.HANDLE]
+
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+
+def find_everything_exe() -> str | None:
+    """Locate Everything.exe wherever it was installed.
+
+    Resolution order: the running process's own image path (works for any
+    custom install dir), the EVERYTHING_EXE env var, the uninstaller's
+    InstallLocation registry keys, then the stock install paths.
+    """
+    hwnd = user32.FindWindowW(EVERYTHING_WNDCLASS, None)
+    if hwnd:
+        pid = w.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        h = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid.value)
+        if h:
+            try:
+                buf = ctypes.create_unicode_buffer(1024)
+                n = w.DWORD(len(buf))
+                if kernel32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(n)):
+                    return buf.value
+            finally:
+                kernel32.CloseHandle(h)
+    env = os.environ.get("EVERYTHING_EXE", "").strip()
+    if env and os.path.exists(env):
+        return env
+    import winreg
+    for root, view in (
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY),
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY),
+        (winreg.HKEY_CURRENT_USER, 0),
+    ):
+        try:
+            with winreg.OpenKey(root, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Everything",
+                                0, winreg.KEY_READ | view) as k:
+                loc = winreg.QueryValueEx(k, "InstallLocation")[0]
+            exe = os.path.join(loc, "Everything.exe")
+            if os.path.exists(exe):
+                return exe
+        except OSError:
+            pass
+    for base in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)"),
+                 os.environ.get("LOCALAPPDATA")):
+        if base:
+            exe = os.path.join(base, "Everything", "Everything.exe")
+            if os.path.exists(exe):
+                return exe
+    return None
 
 
 class COPYDATASTRUCT(ctypes.Structure):

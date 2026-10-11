@@ -150,13 +150,14 @@ def tool_refresh(args: dict) -> dict:
 
 def tool_open_gui(args: dict) -> dict:
     query = args.get("query", "")
-    if not os.path.exists(EVERYTHING_EXE):
-        return {"error": f"Everything.exe not found at {EVERYTHING_EXE}"}
-    cmd = [EVERYTHING_EXE]
+    exe = everything_ipc.find_everything_exe() or EVERYTHING_EXE
+    if not os.path.exists(exe):
+        return {"error": f"Everything.exe not found at {exe}"}
+    cmd = [exe]
     if query:
         cmd += ["-s", query]
     subprocess.Popen(cmd, creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
-    return {"launched": True, "exe": EVERYTHING_EXE, "query": query}
+    return {"launched": True, "exe": exe, "query": query}
 
 
 def tool_fs_read(args: dict) -> dict:
