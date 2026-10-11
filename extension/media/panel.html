@@ -46,7 +46,14 @@
   <button id="actNewDir" title="New folder in selected folder">&#x1F4C1;+</button>
   <span class="sep"></span>
   <button id="actPreview" title="Toggle preview pane">&#x1F441;</button>
+  <span class="sep"></span>
+  <select id="favList" title="Favorite folders — scopes the search">
+    <option value="">&#x2605; Favorites</option>
+  </select>
+  <button id="actFavAdd" title="Add selected folder to favorites">&#x2B50;+</button>
+  <button id="actFavDel" title="Remove selected favorite">&#x2715;</button>
 </div>
+<div id="previewGrip" class="hidden" title="Drag to resize"></div>
 <div id="previewWrap" class="hidden"><div id="previewBox"></div></div>
 <div id="ctxMenu" class="hidden">
   <div class="item" data-act="open">Open</div>

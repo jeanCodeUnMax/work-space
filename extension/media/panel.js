@@ -356,12 +356,66 @@
   document.getElementById('actNewDir').addEventListener('click', () => startCreate('dir'));
   const actPreviewBtn = document.getElementById('actPreview');
   const previewWrap = document.getElementById('previewWrap');
+  const previewGrip = document.getElementById('previewGrip');
   const previewBox = document.getElementById('previewBox');
   actPreviewBtn.addEventListener('click', () => {
     state.previewOn = !state.previewOn;
     previewWrap.classList.toggle('hidden', !state.previewOn);
+    previewGrip.classList.toggle('hidden', !state.previewOn);
     actPreviewBtn.classList.toggle('on', state.previewOn);
     if (state.previewOn) requestPreview();
+  });
+
+  // ---------------- favorites ----------------
+
+  const favList = document.getElementById('favList');
+  let favScope = null; // currently applied scope dir
+
+  function populateFavs() {
+    const cur = favList.value;
+    favList.innerHTML = '<option value="">★ Favorites</option>';
+    (persisted.favs || []).forEach((f) => {
+      const o = document.createElement('option');
+      o.value = f;
+      o.textContent = f;
+      favList.appendChild(o);
+    });
+    favList.value = [...favList.options].some((o) => o.value === cur) ? cur : '';
+  }
+
+  function applyFavScope(f) {
+    if (favScope && q.value.startsWith(`"${favScope}"`)) {
+      q.value = q.value.slice(favScope.length + 2).trim();
+    }
+    favScope = f || null;
+    if (favScope) q.value = `"${favScope}" ` + q.value;
+  }
+
+  favList.addEventListener('change', () => {
+    applyFavScope(favList.value);
+    search();
+    q.focus();
+  });
+  document.getElementById('actFavAdd').addEventListener('click', () => {
+    const items = selectedItems();
+    const dir = items.length ? parentDirOf(items[0]) : null;
+    if (!dir) { statusEl.textContent = 'Select a row to favorite its folder'; return; }
+    persisted.favs = persisted.favs || [];
+    if (persisted.favs.includes(dir)) { statusEl.textContent = 'Already a favorite'; return; }
+    persisted.favs.push(dir);
+    persisted.favs.sort((a, b) => a.localeCompare(b));
+    persistState();
+    populateFavs();
+    statusEl.textContent = '★ ' + dir;
+  });
+  document.getElementById('actFavDel').addEventListener('click', () => {
+    const f = favList.value;
+    if (!f) { statusEl.textContent = 'Pick a favorite to remove'; return; }
+    persisted.favs = (persisted.favs || []).filter((x) => x !== f);
+    if (favScope === f) { applyFavScope(''); favList.value = ''; search(); }
+    persistState();
+    populateFavs();
+    statusEl.textContent = 'Removed ' + f;
   });
 
   // ---------------- preview pane ----------------
@@ -432,6 +486,9 @@
   }
   const resultsWrap = document.getElementById('resultsWrap');
   if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
+  if (persisted.prevH) previewWrap.style.height = persisted.prevH + 'px';
+  persisted.favs = persisted.favs || [];
+  populateFavs();
 
   function persistState() {
     if (!vscode.setState) return;
@@ -439,6 +496,7 @@
     colKeys.forEach((k, i) => { if (cols[i].style.width) colW[k] = parseInt(cols[i].style.width, 10); });
     persisted.colW = colW;
     if (resultsWrap.style.height) persisted.wrapH = parseInt(resultsWrap.style.height, 10);
+    if (previewWrap.style.height) persisted.prevH = parseInt(previewWrap.style.height, 10);
     vscode.setState(persisted);
   }
 
@@ -469,27 +527,30 @@
     });
   });
 
-  // ---------------- results height grip ----------------
+  // ---------------- height grips (results + preview) ----------------
 
-  document.getElementById('resizeGrip').addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startH = resultsWrap.getBoundingClientRect().height;
-    document.body.classList.add('row-resize');
-    const mv = (ev) => {
-      const h = Math.min(window.innerHeight - 140,
-                         Math.max(100, startH + ev.clientY - startY));
-      resultsWrap.style.height = h + 'px';
-    };
-    const up = () => {
-      document.body.classList.remove('row-resize');
-      document.removeEventListener('mousemove', mv);
-      document.removeEventListener('mouseup', up);
-      persistState();
-    };
-    document.addEventListener('mousemove', mv);
-    document.addEventListener('mouseup', up);
-  });
+  function heightGrip(gripEl, targetEl, minH, maxH) {
+    gripEl.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = targetEl.getBoundingClientRect().height;
+      document.body.classList.add('row-resize');
+      const mv = (ev) => {
+        const h = Math.min(maxH(), Math.max(minH, startH + ev.clientY - startY));
+        targetEl.style.height = h + 'px';
+      };
+      const up = () => {
+        document.body.classList.remove('row-resize');
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+        persistState();
+      };
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+  }
+  heightGrip(document.getElementById('resizeGrip'), resultsWrap, 100, () => window.innerHeight - 140);
+  heightGrip(previewGrip, previewWrap, 60, () => window.innerHeight - 120);
 
   // ---------------- column sorting ----------------
 
