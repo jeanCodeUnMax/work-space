@@ -137,10 +137,14 @@ class SearchViewProvider {
     // (native drag-to-Cascade path); addCascadeInput -> main composer;
     // sendCascadeInputNewConversation -> real turn in a fresh conv.
     try {
-      const items = paths.map((p) => {
+      // Each mention is paired with a text TSI carrying the exact absolute
+      // path — the chip label alone can hide the drive (D: vs G:) and leaves
+      // the agent guessing between same-name entries.
+      const items = paths.flatMap((p) => {
         let dir = false;
         try { dir = fs.statSync(p).isDirectory(); } catch { /* */ }
-        return this._scopeItemMention(p, dir);
+        const pathText = this._lenField(1, Buffer.from(p + '\n', 'utf8')).toString('base64');
+        return [pathText, this._scopeItemMention(p, dir)];
       });
       try { await sendAction('openChatPanel'); } catch { /* already open */ }
       await new Promise((r) => setTimeout(r, 400));
