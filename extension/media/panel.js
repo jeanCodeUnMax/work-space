@@ -221,6 +221,12 @@
   }
 
   function search() {
+    // Empty query = home: the PC drive view is the default landing —
+    // until the user types something, this is where the panel lives.
+    if (!effectiveQuery().trim()) {
+      if (state.mode !== 'browse' || state.cwd) navTo('');
+      return;
+    }
     state.mode = 'search';
     state.cwd = '';
     state.seq += 1;
@@ -1095,5 +1101,6 @@
   });
 
   vscode.postMessage({ type: 'ready' });
+  search(); // no query yet -> lands on the PC drive view (home)
   q.focus();
 })();
