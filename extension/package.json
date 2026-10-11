@@ -6,6 +6,10 @@
   "publisher": "art-qalam",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/projet-temporaire/everything-mcp.git"
+  },
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
