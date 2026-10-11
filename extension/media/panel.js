@@ -10,6 +10,157 @@
   const tbody = document.getElementById('tbody');
   const ctxMenu = document.getElementById('ctxMenu');
 
+  // ---------------- i18n ----------------
+
+  const STR = {
+    en: {
+      ph: 'Search everything… (ext:py;txt, size:>10mb, dm:today, folder:)',
+      sHint: 'Type to search…', searching: 'Searching…', loading: 'Loading…',
+      fAll: 'All', fAudio: 'Audio', fCompressed: 'Compressed', fDoc: 'Document',
+      fExe: 'Executable', fFolder: 'Folder', fImage: 'Image', fVideo: 'Video',
+      hName: 'Name', hPath: 'Path', hSize: 'Size', hDate: 'Modified',
+      mOpen: 'Open', mCopyPath: 'Copy Path', mOpenContaining: 'Open Containing Folder',
+      mReveal: 'Reveal in Explorer', mSubmit: 'Submit to Agent',
+      mNewFile: 'New File Here', mNewDir: 'New Folder Here',
+      tFilter: 'Filter', tExplore: 'Open containing folder in Explorer',
+      tSubmit: 'Submit selection to agent (copies paths + opens chat)',
+      tNewFile: 'New file in selected folder', tNewDir: 'New folder in selected folder',
+      tPreview: 'Toggle preview pane', tFavs: 'Favorites — jump straight in',
+      tFavAdd: 'Add selection to favorites', tFavDel: 'Remove selected favorite',
+      tGrip: 'Drag to resize', tSettings: 'Settings',
+      tBack: 'Back', tFwd: 'Forward', tUp: 'Up',
+      favHeader: '★ Favorites',
+      sResults: '{n} result{s} in {ms} ms', sShowing: ' — showing {a} of {b} returned',
+      sFiltered: ' ({n} filtered by policy)',
+      sItems: '{n} item{s} — {p}', sPc: 'PC (drives)',
+      sNothing: 'Nothing selected', sSelFav: 'Select a row to favorite',
+      sAlreadyFav: 'Already a favorite', sRemoved: 'Removed {p}',
+      sCreated: 'Created {p}', sCreateFail: 'Create failed: {e}',
+      sCopied: '{n} path(s) copied — paste into agent chat (Ctrl+V)',
+      sNoPrev: 'No preview for .{e} — {p}', sPickFav: 'Pick a favorite to remove',
+      sNewFilePh: 'New file name…', sNewDirPh: 'New folder name…',
+      sSelCreate: 'Select a row first (its folder becomes the target)',
+      sLoadingPrev: 'Loading preview…', sFavAdded: '★ {p} added to favorites',
+      sSearchTag: '🔍 search', sDrives: '🖥 PC',
+    },
+    fr: {
+      ph: 'Rechercher… (ext:py;txt, size:>10mb, dm:today, folder:)',
+      sHint: 'Tapez pour rechercher…', searching: 'Recherche…', loading: 'Chargement…',
+      fAll: 'Tout', fAudio: 'Audio', fCompressed: 'Compressé', fDoc: 'Document',
+      fExe: 'Exécutable', fFolder: 'Dossier', fImage: 'Image', fVideo: 'Vidéo',
+      hName: 'Nom', hPath: 'Chemin', hSize: 'Taille', hDate: 'Modifié',
+      mOpen: 'Ouvrir', mCopyPath: 'Copier le chemin', mOpenContaining: 'Ouvrir le dossier parent',
+      mReveal: 'Afficher dans l\u2019Explorateur', mSubmit: 'Soumettre à l\u2019agent',
+      mNewFile: 'Nouveau fichier ici', mNewDir: 'Nouveau dossier ici',
+      tFilter: 'Filtre', tExplore: 'Ouvrir le dossier parent dans l\u2019Explorateur',
+      tSubmit: 'Soumettre la sélection à l\u2019agent (copie les chemins + ouvre le chat)',
+      tNewFile: 'Nouveau fichier dans le dossier sélectionné',
+      tNewDir: 'Nouveau dossier dans le dossier sélectionné',
+      tPreview: 'Basculer le panneau d\u2019aperçu', tFavs: 'Favoris — saut direct',
+      tFavAdd: 'Ajouter la sélection aux favoris', tFavDel: 'Retirer le favori sélectionné',
+      tGrip: 'Glisser pour redimensionner', tSettings: 'Paramètres',
+      tBack: 'Précédent', tFwd: 'Suivant', tUp: 'Remonter',
+      favHeader: '★ Favoris',
+      sResults: '{n} résultat{s} en {ms} ms', sShowing: ' — affichés {a} sur {b}',
+      sFiltered: ' ({n} filtrés par la politique)',
+      sItems: '{n} élément{s} — {p}', sPc: 'PC (lecteurs)',
+      sNothing: 'Aucune sélection', sSelFav: 'Sélectionnez une ligne à mettre en favori',
+      sAlreadyFav: 'Déjà en favori', sRemoved: 'Retiré {p}',
+      sCreated: 'Créé {p}', sCreateFail: 'Échec de création : {e}',
+      sCopied: '{n} chemin(s) copié(s) — collez dans le chat agent (Ctrl+V)',
+      sNoPrev: 'Pas d\u2019aperçu pour .{e} — {p}', sPickFav: 'Choisissez un favori à retirer',
+      sNewFilePh: 'Nom du nouveau fichier…', sNewDirPh: 'Nom du nouveau dossier…',
+      sSelCreate: 'Sélectionnez d\u2019abord une ligne (son dossier devient la cible)',
+      sLoadingPrev: 'Chargement de l\u2019aperçu…', sFavAdded: '★ {p} ajouté aux favoris',
+      sSearchTag: '🔍 recherche', sDrives: '🖥 PC',
+    },
+    es: {
+      ph: 'Buscar… (ext:py;txt, size:>10mb, dm:today, folder:)',
+      sHint: 'Escribe para buscar…', searching: 'Buscando…', loading: 'Cargando…',
+      fAll: 'Todo', fAudio: 'Audio', fCompressed: 'Comprimido', fDoc: 'Documento',
+      fExe: 'Ejecutable', fFolder: 'Carpeta', fImage: 'Imagen', fVideo: 'Vídeo',
+      hName: 'Nombre', hPath: 'Ruta', hSize: 'Tamaño', hDate: 'Modificado',
+      mOpen: 'Abrir', mCopyPath: 'Copiar ruta', mOpenContaining: 'Abrir carpeta contenedora',
+      mReveal: 'Mostrar en el Explorador', mSubmit: 'Enviar al agente',
+      mNewFile: 'Nuevo archivo aquí', mNewDir: 'Nueva carpeta aquí',
+      tFilter: 'Filtro', tExplore: 'Abrir carpeta contenedora en el Explorador',
+      tSubmit: 'Enviar selección al agente (copia rutas + abre chat)',
+      tNewFile: 'Nuevo archivo en la carpeta seleccionada',
+      tNewDir: 'Nueva carpeta en la carpeta seleccionada',
+      tPreview: 'Alternar panel de vista previa', tFavs: 'Favoritos — salto directo',
+      tFavAdd: 'Añadir selección a favoritos', tFavDel: 'Quitar favorito seleccionado',
+      tGrip: 'Arrastrar para redimensionar', tSettings: 'Configuración',
+      tBack: 'Atrás', tFwd: 'Adelante', tUp: 'Subir',
+      favHeader: '★ Favoritos',
+      sResults: '{n} resultado{s} en {ms} ms', sShowing: ' — mostrando {a} de {b}',
+      sFiltered: ' ({n} filtrados por política)',
+      sItems: '{n} elemento{s} — {p}', sPc: 'PC (unidades)',
+      sNothing: 'Nada seleccionado', sSelFav: 'Selecciona una fila para favoritos',
+      sAlreadyFav: 'Ya está en favoritos', sRemoved: 'Eliminado {p}',
+      sCreated: 'Creado {p}', sCreateFail: 'Error al crear: {e}',
+      sCopied: '{n} ruta(s) copiada(s) — pega en el chat del agente (Ctrl+V)',
+      sNoPrev: 'Sin vista previa para .{e} — {p}', sPickFav: 'Elige un favorito para quitar',
+      sNewFilePh: 'Nombre del nuevo archivo…', sNewDirPh: 'Nombre de la nueva carpeta…',
+      sSelCreate: 'Selecciona primero una fila (su carpeta será el destino)',
+      sLoadingPrev: 'Cargando vista previa…', sFavAdded: '★ {p} añadido a favoritos',
+      sSearchTag: '🔍 búsqueda', sDrives: '🖥 PC',
+    },
+    de: {
+      ph: 'Suchen… (ext:py;txt, size:>10mb, dm:today, folder:)',
+      sHint: 'Tippen zum Suchen…', searching: 'Suche…', loading: 'Laden…',
+      fAll: 'Alle', fAudio: 'Audio', fCompressed: 'Komprimiert', fDoc: 'Dokument',
+      fExe: 'Ausführbar', fFolder: 'Ordner', fImage: 'Bild', fVideo: 'Video',
+      hName: 'Name', hPath: 'Pfad', hSize: 'Größe', hDate: 'Geändert',
+      mOpen: 'Öffnen', mCopyPath: 'Pfad kopieren', mOpenContaining: 'Übergeordneten Ordner öffnen',
+      mReveal: 'Im Explorer anzeigen', mSubmit: 'An Agent senden',
+      mNewFile: 'Neue Datei hier', mNewDir: 'Neuer Ordner hier',
+      tFilter: 'Filter', tExplore: 'Übergeordneten Ordner im Explorer öffnen',
+      tSubmit: 'Auswahl an Agent senden (Pfade kopieren + Chat öffnen)',
+      tNewFile: 'Neue Datei im ausgewählten Ordner', tNewDir: 'Neuer Ordner im ausgewählten Ordner',
+      tPreview: 'Vorschau ein-/ausblenden', tFavs: 'Favoriten — direkt hinspringen',
+      tFavAdd: 'Auswahl zu Favoriten hinzufügen', tFavDel: 'Ausgewählten Favorit entfernen',
+      tGrip: 'Zum Anpassen ziehen', tSettings: 'Einstellungen',
+      tBack: 'Zurück', tFwd: 'Vorwärts', tUp: 'Nach oben',
+      favHeader: '★ Favoriten',
+      sResults: '{n} Ergebnis{se} in {ms} ms', sShowing: ' — {a} von {b} angezeigt',
+      sFiltered: ' ({n} durch Richtlinie gefiltert)',
+      sItems: '{n} Element{e} — {p}', sPc: 'PC (Laufwerke)',
+      sNothing: 'Nichts ausgewählt', sSelFav: 'Zeile für Favorit auswählen',
+      sAlreadyFav: 'Bereits Favorit', sRemoved: 'Entfernt {p}',
+      sCreated: 'Erstellt {p}', sCreateFail: 'Erstellen fehlgeschlagen: {e}',
+      sCopied: '{n} Pfad(e) kopiert — in Agent-Chat einfügen (Strg+V)',
+      sNoPrev: 'Keine Vorschau für .{e} — {p}', sPickFav: 'Favorit zum Entfernen wählen',
+      sNewFilePh: 'Neuer Dateiname…', sNewDirPh: 'Neuer Ordnername…',
+      sSelCreate: 'Zuerst eine Zeile wählen (ihr Ordner wird zum Ziel)',
+      sLoadingPrev: 'Vorschau wird geladen…', sFavAdded: '★ {p} zu Favoriten hinzugefügt',
+      sSearchTag: '🔍 Suche', sDrives: '🖥 PC',
+    },
+  };
+  const LANGS = ['en', 'fr', 'es', 'de'];
+  let lang = 'en';
+
+  function t(key, vars) {
+    const d = STR[lang] || STR.en;
+    let s = d[key] != null ? d[key] : (STR.en[key] != null ? STR.en[key] : key);
+    if (vars) {
+      for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+    }
+    return s;
+  }
+
+  function pluralS(n, kind) {
+    // kind: '' uses {s}, 'e' uses {e} (de: Element->Elemente)
+    if (n === 1) return '';
+    return kind === 'e' ? 'e' : 's';
+  }
+
+  function applyStrings() {
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    renderCrumbs();
+  }
+
   // Everything's default filter dropdown (Everything.exe built-ins).
   // Only folder:/file: are native IPC functions — the named filters are
   // ext: lists compiled into the app; we replicate them here.
@@ -39,6 +190,8 @@
     pendingCreate: null, // {kind:'file'|'dir', parent}
     mode: 'search', // 'search' | 'browse'
     cwd: '', // current browse dir ('' = PC / drives)
+    hist: [], // browse history (browser-like back/forward)
+    histIdx: -1,
   };
 
   // ---------------- query ----------------
@@ -74,52 +227,99 @@
       sort: state.sort,
       descending: state.descending,
     });
-    statusEl.textContent = 'Searching…';
+    statusEl.textContent = t('searching');
   }
 
   // ---------------- browse mode (file-browser navigation) ----------------
 
-  function navTo(dir) {
+  function navTo(dir, push) {
+    if (push !== false) {
+      // browser-like history: truncate forward entries then push
+      state.hist = state.hist.slice(0, state.histIdx + 1);
+      state.hist.push(dir || '');
+      state.histIdx = state.hist.length - 1;
+    }
     state.mode = 'browse';
     state.cwd = dir || '';
     state.seq += 1;
     renderCrumbs();
     vscode.postMessage({ type: 'browse', seq: state.seq, path: state.cwd });
-    statusEl.textContent = 'Loading…';
+    statusEl.textContent = t('loading');
   }
 
   const crumbsEl = document.getElementById('crumbs');
+  const crumbTrail = document.getElementById('crumbTrail');
+  const navBack = document.getElementById('navBack');
+  const navFwd = document.getElementById('navFwd');
+  const navUp = document.getElementById('navUp');
+
   function renderCrumbs() {
-    crumbsEl.innerHTML = '';
+    crumbTrail.innerHTML = '';
     const pc = document.createElement('span');
     pc.className = 'crumb' + (state.mode === 'browse' && !state.cwd ? ' here' : '');
-    pc.textContent = '🖥 PC';
+    pc.textContent = t('sDrives');
     pc.title = 'Drives';
     pc.addEventListener('click', () => navTo(''));
-    crumbsEl.appendChild(pc);
+    crumbTrail.appendChild(pc);
     if (state.mode === 'search') {
-      crumbsEl.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
+      crumbTrail.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
       const s = document.createElement('span');
       s.className = 'crumb here';
-      s.textContent = '🔍 search';
-      crumbsEl.appendChild(s);
-      return;
+      s.textContent = t('sSearchTag');
+      crumbTrail.appendChild(s);
+    } else {
+      // browse: split cwd into clickable segments
+      const parts = state.cwd.replace(/[\\/]+$/, '').split(/[\\/]+/).filter(Boolean);
+      let acc = '';
+      parts.forEach((part, i) => {
+        acc += part + '\\';
+        const target = acc;
+        crumbTrail.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
+        const c = document.createElement('span');
+        c.className = 'crumb' + (i === parts.length - 1 ? ' here' : '');
+        c.textContent = part;
+        c.title = target;
+        c.addEventListener('click', () => navTo(target));
+        crumbTrail.appendChild(c);
+      });
     }
-    // browse: split cwd into clickable segments
-    const parts = state.cwd.replace(/[\\/]+$/, '').split(/[\\/]+/).filter(Boolean);
-    let acc = '';
-    parts.forEach((part, i) => {
-      acc += (i === 0 ? part + '\\' : part + '\\'); // keep trailing sep in path
-      const target = acc;
-      crumbsEl.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
-      const c = document.createElement('span');
-      c.className = 'crumb' + (i === parts.length - 1 ? ' here' : '');
-      c.textContent = part;
-      c.title = target;
-      c.addEventListener('click', () => navTo(target));
-      crumbsEl.appendChild(c);
-    });
+    // nav buttons enabled state
+    navBack.classList.toggle('off', state.histIdx <= 0);
+    navFwd.classList.toggle('off', state.histIdx >= state.hist.length - 1);
+    navUp.classList.toggle('off', state.mode !== 'browse' || !state.cwd);
   }
+
+  navBack.addEventListener('click', () => {
+    if (state.histIdx > 0) {
+      state.histIdx -= 1;
+      navTo(state.hist[state.histIdx], false);
+    }
+  });
+  navFwd.addEventListener('click', () => {
+    if (state.histIdx < state.hist.length - 1) {
+      state.histIdx += 1;
+      navTo(state.hist[state.histIdx], false);
+    }
+  });
+  navUp.addEventListener('click', () => {
+    if (state.mode === 'browse' && state.cwd) navTo(parentOf(state.cwd));
+    else if (state.mode !== 'browse') navTo('');
+  });
+
+  // drag & drop a folder/file ONTO the crumbs bar -> quick favorite
+  crumbsEl.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'link';
+    crumbsEl.classList.add('dropok');
+  });
+  crumbsEl.addEventListener('dragleave', () => crumbsEl.classList.remove('dropok'));
+  crumbsEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    crumbsEl.classList.remove('dropok');
+    const p = (e.dataTransfer.getData('text/plain') || '').trim();
+    if (p) vscode.postMessage({ type: 'statPath', path: p }); // host stats -> fav
+  });
   renderCrumbs();
 
   // ---------------- rendering ----------------
@@ -245,12 +445,11 @@
 
     let s;
     if (state.mode === 'browse') {
-      s = `${state.total.toLocaleString()} item${state.total === 1 ? '' : 's'} — ${state.cwd || 'PC (drives)'}`;
+      s = t('sItems', { n: state.total.toLocaleString(), s: pluralS(state.total), p: state.cwd || t('sPc') });
     } else {
-      s = `${state.total.toLocaleString()} result${state.total === 1 ? '' : 's'}` +
-          ` in ${payload.elapsed_ms != null ? payload.elapsed_ms : '?'} ms`;
-      if (rows.length > shown) s += ` — showing ${shown} of ${rows.length} returned`;
-      if (payload.filtered_by_policy) s += ` (${payload.filtered_by_policy} filtered by policy)`;
+      s = t('sResults', { n: state.total.toLocaleString(), s: pluralS(state.total), ms: payload.elapsed_ms != null ? payload.elapsed_ms : '?' });
+      if (rows.length > shown) s += t('sShowing', { a: shown, b: rows.length });
+      if (payload.filtered_by_policy) s += t('sFiltered', { n: payload.filtered_by_policy });
     }
     statusEl.textContent = s;
   }
@@ -380,7 +579,7 @@
 
   function submitToAgent() {
     const items = selectedItems();
-    if (!items.length) { statusEl.textContent = 'Nothing selected'; return; }
+    if (!items.length) { statusEl.textContent = t('sNothing'); return; }
     vscode.postMessage({ type: 'submitToAgent', paths: items.map((i) => i.path) });
   }
 
@@ -391,7 +590,7 @@
 
   function startCreate(kind) {
     const parent = dirForCreate();
-    if (!parent) { statusEl.textContent = 'Select a row first (its folder becomes the target)'; return; }
+    if (!parent) { statusEl.textContent = t('sSelCreate'); return; }
     if (state.pendingCreate) return;
     state.pendingCreate = { kind, parent };
     const tr = document.createElement('tr');
@@ -403,7 +602,7 @@
     td.colSpan = 4;
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = kind === 'dir' ? 'New folder name…' : 'New file name…';
+    input.placeholder = t(kind === 'dir' ? 'sNewDirPh' : 'sNewFilePh');
     td.appendChild(input);
     tr.appendChild(icon);
     tr.appendChild(td);
@@ -414,7 +613,7 @@
         const name = input.value.trim();
         if (name) {
           vscode.postMessage({ type: 'fsCreate', kind, parent, name });
-          statusEl.textContent = `Creating ${kind} « ${name} » in ${parent}…`;
+          statusEl.textContent = `${name} — ${parent}`;
         }
         cancelPending();
       } else if (e.key === 'Escape') {
@@ -478,28 +677,58 @@
     }
     q.focus();
   });
-  document.getElementById('actFavAdd').addEventListener('click', () => {
-    const items = selectedItems();
-    const it = items[0];
-    if (!it) { statusEl.textContent = 'Select a row to favorite'; return; }
+  function addFavorite(path, dir) {
     persisted.favs = persisted.favs || [];
-    if (persisted.favs.some((f) => f.path === it.path)) {
-      statusEl.textContent = 'Already a favorite';
+    if (persisted.favs.some((f) => f.path === path)) {
+      statusEl.textContent = t('sAlreadyFav');
       return;
     }
-    persisted.favs.push({ path: it.path, dir: !!it.dir });
+    persisted.favs.push({ path, dir: !!dir });
     persisted.favs.sort((a, b) => a.path.localeCompare(b.path));
     persistState();
     populateFavs();
-    statusEl.textContent = '★ ' + it.path;
+    statusEl.textContent = t('sFavAdded', { p: path });
+  }
+
+  document.getElementById('actFavAdd').addEventListener('click', () => {
+    const it = selectedItems()[0];
+    if (!it) { statusEl.textContent = t('sSelFav'); return; }
+    addFavorite(it.path, it.dir);
   });
   document.getElementById('actFavDel').addEventListener('click', () => {
     const f = favList.value;
-    if (!f) { statusEl.textContent = 'Pick a favorite to remove'; return; }
+    if (!f) { statusEl.textContent = t('sPickFav'); return; }
     persisted.favs = (persisted.favs || []).filter((x) => x.path !== f);
     persistState();
     populateFavs();
-    statusEl.textContent = 'Removed ' + f;
+    statusEl.textContent = t('sRemoved', { p: f });
+  });
+
+  // ---------------- settings gear ----------------
+
+  const settingsMenu = document.getElementById('settingsMenu');
+  document.getElementById('actSettings').addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsMenu.querySelectorAll('.item').forEach((el) =>
+      el.classList.toggle('on', el.dataset.lang === lang));
+    const r = e.target.getBoundingClientRect();
+    settingsMenu.classList.toggle('hidden');
+    settingsMenu.style.left = Math.max(4, r.right - 140) + 'px';
+    settingsMenu.style.top = (r.bottom + 4) + 'px';
+  });
+  settingsMenu.addEventListener('click', (e) => {
+    const l = e.target.dataset.lang;
+    if (!l || !LANGS.includes(l)) return;
+    lang = l;
+    persisted.lang = lang;
+    persistState();
+    applyStrings();
+    settingsMenu.classList.add('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!settingsMenu.contains(e.target) && e.target.id !== 'actSettings') {
+      settingsMenu.classList.add('hidden');
+    }
   });
 
   // ---------------- preview pane ----------------
@@ -529,11 +758,11 @@
       previewBox.innerHTML = '';
       const d = document.createElement('div');
       d.className = 'meta';
-      d.textContent = `No preview for .${e || '?'} — ${it.path}`;
+      d.textContent = t('sNoPrev', { e: e || '?', p: it.path });
       previewBox.appendChild(d);
       return;
     }
-    previewBox.textContent = 'Loading preview…';
+    previewBox.textContent = t('sLoadingPrev');
     vscode.postMessage({ type: 'preview', path: it.path, ext: e });
   }
 
@@ -575,6 +804,14 @@
   persisted.favs = (persisted.favs || []).map((f) =>
     typeof f === 'string' ? { path: f, dir: true } : f);
   populateFavs();
+  // language: persisted > browser locale > en
+  if (persisted.lang && LANGS.includes(persisted.lang)) lang = persisted.lang;
+  else {
+    const bl = (navigator.language || 'en').slice(0, 2);
+    lang = LANGS.includes(bl) ? bl : 'en';
+    persisted.lang = lang;
+  }
+  applyStrings();
 
   function persistState() {
     if (!vscode.setState) return;
@@ -684,9 +921,11 @@
       if (state.previewOn) renderPreview(msg);
     } else if (msg.type === 'fsCreated') {
       statusEl.textContent = msg.error
-        ? 'Create failed: ' + msg.error
-        : `Created ${msg.path}`;
+        ? t('sCreateFail', { e: msg.error })
+        : t('sCreated', { p: msg.path });
       if (!msg.error) search();
+    } else if (msg.type === 'stat') {
+      if (msg.path) addFavorite(msg.path, msg.dir);
     } else if (msg.type === 'status') {
       statusEl.textContent = msg.message || '';
     }

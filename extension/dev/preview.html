@@ -83,6 +83,15 @@ window.acquireVsCodeApi = function () {
           .catch(function (e) {
             window.postMessage({ type: 'error', seq: msg.seq, message: String(e) }, '*');
           });
+      } else if (msg.type === 'statPath') {
+        fetch('/api/stat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: msg.path }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) { window.postMessage({ type: 'stat', path: res.path, dir: res.dir }, '*'); })
+          .catch(function () {});
       } else if (msg.type === 'preview') {
         fetch('/api/preview', {
           method: 'POST',

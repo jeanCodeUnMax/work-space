@@ -3,21 +3,27 @@
      searchView.js _html() (extension). Edit HERE, not in both places. -->
 <div id="toolbar">
   <input id="q" type="text" autocomplete="off" spellcheck="false"
+         data-i18n-ph="ph"
          placeholder="Search everything&hellip; (ext:py;txt, size:&gt;10mb, dm:today, folder:)">
-  <select id="filter" title="Filter">
-    <option value="">All</option>
-    <option value="audio">Audio</option>
-    <option value="compressed">Compressed</option>
-    <option value="doc">Document</option>
-    <option value="exe">Executable</option>
-    <option value="folder">Folder</option>
-    <option value="image">Image</option>
-    <option value="video">Video</option>
+  <select id="filter" data-i18n-title="tFilter">
+    <option value="" data-i18n="fAll">All</option>
+    <option value="audio" data-i18n="fAudio">Audio</option>
+    <option value="compressed" data-i18n="fCompressed">Compressed</option>
+    <option value="doc" data-i18n="fDoc">Document</option>
+    <option value="exe" data-i18n="fExe">Executable</option>
+    <option value="folder" data-i18n="fFolder">Folder</option>
+    <option value="image" data-i18n="fImage">Image</option>
+    <option value="video" data-i18n="fVideo">Video</option>
   </select>
 </div>
-<div id="status">Type to search&hellip;</div>
+<div id="status" data-i18n="sHint">Type to search&hellip;</div>
 <div id="resultsWrap">
-  <div id="crumbs"></div>
+  <div id="crumbs">
+    <span class="navbtn" id="navBack" data-i18n-title="tBack">&#x25C0;</span>
+    <span class="navbtn" id="navFwd" data-i18n-title="tFwd">&#x25B6;</span>
+    <span class="navbtn" id="navUp" data-i18n-title="tUp">&#x2B06;</span>
+    <span id="crumbTrail"></span>
+  </div>
   <table id="results">
     <colgroup>
       <col class="c-icon">
@@ -29,40 +35,47 @@
     <thead>
       <tr>
         <th class="icon"></th>
-        <th data-sort="name">Name <span class="arrow"></span></th>
-        <th data-sort="path">Path <span class="arrow"></span></th>
-        <th data-sort="size" class="num">Size <span class="arrow"></span></th>
-        <th data-sort="date">Modified <span class="arrow"></span></th>
+        <th data-sort="name"><span data-i18n="hName">Name</span> <span class="arrow"></span></th>
+        <th data-sort="path"><span data-i18n="hPath">Path</span> <span class="arrow"></span></th>
+        <th data-sort="size" class="num"><span data-i18n="hSize">Size</span> <span class="arrow"></span></th>
+        <th data-sort="date"><span data-i18n="hDate">Modified</span> <span class="arrow"></span></th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
 </div>
-<div id="resizeGrip" title="Drag to resize"></div>
+<div id="resizeGrip" data-i18n-title="tGrip" title="Drag to resize"></div>
 <div id="actions">
-  <button id="actExplore" title="Open containing folder in Explorer">&#x1F4C2;</button>
-  <button id="actSubmit" title="Submit selection to agent (copies paths + opens chat)">&#x1F4CE;</button>
+  <button id="actExplore" data-i18n-title="tExplore" title="Open containing folder in Explorer">&#x1F4C2;</button>
+  <button id="actSubmit" data-i18n-title="tSubmit" title="Submit selection to agent (copies paths + opens chat)">&#x1F4CE;</button>
   <span class="sep"></span>
-  <button id="actNewFile" title="New file in selected folder">&#x1F4C4;&#xFE0E;+</button>
-  <button id="actNewDir" title="New folder in selected folder">&#x1F4C1;+</button>
+  <button id="actNewFile" data-i18n-title="tNewFile" title="New file in selected folder">&#x1F4C4;&#xFE0E;+</button>
+  <button id="actNewDir" data-i18n-title="tNewDir" title="New folder in selected folder">&#x1F4C1;+</button>
   <span class="sep"></span>
-  <button id="actPreview" title="Toggle preview pane">&#x1F441;</button>
+  <button id="actPreview" data-i18n-title="tPreview" title="Toggle preview pane">&#x1F441;</button>
   <span class="sep"></span>
-  <select id="favList" title="Favorite folders — scopes the search">
-    <option value="">&#x2605; Favorites</option>
+  <select id="favList" data-i18n-title="tFavs" title="Favorite folders — jump straight in">
+    <option value="" data-i18n="favHeader">&#x2605; Favorites</option>
   </select>
-  <button id="actFavAdd" title="Add selected folder to favorites">&#x2B50;+</button>
-  <button id="actFavDel" title="Remove selected favorite">&#x2715;</button>
+  <button id="actFavAdd" data-i18n-title="tFavAdd" title="Add selection to favorites">&#x2B50;+</button>
+  <button id="actFavDel" data-i18n-title="tFavDel" title="Remove selected favorite">&#x2715;</button>
+  <button id="actSettings" data-i18n-title="tSettings" title="Settings">&#x2699;</button>
 </div>
-<div id="previewGrip" class="hidden" title="Drag to resize"></div>
+<div id="previewGrip" class="hidden" data-i18n-title="tGrip" title="Drag to resize"></div>
 <div id="previewWrap" class="hidden"><div id="previewBox"></div></div>
+<div id="settingsMenu" class="hidden">
+  <div class="item" data-lang="en">English</div>
+  <div class="item" data-lang="fr">Fran&ccedil;ais</div>
+  <div class="item" data-lang="es">Espa&ntilde;ol</div>
+  <div class="item" data-lang="de">Deutsch</div>
+</div>
 <div id="ctxMenu" class="hidden">
-  <div class="item" data-act="open">Open</div>
-  <div class="item" data-act="copyPath">Copy Path</div>
-  <div class="item" data-act="openContaining">Open Containing Folder</div>
-  <div class="item" data-act="reveal">Reveal in Explorer</div>
+  <div class="item" data-act="open" data-i18n="mOpen">Open</div>
+  <div class="item" data-act="copyPath" data-i18n="mCopyPath">Copy Path</div>
+  <div class="item" data-act="openContaining" data-i18n="mOpenContaining">Open Containing Folder</div>
+  <div class="item" data-act="reveal" data-i18n="mReveal">Reveal in Explorer</div>
   <div class="sep"></div>
-  <div class="item" data-act="submit">Submit to Agent</div>
-  <div class="item" data-act="newFile">New File Here</div>
-  <div class="item" data-act="newDir">New Folder Here</div>
+  <div class="item" data-act="submit" data-i18n="mSubmit">Submit to Agent</div>
+  <div class="item" data-act="newFile" data-i18n="mNewFile">New File Here</div>
+  <div class="item" data-act="newDir" data-i18n="mNewDir">New Folder Here</div>
 </div>

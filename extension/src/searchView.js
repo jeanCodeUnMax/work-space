@@ -76,6 +76,11 @@ class SearchViewProvider {
       case 'browse':
         this._browse(msg);
         break;
+      case 'statPath':
+        try {
+          this._post({ type: 'stat', path: msg.path, dir: fs.statSync(msg.path).isDirectory() });
+        } catch { this._post({ type: 'stat', path: msg.path, dir: false }); }
+        break;
       case 'ready':
         break;
     }

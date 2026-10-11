@@ -209,6 +209,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, do_preview(body))
         elif self.path == "/api/browse":
             self._send(200, do_browse(body))
+        elif self.path == "/api/stat":
+            p = body.get("path") or ""
+            self._send(200, {"path": p, "dir": os.path.isdir(p)})
         elif self.path == "/api/create":
             self._send(200, do_create(body))
         else:

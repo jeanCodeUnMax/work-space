@@ -190,7 +190,7 @@ th { cursor: default; }
 th.resize-hint, body.col-resize { cursor: col-resize !important; }
 body.col-resize * { cursor: col-resize !important; }
 
-/* breadcrumb — pinned at top of the scroll area */
+/* breadcrumb — pinned at top of the scroll area, toolbar-height */
 #crumbs {
   position: sticky;
   top: 0;
@@ -199,11 +199,33 @@ body.col-resize * { cursor: col-resize !important; }
   align-items: center;
   flex-wrap: nowrap;
   overflow: hidden;
-  padding: 2px 6px;
-  font-size: 11px;
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 6px;
+  font-size: 12px;
   white-space: nowrap;
   background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
   border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
+}
+#crumbs .navbtn {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  margin-right: 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--vscode-descriptionForeground);
+}
+#crumbs .navbtn:hover {
+  background: var(--vscode-list-hoverBackground);
+  color: var(--vscode-foreground);
+}
+#crumbs .navbtn.off { opacity: .35; cursor: default; }
+#crumbs .navbtn.off:hover { background: transparent; }
+#crumbTrail {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
 }
 #crumbs .crumb {
   padding: 0 3px;
@@ -215,6 +237,32 @@ body.col-resize * { cursor: col-resize !important; }
 }
 #crumbs .sep { color: var(--vscode-descriptionForeground); padding: 0 1px; }
 #crumbs .here { font-weight: 600; }
+#crumbs.dropok {
+  outline: 1px dashed var(--vscode-focusBorder);
+  outline-offset: -1px;
+  background: var(--vscode-list-hoverBackground);
+}
+
+/* settings menu (gear) — same skin as ctxMenu */
+#settingsMenu {
+  position: fixed;
+  z-index: 10;
+  min-width: 130px;
+  padding: 4px 0;
+  background: var(--vscode-menu-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-menu-border, rgba(128,128,128,.4));
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+#settingsMenu .item {
+  padding: 4px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#settingsMenu .item:hover {
+  background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
+  color: var(--vscode-menu-selectionForeground);
+}
+#settingsMenu .item.on::before { content: '\2713  '; }
 
 #results {
   width: 100%;
