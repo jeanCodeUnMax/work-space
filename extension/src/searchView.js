@@ -87,21 +87,60 @@ class SearchViewProvider {
     }
   }
 
-  _submitToAgent(paths) {
+  /* Devin chat injection — protobuf payload built like the
+     orchestrator-monitor extension:
+       TextOrScopeItem{text} -> field 1 len-delimited
+       request{items}        -> field 1 len-delimited -> base64
+     actionType 'sendCascadeInput' sends a real user turn to the agent;
+     'addCascadeInput' fills the composer as a draft. */
+  _encodeVarint(n) {
+    const out = [];
+    while (n > 0x7f) { out.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); }
+    out.push(n);
+    return Buffer.from(out);
+  }
+
+  _lenField(fieldNo, data) {
+    return Buffer.concat([
+      Buffer.from([(fieldNo << 3) | 2]),
+      this._encodeVarint(data.length),
+      data,
+    ]);
+  }
+
+  _chatPayload(text) {
+    const item = this._lenField(1, Buffer.from(text, 'utf8'));
+    return this._lenField(1, item).toString('base64');
+  }
+
+  async _submitToAgent(paths) {
     if (!paths.length) return;
-    // Copy absolute paths — pasted into the agent chat they become file refs.
+    const text = `[Everything Search] ${paths.length} item(s) submitted for review:\n`
+      + paths.join('\n');
+    const payload = this._chatPayload(text);
+    try {
+      // real send — the agent receives a new turn with the selected paths
+      await vscode.commands.executeCommand('devin.sendChatActionMessage',
+        JSON.stringify({ actionType: 'sendCascadeInput', payload: [payload] }));
+      this._post({ type: 'status', message: `${paths.length} path(s) submitted to agent` });
+      return;
+    } catch { /* not a Devin host or payload refused — fall back */ }
+    try {
+      await vscode.commands.executeCommand('devin.sendChatActionMessage',
+        JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
+      this._post({ type: 'status', message: `${paths.length} path(s) drafted in chat` });
+      return;
+    } catch { /* */ }
+    // last resort: clipboard + focus whatever chat panel exists
     vscode.env.clipboard.writeText(paths.join('\n'));
     this._post({ type: 'status', message: `${paths.length} path(s) copied — paste into agent chat (Ctrl+V)` });
-    // Best effort: focus whatever chat panel exists (Devin/Windsurf/Copilot).
     const candidates = [
       'devin.focusChat', 'windsurf.openChat', 'aichat.newchataction',
       'workbench.panel.chat.view.copilot.focus',
     ];
-    (async () => {
-      for (const cmd of candidates) {
-        try { await vscode.commands.executeCommand(cmd); return; } catch { /* unknown */ }
-      }
-    })();
+    for (const cmd of candidates) {
+      try { await vscode.commands.executeCommand(cmd); return; } catch { /* unknown */ }
+    }
   }
 
   _fsCreate(msg) {
