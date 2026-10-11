@@ -67,6 +67,50 @@ def do_search(body):
     }
 
 
+IMG_MIME = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+            "gif": "image/gif", "bmp": "image/bmp", "webp": "image/webp",
+            "ico": "image/x-icon", "svg": "image/svg+xml"}
+
+
+def do_preview(body):
+    p = body.get("path") or ""
+    e = (body.get("ext") or "").lower()
+    try:
+        size = os.path.getsize(p)
+        if e in IMG_MIME:
+            if size > 8 * 1024 * 1024:
+                return {"path": p, "size": size, "error": "image too large (>8 MB)"}
+            import base64
+            with open(p, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+            return {"path": p, "size": size, "kind": "image",
+                    "data": f"data:{IMG_MIME[e]};base64,{b64}"}
+        with open(p, "rb") as f:
+            raw = f.read(64 * 1024)
+        return {"path": p, "size": size, "kind": "text",
+                "data": raw.decode("utf-8", errors="replace")}
+    except Exception as ex:
+        return {"path": p, "error": str(ex)}
+
+
+def do_create(body):
+    parent = body.get("parent") or ""
+    name = str(body.get("name") or "").strip()
+    import re
+    if not parent or not name or re.search(r'[\\/:*?"<>|]', name):
+        return {"ok": False, "error": "invalid name or target"}
+    target = os.path.join(parent, name)
+    try:
+        if body.get("kind") == "dir":
+            os.mkdir(target)
+        else:
+            fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+            os.close(fd)
+        return {"ok": True, "path": target}
+    except Exception as ex:
+        return {"ok": False, "error": str(ex), "path": target}
+
+
 def do_act(body):
     p = body.get("path") or ""
     kind = body.get("type")
@@ -96,8 +140,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path in ("/", "/index.html"):
-            with open(os.path.join(DEV_DIR, "preview.html"), "rb") as f:
-                self._send(200, f.read(), "text/html; charset=utf-8")
+            # Inject the shared media/panel.html fragment (same DOM the
+            # real webview loads) into the preview shell.
+            with open(os.path.join(DEV_DIR, "preview.html"), "r", encoding="utf-8") as f:
+                page = f.read()
+            with open(os.path.join(MEDIA_DIR, "panel.html"), "r", encoding="utf-8") as f:
+                body = f.read()
+            page = page.replace("<!--PANEL_BODY-->", body)
+            self._send(200, page.encode("utf-8"), "text/html; charset=utf-8")
             return
         if self.path.startswith("/media/"):
             name = self.path[len("/media/"):].split("?")[0]
@@ -127,6 +177,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, {"total": 0, "results": [], "elapsed_ms": 0, "error": str(e)})
         elif self.path == "/api/act":
             self._send(200, do_act(body))
+        elif self.path == "/api/preview":
+            self._send(200, do_preview(body))
+        elif self.path == "/api/create":
+            self._send(200, do_create(body))
         else:
             self._send(404, {"error": "not found"})
 

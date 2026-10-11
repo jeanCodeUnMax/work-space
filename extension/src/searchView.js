@@ -3,6 +3,8 @@
 'use strict';
 
 const { execFile } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const vscode = require('vscode');
 const { McpClient } = require('./mcpClient'); // eslint-disable-line no-unused-vars -- JSDoc type
 
@@ -62,8 +64,74 @@ class SearchViewProvider {
         // dataTransfer already carries the file; this is a bookkeeping fallback.
         this.lastDragged = msg.path;
         break;
+      case 'submitToAgent':
+        this._submitToAgent(msg.paths || []);
+        break;
+      case 'fsCreate':
+        this._fsCreate(msg);
+        break;
+      case 'preview':
+        this._preview(msg);
+        break;
       case 'ready':
         break;
+    }
+  }
+
+  _submitToAgent(paths) {
+    if (!paths.length) return;
+    // Copy absolute paths — pasted into the agent chat they become file refs.
+    vscode.env.clipboard.writeText(paths.join('\n'));
+    this._post({ type: 'status', message: `${paths.length} path(s) copied — paste into agent chat (Ctrl+V)` });
+    // Best effort: focus whatever chat panel exists (Devin/Windsurf/Copilot).
+    const candidates = [
+      'devin.focusChat', 'windsurf.openChat', 'aichat.newchataction',
+      'workbench.panel.chat.view.copilot.focus',
+    ];
+    (async () => {
+      for (const cmd of candidates) {
+        try { await vscode.commands.executeCommand(cmd); return; } catch { /* unknown */ }
+      }
+    })();
+  }
+
+  _fsCreate(msg) {
+    const parent = msg.parent;
+    const name = String(msg.name || '').trim();
+    const bad = /[\\/:*?"<>|]/;
+    if (!parent || !name || bad.test(name)) {
+      this._post({ type: 'fsCreated', error: 'invalid name or target', parent, name });
+      return;
+    }
+    const target = path.join(parent, name);
+    try {
+      if (msg.kind === 'dir') fs.mkdirSync(target);
+      else fs.writeFileSync(target, '', { flag: 'wx' }); // no clobber
+      this._post({ type: 'fsCreated', path: target });
+    } catch (e) {
+      this._post({ type: 'fsCreated', error: String(e && e.message || e), path: target });
+    }
+  }
+
+  _preview(msg) {
+    const p = msg.path;
+    const IMG_MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', bmp: 'image/bmp', webp: 'image/webp', ico: 'image/x-icon', svg: 'image/svg+xml' };
+    try {
+      const st = fs.statSync(p);
+      const e = (msg.ext || '').toLowerCase();
+      if (IMG_MIME[e]) {
+        if (st.size > 8 * 1024 * 1024) { this._post({ type: 'preview', path: p, size: st.size, error: 'image too large (>8 MB)' }); return; }
+        const b64 = fs.readFileSync(p).toString('base64');
+        this._post({ type: 'preview', path: p, size: st.size, kind: 'image', data: `data:${IMG_MIME[e]};base64,${b64}` });
+      } else {
+        const buf = Buffer.alloc(Math.min(64 * 1024, st.size));
+        const fd = fs.openSync(p, 'r');
+        fs.readSync(fd, buf, 0, buf.length, 0);
+        fs.closeSync(fd);
+        this._post({ type: 'preview', path: p, size: st.size, kind: 'text', data: buf.toString('utf8') });
+      }
+    } catch (e) {
+      this._post({ type: 'preview', path: p, error: String(e && e.message || e) });
     }
   }
 
@@ -113,6 +181,9 @@ class SearchViewProvider {
       `font-src ${webview.cspSource}`,
       `img-src ${webview.cspSource} data:`,
     ].join('; ');
+    // Shared DOM fragment — single source with dev/preview.html
+    const body = fs.readFileSync(
+      path.join(this.context.extensionUri.fsPath, 'media', 'panel.html'), 'utf8');
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,41 +194,7 @@ class SearchViewProvider {
 <title>Everything Search</title>
 </head>
 <body>
-  <div id="toolbar">
-    <input id="q" type="text" autocomplete="off" spellcheck="false"
-           placeholder="Search everything&hellip; (ext:py;txt, size:&gt;10mb, dm:today, folder:)">
-    <select id="filter" title="Filter">
-      <option value="">All</option>
-      <option value="audio">Audio</option>
-      <option value="compressed">Compressed</option>
-      <option value="doc">Document</option>
-      <option value="exe">Executable</option>
-      <option value="folder">Folder</option>
-      <option value="image">Image</option>
-      <option value="video">Video</option>
-    </select>
-  </div>
-  <div id="status">Type to search&hellip;</div>
-  <div id="resultsWrap">
-    <table id="results">
-      <thead>
-        <tr>
-          <th class="icon"></th>
-          <th data-sort="name">Name <span class="arrow"></span></th>
-          <th data-sort="path">Path <span class="arrow"></span></th>
-          <th data-sort="size" class="num">Size <span class="arrow"></span></th>
-          <th data-sort="date">Modified <span class="arrow"></span></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div id="ctxMenu" class="hidden">
-    <div class="item" data-act="open">Open</div>
-    <div class="item" data-act="copyPath">Copy Path</div>
-    <div class="item" data-act="openContaining">Open Containing Folder</div>
-    <div class="item" data-act="reveal">Reveal in Explorer</div>
-  </div>
+${body}
 <script nonce="${nonce}" src="${media('panel.js')}"></script>
 </body>
 </html>`;

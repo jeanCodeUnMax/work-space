@@ -1,0 +1,59 @@
+<!-- Shared webview DOM fragment — single source of truth.
+     Injected into preview.html by serve_preview.py (dev) and read by
+     searchView.js _html() (extension). Edit HERE, not in both places. -->
+<div id="toolbar">
+  <input id="q" type="text" autocomplete="off" spellcheck="false"
+         placeholder="Search everything&hellip; (ext:py;txt, size:&gt;10mb, dm:today, folder:)">
+  <select id="filter" title="Filter">
+    <option value="">All</option>
+    <option value="audio">Audio</option>
+    <option value="compressed">Compressed</option>
+    <option value="doc">Document</option>
+    <option value="exe">Executable</option>
+    <option value="folder">Folder</option>
+    <option value="image">Image</option>
+    <option value="video">Video</option>
+  </select>
+</div>
+<div id="status">Type to search&hellip;</div>
+<div id="resultsWrap">
+  <table id="results">
+    <colgroup>
+      <col class="c-icon">
+      <col class="c-name">
+      <col class="c-path">
+      <col class="c-size">
+      <col class="c-date">
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="icon"></th>
+        <th data-sort="name">Name <span class="arrow"></span></th>
+        <th data-sort="path">Path <span class="arrow"></span></th>
+        <th data-sort="size" class="num">Size <span class="arrow"></span></th>
+        <th data-sort="date">Modified <span class="arrow"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<div id="actions">
+  <button id="actExplore" title="Open containing folder in Explorer">&#x1F4C2;</button>
+  <button id="actSubmit" title="Submit selection to agent (copies paths + opens chat)">&#x1F4CE;</button>
+  <span class="sep"></span>
+  <button id="actNewFile" title="New file in selected folder">&#x1F4C4;&#xFE0E;+</button>
+  <button id="actNewDir" title="New folder in selected folder">&#x1F4C1;+</button>
+  <span class="sep"></span>
+  <button id="actPreview" title="Toggle preview pane">&#x1F441;</button>
+</div>
+<div id="previewWrap" class="hidden"><div id="previewBox"></div></div>
+<div id="ctxMenu" class="hidden">
+  <div class="item" data-act="open">Open</div>
+  <div class="item" data-act="copyPath">Copy Path</div>
+  <div class="item" data-act="openContaining">Open Containing Folder</div>
+  <div class="item" data-act="reveal">Reveal in Explorer</div>
+  <div class="sep"></div>
+  <div class="item" data-act="submit">Submit to Agent</div>
+  <div class="item" data-act="newFile">New File Here</div>
+  <div class="item" data-act="newDir">New Folder Here</div>
+</div>

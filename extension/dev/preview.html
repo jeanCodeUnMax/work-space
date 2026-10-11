@@ -15,6 +15,8 @@
     --vscode-font-size: 13px;
     --vscode-foreground: #cccccc;
     --vscode-editor-background: #1e1e1e;
+    --vscode-sideBar-background: #1e1e1e;
+    --vscode-sideBarSectionHeader-background: #252526;
     --vscode-input-background: #3c3c3c;
     --vscode-input-foreground: #cccccc;
     --vscode-input-border: #3c3c3c;
@@ -26,46 +28,18 @@
     --vscode-descriptionForeground: #989898;
     --vscode-button-background: #0e639c;
     --vscode-button-foreground: #ffffff;
+    --vscode-menu-background: #252526;
+    --vscode-menu-border: #454545;
+    --vscode-menu-selectionBackground: #094771;
+    --vscode-menu-selectionForeground: #ffffff;
+    --vscode-panel-border: #454545;
+    --vscode-editor-font-family: Consolas, 'Courier New', monospace;
   }
   html { color-scheme: dark; }
 </style>
 </head>
 <body>
-  <div id="toolbar">
-    <input id="q" type="text" autocomplete="off" spellcheck="false"
-           placeholder="Search everything&hellip; (ext:py;txt, size:&gt;10mb, dm:today, folder:)">
-    <select id="filter" title="Filter">
-      <option value="">All</option>
-      <option value="audio">Audio</option>
-      <option value="compressed">Compressed</option>
-      <option value="doc">Document</option>
-      <option value="exe">Executable</option>
-      <option value="folder">Folder</option>
-      <option value="image">Image</option>
-      <option value="video">Video</option>
-    </select>
-  </div>
-  <div id="status">Type to search&hellip;</div>
-  <div id="resultsWrap">
-    <table id="results">
-      <thead>
-        <tr>
-          <th class="icon"></th>
-          <th data-sort="name">Name <span class="arrow"></span></th>
-          <th data-sort="path">Path <span class="arrow"></span></th>
-          <th data-sort="size" class="num">Size <span class="arrow"></span></th>
-          <th data-sort="date">Modified <span class="arrow"></span></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div id="ctxMenu" class="hidden">
-    <div class="item" data-act="open">Open</div>
-    <div class="item" data-act="copyPath">Copy Path</div>
-    <div class="item" data-act="openContaining">Open Containing Folder</div>
-    <div class="item" data-act="reveal">Reveal in Explorer</div>
-  </div>
+<!--PANEL_BODY-->
 <script>
 // Stub of the vscode webview API — proxies to serve_preview.py so the REAL
 // panel.js runs against the REAL Everything index in a plain browser.
@@ -83,11 +57,39 @@ window.acquireVsCodeApi = function () {
         })
           .then(function (r) { return r.json(); })
           .then(function (payload) {
-            window.postMessage({ type: 'results', seq: msg.seq, payload: payload, renderCap: 500 }, '*');
+            if (payload.error) {
+              window.postMessage({ type: 'error', seq: msg.seq, message: payload.error }, '*');
+            } else {
+              window.postMessage({ type: 'results', seq: msg.seq, payload: payload, renderCap: 500 }, '*');
+            }
           })
           .catch(function (e) {
             window.postMessage({ type: 'error', seq: msg.seq, message: String(e) }, '*');
           });
+      } else if (msg.type === 'preview') {
+        fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(msg),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (pv) { window.postMessage(Object.assign({ type: 'preview' }, pv), '*'); })
+          .catch(function () {});
+      } else if (msg.type === 'fsCreate') {
+        fetch('/api/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(msg),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            window.postMessage({ type: 'fsCreated', path: res.path, error: res.ok ? null : (res.error || 'failed') }, '*');
+          })
+          .catch(function (e) { window.postMessage({ type: 'fsCreated', error: String(e) }, '*'); });
+      } else if (msg.type === 'submitToAgent') {
+        var paths = (msg.paths || []).join('\n');
+        if (navigator.clipboard) navigator.clipboard.writeText(paths).catch(function () {});
+        window.postMessage({ type: 'status', message: (msg.paths || []).length + ' path(s) copied — paste into agent chat (Ctrl+V)' }, '*');
       } else if (msg.type === 'copyPath') {
         if (navigator.clipboard) navigator.clipboard.writeText(msg.path).catch(function () {});
       } else if (msg.type === 'open' || msg.type === 'openContaining' || msg.type === 'reveal') {
@@ -98,8 +100,13 @@ window.acquireVsCodeApi = function () {
         }).catch(function () {});
       }
     },
-    getState: function () { return null; },
-    setState: function () {},
+    getState: function () {
+      try { return JSON.parse(localStorage.getItem('evPreviewState') || 'null'); }
+      catch (e) { return null; }
+    },
+    setState: function (s) {
+      try { localStorage.setItem('evPreviewState', JSON.stringify(s)); } catch (e) {}
+    },
   };
 };
 </script>
