@@ -118,17 +118,21 @@ class SearchViewProvider {
     const text = `[Everything Search] ${paths.length} item(s) submitted for review:\n`
       + paths.join('\n');
     const payload = this._chatPayload(text);
+    const sendAction = (actionType) => vscode.commands.executeCommand(
+      'devin.sendChatActionMessage',
+      JSON.stringify({ actionType, payload: actionType === 'openChatPanel' ? [] : [payload] }));
+    // Routing map (workbench 2026-10): sendCascadeInput is NOT routed for
+    // extensions — silently dropped. addCascadeInput lands the paths in
+    // the composer of the main conversation (user presses Enter to send);
+    // sendCascadeInputNewConversation fires a real turn in a fresh conv.
     try {
-      // real send — the agent receives a new turn with the selected paths
-      await vscode.commands.executeCommand('devin.sendChatActionMessage',
-        JSON.stringify({ actionType: 'sendCascadeInput', payload: [payload] }));
-      this._post({ type: 'status', message: `${paths.length} path(s) submitted to agent` });
+      await sendAction('addCascadeInput');
+      this._post({ type: 'status', message: `${paths.length} path(s) in chat composer — press Enter to submit` });
       return;
-    } catch { /* not a Devin host or payload refused — fall back */ }
+    } catch { /* not routed either */ }
     try {
-      await vscode.commands.executeCommand('devin.sendChatActionMessage',
-        JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
-      this._post({ type: 'status', message: `${paths.length} path(s) drafted in chat` });
+      await sendAction('sendCascadeInputNewConversation');
+      this._post({ type: 'status', message: `${paths.length} path(s) submitted (new conversation)` });
       return;
     } catch { /* */ }
     // last resort: clipboard + focus whatever chat panel exists
