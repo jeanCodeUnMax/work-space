@@ -10,8 +10,13 @@ html, body {
   font-size: var(--vscode-font-size, 13px);
   color: var(--vscode-foreground);
   background: var(--vscode-sideBar-background, transparent);
-  overflow: hidden;
+  /* overall overflow must stay scrollable — an oversized preview must
+     never trap the bottom resize grip outside the viewport */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
+body { padding-bottom: 6px; }
 
 #toolbar {
   display: flex;
