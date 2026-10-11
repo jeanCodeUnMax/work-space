@@ -66,6 +66,23 @@ window.acquireVsCodeApi = function () {
           .catch(function (e) {
             window.postMessage({ type: 'error', seq: msg.seq, message: String(e) }, '*');
           });
+      } else if (msg.type === 'browse') {
+        fetch('/api/browse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(msg),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (res.error) {
+              window.postMessage({ type: 'error', seq: msg.seq, message: res.error }, '*');
+            } else {
+              window.postMessage({ type: 'browse', seq: msg.seq, payload: res }, '*');
+            }
+          })
+          .catch(function (e) {
+            window.postMessage({ type: 'error', seq: msg.seq, message: String(e) }, '*');
+          });
       } else if (msg.type === 'preview') {
         fetch('/api/preview', {
           method: 'POST',

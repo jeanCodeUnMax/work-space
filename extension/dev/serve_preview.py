@@ -111,6 +111,34 @@ def do_create(body):
         return {"ok": False, "error": str(ex), "path": target}
 
 
+def do_browse(body):
+    p = body.get("path") or ""
+    try:
+        if not p:
+            # PC level: existing drive letters
+            import string
+            results = [{"name": L + ":", "path": L + ":\\", "dir": True, "size": 0}
+                       for L in string.ascii_uppercase
+                       if os.path.exists(L + ":\\")]
+            return {"results": results, "total": len(results)}
+        results = []
+        with os.scandir(p) as it:
+            for e in it:
+                fp = e.path
+                try:
+                    st = e.stat()
+                    size, mtime = st.st_size, st.st_mtime
+                except OSError:
+                    size, mtime = 0, None
+                is_dir = e.is_dir()
+                results.append({"name": e.name, "path": fp, "dir": is_dir,
+                                "size": 0 if is_dir else size, "mtime": mtime})
+        results.sort(key=lambda r: (not r["dir"], r["name"].lower()))
+        return {"results": results, "total": len(results)}
+    except Exception as ex:
+        return {"error": str(ex)}
+
+
 def do_act(body):
     p = body.get("path") or ""
     kind = body.get("type")
@@ -179,6 +207,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, do_act(body))
         elif self.path == "/api/preview":
             self._send(200, do_preview(body))
+        elif self.path == "/api/browse":
+            self._send(200, do_browse(body))
         elif self.path == "/api/create":
             self._send(200, do_create(body))
         else:

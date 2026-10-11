@@ -37,6 +37,8 @@
     ctxPath: null,
     previewOn: false,
     pendingCreate: null, // {kind:'file'|'dir', parent}
+    mode: 'search', // 'search' | 'browse'
+    cwd: '', // current browse dir ('' = PC / drives)
   };
 
   // ---------------- query ----------------
@@ -61,7 +63,10 @@
   }
 
   function search() {
+    state.mode = 'search';
+    state.cwd = '';
     state.seq += 1;
+    renderCrumbs();
     vscode.postMessage({
       type: 'search',
       seq: state.seq,
@@ -71,6 +76,51 @@
     });
     statusEl.textContent = 'Searching…';
   }
+
+  // ---------------- browse mode (file-browser navigation) ----------------
+
+  function navTo(dir) {
+    state.mode = 'browse';
+    state.cwd = dir || '';
+    state.seq += 1;
+    renderCrumbs();
+    vscode.postMessage({ type: 'browse', seq: state.seq, path: state.cwd });
+    statusEl.textContent = 'Loading…';
+  }
+
+  const crumbsEl = document.getElementById('crumbs');
+  function renderCrumbs() {
+    crumbsEl.innerHTML = '';
+    const pc = document.createElement('span');
+    pc.className = 'crumb' + (state.mode === 'browse' && !state.cwd ? ' here' : '');
+    pc.textContent = '🖥 PC';
+    pc.title = 'Drives';
+    pc.addEventListener('click', () => navTo(''));
+    crumbsEl.appendChild(pc);
+    if (state.mode === 'search') {
+      crumbsEl.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
+      const s = document.createElement('span');
+      s.className = 'crumb here';
+      s.textContent = '🔍 search';
+      crumbsEl.appendChild(s);
+      return;
+    }
+    // browse: split cwd into clickable segments
+    const parts = state.cwd.replace(/[\\/]+$/, '').split(/[\\/]+/).filter(Boolean);
+    let acc = '';
+    parts.forEach((part, i) => {
+      acc += (i === 0 ? part + '\\' : part + '\\'); // keep trailing sep in path
+      const target = acc;
+      crumbsEl.insertAdjacentHTML('beforeend', '<span class="sep">›</span>');
+      const c = document.createElement('span');
+      c.className = 'crumb' + (i === parts.length - 1 ? ' here' : '');
+      c.textContent = part;
+      c.title = target;
+      c.addEventListener('click', () => navTo(target));
+      crumbsEl.appendChild(c);
+    });
+  }
+  renderCrumbs();
 
   // ---------------- rendering ----------------
 
@@ -119,6 +169,14 @@
     return i > 0 ? p.slice(0, i) : p;
   }
 
+  function parentOf(cwd) {
+    const p = (cwd || '').replace(/[\\/]+$/, '');
+    if (/^[A-Za-z]:$/.test(p)) return ''; // drive root -> PC drives
+    const i = Math.max(p.lastIndexOf('\\'), p.lastIndexOf('/'));
+    if (/^[A-Za-z]:/.test(p) && i <= 2) return p.slice(0, 2) + '\\'; // parent = drive root
+    return i > 0 ? p.slice(0, i) : '';
+  }
+
   function render(payload) {
     const rows = payload.results || [];
     state.results = rows;
@@ -129,6 +187,25 @@
 
     const shown = Math.min(rows.length, state.renderCap);
     const frag = document.createDocumentFragment();
+
+    // ".." row to go up — always first when browsing a real dir
+    if (state.mode === 'browse' && state.cwd) {
+      const up = document.createElement('tr');
+      up.dataset.i = '-1';
+      const ic = document.createElement('td');
+      ic.className = 'icon';
+      ic.textContent = '↩';
+      const nm = document.createElement('td');
+      nm.className = 'name';
+      nm.textContent = '..';
+      nm.colSpan = 4;
+      up.appendChild(ic);
+      up.appendChild(nm);
+      up.addEventListener('dblclick', () => navTo(parentOf(state.cwd)));
+      up.title = 'Parent directory';
+      frag.appendChild(up);
+    }
+
     for (let i = 0; i < shown; i += 1) {
       const it = rows[i];
       const tr = document.createElement('tr');
@@ -166,10 +243,15 @@
     tbody.replaceChildren(frag);
     markSel();
 
-    let s = `${state.total.toLocaleString()} result${state.total === 1 ? '' : 's'}` +
-            ` in ${payload.elapsed_ms != null ? payload.elapsed_ms : '?'} ms`;
-    if (rows.length > shown) s += ` — showing ${shown} of ${rows.length} returned`;
-    if (payload.filtered_by_policy) s += ` (${payload.filtered_by_policy} filtered by policy)`;
+    let s;
+    if (state.mode === 'browse') {
+      s = `${state.total.toLocaleString()} item${state.total === 1 ? '' : 's'} — ${state.cwd || 'PC (drives)'}`;
+    } else {
+      s = `${state.total.toLocaleString()} result${state.total === 1 ? '' : 's'}` +
+          ` in ${payload.elapsed_ms != null ? payload.elapsed_ms : '?'} ms`;
+      if (rows.length > shown) s += ` — showing ${shown} of ${rows.length} returned`;
+      if (payload.filtered_by_policy) s += ` (${payload.filtered_by_policy} filtered by policy)`;
+    }
     statusEl.textContent = s;
   }
 
@@ -209,7 +291,9 @@
 
   function openItem(it) {
     if (!it) return;
-    vscode.postMessage({ type: 'open', path: it.path, dir: !!it.dir });
+    // dirs: navigate INTO them (browser mode); files: open in the IDE
+    if (it.dir) navTo(it.path);
+    else vscode.postMessage({ type: 'open', path: it.path, dir: false });
   }
 
   tbody.addEventListener('click', (e) => {
@@ -554,6 +638,20 @@
 
   // ---------------- column sorting ----------------
 
+  function clientSort() {
+    const key = { name: 'name', path: 'path', size: 'size', date: 'mtime' }[state.sort] || 'name';
+    const mul = state.descending ? -1 : 1;
+    state.results.sort((a, b) => {
+      if (a.dir !== b.dir) return a.dir ? -1 : 1; // dirs first, always
+      const va = a[key], vb = b[key];
+      if (typeof va === 'number' || typeof vb === 'number') {
+        return mul * ((va || 0) - (vb || 0));
+      }
+      return mul * String(va || '').localeCompare(String(vb || ''));
+    });
+    render({ results: state.results, total: state.total });
+  }
+
   document.querySelectorAll('th[data-sort]').forEach((th) => {
     th.addEventListener('click', () => {
       const f = th.dataset.sort;
@@ -565,7 +663,7 @@
       }
       document.querySelectorAll('th .arrow').forEach((a) => { a.textContent = ''; });
       th.querySelector('.arrow').textContent = state.descending ? '▼' : '▲';
-      search();
+      if (state.mode === 'browse') clientSort(); else search();
     });
   });
 
@@ -575,7 +673,7 @@
     const msg = e.data;
     if (!msg || typeof msg !== 'object') return;
     if (msg.seq != null && msg.seq !== state.seq) return; // stale response
-    if (msg.type === 'results') {
+    if (msg.type === 'results' || msg.type === 'browse') {
       if (msg.renderCap) state.renderCap = msg.renderCap;
       render(msg.payload || {});
     } else if (msg.type === 'error') {

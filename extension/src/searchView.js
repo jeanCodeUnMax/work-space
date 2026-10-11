@@ -73,6 +73,9 @@ class SearchViewProvider {
       case 'preview':
         this._preview(msg);
         break;
+      case 'browse':
+        this._browse(msg);
+        break;
       case 'ready':
         break;
     }
@@ -146,6 +149,34 @@ class SearchViewProvider {
     try {
       const payload = await this.client.callTool('everything_search', args);
       this._post({ type: 'results', seq: msg.seq, payload, renderCap: cfg.get('renderCap', 500) });
+    } catch (e) {
+      this._post({ type: 'error', seq: msg.seq, message: String(e && e.message || e) });
+    }
+  }
+
+  _browse(msg) {
+    const p = msg.path || '';
+    try {
+      if (!p) {
+        // PC level: enumerate existing drive letters
+        const results = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+          .filter((L) => fs.existsSync(L + ':\\'))
+          .map((L) => ({ name: L + ':', path: L + ':\\', dir: true, size: 0 }));
+        this._post({ type: 'browse', seq: msg.seq, payload: { results, total: results.length } });
+        return;
+      }
+      const results = fs.readdirSync(p, { withFileTypes: true }).map((e) => {
+        const fp = path.join(p, e.name);
+        let size = 0;
+        let mtime = null;
+        try {
+          const st = fs.statSync(fp);
+          size = st.size;
+          mtime = st.mtimeMs / 1000;
+        } catch { /* locked/gone */ }
+        return { name: e.name, path: fp, dir: e.isDirectory(), size: e.isDirectory() ? 0 : size, mtime };
+      }).sort((a, b) => (b.dir - a.dir) || a.name.localeCompare(b.name));
+      this._post({ type: 'browse', seq: msg.seq, payload: { results, total: results.length } });
     } catch (e) {
       this._post({ type: 'error', seq: msg.seq, message: String(e && e.message || e) });
     }

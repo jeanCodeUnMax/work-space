@@ -190,6 +190,32 @@ th { cursor: default; }
 th.resize-hint, body.col-resize { cursor: col-resize !important; }
 body.col-resize * { cursor: col-resize !important; }
 
+/* breadcrumb — pinned at top of the scroll area */
+#crumbs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  padding: 2px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
+}
+#crumbs .crumb {
+  padding: 0 3px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+#crumbs .crumb:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+#crumbs .sep { color: var(--vscode-descriptionForeground); padding: 0 1px; }
+#crumbs .here { font-weight: 600; }
+
 #results {
   width: 100%;
   border-collapse: collapse;
