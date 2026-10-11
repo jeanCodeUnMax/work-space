@@ -10,12 +10,15 @@ everything-mcp/
 ├── server.py            # serveur MCP stdio (point d'entrée)
 ├── everything_ipc.py    # client IPC Everything (ctypes, QUERY2)
 ├── categories.py        # catégories de filtres
-├── fs_tools.py          # outils filesystem
+├── fs_tools.py          # outils filesystem + moteur .mcp-access
+├── .mcp-access          # politique d'accès par agent (profils)
 ├── README.md            # vue d'ensemble
 ├── .gitignore
 ├── docs/
 │   ├── GUIDE.md         # guide local (install, usage, test)
-│   └── ORGANISATION.md  # ce fichier
+│   ├── ORGANISATION.md  # ce fichier
+│   └── wiki/            # wiki complet (9 pages)
+├── extension/           # extension VS Code (version dev, non packagée)
 └── _obsolete/           # ancienne archi MFT/SQLite — référence, archivé
 ```
 

@@ -70,8 +70,10 @@ def _load_policy() -> dict[str, list[tuple[str, str]]]:
 
 def path_allowed(path: str, write: bool = False) -> bool:
     """Last-match-wins evaluation of the agent's .mcp-access profile.
-    No rules for the profile => unrestricted (local trusted agents)."""
-    rules = _load_policy().get(agent_profile())
+    Unknown/missing profile falls back to [default]; only a policy file
+    without ANY [default] rules means unrestricted."""
+    policy = _load_policy()
+    rules = policy.get(agent_profile()) or policy.get("default", [])
     if not rules:
         return True
     np = os.path.abspath(path).replace("\\", "/").lower()
@@ -238,7 +240,7 @@ def _unified_diff(old: str, new: str, path: str) -> str:
 
 def fs_edit_file(path: str, edits: list[dict], dry_run: bool = False,
                  encoding: str = "utf-8") -> dict:
-    """Exact-match line edits: each edit replaces the FIRST occurrence of
+    """Exact-match substring edits: each edit replaces the FIRST occurrence of
     oldText with newText. Returns a git-style diff; dry_run writes nothing."""
     p = _check(path, write=True)
     with open(_long(p), "rb") as f:
@@ -350,11 +352,13 @@ def fs_search_files(path: str, pattern: str,
 def fs_list_allowed_roots() -> dict:
     roots = allowed_roots()
     profile = agent_profile()
-    rules = _load_policy().get(profile, [])
+    policy = _load_policy()
+    rules = policy.get(profile) or policy.get("default", [])
     return {"allowed_roots": roots,
             "unrestricted": not roots,
             "env_var": "EVERYTHING_MCP_ROOTS",
             "agent": profile,
+            "effective_profile": profile if policy.get(profile) else "default",
             "policy_file": _ACCESS_FILE,
             "policy_rules": len(rules),
             "restricted": rules != [("allow", "**")]}

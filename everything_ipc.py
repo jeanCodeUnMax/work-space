@@ -76,7 +76,7 @@ IPC_IS_ADMIN = 403
 IPC_REBUILD_DB = 405
 IPC_SAVE_DB = 407
 
-FILETIME_EPOCH_DELTA_US = 11644473600000000  # 1601 -> 1970 in 100ns units
+FILETIME_EPOCH_DELTA = 116444736000000000  # 1601 -> 1970 in 100ns units
 
 LRESULT = ctypes.c_ssize_t
 WNDPROC = ctypes.WINFUNCTYPE(LRESULT, w.HWND, w.UINT, w.WPARAM, w.LPARAM)
@@ -123,7 +123,7 @@ class EverythingError(RuntimeError):
 
 
 def _filetime_to_epoch(ft: int) -> float:
-    return (ft - FILETIME_EPOCH_DELTA_US) / 10_000_000.0
+    return (ft - FILETIME_EPOCH_DELTA) / 10_000_000.0
 
 
 class EverythingIPC:

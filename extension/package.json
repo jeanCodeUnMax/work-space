@@ -1,0 +1,90 @@
+{
+  "name": "everything-search-dev",
+  "displayName": "Everything Search (Dev)",
+  "description": "DEV build: instant NTFS file search powered by Everything.exe via the everything-search MCP server",
+  "version": "0.0.1-dev",
+  "publisher": "local-dev",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:everything-search.searchView",
+    "onCommand:everything-search.openSearch"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "everything-search.openSearch",
+        "title": "Everything: Open Search",
+        "icon": "$(search)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "everything-search",
+          "title": "Everything Search",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "everything-search": [
+        {
+          "type": "webview",
+          "id": "everything-search.searchView",
+          "name": "Search",
+          "contextualTitle": "Everything"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "everything-search.openSearch",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f"
+      }
+    ],
+    "configuration": {
+      "title": "Everything Search",
+      "properties": {
+        "everythingSearch.serverPath": {
+          "type": "string",
+          "default": "C:/Program Files/servers/everything-mcp/server.py",
+          "description": "Absolute path to the everything-search MCP server script"
+        },
+        "everythingSearch.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python interpreter used to spawn the MCP server"
+        },
+        "everythingSearch.maxResults": {
+          "type": "integer",
+          "default": 500,
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "max_results sent to everything_search per query"
+        },
+        "everythingSearch.renderCap": {
+          "type": "integer",
+          "default": 500,
+          "minimum": 10,
+          "maximum": 5000,
+          "description": "Max rows rendered in the webview (rest are truncated with a note)"
+        },
+        "everythingSearch.requestTimeoutMs": {
+          "type": "integer",
+          "default": 30000,
+          "minimum": 1000,
+          "description": "Per-request timeout for MCP calls"
+        }
+      }
+    }
+  }
+}

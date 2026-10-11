@@ -14,6 +14,10 @@ wheels/
 venv/
 env/
 
+# ---- Node (extension) ----
+node_modules/
+*.vsix
+
 # ---- Agent / IDE workspace ----
 .agent/
 .vscode/

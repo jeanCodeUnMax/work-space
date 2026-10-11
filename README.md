@@ -17,8 +17,9 @@ server maintains **no local index**, performs **no MFT enumeration**, and needs
   reply window, parses name/path/size/date/attributes.
 - `server.py` — MCP stdio JSON-RPC server exposing the tools below.
 
-Search latency is milliseconds, identical to the Everything GUI (~50–300 ms
-cold, <50 ms warm).
+Search latency is tens of milliseconds for typical queries (~30–400 ms);
+large result sets (>1000 paths returned) cost seconds as the whole payload
+travels over WM_COPYDATA — same order as the Everything GUI itself.
 
 ## Tools
 
