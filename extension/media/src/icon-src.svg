@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <radialGradient id="glass" cx="38%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#8FE3DD" stop-opacity=".9"/>
+      <stop offset="45%" stop-color="#2FA8A0" stop-opacity=".75"/>
+      <stop offset="100%" stop-color="#0E3B3F" stop-opacity=".9"/>
+    </radialGradient>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E8C57A"/>
+      <stop offset="55%" stop-color="#C9984B"/>
+      <stop offset="100%" stop-color="#8A6423"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8A6238"/>
+      <stop offset="100%" stop-color="#4A2E14"/>
+    </linearGradient>
+  </defs>
+
+  <!-- handle -->
+  <g transform="rotate(45 164 164)">
+    <rect x="150" y="158" width="30" height="86" rx="14" fill="url(#wood)"/>
+    <rect x="150" y="158" width="30" height="14" rx="7" fill="url(#brass)"/>
+  </g>
+  <!-- brass rim -->
+  <circle cx="104" cy="104" r="74" fill="none" stroke="url(#brass)" stroke-width="16"/>
+  <!-- lens -->
+  <circle cx="104" cy="104" r="66" fill="url(#glass)"/>
+  <!-- Sherlock silhouette inside lens -->
+  <g fill="#2B1D0E">
+    <!-- head -->
+    <circle cx="104" cy="108" r="22"/>
+    <!-- deerstalker dome sitting on the head -->
+    <path d="M78 102c0-18 11-30 26-30s26 12 26 30l-7 1c-3-13-10-21-19-21s-16 8-19 21z"/>
+    <path d="M75 101c-9 1-16 5-21 11l17 3z"/>
+    <path d="M133 101c9 1 16 5 21 11l-17 3z"/>
+    <!-- top knot bow -->
+    <path d="M104 70 95 60m9 10 9-10" stroke="#2B1D0E" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <!-- cape shoulders -->
+    <path d="M66 148c3-14 18-24 38-24s35 10 38 24l3 10H63z"/>
+    <!-- pipe -->
+    <path d="M126 116c8-2 15 1 17 8l-6 3c-2-5-6-8-11-8z"/>
+    <circle cx="145" cy="122" r="4" fill="#C9984B"/>
+  </g>
+  <!-- glass glint -->
+  <path d="M62 84a48 48 0 0 1 26-28" stroke="#EAFBF9" stroke-width="8" stroke-linecap="round" fill="none" opacity=".8"/>
+</svg>

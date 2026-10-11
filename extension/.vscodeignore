@@ -3,3 +3,4 @@ dev/**
 *.vsix
 *.log
 README-DEV.md
+media/src/**

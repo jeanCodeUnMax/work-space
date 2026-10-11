@@ -1,11 +1,12 @@
 {
-  "name": "everything-search-dev",
-  "displayName": "Everything Search (Dev)",
-  "description": "DEV build: instant NTFS file search powered by Everything.exe via the everything-search MCP server",
-  "version": "0.0.1-dev",
-  "publisher": "local-dev",
+  "name": "everything-search",
+  "displayName": "Everything Search",
+  "description": "Instant NTFS file search & browser powered by Everything.exe's live index (IPC) — Sherlock finds it before you finish typing",
+  "version": "1.0.0",
+  "publisher": "art-qalam",
   "private": true,
   "license": "MIT",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },

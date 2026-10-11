@@ -7,18 +7,32 @@ packaging, pas de CI. À faire évoluer si le projet grossit.
 
 ```
 everything-mcp/
-├── server.py            # serveur MCP stdio (point d'entrée)
-├── everything_ipc.py    # client IPC Everything (ctypes, QUERY2)
+├── server.py            # serveur MCP stdio (point d'entrée, 18 outils)
+├── everything_ipc.py    # client IPC Everything (ctypes, WM_COPYDATA/QUERY2)
 ├── categories.py        # catégories de filtres
 ├── fs_tools.py          # outils filesystem + moteur .mcp-access
 ├── .mcp-access          # politique d'accès par agent (profils)
 ├── README.md            # vue d'ensemble
 ├── .gitignore
 ├── docs/
-│   ├── GUIDE.md         # guide local (install, usage, test)
+│   ├── GUIDE.md         # guide local (install, usage, policy, comparatif)
 │   ├── ORGANISATION.md  # ce fichier
-│   └── wiki/            # wiki complet (9 pages)
-├── extension/           # extension VS Code (version dev, non packagée)
+│   └── wiki/            # wiki complet (Architecture, IPC-Protocol,
+│                        #  Tools-Reference, Query-Syntax, Security,
+│                        #  Benchmarks, Dev-Guide…)
+├── extension/           # extension VS Code/Devin (build dev, non packagée)
+│   ├── package.json     # manifest : vue webview, commande, settings
+│   ├── extension.js     # entry point : activate/deactivate, spawn client
+│   ├── src/
+│   │   ├── mcpClient.js # client MCP stdio NDJSON (respawn à backoff)
+│   │   └── searchView.js# WebviewViewProvider + pont postMessage
+│   ├── media/
+│   │   ├── panel.js     # UI du panneau (recherche, nav, favoris, i18n)
+│   │   ├── panel.css    # thème via variables CSS VS Code
+│   │   └── icon.svg     # icône barre d'activité
+│   └── dev/
+│       ├── serve_preview.py  # harness navigateur sur l'index réel
+│       └── preview.html      # stub acquireVsCodeApi + DOM du panneau
 └── _obsolete/           # ancienne archi MFT/SQLite — référence, archivé
 ```
 
@@ -66,34 +80,37 @@ Format `type(scope): message` (convention du workspace) :
 - `tests/` pytest quand la surface le justifiera
 - CI (syntax check + smoke) si plusieurs contributeurs
 
-## Étape suivante : extension VS Code (VSIX)
+## Extension VS Code — état actuel (implémentée, build dev)
 
-Dashboard de recherche type Everything dans l'IDE — conception inspirée de
-`Hephaistos-Kit/extensions/orchestrator-monitor` (src/ TS → out/, webview
-media/, build `npx tsc && npx @vscode/vsce package`).
+L'extension `extension/` existe et fonctionne en version dev (non packagée,
+JavaScript CommonJS — le plan initial TypeScript/`out/` a été simplifié en
+JS direct, pas de build `tsc` requis) :
 
-**Contrat d'intégration déjà prêt** — le serveur est un MCP stdio standard :
-l'extension spawn `python server.py`, garde un client JSON-RPC longue durée
-et appelle `everything_search` / `fs_*`. Aucun bridge supplémentaire requis
-(le protocole `snapshot`/`ws-bridge` du monitor n'est pas nécessaire ici :
-pas de DB à poller, les requêtes sont synchrones et en ms).
+- `extension.js` — `activate()` : crée l'OutputChannel, instancie
+  `McpClient`, enregistre le `SearchViewProvider` et la commande
+  `everything-search.openSearch` (`Ctrl+Alt+F`), warmup du serveur.
+- `src/mcpClient.js` — spawn `python -u server.py` en profil `default`
+  (utilisateur local = sans restriction), JSON-RPC NDJSON, mapping
+  id→promesse, respawn paresseux avec backoff exponentiel (cap 30 s).
+- `src/searchView.js` — `WebviewViewProvider` : sert `media/panel.{js,css}`,
+  relaie le trafic postMessage webview ↔ MCP, actions fichiers réelles
+  (open, openContaining, reveal, create).
+- `media/panel.js` — panneau complet : recherche live, navigation
+  PC→drives, favoris dossiers/fichiers, preview texte/images avec
+  détection binaire, colonnes redimensionnables/réordonnables,
+  multi-sélection, submit-to-agent via `fileMention` natif Devin,
+  breadcrumbs + historique, i18n FR/EN/ES/DE.
+- `dev/serve_preview.py` + `dev/preview.html` — harness de dev navigateur :
+  sert les vrais `media/panel.*` avec `acquireVsCodeApi` stubbé, adossé à
+  l'index réel via `everything_ipc` (`POST /api/search`, `POST /api/act`).
+  Lancement : `python extension/dev/serve_preview.py --port 8787`.
 
-Cible :
+Conception inspirée de `Hephaistos-Kit/extensions/orchestrator-monitor`,
+mais **sans bridge** : le serveur est un MCP stdio standard, les requêtes
+sont synchrones et en ms — pas de DB à poller, pas de protocole snapshot.
 
-```
-extension/everything-search/
-├── package.json        # contributes: views/webview, commandes, activation
-├── tsconfig.json
-├── src/
-│   ├── extension.ts    # activation, spawn server.py, client MCP stdio
-│   ├── mcpClient.ts    # JSON-RPC ligne par ligne (initialize, tools/call)
-│   └── searchView.ts   # webview provider : input + résultats virtualisés
-├── media/
-│   ├── panel.js        # UI recherche (champ, liste, tri colonnes)
-│   └── panel.css
-└── out/                # compilé tsc
-```
+**Reste à faire** : packaging VSIX (`@vscode/vsce package`), publication,
+et éventuellement un dashboard plus riche que le panneau sidebar.
 
-Drag & drop webview → workspace : `text/uri-list` sur les items de résultats
-(drop natif VS Code vers l'éditeur / l'explorer). Recherche utilisateur
-(manuelle, UI) et agent (MCP) partagent le même backend Everything.
+Recherche utilisateur (UI manuelle) et agent (MCP) partagent le même
+backend Everything — même index, même policy `.mcp-access`.
