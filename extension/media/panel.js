@@ -28,7 +28,8 @@
       tPreview: 'Toggle preview pane', tFavs: 'Favorites — jump straight in',
       tFavAdd: 'Add selection to favorites', tFavDel: 'Remove selected favorite',
       tGrip: 'Drag to resize', tSettings: 'Settings',
-      tBack: 'Back', tFwd: 'Forward', tUp: 'Up',
+      tBack: 'Back', tFwd: 'Forward', tUp: 'Up', tSearch: 'Back to search',
+      sFileOnly: 'Files only — drop folders on the navigation bar',
       favHeader: '★ Favorites',
       sResults: '{n} result{s} in {ms} ms', sShowing: ' — showing {a} of {b} returned',
       sFiltered: ' ({n} filtered by policy)',
@@ -59,7 +60,8 @@
       tPreview: 'Basculer le panneau d\u2019aperçu', tFavs: 'Favoris — saut direct',
       tFavAdd: 'Ajouter la sélection aux favoris', tFavDel: 'Retirer le favori sélectionné',
       tGrip: 'Glisser pour redimensionner', tSettings: 'Paramètres',
-      tBack: 'Précédent', tFwd: 'Suivant', tUp: 'Remonter',
+      tBack: 'Précédent', tFwd: 'Suivant', tUp: 'Remonter', tSearch: 'Retour à la recherche',
+      sFileOnly: 'Fichiers uniquement — les dossiers vont sur la barre de navigation',
       favHeader: '★ Favoris',
       sResults: '{n} résultat{s} en {ms} ms', sShowing: ' — affichés {a} sur {b}',
       sFiltered: ' ({n} filtrés par la politique)',
@@ -90,7 +92,8 @@
       tPreview: 'Alternar panel de vista previa', tFavs: 'Favoritos — salto directo',
       tFavAdd: 'Añadir selección a favoritos', tFavDel: 'Quitar favorito seleccionado',
       tGrip: 'Arrastrar para redimensionar', tSettings: 'Configuración',
-      tBack: 'Atrás', tFwd: 'Adelante', tUp: 'Subir',
+      tBack: 'Atrás', tFwd: 'Adelante', tUp: 'Subir', tSearch: 'Volver a búsqueda',
+      sFileOnly: 'Solo archivos — las carpetas van en la barra',
       favHeader: '★ Favoritos',
       sResults: '{n} resultado{s} en {ms} ms', sShowing: ' — mostrando {a} de {b}',
       sFiltered: ' ({n} filtrados por política)',
@@ -120,7 +123,8 @@
       tPreview: 'Vorschau ein-/ausblenden', tFavs: 'Favoriten — direkt hinspringen',
       tFavAdd: 'Auswahl zu Favoriten hinzufügen', tFavDel: 'Ausgewählten Favorit entfernen',
       tGrip: 'Zum Anpassen ziehen', tSettings: 'Einstellungen',
-      tBack: 'Zurück', tFwd: 'Vorwärts', tUp: 'Nach oben',
+      tBack: 'Zurück', tFwd: 'Vorwärts', tUp: 'Nach oben', tSearch: 'Zurück zur Suche',
+      sFileOnly: 'Nur Dateien — Ordner in die Leiste ziehen',
       favHeader: '★ Favoriten',
       sResults: '{n} Ergebnis{se} in {ms} ms', sShowing: ' — {a} von {b} angezeigt',
       sFiltered: ' ({n} durch Richtlinie gefiltert)',
@@ -287,7 +291,12 @@
     navBack.classList.toggle('off', state.histIdx <= 0);
     navFwd.classList.toggle('off', state.histIdx >= state.hist.length - 1);
     navUp.classList.toggle('off', state.mode !== 'browse' || !state.cwd);
+    navSearch.classList.toggle('on', state.mode === 'search');
+    renderDirChips();
   }
+
+  const navSearch = document.getElementById('navSearch');
+  navSearch.addEventListener('click', () => search());
 
   navBack.addEventListener('click', () => {
     if (state.histIdx > 0) {
@@ -652,53 +661,83 @@
   // ---------------- favorites ----------------
 
   const favList = document.getElementById('favList');
-  // persisted.favs = [{path, dir}] — shortcuts: select navigates straight
-  // into the dir (browse mode); files open directly. Legacy string entries
-  // are migrated to {path, dir:true}.
+  const dirFavChips = document.getElementById('dirFavChips');
+  // Two favorite stores:
+  //   persisted.fileFavs = ["path", ...] -> bottom dropdown, files ONLY
+  //   persisted.dirFavs  = ["path", ...] -> chips pinned in the crumbs bar
+  // (legacy persisted.favs[{path,dir}] is migrated/split on load)
 
   function populateFavs() {
     const cur = favList.value;
-    favList.innerHTML = '<option value="">★ Favorites</option>';
-    (persisted.favs || []).forEach((f) => {
+    favList.innerHTML = `<option value="">${t('favHeader')}</option>`;
+    (persisted.fileFavs || []).forEach((p) => {
       const o = document.createElement('option');
-      o.value = f.path;
-      o.textContent = f.path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || f.path;
-      o.title = f.path;
+      o.value = p;
+      o.textContent = p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p;
+      o.title = p;
       favList.appendChild(o);
     });
     favList.value = [...favList.options].some((o) => o.value === cur) ? cur : '';
   }
 
+  function renderDirChips() {
+    dirFavChips.innerHTML = '';
+    (persisted.dirFavs || []).forEach((p) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.title = p;
+      const lbl = document.createElement('span');
+      lbl.className = 'lbl';
+      lbl.textContent = '📁 ' + (p.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || p);
+      const x = document.createElement('span');
+      x.className = 'x';
+      x.textContent = '✕';
+      x.title = 'Remove';
+      x.addEventListener('click', (e) => {
+        e.stopPropagation();
+        persisted.dirFavs = persisted.dirFavs.filter((f) => f !== p);
+        persistState();
+        renderDirChips();
+        statusEl.textContent = t('sRemoved', { p });
+      });
+      lbl.addEventListener('click', () => navTo(p));
+      chip.appendChild(lbl);
+      chip.appendChild(x);
+      dirFavChips.appendChild(chip);
+    });
+  }
+
   favList.addEventListener('change', () => {
-    const fav = (persisted.favs || []).find((f) => f.path === favList.value);
-    if (fav) {
-      if (fav.dir) navTo(fav.path);
-      else vscode.postMessage({ type: 'open', path: fav.path, dir: false });
-    }
+    const p = favList.value;
+    if (p) vscode.postMessage({ type: 'open', path: p, dir: false });
     q.focus();
   });
+
   function addFavorite(path, dir) {
-    persisted.favs = persisted.favs || [];
-    if (persisted.favs.some((f) => f.path === path)) {
+    const store = dir ? 'dirFavs' : 'fileFavs';
+    persisted[store] = persisted[store] || [];
+    if (persisted[store].includes(path)) {
       statusEl.textContent = t('sAlreadyFav');
       return;
     }
-    persisted.favs.push({ path, dir: !!dir });
-    persisted.favs.sort((a, b) => a.path.localeCompare(b.path));
+    persisted[store].push(path);
+    persisted[store].sort((a, b) => a.localeCompare(b));
     persistState();
     populateFavs();
+    renderDirChips();
     statusEl.textContent = t('sFavAdded', { p: path });
   }
 
   document.getElementById('actFavAdd').addEventListener('click', () => {
     const it = selectedItems()[0];
     if (!it) { statusEl.textContent = t('sSelFav'); return; }
-    addFavorite(it.path, it.dir);
+    if (it.dir) { statusEl.textContent = t('sFileOnly'); return; } // files only below
+    addFavorite(it.path, false);
   });
   document.getElementById('actFavDel').addEventListener('click', () => {
     const f = favList.value;
     if (!f) { statusEl.textContent = t('sPickFav'); return; }
-    persisted.favs = (persisted.favs || []).filter((x) => x.path !== f);
+    persisted.fileFavs = (persisted.fileFavs || []).filter((x) => x !== f);
     persistState();
     populateFavs();
     statusEl.textContent = t('sRemoved', { p: f });
@@ -800,10 +839,17 @@
   const resultsWrap = document.getElementById('resultsWrap');
   if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
   if (persisted.prevH) previewWrap.style.height = persisted.prevH + 'px';
-  // migrate legacy string favorites -> {path, dir:true}
-  persisted.favs = (persisted.favs || []).map((f) =>
-    typeof f === 'string' ? { path: f, dir: true } : f);
+  // migrate legacy favorites: strings -> dir chips; {path,dir} -> split
+  persisted.fileFavs = persisted.fileFavs || [];
+  persisted.dirFavs = persisted.dirFavs || [];
+  (persisted.favs || []).forEach((f) => {
+    const it = typeof f === 'string' ? { path: f, dir: true } : f;
+    const store = it.dir ? persisted.dirFavs : persisted.fileFavs;
+    if (!store.includes(it.path)) store.push(it.path);
+  });
+  delete persisted.favs;
   populateFavs();
+  renderDirChips();
   // language: persisted > browser locale > en
   if (persisted.lang && LANGS.includes(persisted.lang)) lang = persisted.lang;
   else {
