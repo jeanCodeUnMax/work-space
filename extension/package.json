@@ -36,7 +36,8 @@
           "type": "webview",
           "id": "everything-search.searchView",
           "name": "Search",
-          "contextualTitle": "Everything"
+          "contextualTitle": "Everything",
+          "icon": "media/icon.svg"
         }
       ]
     },
