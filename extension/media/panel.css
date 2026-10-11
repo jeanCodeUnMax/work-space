@@ -59,14 +59,32 @@ html, body {
   text-overflow: ellipsis;
 }
 
+/* fixed column header — sits above the scrollable body, never scrolls */
+#headWrap {
+  flex: 0 0 auto;
+  margin: 0 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.35));
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
+}
+#headTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
 #resultsWrap {
   flex: 0 0 auto;
   height: clamp(240px, 55vh, 400px);
   margin: 0 8px 4px;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
+  scrollbar-gutter: stable;
   border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.35));
-  border-radius: 4px;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
 }
 
 /* height grips — below resultsWrap, above previewWrap */
@@ -185,21 +203,20 @@ body.row-resize, body.row-resize * { cursor: ns-resize !important; }
 }
 
 /* column resize affordance */
-#results thead th { position: sticky; }
 th { cursor: default; }
 th.resize-hint, body.col-resize { cursor: col-resize !important; }
 body.col-resize * { cursor: col-resize !important; }
+#headTable th.drop-ok { box-shadow: inset 3px 0 0 var(--vscode-focusBorder, #3794ff); }
 
-/* breadcrumb — pinned at top of the scroll area, toolbar-height */
+/* breadcrumb — standalone bar above the column header, never scrolls */
 #crumbs {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
   overflow: hidden;
   box-sizing: border-box;
+  flex: 0 0 auto;
+  margin: 0 8px 3px;
   min-height: 50px;
   padding: 4px 6px;
   font-size: 12px;
@@ -337,10 +354,7 @@ body.col-resize * { cursor: col-resize !important; }
   table-layout: fixed;
 }
 
-#results thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+#headTable th {
   text-align: left;
   padding: 3px 6px;
   font-weight: 600;
@@ -350,15 +364,13 @@ body.col-resize * { cursor: col-resize !important; }
   cursor: pointer;
   user-select: none;
   color: var(--vscode-foreground);
-  background: var(--vscode-sideBarSectionHeader-background, var(--vscode-sideBar-background));
   border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
 }
-#results thead th:hover {
+#headTable th:hover {
   background: var(--vscode-list-hoverBackground);
 }
-#results th.icon { width: 26px; }
-#results th.num  { width: 80px; text-align: right; }
-#results th[data-sort="date"] { width: 140px; }
+#headTable th.icon { cursor: default; }
+#headTable th.num  { text-align: right; }
 
 #results tbody td {
   padding: 1px 6px;

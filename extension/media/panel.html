@@ -17,34 +17,20 @@
   </select>
 </div>
 <div id="status" data-i18n="sHint">Type to search&hellip;</div>
+<div id="crumbs">
+  <span class="navbtn" id="navBack" data-i18n-title="tBack">&#x25C0;</span>
+  <span class="navbtn" id="navFwd" data-i18n-title="tFwd">&#x25B6;</span>
+  <span class="navbtn" id="navUp" data-i18n-title="tUp">&#x2B06;</span>
+  <span class="navbtn" id="navSearch" data-i18n-title="tSearch">&#x1F50D;</span>
+  <span id="crumbTrail"></span>
+  <span id="dirFavChips"></span>
+</div>
+<!-- fixed header — never scrolls; its table is width-synced with the body -->
+<div id="headWrap">
+  <table id="headTable"><colgroup id="headCols"></colgroup><thead><tr id="headRow"></tr></thead></table>
+</div>
 <div id="resultsWrap">
-  <div id="crumbs">
-    <span class="navbtn" id="navBack" data-i18n-title="tBack">&#x25C0;</span>
-    <span class="navbtn" id="navFwd" data-i18n-title="tFwd">&#x25B6;</span>
-    <span class="navbtn" id="navUp" data-i18n-title="tUp">&#x2B06;</span>
-    <span class="navbtn" id="navSearch" data-i18n-title="tSearch">&#x1F50D;</span>
-    <span id="crumbTrail"></span>
-    <span id="dirFavChips"></span>
-  </div>
-  <table id="results">
-    <colgroup>
-      <col class="c-icon">
-      <col class="c-name">
-      <col class="c-path">
-      <col class="c-size">
-      <col class="c-date">
-    </colgroup>
-    <thead>
-      <tr>
-        <th class="icon"></th>
-        <th data-sort="name"><span data-i18n="hName">Name</span> <span class="arrow"></span></th>
-        <th data-sort="path"><span data-i18n="hPath">Path</span> <span class="arrow"></span></th>
-        <th data-sort="size" class="num"><span data-i18n="hSize">Size</span> <span class="arrow"></span></th>
-        <th data-sort="date"><span data-i18n="hDate">Modified</span> <span class="arrow"></span></th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <table id="results"><colgroup id="bodyCols"></colgroup><tbody id="tbody"></tbody></table>
 </div>
 <div id="resizeGrip" data-i18n-title="tGrip" title="Drag to resize"></div>
 <div id="actions">

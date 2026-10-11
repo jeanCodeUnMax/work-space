@@ -162,6 +162,7 @@
     document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
     document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
     document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    buildHead();
     renderCrumbs();
   }
 
@@ -421,35 +422,32 @@
       tr.draggable = true;
       tr.title = it.path;
 
-      const icon = document.createElement('td');
-      icon.className = 'icon';
-      icon.textContent = it.ico || (it.dir ? '📁' : '📄');
-      tr.appendChild(icon);
-
-      const name = document.createElement('td');
-      name.className = 'name';
-      name.textContent = it.name || '';
-      tr.appendChild(name);
-
-      const dir = document.createElement('td');
-      dir.className = 'path';
-      dir.textContent = dirOf(it.path || '');
-      tr.appendChild(dir);
-
-      const size = document.createElement('td');
-      size.className = 'num';
-      size.textContent = it.dir ? '' : fmtSize(it.size);
-      tr.appendChild(size);
-
-      const mod = document.createElement('td');
-      mod.className = 'date';
-      mod.textContent = fmtDate(it.mtime);
-      tr.appendChild(mod);
-
+      // cells follow the current (reorderable) column order
+      state.colOrder.forEach((key) => {
+        const td = document.createElement('td');
+        if (key === 'icon') {
+          td.className = 'icon';
+          td.textContent = it.ico || (it.dir ? '📁' : '📄');
+        } else if (key === 'name') {
+          td.className = 'name';
+          td.textContent = it.name || '';
+        } else if (key === 'path') {
+          td.className = 'path';
+          td.textContent = dirOf(it.path || '');
+        } else if (key === 'size') {
+          td.className = 'num';
+          td.textContent = it.dir ? '' : fmtSize(it.size);
+        } else if (key === 'date') {
+          td.className = 'date';
+          td.textContent = fmtDate(it.mtime);
+        }
+        tr.appendChild(td);
+      });
       frag.appendChild(tr);
     }
     tbody.replaceChildren(frag);
     markSel();
+    syncHeadPad();
 
     let s;
     if (state.mode === 'browse') {
@@ -831,19 +829,163 @@
     previewBox.appendChild(meta);
   }
 
-  // ---------------- column resize ----------------
+  // ---------------- columns: fixed header, order, widths ----------------
+  // The header lives in its own non-scrolling table (#headTable), kept
+  // width-synced with the body table via twin colgroups. A trailing
+  // "filler" col absorbs leftover space so real columns keep exact px —
+  // resizing one column never moves another. Columns (except the pinned
+  // icon) can be reordered by dragging their header cell.
 
-  const cols = document.querySelectorAll('#results colgroup col');
-  const colKeys = ['icon', 'name', 'path', 'size', 'date'];
-  const persisted = (vscode.getState && vscode.getState()) || {};
-  if (persisted.colW) {
-    // last column (date) stays flexible — it absorbs leftover space so
-    // resizing one column never disturbs the others proportionally
-    colKeys.forEach((k, i) => { if (persisted.colW[k] && cols[i] && i < cols.length - 1) cols[i].style.width = persisted.colW[k] + 'px'; });
-  }
+  const COLS = {
+    icon: { label: null, sort: null, w: 26 },
+    name: { label: 'hName', sort: 'name', w: 220 },
+    path: { label: 'hPath', sort: 'path', w: 220 },
+    size: { label: 'hSize', sort: 'size', w: 80, num: true },
+    date: { label: 'hDate', sort: 'date', w: 140 },
+  };
+  const headTable = document.getElementById('headTable');
+  const headRow = document.getElementById('headRow');
+  const headCols = document.getElementById('headCols');
+  const bodyCols = document.getElementById('bodyCols');
+  const headWrap = document.getElementById('headWrap');
+  const tableEl = document.getElementById('results');
   const resultsWrap = document.getElementById('resultsWrap');
+
+  const persisted = (vscode.getState && vscode.getState()) || {};
+  const colW = Object.assign(
+    { icon: 26, name: 220, path: 220, size: 80, date: 140 },
+    persisted.colW || {});
+  {
+    const want = Object.keys(COLS);
+    const o = persisted.colOrder;
+    state.colOrder = (Array.isArray(o) && o.length === want.length
+      && o[0] === 'icon' && new Set(o).size === want.length
+      && o.every((k) => COLS[k])) ? o.slice() : want;
+  }
+
+  let resizingCol = false;
+
+  function applyCols() {
+    [headCols, bodyCols].forEach((cg) => {
+      cg.innerHTML = '';
+      state.colOrder.forEach((k) => {
+        const c = document.createElement('col');
+        c.style.width = colW[k] + 'px';
+        cg.appendChild(c);
+      });
+      cg.appendChild(document.createElement('col')); // filler
+    });
+    const minW = state.colOrder.reduce((s, k) => s + colW[k], 0);
+    headTable.style.minWidth = minW + 'px';
+    tableEl.style.minWidth = minW + 'px';
+    headWrap.scrollLeft = resultsWrap.scrollLeft;
+  }
+
+  function buildHead() {
+    headRow.innerHTML = '';
+    state.colOrder.forEach((key, idx) => {
+      const meta = COLS[key];
+      const th = document.createElement('th');
+      th.dataset.col = key;
+      if (key === 'icon') th.className = 'icon';
+      if (meta.num) th.classList.add('num');
+      if (meta.label) {
+        const lbl = document.createElement('span');
+        lbl.textContent = t(meta.label);
+        th.appendChild(lbl);
+        th.appendChild(document.createTextNode(' '));
+        const ar = document.createElement('span');
+        ar.className = 'arrow';
+        if (state.sort === meta.sort) ar.textContent = state.descending ? '▼' : '▲';
+        th.appendChild(ar);
+      }
+      if (meta.sort) {
+        th.addEventListener('click', () => {
+          if (state.sort === meta.sort) state.descending = !state.descending;
+          else { state.sort = meta.sort; state.descending = false; }
+          buildHead(); // refresh arrows
+          if (state.mode === 'browse') clientSort(); else search();
+        });
+      }
+      if (key !== 'icon') {
+        // resize by dragging the right edge — absolute px, others untouched
+        th.addEventListener('mousemove', (e) => {
+          th.classList.toggle('resize-hint', th.getBoundingClientRect().right - e.clientX < 6);
+        });
+        th.addEventListener('mousedown', (e) => {
+          const r = th.getBoundingClientRect();
+          if (r.right - e.clientX >= 6) return;
+          e.preventDefault();
+          e.stopPropagation();
+          resizingCol = true;
+          const startX = e.clientX;
+          const startW = r.width;
+          const mv = (ev) => {
+            colW[key] = Math.max(24, Math.round(startW + ev.clientX - startX));
+            const w = colW[key] + 'px';
+            headCols.children[idx].style.width = w;
+            bodyCols.children[idx].style.width = w;
+            const minW = state.colOrder.reduce((s, k) => s + colW[k], 0);
+            headTable.style.minWidth = minW + 'px';
+            tableEl.style.minWidth = minW + 'px';
+          };
+          const up = () => {
+            resizingCol = false;
+            document.body.classList.remove('col-resize');
+            document.removeEventListener('mousemove', mv);
+            document.removeEventListener('mouseup', up);
+            persistState();
+          };
+          document.body.classList.add('col-resize');
+          document.addEventListener('mousemove', mv);
+          document.addEventListener('mouseup', up);
+        });
+        // drag to reorder — icon pinned first: no drag source, no drop target
+        th.draggable = true;
+        th.addEventListener('dragstart', (e) => {
+          if (resizingCol) { e.preventDefault(); return; }
+          e.dataTransfer.setData('text/x-ecol', key);
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        th.addEventListener('dragover', (e) => {
+          if (e.dataTransfer.types.includes('text/x-ecol')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            th.classList.add('drop-ok');
+          }
+        });
+        th.addEventListener('dragleave', () => th.classList.remove('drop-ok'));
+        th.addEventListener('drop', (e) => {
+          e.preventDefault();
+          th.classList.remove('drop-ok');
+          const src = e.dataTransfer.getData('text/x-ecol');
+          if (!src || src === key || !COLS[src]) return;
+          const order = state.colOrder.filter((k) => k !== src);
+          order.splice(order.indexOf(key), 0, src);
+          state.colOrder = order;
+          buildHead();
+          applyCols();
+          render({ results: state.results, total: state.total });
+          persistState();
+        });
+      }
+      headRow.appendChild(th);
+    });
+  }
+
+  // keep the fixed header aligned with the scrollable body
+  resultsWrap.addEventListener('scroll', () => {
+    headWrap.scrollLeft = resultsWrap.scrollLeft;
+  });
+  function syncHeadPad() {
+    const g = resultsWrap.offsetWidth - resultsWrap.clientWidth;
+    headWrap.style.paddingRight = g > 0 ? g + 'px' : '';
+  }
+  window.addEventListener('resize', syncHeadPad);
+
   if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
   if (persisted.prevH) previewWrap.style.height = persisted.prevH + 'px';
+  applyCols();
   // migrate legacy favorites: strings -> dir chips; {path,dir} -> split
   persisted.fileFavs = persisted.fileFavs || [];
   persisted.dirFavs = persisted.dirFavs || [];
@@ -866,42 +1008,12 @@
 
   function persistState() {
     if (!vscode.setState) return;
-    const colW = {};
-    colKeys.forEach((k, i) => { if (cols[i].style.width) colW[k] = parseInt(cols[i].style.width, 10); });
     persisted.colW = colW;
+    persisted.colOrder = state.colOrder;
     if (resultsWrap.style.height) persisted.wrapH = parseInt(resultsWrap.style.height, 10);
     if (previewWrap.style.height) persisted.prevH = parseInt(previewWrap.style.height, 10);
     vscode.setState(persisted);
   }
-
-  document.querySelectorAll('#results thead th').forEach((th, idx) => {
-    // icon column fixed at left; last column flexes — no resize on either
-    if (idx === 0 || idx === cols.length - 1) return;
-    th.addEventListener('mousemove', (e) => {
-      const r = th.getBoundingClientRect();
-      th.classList.toggle('resize-hint', r.right - e.clientX < 6);
-    });
-    th.addEventListener('mousedown', (e) => {
-      const r = th.getBoundingClientRect();
-      if (r.right - e.clientX >= 6 || !cols[idx]) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startW = cols[idx].getBoundingClientRect().width;
-      document.body.classList.add('col-resize');
-      const mv = (ev) => {
-        cols[idx].style.width = Math.max(24, startW + ev.clientX - startX) + 'px';
-      };
-      const up = () => {
-        document.body.classList.remove('col-resize');
-        document.removeEventListener('mousemove', mv);
-        document.removeEventListener('mouseup', up);
-        persistState();
-      };
-      document.addEventListener('mousemove', mv);
-      document.addEventListener('mouseup', up);
-    });
-  });
 
   // ---------------- height grips (results + preview) ----------------
 
@@ -943,21 +1055,6 @@
     });
     render({ results: state.results, total: state.total });
   }
-
-  document.querySelectorAll('th[data-sort]').forEach((th) => {
-    th.addEventListener('click', () => {
-      const f = th.dataset.sort;
-      if (state.sort === f) {
-        state.descending = !state.descending;
-      } else {
-        state.sort = f;
-        state.descending = false;
-      }
-      document.querySelectorAll('th .arrow').forEach((a) => { a.textContent = ''; });
-      th.querySelector('.arrow').textContent = state.descending ? '▼' : '▲';
-      if (state.mode === 'browse') clientSort(); else search();
-    });
-  });
 
   // ---------------- extension -> webview ----------------
 
