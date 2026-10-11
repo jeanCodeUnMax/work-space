@@ -107,6 +107,8 @@ html, body {
 #resizeGrip:hover::after, #previewGrip:hover::after {
   background: var(--vscode-focusBorder);
 }
+/* preview grip sits at the very bottom edge of the pane */
+#previewGrip { margin: 0 8px 4px; }
 #previewGrip.hidden { display: none; }
 body.row-resize, body.row-resize * { cursor: ns-resize !important; }
 
