@@ -62,3 +62,35 @@ Format `type(scope): message` (convention du workspace) :
 - Packaging (`pyproject.toml`) si distribution prévue
 - `tests/` pytest quand la surface le justifiera
 - CI (syntax check + smoke) si plusieurs contributeurs
+
+## Étape suivante : extension VS Code (VSIX)
+
+Dashboard de recherche type Everything dans l'IDE — conception inspirée de
+`Hephaistos-Kit/extensions/orchestrator-monitor` (src/ TS → out/, webview
+media/, build `npx tsc && npx @vscode/vsce package`).
+
+**Contrat d'intégration déjà prêt** — le serveur est un MCP stdio standard :
+l'extension spawn `python server.py`, garde un client JSON-RPC longue durée
+et appelle `everything_search` / `fs_*`. Aucun bridge supplémentaire requis
+(le protocole `snapshot`/`ws-bridge` du monitor n'est pas nécessaire ici :
+pas de DB à poller, les requêtes sont synchrones et en ms).
+
+Cible :
+
+```
+extension/everything-search/
+├── package.json        # contributes: views/webview, commandes, activation
+├── tsconfig.json
+├── src/
+│   ├── extension.ts    # activation, spawn server.py, client MCP stdio
+│   ├── mcpClient.ts    # JSON-RPC ligne par ligne (initialize, tools/call)
+│   └── searchView.ts   # webview provider : input + résultats virtualisés
+├── media/
+│   ├── panel.js        # UI recherche (champ, liste, tri colonnes)
+│   └── panel.css
+└── out/                # compilé tsc
+```
+
+Drag & drop webview → workspace : `text/uri-list` sur les items de résultats
+(drop natif VS Code vers l'éditeur / l'explorer). Recherche utilisateur
+(manuelle, UI) et agent (MCP) partagent le même backend Everything.

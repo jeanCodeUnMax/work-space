@@ -189,6 +189,39 @@ def tool_fs_delete(args: dict) -> dict:
     return fs_tools.fs_delete(args["path"], bool(args.get("recursive", False)))
 
 
+def tool_fs_read_multi(args: dict) -> dict:
+    return fs_tools.fs_read_multiple_files(
+        args["paths"], int(args.get("max_bytes", 1 << 20)),
+        args.get("encoding", "utf-8"),
+    )
+
+
+def tool_fs_edit(args: dict) -> dict:
+    return fs_tools.fs_edit_file(
+        args["path"], args.get("edits", []),
+        bool(args.get("dryRun", args.get("dry_run", False))),
+        args.get("encoding", "utf-8"),
+    )
+
+
+def tool_fs_tree(args: dict) -> dict:
+    return fs_tools.fs_directory_tree(
+        args["path"], int(args.get("max_depth", 8)),
+        int(args.get("max_entries", 10_000)),
+    )
+
+
+def tool_fs_search(args: dict) -> dict:
+    return fs_tools.fs_search_files(
+        args["path"], args.get("pattern", ""),
+        args.get("excludePatterns"), int(args.get("max_results", 1000)),
+    )
+
+
+def tool_fs_roots(_args: dict) -> dict:
+    return fs_tools.fs_list_allowed_roots()
+
+
 # ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
@@ -327,6 +360,60 @@ TOOLS = [
         ),
         "annotations": {"destructiveHint": True, "idempotentHint": True},
     },
+    {
+        "name": "fs_read_multiple_files",
+        "description": "Read several files in one call; individual failures don't stop the batch.",
+        "inputSchema": _props(
+            paths=_s("array", items={"type": "string"}),
+            max_bytes=_s("integer", default=1048576),
+            encoding=_s("string", default="utf-8"),
+            required=["paths"],
+        ),
+        "annotations": {"readOnlyHint": True, "idempotentHint": True},
+    },
+    {
+        "name": "fs_edit_file",
+        "description": "Exact-match edits: each edit replaces the first occurrence of oldText with newText; returns a git-style diff. dryRun previews without writing.",
+        "inputSchema": _props(
+            path=_s("string"),
+            edits=_s("array", items={"type": "object",
+                     "properties": {"oldText": _s("string"), "newText": _s("string")},
+                     "required": ["oldText", "newText"]}),
+            dryRun=_s("boolean", default=False),
+            encoding=_s("string", default="utf-8"),
+            required=["path", "edits"],
+        ),
+        "annotations": {"destructiveHint": True, "idempotentHint": True},
+    },
+    {
+        "name": "fs_directory_tree",
+        "description": "Recursive JSON tree of a directory (name/type/children), bounded by max_depth and max_entries.",
+        "inputSchema": _props(
+            path=_s("string"),
+            max_depth=_s("integer", default=8),
+            max_entries=_s("integer", default=10000),
+            required=["path"],
+        ),
+        "annotations": {"readOnlyHint": True, "idempotentHint": True},
+    },
+    {
+        "name": "fs_search_files",
+        "description": "Recursive traversal search by partial name (case-insensitive). SLOW on large trees - prefer everything_search. Use for off-index locations or exact partial-name parity.",
+        "inputSchema": _props(
+            path=_s("string"),
+            pattern=_s("string"),
+            excludePatterns=_s("array", items={"type": "string"}),
+            max_results=_s("integer", default=1000),
+            required=["path", "pattern"],
+        ),
+        "annotations": {"readOnlyHint": True, "idempotentHint": True},
+    },
+    {
+        "name": "fs_list_allowed_roots",
+        "description": "List the EVERYTHING_MCP_ROOTS allowlist for fs_* tools (empty = unrestricted).",
+        "inputSchema": _props(),
+        "annotations": {"readOnlyHint": True, "idempotentHint": True},
+    },
 ]
 
 _HANDLERS = {
@@ -343,6 +430,11 @@ _HANDLERS = {
     "fs_create_directory": tool_fs_mkdir,
     "fs_move": tool_fs_move,
     "fs_delete": tool_fs_delete,
+    "fs_read_multiple_files": tool_fs_read_multi,
+    "fs_edit_file": tool_fs_edit,
+    "fs_directory_tree": tool_fs_tree,
+    "fs_search_files": tool_fs_search,
+    "fs_list_allowed_roots": tool_fs_roots,
 }
 
 

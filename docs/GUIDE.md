@@ -63,6 +63,13 @@ Seul `matchpath:` n'est pas natif : il est traduit en flag de recherche MATCHPAT
 
 `everything_search` (query, max_results, offset, sort, descending),
 `everything_count`, `everything_categories`, `everything_index_stats`,
-`everything_refresh` (save_db / rebuild si `full=true`), `everything_open_gui`,
-`fs_read_file`, `fs_list_directory`, `fs_get_info`, `fs_write_file`,
-`fs_create_directory`, `fs_move`, `fs_delete`.
+`everything_refresh` (save_db / rebuild si `full=true`), `everything_open_gui`.
+
+Filesystem (parité complète avec le serveur `filesystem` officiel) :
+`fs_read_file`, `fs_read_multiple_files`, `fs_list_directory`, `fs_get_info`,
+`fs_directory_tree`, `fs_write_file`, `fs_edit_file` (diff git-style + dryRun),
+`fs_create_directory`, `fs_move`, `fs_delete`, `fs_search_files` (traversal —
+lent, fallback hors-index), `fs_list_allowed_roots`.
+
+Sécurité : `EVERYTHING_MCP_ROOTS` (env, `;`-séparé) restreint les outils fs_*
+à une whitelist de répertoires — vide = sans restriction.

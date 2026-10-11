@@ -30,8 +30,9 @@ cold, <50 ms warm).
 | `everything_index_stats` | Everything service status: version, db loaded/busy, total entries |
 | `everything_refresh` | Save Everything's db (default) or trigger a full rebuild (`full=true`) |
 | `everything_open_gui` | Launch `Everything.exe -s <query>` in the GUI |
-| `fs_read_file` `fs_list_directory` `fs_get_info` | Filesystem reads |
-| `fs_write_file` `fs_create_directory` `fs_move` `fs_delete` | Filesystem writes |
+| `fs_read_file` `fs_read_multiple_files` `fs_list_directory` `fs_get_info` `fs_directory_tree` | Filesystem reads |
+| `fs_write_file` `fs_edit_file` `fs_create_directory` `fs_move` `fs_delete` | Filesystem writes |
+| `fs_search_files` `fs_list_allowed_roots` | Traversal search (slow fallback) + allowlist |
 
 ## Configuration (env)
 
