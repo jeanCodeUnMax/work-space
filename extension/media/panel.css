@@ -69,6 +69,28 @@ html, body {
   border-radius: 4px;
 }
 
+/* height grip between results and actions */
+#resizeGrip {
+  flex: 0 0 auto;
+  height: 7px;
+  margin: -1px 8px 1px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#resizeGrip::after {
+  content: '';
+  width: 42px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--vscode-panel-border, rgba(128,128,128,.4));
+}
+#resizeGrip:hover::after {
+  background: var(--vscode-focusBorder);
+}
+body.row-resize, body.row-resize * { cursor: ns-resize !important; }
+
 /* actions bar — same width as resultsWrap */
 #actions {
   flex: 0 0 auto;

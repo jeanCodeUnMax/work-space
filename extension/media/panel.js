@@ -426,16 +426,20 @@
 
   const cols = document.querySelectorAll('#results colgroup col');
   const colKeys = ['icon', 'name', 'path', 'size', 'date'];
-  const saved = vscode.getState && vscode.getState();
-  if (saved && saved.colW) {
-    colKeys.forEach((k, i) => { if (saved.colW[k] && cols[i]) cols[i].style.width = saved.colW[k] + 'px'; });
+  const persisted = (vscode.getState && vscode.getState()) || {};
+  if (persisted.colW) {
+    colKeys.forEach((k, i) => { if (persisted.colW[k] && cols[i]) cols[i].style.width = persisted.colW[k] + 'px'; });
   }
+  const resultsWrap = document.getElementById('resultsWrap');
+  if (persisted.wrapH) resultsWrap.style.height = persisted.wrapH + 'px';
 
-  function persistCols() {
+  function persistState() {
     if (!vscode.setState) return;
     const colW = {};
     colKeys.forEach((k, i) => { if (cols[i].style.width) colW[k] = parseInt(cols[i].style.width, 10); });
-    vscode.setState(Object.assign({}, saved, { colW }));
+    persisted.colW = colW;
+    if (resultsWrap.style.height) persisted.wrapH = parseInt(resultsWrap.style.height, 10);
+    vscode.setState(persisted);
   }
 
   document.querySelectorAll('#results thead th').forEach((th, idx) => {
@@ -458,11 +462,33 @@
         document.body.classList.remove('col-resize');
         document.removeEventListener('mousemove', mv);
         document.removeEventListener('mouseup', up);
-        persistCols();
+        persistState();
       };
       document.addEventListener('mousemove', mv);
       document.addEventListener('mouseup', up);
     });
+  });
+
+  // ---------------- results height grip ----------------
+
+  document.getElementById('resizeGrip').addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = resultsWrap.getBoundingClientRect().height;
+    document.body.classList.add('row-resize');
+    const mv = (ev) => {
+      const h = Math.min(window.innerHeight - 140,
+                         Math.max(100, startH + ev.clientY - startY));
+      resultsWrap.style.height = h + 'px';
+    };
+    const up = () => {
+      document.body.classList.remove('row-resize');
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      persistState();
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
   });
 
   // ---------------- column sorting ----------------
