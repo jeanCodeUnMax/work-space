@@ -87,6 +87,9 @@ def do_preview(body):
                     "data": f"data:{IMG_MIME[e]};base64,{b64}"}
         with open(p, "rb") as f:
             raw = f.read(64 * 1024)
+        if b"\x00" in raw:
+            return {"path": p, "size": size,
+                    "error": "binary file — no text preview"}
         return {"path": p, "size": size, "kind": "text",
                 "data": raw.decode("utf-8", errors="replace")}
     except Exception as ex:

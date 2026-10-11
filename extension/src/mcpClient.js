@@ -141,7 +141,9 @@ class McpClient {
       let settled = false;
       const proc = spawn(pythonPath, ['-u', serverPath], {
         cwd,
-        env: process.env, // trusted local client -> default profile, no EVERYTHING_MCP_AGENT
+        // trusted local client -> pin the unrestricted [default] profile so a
+        // stray EVERYTHING_MCP_AGENT in the env can never constrain the panel
+        env: { ...process.env, EVERYTHING_MCP_AGENT: 'default' },
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       this.proc = proc;

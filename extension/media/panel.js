@@ -793,7 +793,6 @@
   // ---------------- preview pane ----------------
 
   const IMG_EXT = new Set(['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico', 'svg']);
-  const TXT_EXT = new Set(['txt', 'md', 'py', 'js', 'ts', 'json', 'css', 'html', 'xml', 'yaml', 'yml', 'ini', 'cfg', 'log', 'csv', 'bat', 'ps1', 'sh', 'c', 'cpp', 'h', 'java', 'rs', 'go', 'toml']);
 
   function extOf(p) {
     const m = /\.([a-z0-9]+)$/i.exec(p || '');
@@ -813,14 +812,8 @@
       return;
     }
     const e = extOf(it.path);
-    if (!IMG_EXT.has(e) && !TXT_EXT.has(e)) {
-      previewBox.innerHTML = '';
-      const d = document.createElement('div');
-      d.className = 'meta';
-      d.textContent = t('sNoPrev', { e: e || '?', p: it.path });
-      previewBox.appendChild(d);
-      return;
-    }
+    // Everything else gets a shot as text — the host sniffs for binary
+    // and reports an error if the file isn't previewable.
     previewBox.textContent = t('sLoadingPrev');
     vscode.postMessage({ type: 'preview', path: it.path, ext: e });
   }

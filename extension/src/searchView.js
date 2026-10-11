@@ -211,6 +211,7 @@ class SearchViewProvider {
         const fd = fs.openSync(p, 'r');
         fs.readSync(fd, buf, 0, buf.length, 0);
         fs.closeSync(fd);
+        if (buf.includes(0)) { this._post({ type: 'preview', path: p, size: st.size, error: 'binary file — no text preview' }); return; }
         this._post({ type: 'preview', path: p, size: st.size, kind: 'text', data: buf.toString('utf8') });
       }
     } catch (e) {
