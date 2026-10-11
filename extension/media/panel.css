@@ -221,6 +221,8 @@ body.col-resize * { cursor: col-resize !important; }
 }
 #crumbs .navbtn.off { opacity: .35; cursor: default; }
 #crumbs .navbtn.off:hover { background: transparent; }
+/* invisible separator: fixed gap between the nav-button group and the trail */
+#navSearch { margin-right: 10px; }
 #crumbTrail {
   display: flex;
   align-items: center;
@@ -228,6 +230,7 @@ body.col-resize * { cursor: col-resize !important; }
   min-width: 0;
   flex: 0 1 auto;
   max-width: 55%;
+  margin-right: 4px;
 }
 /* pinned dir-favorite tiles — flow left-to-right right after the crumbs */
 #dirFavChips {
@@ -237,7 +240,7 @@ body.col-resize * { cursor: col-resize !important; }
   align-items: stretch;
   justify-content: flex-start;
   margin-left: 6px;
-  padding-left: 6px;
+  padding-left: 8px;
   border-left: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
   overflow-x: auto;
   overflow-y: hidden;
