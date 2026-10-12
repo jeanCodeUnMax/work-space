@@ -193,9 +193,44 @@ impl IpcClient {
     }
 
     /// Send a raw request and receive response
+    ///
+    /// If the write/read fails because the daemon dropped our side of the
+    /// pipe (daemon restart, idle timeout), the stale stream is discarded
+    /// and the request is retried once on a fresh connection.
     pub async fn send_request(&mut self, request: &Request) -> IpcResult<Response> {
         self.ensure_connected().await?;
 
+        match self.send_request_once(request).await {
+            Err(e) if Self::is_transient(&e) => {
+                self.state = ConnectionState::Disconnected;
+                self.stream = None;
+                self.connect().await?;
+                self.send_request_once(request).await
+            }
+            result => result,
+        }
+    }
+
+    /// True for errors that mean "the pipe is dead" rather than a
+    /// request-level failure — worth one reconnect + retry.
+    fn is_transient(err: &IpcError) -> bool {
+        match err {
+            IpcError::ConnectionClosed | IpcError::ConnectionError(_) => true,
+            IpcError::Io(e) => matches!(
+                e.kind(),
+                std::io::ErrorKind::BrokenPipe
+                    | std::io::ErrorKind::ConnectionReset
+                    | std::io::ErrorKind::ConnectionAborted
+                    | std::io::ErrorKind::NotConnected
+                    | std::io::ErrorKind::UnexpectedEof
+            ) || e.raw_os_error() == Some(232) // ERROR_NO_DATA: pipe being closed
+                || e.raw_os_error() == Some(233), // ERROR_PIPE_NOT_CONNECTED
+            _ => false,
+        }
+    }
+
+    /// Single attempt: serialize, write, read the framed response.
+    async fn send_request_once(&mut self, request: &Request) -> IpcResult<Response> {
         let stream = self
             .stream
             .as_mut()
