@@ -58,6 +58,19 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
     (if m <= 2 { y + 1 } else { y }, m, d)
 }
 
+/// task_id tolérant : accepte `"42"` (string) ou `42` (nombre).
+fn arg_task_id(args: &Value) -> Result<String, String> {
+    match &args["task_id"] {
+        Value::String(s) if !s.is_empty() => Ok(s.clone()),
+        Value::Number(n) => Ok(n.to_string()),
+        _ => args["id"]
+            .as_str()
+            .map(String::from)
+            .or_else(|| args["id"].as_i64().map(|n| n.to_string()))
+            .ok_or_else(|| "task_id requis".to_string()),
+    }
+}
+
 fn log_event(conn: &Connection, task_id: &str, event: &str, detail: &str) {
     let _ = conn.execute(
         "INSERT INTO task_events (task_id, event, detail, ts) VALUES (?,?,?,?)",
@@ -263,7 +276,7 @@ pub fn tool_create_task(args: &Value) -> Result<Value, String> {
 }
 
 pub fn tool_update_task(args: &Value) -> Result<Value, String> {
-    let task_id = args["task_id"].as_str().ok_or("task_id requis")?;
+    let task_id = arg_task_id(args)?;
     let id_num: i64 = task_id.parse().map_err(|_| "task_id numérique requis")?;
     with_db(|conn| {
         if let Some(s) = args["status"].as_str() {
@@ -272,7 +285,7 @@ pub fn tool_update_task(args: &Value) -> Result<Value, String> {
                 params![s, id_num],
             )
             .map_err(|e| e.to_string())?;
-            log_event(conn, task_id, "status", s);
+            log_event(conn, &task_id, "status", s);
         }
         if let Some(d) = args["description"].as_str() {
             conn.execute(
@@ -370,7 +383,7 @@ pub fn tool_get_next_task(args: &Value) -> Result<Value, String> {
 }
 
 pub fn tool_delete_task(args: &Value) -> Result<Value, String> {
-    let task_id = args["task_id"].as_str().ok_or("task_id requis")?;
+    let task_id = arg_task_id(args)?;
     with_db(|conn| {
         let n = conn
             .execute("DELETE FROM tasks_todo WHERE id=? OR CAST(id AS TEXT)=?",
@@ -1038,7 +1051,7 @@ pub fn tool_worktree_cleanup(args: &Value) -> Result<Value, String> {
                 results.push(json!({"task_id": row["task_id"], "result": remove_worktree(conn, &row)}));
             }
         } else {
-            let tid = args["task_id"].as_str().ok_or("task_id ou all=true requis")?;
+            let tid = arg_task_id(args).map_err(|_| "task_id ou all=true requis".to_string())?;
             let row: Option<Value> = conn
                 .query_row(
                     "SELECT id, task_id, path, branch, base FROM worktrees WHERE task_id=? AND status='active'",
