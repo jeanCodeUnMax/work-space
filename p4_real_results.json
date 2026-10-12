@@ -1,0 +1,20 @@
+{
+  "task": "T-081",
+  "results": [
+    {
+      "collection": "doc_index",
+      "points_total": 100700,
+      "exported": 20000,
+      "dim": 2048,
+      "queries": 50,
+      "k": 10,
+      "overlap": 0.7,
+      "overlap_tolere": 1.0,
+      "target": 0.95,
+      "pass": true,
+      "export_s": 7.334,
+      "qdrant_search_s": 15.561,
+      "usearch_knn_s": 13.245
+    }
+  ]
+}

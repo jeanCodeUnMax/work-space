@@ -310,6 +310,12 @@ impl VecIndex {
     pub fn hardware_acceleration(&self) -> String {
         self.inner.index.hardware_acceleration()
     }
+
+    /// Tune the HNSW search-time expansion list (ef_search) at runtime.
+    /// Higher = better recall, more latency. usearch allows this without rebuild.
+    pub fn set_expansion_search(&self, ef: usize) {
+        self.inner.index.change_expansion_search(ef);
+    }
 }
 
 fn zip_matches(matches: &usearch::ffi::Matches) -> Vec<VecHit> {
