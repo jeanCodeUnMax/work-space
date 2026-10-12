@@ -327,26 +327,31 @@ impl UsnWatcher {
         }
 
         self.is_running.store(true, Ordering::Release);
-        
+        let result = self.poll_inner();
+        self.is_running.store(false, Ordering::Release);
+        result
+    }
+
+    /// Corps du poll — is_running est toujours relâché par l'appelant,
+    /// y compris sur erreur (sinon chaque poll suivant warn "already running").
+    fn poll_inner(&mut self) -> UsnResult<()> {
         info!("Starting USN watcher poll for {}", self.drive_letter);
-        
+
         // Query journal metadata
         let journal_data = self.query_journal()?;
-        
+
         // Check for wrap conditions
         self.check_wrap_conditions(&journal_data)?;
-        
+
         // Read and process new records
         self.process_new_records(&journal_data)?;
-        
+
         // Save checkpoint
         self.save_checkpoint()?;
-        
+
         self.stats.poll_count += 1;
         self.stats.last_poll_time = Some(Instant::now());
-        
-        self.is_running.store(false, Ordering::Release);
-        
+
         Ok(())
     }
 
@@ -406,11 +411,32 @@ impl UsnWatcher {
         }
 
         let handle = self.volume_handle.unwrap();
+
+        // Fresh start sans checkpoint (1er boot après un scan MFT complet) :
+        // l'index reflète déjà l'état courant — sauter tout l'historique du
+        // journal et démarrer les deltas à partir de maintenant. Sinon le
+        // backlog historique (> 100 Md de records sur un volume actif)
+        // déclenche BacklogTooLarge en boucle infinie.
+        if self.last_usn == 0 {
+            info!(
+                "No checkpoint for {}: fast-forward to next_usn={} (post full scan)",
+                self.drive_letter, journal_data.next_usn
+            );
+            self.last_usn = journal_data.next_usn;
+            self.last_journal_id = journal_data.journal_id;
+        }
+
         let start_usn = self.last_usn;
-        
+
         // Calculate how much backlog there is
         let backlog = journal_data.next_usn - start_usn;
-        
+
+        // Nothing new: reading at/past next_usn makes FSCTL_READ_USN_JOURNAL
+        // fail with ERROR_INVALID_USER_BUFFER (1784). Skip the read entirely.
+        if backlog <= 0 {
+            return Ok(());
+        }
+
         // Check backlog threshold
         // Note: This is a simplified check - actual backlog size depends on record sizes
         if backlog > (self.config.backlog_threshold as i64) {
@@ -427,31 +453,36 @@ impl UsnWatcher {
         // Read records in batches
         let mut current_usn = start_usn;
         let mut total_records = 0;
-        
+
         loop {
             // Create read buffer
             let mut buffer = vec![0u8; self.config.read_buffer_size];
-            
+
             // Read a batch of records
-            let (read_data, bytes_returned) = unsafe {
-                read_usn_journal(handle, current_usn, &mut buffer)?
+            let (_read_data, bytes_returned) = unsafe {
+                read_usn_journal(handle, current_usn, journal_data.journal_id, &mut buffer)?
             };
-            
+
             if bytes_returned == 0 {
                 // No more records
                 break;
             }
 
-            // Update current USN
-            current_usn = read_data.StartUsn + bytes_returned as i64;
+            // Per FSCTL_READ_USN_JOURNAL: the FIRST 8 bytes of the output
+            // buffer contain the USN to continue reading from (NOT
+            // start_usn + bytes_returned — that lands mid-record and the
+            // next call fails with ERROR_INVALID_PARAMETER 87).
+            if bytes_returned < 8 {
+                break;
+            }
+            let next_read_usn = i64::from_ne_bytes(buffer[0..8].try_into().unwrap());
+            current_usn = next_read_usn;
 
-            // Process the records in this batch
-            let records_buffer = &buffer[..bytes_returned];
+            // Records start AFTER the 8-byte continuation USN
+            let records_buffer = &buffer[8..bytes_returned];
             let mut deltas = Vec::new();
 
-            for record in iter_usn_records(records_buffer) {
-                // SAFETY: The buffer is valid for the lifetime of the iterator
-                let name = unsafe { record.file_name(records_buffer) };
+            for (record, name) in iter_usn_records(records_buffer) {
                 let file_deltas = FileDelta::from_usn_record(&record, name);
                 deltas.extend(file_deltas);
                 total_records += 1;
@@ -487,9 +518,13 @@ impl UsnWatcher {
 
     /// Applies a batch of deltas to the index.
     fn apply_deltas(&mut self, deltas: Vec<FileDelta>) -> UsnResult<()> {
-        // For now, just process with the default processor
-        // In production, we'd use the async version with MFT fetching
+        // Le callback démon applique les deltas à l'index live avec le nom
+        // porté par le record USN — le processor interne ne gère que les
+        // types ne nécessitant pas de fetch MFT (pas de fetcher ici).
         for delta in &deltas {
+            if delta.needs_mft_fetch() {
+                continue;
+            }
             if let Err(e) = self.delta_processor.apply_delta(delta) {
                 error!("Failed to apply delta: {}", e);
                 self.stats.errors += 1;

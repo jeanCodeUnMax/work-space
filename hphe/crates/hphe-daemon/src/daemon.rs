@@ -12,7 +12,7 @@ use hphe_ipc::protocol::UsnEvent;
 use hphe_ipc::server::{NamedPipeServerBuilder, WatchState};
 use hphe_usn::{FileDelta, UsnConfig, UsnError, UsnWatcher};
 use thiserror::Error;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::config::DaemonConfig;
 use crate::elevation::{check_elevation, ElevationRequiredError};
@@ -208,7 +208,20 @@ impl HpheDaemon {
                         | hphe_usn::DeltaType::DataExtend
                         | hphe_usn::DeltaType::DataTruncate
                         | hphe_usn::DeltaType::Close => {
+                            // A record carrying FILE_DELETE (e.g.
+                            // DELETE|CLOSE) must not resurrect the entry:
+                            // apply_delete already ran for the Delete delta
+                            // emitted from the same record.
+                            if delta.reason & hphe_usn::journal::usn_reason::FILE_DELETE != 0 {
+                                continue;
+                            }
                             if let Some(ref name) = delta.name {
+                                let is_dir = (delta.attributes
+                                    & windows_sys::Win32::Storage::FileSystem::FILE_ATTRIBUTE_DIRECTORY)
+                                    != 0;
+                                // USN attributes are raw Win32 flags, not the
+                                // packed EntryFlags layout — from_u32 would
+                                // leave is_in_use=false and hide the entry.
                                 callback_index.add_entry(
                                     delta.frn,
                                     delta.parent_frn,
@@ -217,7 +230,7 @@ impl HpheDaemon {
                                     delta.timestamp,
                                     delta.timestamp,
                                     delta.timestamp,
-                                    EntryFlags::from_u32(delta.attributes),
+                                    EntryFlags::new(is_dir, true, false, delta.attributes),
                                 );
                             }
                         }

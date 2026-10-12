@@ -101,10 +101,10 @@ pub struct READ_USN_JOURNAL_DATA_V1 {
     pub ReasonMask: u32,
     /// Return only records that have been closed
     pub ReturnOnlyOnClose: u32,
-    /// Timeout in milliseconds (0 = non-blocking)
-    pub Timeout: u32,
-    /// Minimum number of bytes to wait for before returning
-    pub BytesToWaitFor: u32,
+    /// Timeout in seconds * 10^7 (DWORDLONG per Win32 ABI, 0 = non-blocking)
+    pub Timeout: u64,
+    /// Minimum number of bytes to wait for before returning (DWORDLONG per Win32 ABI)
+    pub BytesToWaitFor: u64,
     /// Journal ID to read from (updated by the call)
     pub UsnJournalID: i64,
 }
@@ -114,14 +114,14 @@ impl READ_USN_JOURNAL_DATA_V1 {
         mem::size_of::<Self>()
     }
 
-    pub fn new(start_usn: i64) -> Self {
+    pub fn new(start_usn: i64, journal_id: i64) -> Self {
         Self {
             StartUsn: start_usn,
             ReasonMask: 0xFFFF_FFFF, // All reasons
             ReturnOnlyOnClose: 0,
             Timeout: 0, // Non-blocking
             BytesToWaitFor: 0,
-            UsnJournalID: 0,
+            UsnJournalID: journal_id,
         }
     }
 }
@@ -134,52 +134,54 @@ pub type USN_READ_JOURNAL_DATA_V1 = READ_USN_JOURNAL_DATA_V1;
 #[allow(dead_code)]
 #[allow(non_upper_case_globals)]
 pub mod usn_reason {
+    // Canonical USN_REASON_* values from winioctl.h — a previous revision of
+    // this table used shifted/bogus values, which misdecoded every real record
+    // (FILE_CREATE=0x100 landed on FILE_ADD_LINK, FILE_DELETE=0x200 on
+    // HARD_LINK_CHANGE, DATA_EXTEND=0x02 on FILE_DELETE, etc.).
+    /// Data was overwritten in the file.
+    pub const DATA_OVERWRITE: u32 = 0x0000_0001;
+    /// The file or directory was extended.
+    pub const DATA_EXTEND: u32 = 0x0000_0002;
+    /// Data was truncated from the file.
+    pub const DATA_TRUNCATION: u32 = 0x0000_0004;
+    /// Named data stream was overwritten.
+    pub const NAMED_DATA_OVERWRITE: u32 = 0x0000_0010;
+    /// Named data stream was extended.
+    pub const NAMED_DATA_EXTEND: u32 = 0x0000_0020;
+    /// Named data stream was truncated.
+    pub const NAMED_DATA_TRUNCATION: u32 = 0x0000_0040;
     /// The file or directory was created.
-    pub const FILE_CREATE: u32 = 0x0000_0001;
+    pub const FILE_CREATE: u32 = 0x0000_0100;
     /// The file or directory was deleted.
-    pub const FILE_DELETE: u32 = 0x0000_0002;
-    /// The file or directory was extended.
-    pub const FILE_EXTEND: u32 = 0x0000_0004;
-    /// Data was truncated from the file.
-    pub const FILE_TRUNCATE: u32 = 0x0000_0008;
+    pub const FILE_DELETE: u32 = 0x0000_0200;
+    /// Extended attributes were changed.
+    pub const EA_CHANGE: u32 = 0x0000_0400;
     /// One or more security descriptors were changed.
-    pub const SECURITY_CHANGE: u32 = 0x0000_0010;
-    /// One or more file or directory names were renamed.
-    pub const RENAME: u32 = 0x0000_0020;
-    /// The file or directory was renamed and the file name in the USN record is the new name.
-    pub const RENAME_NEW_NAME: u32 = 0x0000_0040;
-    /// The file or directory was renamed and the file name in the USN record is the old name.
-    pub const RENAME_OLD_NAME: u32 = 0x0000_0080;
-    /// The file or directory was added to a directory.
-    pub const FILE_ADD_LINK: u32 = 0x0000_0100;
-    /// One or more hard links were added to the file.
-    pub const HARD_LINK_CHANGE: u32 = 0x0000_0200;
-    /// A change to the file or directory that is not a data change.
-    pub const BASIC_INFO_CHANGE: u32 = 0x0000_0400;
-    /// A change to the data in the file or directory.
-    pub const DATA_OVERWRITE: u32 = 0x0000_0800;
-    /// The file or directory was extended.
-    pub const DATA_EXTEND: u32 = 0x0000_1000;
-    /// Data was truncated from the file.
-    pub const DATA_TRUNCATION: u32 = 0x0000_2000;
-    /// The file or directory was compressed.
-    pub const COMPRESSION_CHANGE: u32 = 0x0000_4000;
-    /// The file or directory encryption was changed.
-    pub const ENCRYPTION_CHANGE: u32 = 0x0000_8000;
-    /// The object ID was changed.
-    pub const OBJECT_ID_CHANGE: u32 = 0x0001_0000;
-    /// The reparse point was changed or a reparse point was added.
-    pub const REPARSE_POINT_CHANGE: u32 = 0x0002_0000;
-    /// The sparse flag was changed.
-    pub const SPARSE_FILE_CHANGE: u32 = 0x0004_0000;
+    pub const SECURITY_CHANGE: u32 = 0x0000_0800;
+    /// The file or directory was renamed; the USN record carries the old name.
+    pub const RENAME_OLD_NAME: u32 = 0x0000_1000;
+    /// The file or directory was renamed; the USN record carries the new name.
+    pub const RENAME_NEW_NAME: u32 = 0x0000_2000;
     /// The index root was changed.
-    pub const INDEXABLE_CHANGE: u32 = 0x0008_0000;
-    /// An offload read was processed.
-    pub const OFFLOAD_READ: u32 = 0x0010_0000;
-    /// An offload write was processed.
-    pub const OFFLOAD_WRITE: u32 = 0x0020_0000;
-    /// The file or directory was opened for the first time after being created.
-    pub const FILE_OPEN: u32 = 0x0040_0000;
+    pub const INDEXABLE_CHANGE: u32 = 0x0000_4000;
+    /// A change to the file or directory that is not a data change.
+    pub const BASIC_INFO_CHANGE: u32 = 0x0000_8000;
+    /// One or more hard links were added to the file.
+    pub const HARD_LINK_CHANGE: u32 = 0x0001_0000;
+    /// The file or directory was compressed.
+    pub const COMPRESSION_CHANGE: u32 = 0x0002_0000;
+    /// The file or directory encryption was changed.
+    pub const ENCRYPTION_CHANGE: u32 = 0x0004_0000;
+    /// The object ID was changed.
+    pub const OBJECT_ID_CHANGE: u32 = 0x0008_0000;
+    /// The reparse point was changed or a reparse point was added.
+    pub const REPARSE_POINT_CHANGE: u32 = 0x0010_0000;
+    /// A new stream was added or removed.
+    pub const STREAM_CHANGE: u32 = 0x0020_0000;
+    /// Change made within a transacted operation.
+    pub const TRANSACTED_CHANGE: u32 = 0x0040_0000;
+    /// Integrity (checksum) data was changed.
+    pub const INTEGRITY_CHANGE: u32 = 0x0080_0000;
     /// The file or directory was closed.
     pub const FILE_CLOSE: u32 = 0x8000_0000;
 
@@ -513,13 +515,13 @@ pub unsafe fn query_usn_journal(handle: HANDLE) -> Result<UsnJournalData, UsnErr
 pub unsafe fn read_usn_journal(
     handle: HANDLE,
     start_usn: i64,
+    journal_id: i64,
     buffer: &mut [u8],
 ) -> Result<(READ_USN_JOURNAL_DATA_V1, usize), UsnError> {
-    let mut read_data = USN_READ_JOURNAL_DATA_V1::new(start_usn);
+    let mut read_data = USN_READ_JOURNAL_DATA_V1::new(start_usn, journal_id);
     let mut bytes_returned: u32 = 0;
 
-    // Set timeout to non-blocking
-    read_data.Timeout = 0;
+    let _ = &read_data;
 
     let status = DeviceIoControl(
         handle,
@@ -573,7 +575,13 @@ impl<'a> UsnRecordIterator<'a> {
 }
 
 impl<'a> Iterator for UsnRecordIterator<'a> {
-    type Item = UsnRecord;
+    /// Each item is the parsed record paired with its extracted file name
+    /// (None when the UTF-16 name can't be decoded). The name is extracted
+    /// here — inside the iterator — because `UsnRecord::file_name` requires
+    /// a buffer starting at the record itself (`FileNameOffset` is relative
+    /// to the record start); callers holding only the batch buffer would
+    /// read the wrong bytes for every record past the first.
+    type Item = (UsnRecord, Option<String>);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset >= self.buffer.len() {
@@ -609,8 +617,12 @@ impl<'a> Iterator for UsnRecordIterator<'a> {
             UsnRecord::V2(record_v2)
         };
 
+        // SAFETY: `record_data` starts at the record and is at least
+        // `total_size()` bytes — the exact contract `file_name` requires.
+        let name = unsafe { record.file_name(record_data) };
+
         self.offset += record_length;
-        Some(record)
+        Some((record, name))
     }
 }
 
@@ -633,8 +645,10 @@ mod tests {
 
     #[test]
     fn test_usn_read_data_v1_size() {
-        // StartUsn(8) + ReasonMask(4) + ReturnOnlyOnClose(4) + Timeout(4) + BytesToWaitFor(4) + UsnJournalID(8) = 32
-        assert_eq!(USN_READ_JOURNAL_DATA_V1::size_of(), 32);
+        // StartUsn(8) + ReasonMask(4) + ReturnOnlyOnClose(4) + Timeout(8) + BytesToWaitFor(8) + UsnJournalID(8) = 40
+        // Timeout/BytesToWaitFor are DWORDLONG in the Win32 ABI — u32 fields
+        // here previously produced a 32-byte buffer rejected with error 1784.
+        assert_eq!(USN_READ_JOURNAL_DATA_V1::size_of(), 40);
     }
 
     #[test]

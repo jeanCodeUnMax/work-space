@@ -144,20 +144,55 @@ impl RequestHandler for DaemonHandler {
                 .collect()
         };
 
-        let total = filtered_rows.len();
+        // 3. Merge overlay entries (USN-added files invisible to the column
+        // scan). Fallback semantics: substring on the raw query string —
+        // structured queries ("ext:rs") simply won't match overlay names.
+        let overlay_entries = if query_str.is_empty() {
+            self.index.overlay_matches("")
+        } else {
+            self.index.overlay_matches(&query_str.to_lowercase())
+        };
 
-        // 3. Paginate — cap la taille de réponse (un client peut demander
+        let total = filtered_rows.len() + overlay_entries.len();
+
+        // 4. Paginate — cap la taille de réponse (un client peut demander
         // limit=usize::MAX et vider l'index entier en une frame NDJSON)
         const MAX_SEARCH_RESULTS: usize = 10_000;
         let limit = params.limit.clamp(1, MAX_SEARCH_RESULTS);
         let offset = params.offset;
 
-        let entries: Vec<FileEntry> = filtered_rows
+        let mut entries: Vec<FileEntry> = filtered_rows
             .iter()
             .skip(offset)
             .take(limit)
             .map(|&row| self.row_to_entry(row))
             .collect();
+
+        // Fill remaining page slots with overlay hits
+        if entries.len() < limit {
+            let overlay_skip = offset.saturating_sub(filtered_rows.len());
+            for e in overlay_entries.iter().skip(overlay_skip).take(limit - entries.len()) {
+                let dir = self.index.dir_path_of_frn(e.parent_frn);
+                let path = if dir.ends_with('\\') {
+                    format!("{}{}", dir, e.name)
+                } else {
+                    format!("{}\\{}", dir, e.name)
+                };
+                entries.push(FileEntry {
+                    row: usize::MAX,
+                    frn: e.frn,
+                    parent_frn: e.parent_frn,
+                    name: e.name.clone(),
+                    path,
+                    size: e.size,
+                    is_dir: e.flags.is_dir,
+                    created: e.created,
+                    modified: e.modified,
+                    accessed: e.accessed,
+                    attributes: e.flags.to_u32(),
+                });
+            }
+        }
 
         let has_more = total > offset + entries.len();
 

@@ -87,7 +87,13 @@ impl CheckpointStore {
     /// Saves a checkpoint to disk.
     pub fn save(&self, checkpoint: &Checkpoint) -> Result<(), UsnError> {
         let path = self.checkpoint_path(&checkpoint.drive_letter);
-        
+
+        // Ensure the base directory exists — `new()` does not create it.
+        fs::create_dir_all(&self.base_path).map_err(|e| UsnError::CheckpointError {
+            path: self.base_path.display().to_string(),
+            source: e,
+        })?;
+
         // Write to temporary file first, then rename for atomicity
         let temp_path = path.with_extension("tmp");
         

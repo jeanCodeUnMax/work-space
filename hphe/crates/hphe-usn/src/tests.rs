@@ -114,7 +114,9 @@ fn test_build_and_parse_usn_record_v2() {
 
     // Parse the record
     let mut iter = crate::journal::iter_usn_records(&buffer);
-    let record = iter.next().expect("Should have one record");
+    let (record, iter_name) = iter.next().expect("Should have one record");
+
+    assert_eq!(iter_name.as_deref(), Some(name));
 
     match record {
         UsnRecord::V2(r) => {
@@ -136,11 +138,12 @@ fn test_build_and_parse_usn_record_v2() {
 #[test]
 fn test_parse_multiple_usn_records() {
     let buffer = generate_synthetic_usn_buffer(100, 0);
-    let records: Vec<crate::journal::UsnRecord> = crate::journal::iter_usn_records(&buffer).collect();
+    let records: Vec<(crate::journal::UsnRecord, Option<String>)> =
+        crate::journal::iter_usn_records(&buffer).collect();
 
     assert_eq!(records.len(), 100);
 
-    for (i, record) in records.iter().enumerate() {
+    for (i, (record, name)) in records.iter().enumerate() {
         let expected_usn = i as i64;
         assert_eq!(record.usn(), expected_usn);
 
@@ -149,6 +152,11 @@ fn test_parse_multiple_usn_records() {
 
         let expected_parent = 5u64;
         assert_eq!(record.parent_file_reference_number(), expected_parent);
+
+        // Regression: FileNameOffset is relative to the record start, so
+        // extracting with the batch buffer corrupted every name past the
+        // first record. Names must decode correctly at every offset.
+        assert_eq!(name.as_deref(), Some(format!("file_{i}.txt").as_str()));
     }
 }
 
@@ -161,7 +169,7 @@ fn test_delta_type_from_create_reason() {
     let buffer = build_synthetic_usn_record_v2(
         1, 5, 0, 0, usn_reason::FILE_CREATE, "test.txt"
     );
-    let record = crate::journal::iter_usn_records(&buffer).next().unwrap();
+    let (record, _) = crate::journal::iter_usn_records(&buffer).next().unwrap();
     let deltas = FileDelta::from_usn_record(&record, Some("test.txt".to_string()));
 
     assert_eq!(deltas.len(), 1);
@@ -173,7 +181,7 @@ fn test_delta_type_from_delete_reason() {
     let buffer = build_synthetic_usn_record_v2(
         1, 5, 0, 0, usn_reason::FILE_DELETE, "test.txt"
     );
-    let record = crate::journal::iter_usn_records(&buffer).next().unwrap();
+    let (record, _) = crate::journal::iter_usn_records(&buffer).next().unwrap();
     let deltas = FileDelta::from_usn_record(&record, Some("test.txt".to_string()));
 
     assert_eq!(deltas.len(), 1);
@@ -186,7 +194,7 @@ fn test_delta_type_from_rename_reasons() {
     let buffer = build_synthetic_usn_record_v2(
         1, 5, 0, 0, reason, "test.txt"
     );
-    let record = crate::journal::iter_usn_records(&buffer).next().unwrap();
+    let (record, _) = crate::journal::iter_usn_records(&buffer).next().unwrap();
     let deltas = FileDelta::from_usn_record(&record, Some("test.txt".to_string()));
 
     assert_eq!(deltas.len(), 2);
@@ -200,7 +208,7 @@ fn test_delta_type_from_multiple_reasons() {
     let buffer = build_synthetic_usn_record_v2(
         1, 5, 0, 0, reason, "test.txt"
     );
-    let record = crate::journal::iter_usn_records(&buffer).next().unwrap();
+    let (record, _) = crate::journal::iter_usn_records(&buffer).next().unwrap();
     let deltas = FileDelta::from_usn_record(&record, Some("test.txt".to_string()));
 
     assert_eq!(deltas.len(), 2);
@@ -411,10 +419,10 @@ fn test_usn_structure_sizes() {
     // Let's just check it's reasonable
     assert!(USN_RECORD_V2::size_of() >= 60);
     
-    // USN_READ_JOURNAL_DATA_V1 should be 32 bytes:
-    // StartUsn (8) + ReasonMask (4) + ReturnOnlyOnClose (4) + Timeout (4) + BytesToWaitFor (4) + UsnJournalID (8)
-    // Total = 8+4+4+4+4+8 = 32
-    assert_eq!(USN_READ_JOURNAL_DATA_V1::size_of(), 32);
+    // USN_READ_JOURNAL_DATA_V1 should be 40 bytes per the Win32 ABI:
+    // StartUsn (8) + ReasonMask (4) + ReturnOnlyOnClose (4) + Timeout (8) + BytesToWaitFor (8) + UsnJournalID (8)
+    // Total = 8+4+4+8+8+8 = 40
+    assert_eq!(USN_READ_JOURNAL_DATA_V1::size_of(), 40);
 }
 
 // ============================================================================

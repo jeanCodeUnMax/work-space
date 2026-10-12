@@ -763,6 +763,25 @@ impl FileIndex {
         }
     }
 
+    /// Returns overlay entries (USN-added/updated files not yet in the
+    /// column store) whose lowercase name contains `pattern_lower`.
+    /// Pass an already-lowercased pattern; empty pattern matches all.
+    pub fn overlay_matches(&self, pattern_lower: &str) -> Vec<IndexEntry> {
+        let Ok(overlay) = self.overlay.read() else {
+            return Vec::new();
+        };
+        overlay
+            .updated_entries
+            .values()
+            .filter(|e| e.flags.is_in_use)
+            .filter(|e| !overlay.deleted_frns.contains(&e.frn))
+            .filter(|e| {
+                pattern_lower.is_empty() || e.name_lower.contains(pattern_lower)
+            })
+            .cloned()
+            .collect()
+    }
+
     /// Binary search for exact match on `name_lower`.
     pub fn find_exact(&self, name: &str) -> Option<usize> {
         let target = name.to_lowercase();
@@ -827,8 +846,10 @@ impl FileIndex {
         let parent_frn = self.parent_frn[row];
         let is_dir = self.is_dir(row);
 
-        // Root entry (FRN 5 or self-referential parent)
-        if frn == 5 || parent_frn == 0 || parent_frn == frn {
+        // Root entry (MFT record 5 or self-referential parent). FRNs carry
+        // the sequence number in the high 16 bits — mask to the 48-bit
+        // record number before comparing to 5.
+        if (frn & 0x0000_FFFF_FFFF_FFFF) == 5 || parent_frn == 0 || parent_frn == frn {
             return format!("{}:\\", self.drive_letter);
         }
 
@@ -852,6 +873,12 @@ impl FileIndex {
         full_path
     }
 
+    /// Public wrapper: resolves the full path of a directory FRN (used for
+    /// overlay entries that have no row in the column store).
+    pub fn dir_path_of_frn(&self, dir_frn: u64) -> String {
+        self.resolve_dir_path(dir_frn)
+    }
+
     /// Internal helper: resolves full path for directory parent FRN using segment cache.
     fn resolve_dir_path(&self, dir_frn: u64) -> String {
         // Fast path: cache hit on dir_frn
@@ -870,7 +897,7 @@ impl FileIndex {
         while depth < 256 {
             depth += 1;
 
-            if cur_frn == 0 || cur_frn == 5 {
+            if cur_frn == 0 || (cur_frn & 0x0000_FFFF_FFFF_FFFF) == 5 {
                 base_prefix = Some(format!("{}:\\", self.drive_letter));
                 break;
             }
