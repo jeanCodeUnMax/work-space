@@ -21,6 +21,7 @@ path = "src/main.rs"
 # usearch with `USEARCH_USE_NUMKONG=0` — pure-C++ HNSW, still SIMD-accelerated
 # via its own dispatch; recall is unaffected. Re-enable only if numkong links.
 usearch = { version = "2", default-features = false }
+serde_json = "1"
 
 [dev-dependencies]
 rand = "0.8"
