@@ -36,7 +36,12 @@ EVERYTHING_EXE = os.environ.get(
     "EVERYTHING_EXE", r"C:\Program Files\Everything\Everything.exe"
 )
 
+# Feature flag: HPHE_PIPE=1 activates communication with the Rust daemon hphe-indexd
+# via Windows named pipe (\\.\pipe\hphe-index). If absent or disabled, falls back to Everything.exe.
+USE_HPHE_PIPE = os.environ.get("HPHE_PIPE", "").strip().lower() in ("1", "true", "yes")
+
 _ipc: EverythingIPC | None = None
+_pipe_client: Any = None
 
 
 def get_ipc() -> EverythingIPC:
@@ -44,6 +49,14 @@ def get_ipc() -> EverythingIPC:
     if _ipc is None:
         _ipc = EverythingIPC.get()
     return _ipc
+
+
+def get_pipe_client() -> Any:
+    global _pipe_client
+    if _pipe_client is None:
+        from pipe_client import HphePipeClient
+        _pipe_client = HphePipeClient(fallback_to_everything=True)
+    return _pipe_client
 
 
 # ---------------------------------------------------------------------------
@@ -75,15 +88,51 @@ def _basename(full: str) -> str:
 
 
 def tool_search(args: dict) -> dict:
-    ipc = get_ipc()
     raw = args.get("query", "")
     max_results = min(int(args.get("max_results", 100)), 10_000)
     offset = int(args.get("offset", 0))
     sort = str(args.get("sort", "name"))
     descending = bool(args.get("descending", False))
 
-    query, sflags = _translate_query(raw)
     t0 = time.time()
+
+    # -----------------------------------------------------------------------
+    # Integration Point: HPHE Pipe Client (HPHE_PIPE=1)
+    # -----------------------------------------------------------------------
+    if USE_HPHE_PIPE:
+        client = get_pipe_client()
+        try:
+            if client.is_connected() or client.connect():
+                rows = client.search(raw, limit=max_results, offset=offset)
+                results = [
+                    {
+                        "path": it["path"],
+                        "name": it.get("name") or _basename(it["path"]),
+                        "dir": os.path.dirname(it["path"]),
+                        "size": it.get("size"),
+                        "mtime": it.get("modified"),
+                        "attrs": it.get("attributes"),
+                    }
+                    for it in rows
+                    if fs_tools.path_allowed(it["path"])
+                ]
+                filtered = len(rows) - len(results)
+                return {
+                    "total": len(rows),
+                    "offset": offset,
+                    "results": results,
+                    "filtered_by_policy": filtered or None,
+                    "query": raw,
+                    "elapsed_ms": round((time.time() - t0) * 1000, 1),
+                    "backend": "hphe-pipe",
+                }
+        except Exception:
+            # Automatic fallback to Everything.exe if pipe connection fails
+            pass
+
+    # Standard / Fallback backend: Everything.exe IPC
+    ipc = get_ipc()
+    query, sflags = _translate_query(raw)
     r = everything_ipc.search(
         query, max_results=max_results, offset=offset,
         sort=sort, descending=descending, search_flags=sflags,
@@ -124,6 +173,23 @@ def tool_categories(_args: dict) -> dict:
 
 
 def tool_index_stats(_args: dict) -> dict:
+    # -----------------------------------------------------------------------
+    # Integration Point: HPHE Pipe Client (HPHE_PIPE=1)
+    # -----------------------------------------------------------------------
+    if USE_HPHE_PIPE:
+        client = get_pipe_client()
+        try:
+            if client.is_connected() or client.connect():
+                st = client.stats()
+                st["backend"] = "hphe-pipe"
+                st["note"] = (
+                    "index maintained live by hphe-indexd daemon via Windows named pipe "
+                    "(\\\\.\\pipe\\hphe-index)"
+                )
+                return st
+        except Exception:
+            pass
+
     ipc = get_ipc()
     st = ipc.status()
     st["total"] = everything_ipc.count("")
