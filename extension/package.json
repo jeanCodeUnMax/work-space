@@ -1,8 +1,8 @@
 {
-  "name": "everything-search",
-  "displayName": "Hephaistos Everything Search",
-  "description": "Instant NTFS file search & browser powered by Everything.exe's live index (IPC) — Sherlock finds it before you finish typing",
-  "version": "1.0.2",
+  "name": "hephaistos-kit-search",
+  "displayName": "Hephaistos-Kit Search",
+  "description": "Ultra-fast NTFS file search powered by the Hephaistos engine ($MFT + USN, Rust daemon, no Everything.exe) — Sherlock finds it before you finish typing",
+  "version": "1.0.3",
   "publisher": "art-qalam",
   "private": true,
   "license": "MIT",
@@ -22,7 +22,7 @@
     "commands": [
       {
         "command": "everything-search.openSearch",
-        "title": "Everything: Open Search",
+        "title": "Hephaistos-Kit: Open Search",
         "icon": "$(search)"
       }
     ],
@@ -30,7 +30,7 @@
       "activitybar": [
         {
           "id": "everything-search",
-          "title": "Everything Search",
+          "title": "Hephaistos-Kit Search",
           "icon": "media/icon.svg"
         }
       ]
@@ -41,7 +41,7 @@
           "type": "webview",
           "id": "everything-search.searchView",
           "name": "Search",
-          "contextualTitle": "Everything",
+          "contextualTitle": "Hephaistos-Kit",
           "icon": "media/icon.svg"
         }
       ]
@@ -54,7 +54,7 @@
       }
     ],
     "configuration": {
-      "title": "Everything Search",
+      "title": "Hephaistos-Kit Search",
       "properties": {
         "everythingSearch.serverPath": {
           "type": "string",

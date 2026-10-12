@@ -12,7 +12,7 @@ let client;
 let output;
 
 function activate(context) {
-  output = vscode.window.createOutputChannel('everything-search');
+  output = vscode.window.createOutputChannel('hephaistos-kit-search');
   client = new McpClient(output, context.extensionPath);
 
   const provider = new SearchViewProvider(context, client, output);

@@ -312,7 +312,7 @@ class SearchViewProvider {
 <meta http-equiv="Content-Security-Policy" content="${csp}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${media('panel.css')}">
-<title>Everything Search</title>
+<title>Hephaistos-Kit Search</title>
 </head>
 <body>
 ${body}
