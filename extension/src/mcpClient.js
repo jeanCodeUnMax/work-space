@@ -37,8 +37,26 @@ class McpClient {
     return {
       serverPath: c.get('serverPath', ''),
       pythonPath: c.get('pythonPath', ''),
+      hpheBinaryPath: c.get('hpheBinaryPath', ''),
+      preferHphe: c.get('preferHphe', true), // Rust binary preferred by default
       timeoutMs: c.get('requestTimeoutMs', 30_000),
     };
+  }
+
+  /**
+   * Detect platform-specific hphe-mcp.exe bundled with the extension.
+   * The Rust binary eliminates the Python dependency and solves the
+   * 'spawn python ENOENT' error on machines without Python installed.
+   */
+  _hpheBinaryPath() {
+    const cfg = this._cfg().hpheBinaryPath;
+    if (cfg) {
+      if (fs.existsSync(cfg)) return cfg;
+      this._log(`configured hpheBinaryPath missing: ${cfg} — falling back to bundled binary`);
+    }
+    const bundled = path.join(this.extensionPath, 'server', 'hphe-mcp.exe');
+    if (fs.existsSync(bundled)) return bundled;
+    return null;
   }
 
   /**
@@ -170,6 +188,24 @@ class McpClient {
   }
 
   async _spawn() {
+    // Strategy: try hphe-mcp.exe (Rust, no dependencies) first, fallback to Python.
+    // The Rust binary eliminates 'spawn python ENOENT' entirely.
+    const cfg = this._cfg();
+    if (cfg.preferHphe) {
+      const hphePath = this._hpheBinaryPath();
+      if (hphePath) {
+        try {
+          this._log(`trying hphe-mcp.exe (Rust, no Python needed): ${hphePath}`);
+          await this._trySpawn(hphePath, [], hphePath);
+          return;
+        } catch (e) {
+          this._log(`hphe-mcp.exe failed: ${e.message} — falling back to Python`);
+        }
+      } else {
+        this._log('hphe-mcp.exe not found — falling back to Python');
+      }
+    }
+
     const serverPath = this._serverPath();
     const tried = [];
     let lastErr;

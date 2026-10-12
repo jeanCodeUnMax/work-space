@@ -6,3 +6,7 @@ README-DEV.md
 media/src/**
 __pycache__/
 *.pyc
+
+# NOTE: server/hphe-mcp.exe IS INCLUDED intentionally (Rust binary, no Python needed).
+# The extension spawns it directly to solve 'spawn python ENOENT' on clean machines.
+# server/*.py (Python fallback) is also kept for machines without the Rust binary.
