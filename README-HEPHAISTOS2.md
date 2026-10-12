@@ -4,27 +4,31 @@ Plateforme unifiée : indexation NTFS native ($MFT + USN) + MCP unique Rust
 (**57 outils**) couvrant recherche, contenu, vecteurs, orchestration,
 NIM/model-discovery, mémoire et ingestion.
 
-## Layout
+## Layout — PROJET vs INSTALL
 
 ```
-hephaistos2-kit/
+PROJET (dev)  : C:\Program Files\Projet-complet\hephaistos2-kit\
 ├── hphe/                    # workspace Rust (crates hphe-*)
 │   └── crates/hphe-kit/     # orch + models + nim + memory + ingest
 ├── extension/               # ext VS Code "Hephaistos Everything Search"
-│   └── server/              # hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe
+│   └── server/              # binaires déployés (miroir de l'install)
 ├── extensions/
 │   └── orchestrator-monitor/# source ext monitor (UI inchangée)
 ├── .agent/                  # agents, skills, workflows, knowledge
-├── data/                    # content-index Tantivy + orchestrator.db
-├── migrated-vec/            # collections usearch 2048D
 ├── memory-database ->       # jonction F:\Sqlite-DB\current_workspace
-├── install.ps1              # installation complète
-└── install.cmd
+├── install.ps1 / install.cmd# deploy PROJET -> INSTALL
+└── tests/ docs/ tools/ bench/
+
+INSTALL (runtime) : C:\Program Files\servers\hephaistos2-kit\
+├── extension/server/        # hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe + .cmd
+├── data/                    # content-index Tantivy + orchestrator.db + logs
+├── migrated-vec/            # collections usearch 2048D
+└── memory-database ->       # jonction F:\Sqlite-DB\current_workspace
 ```
 
 ## MCP (Devin) : `Hephaistos-everything-search`
 
-`extension/server/hphe-mcp.exe` — stdin/stdout MCP, 57 outils.
+`INSTALL\extension\server\hphe-mcp.exe` — stdin/stdout MCP, 57 outils.
 CLI direct : `hphe-mcp.exe --tool hephaistos_update --args '{"root":".","force":true}'`
 
 ## REST : `hphe-rest` sur 127.0.0.1:8792
