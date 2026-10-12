@@ -226,7 +226,7 @@ systématiquement le livrable **sur disque** avant d'accepter la complétion.
 | T-030 | Named pipe + ACL + proto NDJSON | P1 | `code` | `vibe` | T-010 | **FAIT** (vibe+agy #329/#333, `1bb6524`, `p1-pipe.md`) |
 | T-031 | Review sécurité pipe/ACL/snapshot | P1 | `review` | `agy` | T-030 | **FAIT** (devin, `a5e7c62` — fix traversal F1 + cap limit F2, `p7-security.md`) |
 | T-040 | Backend `hphe` dans `server.py` (client pipe, flag) | P2 | `code` | `devin` | T-030 | **FAIT** (agy #335, `b4da815`, 13/13 tests, fallback Everything.exe) |
-| T-050 | Suite parité 18 tools + bench `p2.md` | P2 | `test` | `vibe` | T-040 | 🔄 #343 agy |
+| T-050 | Suite parité 18 tools + bench `p2.md` | P2 | `test` | `vibe` | T-040 | **FAIT** (agy #343, `d93e104`, 18/18 conformes, `p5-parity.md`) |
 | T-060 | Service Windows + watchdog + install | P2 | `code` | `agy` | T-050 | **FAIT** (agy #336, `46c2e34`) |
 | T-070 | Index contenu `tantivy` + watch→ingest | P3 | `code` | `vibe` | T-020 | **FAIT** (ollama #331, `d3e2134`, 71,6k docs/s, `p3-tantivy.md`) |
 | T-071 | Bascule `beacon_ingest` sur watch stream | P3 | `code` | `vibe` | T-070 | **FAIT** (ollama #342, `ea07785`, mode `--watch` + fallback poll, 9/9 pytest) |
@@ -235,9 +235,10 @@ systématiquement le livrable **sur disque** avant d'accepter la complétion.
 | T-082 | Décommission Qdrant/Zvec + runbook rollback | P4 | `code` | `devin` | T-081 | **FAIT infra** (devin, `hphe-vec import` + `p8-migration.md`, 23,7k vec migrés — bascule applicative et decommission = étapes opérationnelles documentées) |
 | T-090 | Port `hphe-mcp.exe` (fs_*, policy, memory_*, semantic_*) | P5 | `code` | `agy` | T-040 | **FAIT** (agy #338, `5f186d5`, 18 outils + stubs V1 content/vec/memory) |
 | T-091 | Tests e2e MCP unifié | P5 | `test` | `vibe` | T-090 | **FAIT** (agy #341, `e186382`, 1049 l e2e, `p5-e2e.md`) |
-| T-100 | VSIX packaging + suppression `spawn python` | P6 | `code` | `devin` | T-060, T-091 | 🔄 #344 ollama-cloud |
+| T-100 | VSIX packaging + suppression `spawn python` | P6 | `code` | `devin` | T-060, T-091 | **FAIT** (ollama #344, `228d81d`, vsix 1.75 MB autonome, preferHphe) |
+| T-092 | Vrais outils content/vec/hybrid dans hphe-mcp | P5 | `code` | `agy` | T-090 | **FAIT** (agy #345, `7ec1800`, stubs V1 remplacés, `p5-tools.md`) |
 | T-110 | Docs wiki + runbook rollback final | P6 | `docs` | `ollama-cloud` | T-100 | **FAIT** (devin, `RUNBOOK.md` + p7/p8) |
-| T-120 | Audit sécurité final (pipe, racines, secrets) | P6 | `review` | `agy` | T-100 | Partiel — T-031 livré (`a5e7c62`), balayage final en attente |
+| T-120 | Audit sécurité final (pipe, racines, secrets) | P6 | `review` | `agy` | T-100 | **FAIT** (devin, `p9-audit-final.md` — PASS, F1/F2 corrigés) |
 
 ### Rôle de Devin (agent principal)
 
