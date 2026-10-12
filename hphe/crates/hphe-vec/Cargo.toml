@@ -1,0 +1,27 @@
+[package]
+name = "hphe-vec"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Embedded HNSW vector store (usearch) for the Hephaistos engine - P4 component"
+
+[lib]
+name = "hphe_vec"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hphe-vec"
+path = "src/main.rs"
+
+[dependencies]
+# `default-features = false` drops the `numkong` feature. With numkong ON,
+# usearch's static C++ core references `__imp_nk_*` SIMD-capability symbols
+# that fail to link on this MSVC toolchain (LNK2019). Disabling it compiles
+# usearch with `USEARCH_USE_NUMKONG=0` — pure-C++ HNSW, still SIMD-accelerated
+# via its own dispatch; recall is unaffected. Re-enable only if numkong links.
+usearch = { version = "2", default-features = false }
+
+[dev-dependencies]
+rand = "0.8"
+tempfile = "3"
