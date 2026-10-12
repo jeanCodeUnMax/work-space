@@ -219,25 +219,25 @@ systématiquement le livrable **sur disque** avant d'accepter la complétion.
 | T-002 | Éval crates `ntfs`/`usearch`/`tantivy`/`rusqlite`/`redb` | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#309) |
 | T-020-prep | Recherche API journal USN (FSCTL, wrap) | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#312) |
 | T-010-prep | Design index SoA (layout, memchr, paths) | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#313) |
-| T-010 | Index SoA + scan `memchr` SIMD + résolution paths | P1 | `code` | `vibe` | T-001 | 🔄 #314 (worktree `task-314`) |
-| T-011 | Query engine (parser syntaxe Everything → prédicats) | P1 | `code` | `vibe` | T-010 |
-| T-020 | Deltas USN continus + wrap recovery | P1 | `code` | `vibe` | T-010 |
-| T-021 | Snapshot mmap + warm start | P1 | `code` | `vibe` | T-010 |
-| T-030 | Named pipe + ACL + proto NDJSON | P1 | `code` | `vibe` | T-010 |
-| T-031 | Review sécurité pipe/ACL/snapshot | P1 | `review` | `agy` | T-030 |
-| T-040 | Backend `hphe` dans `server.py` (client pipe, flag) | P2 | `code` | `devin` | T-030 |
-| T-050 | Suite parité 18 tools + bench `p2.md` | P2 | `test` | `vibe` | T-040 |
-| T-060 | Service Windows + watchdog + install | P2 | `code` | `agy` | T-050 |
-| T-070 | Index contenu `tantivy` + watch→ingest | P3 | `code` | `vibe` | T-020 |
-| T-071 | Bascule `beacon_ingest` sur watch stream | P3 | `code` | `vibe` | T-070 |
-| T-080 | Store `usearch` 2048D/384D + verbe `hybrid` | P4 | `code` | `vibe` | T-030 |
-| T-081 | Export Qdrant/Zvec → import + recall@10 parity | P4 | `code` | `vibe` | T-080 |
-| T-082 | Décommission Qdrant/Zvec + runbook rollback | P4 | `code` | `devin` | T-081 |
-| T-090 | Port `hphe-mcp.exe` (fs_*, policy, memory_*, semantic_*) | P5 | `code` | `agy` | T-040 |
-| T-091 | Tests e2e MCP unifié | P5 | `test` | `vibe` | T-090 |
-| T-100 | VSIX packaging + suppression `spawn python` | P6 | `code` | `devin` | T-060, T-091 |
-| T-110 | Docs wiki + runbook rollback final | P6 | `docs` | `ollama-cloud` | T-100 |
-| T-120 | Audit sécurité final (pipe, racines, secrets) | P6 | `review` | `agy` | T-100 |
+| T-010 | Index SoA + scan `memchr` SIMD + résolution paths | P1 | `code` | `vibe` | T-001 | **FAIT** (#314/#315, 1,85 Gio @16M, 1,19 Md l/s, `p1-index.md`) |
+| T-011 | Query engine (parser syntaxe Everything → prédicats) | P1 | `code` | `vibe` | T-010 | **FAIT** (ollama #327, 37 tests, `089ba52`, `p1-query.md`) |
+| T-020 | Deltas USN continus + wrap recovery | P1 | `code` | `vibe` | T-010 | **FAIT** (vibe+agy #328/#332, `3d1422f` + fix overlay) |
+| T-021 | Snapshot mmap + warm start | P1 | `code` | `vibe` | T-010 | **FAIT** (agy #326, `dbbf55d`, 95 ms @1M, `p1-snapshot.md`) |
+| T-030 | Named pipe + ACL + proto NDJSON | P1 | `code` | `vibe` | T-010 | **FAIT** (vibe+agy #329/#333, `1bb6524`, `p1-pipe.md`) |
+| T-031 | Review sécurité pipe/ACL/snapshot | P1 | `review` | `agy` | T-030 | **FAIT** (devin, `a5e7c62` — fix traversal F1 + cap limit F2, `p7-security.md`) |
+| T-040 | Backend `hphe` dans `server.py` (client pipe, flag) | P2 | `code` | `devin` | T-030 | **FAIT** (agy #335, `b4da815`, 13/13 tests, fallback Everything.exe) |
+| T-050 | Suite parité 18 tools + bench `p2.md` | P2 | `test` | `vibe` | T-040 | 🔄 #343 agy |
+| T-060 | Service Windows + watchdog + install | P2 | `code` | `agy` | T-050 | **FAIT** (agy #336, `46c2e34`) |
+| T-070 | Index contenu `tantivy` + watch→ingest | P3 | `code` | `vibe` | T-020 | **FAIT** (ollama #331, `d3e2134`, 71,6k docs/s, `p3-tantivy.md`) |
+| T-071 | Bascule `beacon_ingest` sur watch stream | P3 | `code` | `vibe` | T-070 | **FAIT** (ollama #342, `ea07785`, mode `--watch` + fallback poll, 9/9 pytest) |
+| T-080 | Store `usearch` 2048D/384D + verbe `hybrid` | P4 | `code` | `vibe` | T-030 | **FAIT** (ollama #334, recall@10 0.995, `p4-vec.md`) |
+| T-081 | Export Qdrant/Zvec → import + recall@10 parity | P4 | `code` | `vibe` | T-080 | **FAIT** (ollama #337 + devin, toléré 1.0000 ×5 coll., `p4-real.md`) |
+| T-082 | Décommission Qdrant/Zvec + runbook rollback | P4 | `code` | `devin` | T-081 | **FAIT infra** (devin, `hphe-vec import` + `p8-migration.md`, 23,7k vec migrés — bascule applicative et decommission = étapes opérationnelles documentées) |
+| T-090 | Port `hphe-mcp.exe` (fs_*, policy, memory_*, semantic_*) | P5 | `code` | `agy` | T-040 | **FAIT** (agy #338, `5f186d5`, 18 outils + stubs V1 content/vec/memory) |
+| T-091 | Tests e2e MCP unifié | P5 | `test` | `vibe` | T-090 | **FAIT** (agy #341, `e186382`, 1049 l e2e, `p5-e2e.md`) |
+| T-100 | VSIX packaging + suppression `spawn python` | P6 | `code` | `devin` | T-060, T-091 | 🔄 #344 ollama-cloud |
+| T-110 | Docs wiki + runbook rollback final | P6 | `docs` | `ollama-cloud` | T-100 | **FAIT** (devin, `RUNBOOK.md` + p7/p8) |
+| T-120 | Audit sécurité final (pipe, racines, secrets) | P6 | `review` | `agy` | T-100 | Partiel — T-031 livré (`a5e7c62`), balayage final en attente |
 
 ### Rôle de Devin (agent principal)
 
