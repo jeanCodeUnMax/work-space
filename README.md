@@ -1,7 +1,7 @@
   
 
 <p align="center">
-  <img src="extension/media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
+  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
 </p>
 
 # Hephaistos2-Kit
