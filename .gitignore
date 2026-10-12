@@ -55,3 +55,4 @@ $RECYCLE.BIN/
 *.key
 secrets.*
 credentials.*
+migrated-vec/

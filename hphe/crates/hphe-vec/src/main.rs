@@ -11,9 +11,51 @@ fn main() {
             .and_then(|i| std::env::args().nth(i + 1))
             .and_then(|s| s.parse::<usize>().ok());
         recall_real(&corpus, &queries, ef);
+    } else if args.len() >= 4 && args[1] == "import" {
+        // import --corpus <file> --dir <outdir> [--file index.usearch]
+        // Construit un VecIndex depuis un export corpus_*.json et le persiste
+        // sur disque (T-082 : migration Qdrant -> usearch).
+        let corpus = std::env::args().nth(3).unwrap_or_default();
+        let dir = std::env::args().nth(5).unwrap_or_else(|| ".".into());
+        let file = std::env::args().position(|a| a == "--file")
+            .and_then(|i| std::env::args().nth(i + 1))
+            .unwrap_or_else(|| "index.usearch".into());
+        import(&corpus, &dir, &file);
     } else {
-        println!("hphe-vec test build OK");
+        println!("hphe-vec: recall_real --corpus <f> --queries <f> [--ef N] | import --corpus <f> --dir <d> [--file f]");
     }
+}
+
+fn import(corpus_path: &str, dir: &str, file: &str) {
+    let corpus: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(corpus_path).expect("corpus file"),
+    )
+    .expect("corpus json");
+    let dim = corpus["dim"].as_u64().unwrap() as usize;
+    let vecs = corpus["vectors"].as_array().unwrap();
+    let n = vecs.len();
+
+    std::fs::create_dir_all(dir).expect("create out dir");
+    let cfg = VecIndexConfig::recall_tuned(dim, n + 1024);
+    let idx = VecIndex::create(&cfg, Some(dir)).expect("create index");
+
+    let t0 = Instant::now();
+    for v in vecs {
+        let key = v["key"].as_u64().unwrap();
+        let vec: Vec<f32> = v["vec"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_f64().unwrap() as f32)
+            .collect();
+        idx.upsert_vector(key, &vec).expect("upsert");
+    }
+    let build_s = t0.elapsed().as_secs_f64();
+
+    idx.save(file).expect("save index");
+    let out = serde_json::json!({"imported": n, "dim": dim, "build_s": build_s,
+        "dir": dir, "file": file});
+    println!("{}", serde_json::to_string(&out).unwrap());
 }
 
 fn recall_real(corpus_path: &str, queries_path: &str, ef: Option<usize>) {
