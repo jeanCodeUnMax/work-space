@@ -22,6 +22,9 @@ use hashbrown::HashMap;
 use memchr::memmem;
 use rayon::prelude::*;
 
+use crate::snapshot::{
+    load_index_mmap, load_or_rebuild_index, save_index, Column, SnapshotError,
+};
 use crate::{EntryFlags, FLAG_DIRECTORY};
 use hphe_mft::reader::{MftError, MftReader};
 use hphe_mft::record::MftEntry;
@@ -91,20 +94,20 @@ pub struct SearchResult {
 /// Main Struct-of-Arrays (SoA) File Index.
 pub struct FileIndex {
     // String blobs (separated by '\0')
-    name_blob: Vec<u8>,
-    name_offsets: Vec<u32>,
+    name_blob: Column<u8>,
+    name_offsets: Column<u32>,
 
-    name_lower_blob: Vec<u8>,
-    name_lower_offsets: Vec<u32>,
+    name_lower_blob: Column<u8>,
+    name_lower_offsets: Column<u32>,
 
     // Numerical columns (indexed by row: 0..N)
-    frn: Vec<u64>,
-    parent_frn: Vec<u64>,
-    size: Vec<u64>,
-    created: Vec<u64>,
-    modified: Vec<u64>,
-    accessed: Vec<u64>,
-    flags: Vec<u32>,
+    frn: Column<u64>,
+    parent_frn: Column<u64>,
+    size: Column<u64>,
+    created: Column<u64>,
+    modified: Column<u64>,
+    accessed: Column<u64>,
+    flags: Column<u32>,
 
     // Root drive letter, e.g. 'C'
     drive_letter: char,
@@ -128,17 +131,17 @@ impl FileIndex {
     /// Creates an empty FileIndex with a specific drive letter.
     pub fn with_drive(drive: char) -> Self {
         Self {
-            name_blob: Vec::new(),
-            name_offsets: Vec::new(),
-            name_lower_blob: Vec::new(),
-            name_lower_offsets: Vec::new(),
-            frn: Vec::new(),
-            parent_frn: Vec::new(),
-            size: Vec::new(),
-            created: Vec::new(),
-            modified: Vec::new(),
-            accessed: Vec::new(),
-            flags: Vec::new(),
+            name_blob: Column::empty(),
+            name_offsets: Column::empty(),
+            name_lower_blob: Column::empty(),
+            name_lower_offsets: Column::empty(),
+            frn: Column::empty(),
+            parent_frn: Column::empty(),
+            size: Column::empty(),
+            created: Column::empty(),
+            modified: Column::empty(),
+            accessed: Column::empty(),
+            flags: Column::empty(),
             drive_letter: drive.to_ascii_uppercase(),
             frn_to_row: HashMap::new(),
             dir_cache: RwLock::new(HashMap::new()),
@@ -255,17 +258,17 @@ impl FileIndex {
         };
 
         let mut index = Self {
-            name_blob,
-            name_offsets,
-            name_lower_blob,
-            name_lower_offsets,
-            frn,
-            parent_frn,
-            size,
-            created,
-            modified,
-            accessed,
-            flags,
+            name_blob: name_blob.into(),
+            name_offsets: name_offsets.into(),
+            name_lower_blob: name_lower_blob.into(),
+            name_lower_offsets: name_lower_offsets.into(),
+            frn: frn.into(),
+            parent_frn: parent_frn.into(),
+            size: size.into(),
+            created: created.into(),
+            modified: modified.into(),
+            accessed: accessed.into(),
+            flags: flags.into(),
             drive_letter: drive_char,
             frn_to_row,
             dir_cache: RwLock::new(HashMap::new()),
@@ -299,19 +302,124 @@ impl FileIndex {
         Self::from_mft_reader(drive, &mut reader)
     }
 
+    /// Whether this index is backed by a read-only memory map.
+    #[inline]
+    pub fn is_mmap(&self) -> bool {
+        self.frn.is_mmap()
+    }
+
+    /// Re-evaluates in-memory footprint in bytes.
+    pub(crate) fn update_memory_usage(&mut self) {
+        self.stats.memory_usage_bytes = self.compute_memory_usage();
+    }
+
+    /// Internal constructor for zero-copy snapshot loading.
+    pub(crate) fn from_columns(
+        name_blob: Column<u8>,
+        name_offsets: Column<u32>,
+        name_lower_blob: Column<u8>,
+        name_lower_offsets: Column<u32>,
+        frn: Column<u64>,
+        parent_frn: Column<u64>,
+        size: Column<u64>,
+        created: Column<u64>,
+        modified: Column<u64>,
+        accessed: Column<u64>,
+        flags: Column<u32>,
+        drive_letter: char,
+        frn_to_row: HashMap<u64, u32>,
+        stats: FileIndexStats,
+    ) -> Self {
+        Self {
+            name_blob,
+            name_offsets,
+            name_lower_blob,
+            name_lower_offsets,
+            frn,
+            parent_frn,
+            size,
+            created,
+            modified,
+            accessed,
+            flags,
+            drive_letter,
+            frn_to_row,
+            dir_cache: RwLock::new(HashMap::new()),
+            stats,
+        }
+    }
+
+    // Column slice accessors used during snapshot serialization
+    pub(crate) fn name_blob_slice(&self) -> &[u8] {
+        &self.name_blob
+    }
+    pub(crate) fn name_offsets_slice(&self) -> &[u32] {
+        &self.name_offsets
+    }
+    pub(crate) fn name_lower_blob_slice(&self) -> &[u8] {
+        &self.name_lower_blob
+    }
+    pub(crate) fn name_lower_offsets_slice(&self) -> &[u32] {
+        &self.name_lower_offsets
+    }
+    pub(crate) fn frn_slice(&self) -> &[u64] {
+        &self.frn
+    }
+    pub(crate) fn parent_frn_slice(&self) -> &[u64] {
+        &self.parent_frn
+    }
+    pub(crate) fn size_slice(&self) -> &[u64] {
+        &self.size
+    }
+    pub(crate) fn created_slice(&self) -> &[u64] {
+        &self.created
+    }
+    pub(crate) fn modified_slice(&self) -> &[u64] {
+        &self.modified
+    }
+    pub(crate) fn accessed_slice(&self) -> &[u64] {
+        &self.accessed
+    }
+    pub(crate) fn flags_slice(&self) -> &[u32] {
+        &self.flags
+    }
+
+    // =========================================================================
+    // SNAPSHOT PERSISTENCE & MMAP LOADING
+    // =========================================================================
+
+    /// Saves the index to a binary snapshot file at `path` atomically.
+    pub fn save<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), SnapshotError> {
+        save_index(self, path.as_ref())
+    }
+
+    /// Loads the index from a binary snapshot file using memory mapping (zero-copy).
+    pub fn load_mmap<P: AsRef<std::path::Path>>(path: P) -> Result<Self, SnapshotError> {
+        load_index_mmap(path.as_ref())
+    }
+
+    /// Loads the index from a snapshot if available and valid; otherwise invokes `rebuild`.
+    pub fn load_or_rebuild<P, F>(path: P, rebuild: F) -> Result<Self, IndexError>
+    where
+        P: AsRef<std::path::Path>,
+        F: FnOnce() -> Result<Self, IndexError>,
+    {
+        load_or_rebuild_index(path.as_ref(), rebuild)
+    }
+
     /// Computes accurate in-memory footprint in bytes.
     pub fn compute_memory_usage(&self) -> usize {
-        self.name_blob.capacity()
-            + self.name_offsets.capacity() * std::mem::size_of::<u32>()
-            + self.name_lower_blob.capacity()
-            + self.name_lower_offsets.capacity() * std::mem::size_of::<u32>()
-            + self.frn.capacity() * std::mem::size_of::<u64>()
-            + self.parent_frn.capacity() * std::mem::size_of::<u64>()
-            + self.size.capacity() * std::mem::size_of::<u64>()
-            + self.created.capacity() * std::mem::size_of::<u64>()
-            + self.modified.capacity() * std::mem::size_of::<u64>()
-            + self.accessed.capacity() * std::mem::size_of::<u64>()
-            + self.flags.capacity() * std::mem::size_of::<u32>()
+        self.name_blob.capacity_bytes()
+            + self.name_offsets.capacity_bytes()
+            + self.name_lower_blob.capacity_bytes()
+            + self.name_lower_offsets.capacity_bytes()
+            + self.frn.capacity_bytes()
+            + self.parent_frn.capacity_bytes()
+            + self.size.capacity_bytes()
+            + self.created.capacity_bytes()
+            + self.modified.capacity_bytes()
+            + self.accessed.capacity_bytes()
+            + self.flags.capacity_bytes()
             + self.frn_to_row.capacity() * (std::mem::size_of::<u64>() + std::mem::size_of::<u32>() + 1)
             + self.dir_cache.read().map(|c| c.len() * 96).unwrap_or(0)
     }
@@ -683,6 +791,17 @@ impl FileIndex {
 impl Default for FileIndex {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Debug for FileIndex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("FileIndex")
+            .field("drive_letter", &self.drive_letter)
+            .field("entry_count", &self.len())
+            .field("is_mmap", &self.is_mmap())
+            .field("stats", &self.stats)
+            .finish()
     }
 }
 
