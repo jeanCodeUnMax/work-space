@@ -272,6 +272,51 @@ pub fn tool_fs_move(args: &Value, policy: &AccessPolicy) -> Result<Value, String
     }))
 }
 
+pub fn tool_fs_copy(args: &Value, policy: &AccessPolicy) -> Result<Value, String> {
+    let source_str = args
+        .get("source")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Missing required parameter 'source'".to_string())?;
+
+    let destination_str = args
+        .get("destination")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Missing required parameter 'destination'".to_string())?;
+
+    let overwrite = args
+        .get("overwrite")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    let src = policy
+        .check_allowed(Path::new(source_str), false)
+        .map_err(|e| e.to_string())?;
+
+    let dst = policy
+        .check_allowed(Path::new(destination_str), true)
+        .map_err(|e| e.to_string())?;
+
+    if dst.exists() && !overwrite {
+        return Err(format!("destination exists: {}", dst.display()));
+    }
+
+    if let Some(parent) = dst.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create destination directories: {}", e))?;
+        }
+    }
+
+    let bytes = fs::copy(&src, &dst).map_err(|e| format!("Failed to copy file: {}", e))?;
+
+    Ok(json!({
+        "source": strip_unc_prefix(&src.to_string_lossy()),
+        "destination": strip_unc_prefix(&dst.to_string_lossy()),
+        "copied": true,
+        "bytes_copied": bytes
+    }))
+}
+
 pub fn tool_fs_delete(args: &Value, policy: &AccessPolicy) -> Result<Value, String> {
     let path_str = args
         .get("path")

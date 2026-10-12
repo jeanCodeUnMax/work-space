@@ -362,6 +362,7 @@ pub async fn execute_tool(
         "fs_write_file" => fs::tool_fs_write_file(args, policy),
         "fs_create_directory" => fs::tool_fs_create_directory(args, policy),
         "fs_move" => fs::tool_fs_move(args, policy),
+        "fs_copy" => fs::tool_fs_copy(args, policy),
         "fs_delete" => fs::tool_fs_delete(args, policy),
         "fs_read_multiple_files" => fs::tool_fs_read_multiple_files(args, policy),
         "fs_edit_file" => fs::tool_fs_edit_file(args, policy),
