@@ -98,6 +98,13 @@ if ($restUp) {
             Write-Log "[ingest] index occupé (boucle hphe-rest en cours) — racine déjà couverte, skip." "WARN"
             return
         }
+        # Connexion coupée = hphe-rest a redémarré pendant l'attente en
+        # file (déploiement/crash). La boucle reprendra la racine au cycle
+        # suivant — non-fatal, on ne plante pas le workspace.
+        if ($detail -match 'transport connection|hôte distant|forcibly closed|closed the connection|connection.*closed|aborted') {
+            Write-Log "[ingest] connexion REST interrompée (redémarrage hphe-rest) — racine couverte au prochain cycle, skip." "WARN"
+            return
+        }
         throw "hephaistos_update via REST a échoué: $detail"
     }
 }
