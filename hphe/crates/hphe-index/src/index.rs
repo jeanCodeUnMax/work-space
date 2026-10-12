@@ -115,8 +115,18 @@ pub struct FileIndex {
     // Cached directory full paths: dir_frn -> "C:\Users\Admin"
     dir_cache: RwLock<HashMap<u64, String>>,
 
+    // Overlay for real-time USN delta mutations (deletes, updates)
+    overlay: RwLock<IndexOverlay>,
+
     // Index statistics
     stats: FileIndexStats,
+}
+
+/// Dynamic overlay for real-time USN delta mutations applied to the index.
+#[derive(Debug, Default, Clone)]
+pub struct IndexOverlay {
+    pub deleted_frns: hashbrown::HashSet<u64>,
+    pub updated_entries: hashbrown::HashMap<u64, IndexEntry>,
 }
 
 impl FileIndex {
@@ -142,6 +152,7 @@ impl FileIndex {
             drive_letter: drive.to_ascii_uppercase(),
             frn_to_row: HashMap::new(),
             dir_cache: RwLock::new(HashMap::new()),
+            overlay: RwLock::new(IndexOverlay::default()),
             stats: FileIndexStats::default(),
         }
     }
@@ -269,6 +280,7 @@ impl FileIndex {
             drive_letter: drive_char,
             frn_to_row,
             dir_cache: RwLock::new(HashMap::new()),
+            overlay: RwLock::new(IndexOverlay::default()),
             stats: FileIndexStats {
                 entry_count,
                 file_count,
@@ -409,6 +421,28 @@ impl FileIndex {
         if row >= self.len() {
             return None;
         }
+        let frn = self.frn[row];
+        if let Ok(overlay) = self.overlay.read() {
+            if let Some(updated) = overlay.updated_entries.get(&frn) {
+                return Some(updated.clone());
+            }
+            if overlay.deleted_frns.contains(&frn) {
+                let mut e = IndexEntry {
+                    row,
+                    frn,
+                    parent_frn: self.parent_frn[row],
+                    name: self.name(row).to_string(),
+                    name_lower: self.name_lower(row).to_string(),
+                    size: self.size[row],
+                    created: self.created[row],
+                    modified: self.modified[row],
+                    accessed: self.accessed[row],
+                    flags: EntryFlags::from_u32(self.flags[row]),
+                };
+                e.flags.is_in_use = false;
+                return Some(e);
+            }
+        }
         Some(IndexEntry {
             row,
             frn: self.frn[row],
@@ -427,6 +461,119 @@ impl FileIndex {
     #[inline]
     pub fn row_by_frn(&self, frn: u64) -> Option<usize> {
         self.frn_to_row.get(&frn).copied().map(|r| r as usize)
+    }
+
+    /// Look up row index by FRN (alias for row_by_frn).
+    #[inline]
+    pub fn find_entry_by_frn(&self, frn: u64) -> Option<usize> {
+        self.row_by_frn(frn)
+    }
+
+    /// Checks if a given FRN has been soft-deleted by USN deltas.
+    pub fn is_frn_deleted(&self, frn: u64) -> bool {
+        self.overlay.read().map(|o| o.deleted_frns.contains(&frn)).unwrap_or(false)
+    }
+
+    /// Checks if a row in the SoA index is currently valid and active (in_use and not soft-deleted).
+    pub fn is_row_active(&self, row: usize) -> bool {
+        if row >= self.len() {
+            return false;
+        }
+        let in_use = (self.flags[row] & crate::FLAG_IN_USE) != 0;
+        in_use && !self.is_frn_deleted(self.frn[row])
+    }
+
+    /// Marks an entry as deleted by FRN (USN delta application).
+    pub fn apply_delete(&self, frn: u64) {
+        if let Ok(mut overlay) = self.overlay.write() {
+            overlay.deleted_frns.insert(frn);
+            overlay.updated_entries.remove(&frn);
+        }
+        self.clear_path_cache();
+    }
+
+    /// Invalidates path caching for a renamed old path (USN delta application).
+    pub fn apply_rename_old(&self, _frn: u64) {
+        self.clear_path_cache();
+    }
+
+    /// Applies create or update delta using a full MftEntry.
+    pub fn apply_create_or_update(&self, mft_entry: &hphe_mft::record::MftEntry) {
+        let created = hphe_mft::record::MftEntry::filetime_to_unix_secs(mft_entry.created);
+        let modified = hphe_mft::record::MftEntry::filetime_to_unix_secs(mft_entry.modified);
+        let accessed = hphe_mft::record::MftEntry::filetime_to_unix_secs(mft_entry.accessed);
+        let flags = EntryFlags::new(
+            mft_entry.is_dir,
+            mft_entry.is_in_use,
+            false,
+            mft_entry.attributes,
+        );
+
+        let row = self.row_by_frn(mft_entry.frn).unwrap_or(usize::MAX);
+        let index_entry = IndexEntry {
+            row,
+            frn: mft_entry.frn,
+            parent_frn: mft_entry.parent_frn,
+            name: mft_entry.name.clone(),
+            name_lower: mft_entry.name.to_lowercase(),
+            size: mft_entry.size,
+            created: created as u64,
+            modified: modified as u64,
+            accessed: accessed as u64,
+            flags,
+        };
+
+        if let Ok(mut overlay) = self.overlay.write() {
+            overlay.deleted_frns.remove(&mft_entry.frn);
+            overlay.updated_entries.insert(mft_entry.frn, index_entry);
+        }
+        if mft_entry.is_dir {
+            self.clear_path_cache();
+        }
+    }
+
+    /// Adds or updates an entry manually with raw fields.
+    pub fn add_entry(
+        &self,
+        frn: u64,
+        parent_frn: u64,
+        name: &str,
+        size: u64,
+        created: i64,
+        modified: i64,
+        accessed: i64,
+        flags: EntryFlags,
+    ) {
+        let row = self.row_by_frn(frn).unwrap_or(usize::MAX);
+        let index_entry = IndexEntry {
+            row,
+            frn,
+            parent_frn,
+            name: name.to_string(),
+            name_lower: name.to_lowercase(),
+            size,
+            created: created as u64,
+            modified: modified as u64,
+            accessed: accessed as u64,
+            flags,
+        };
+        if let Ok(mut overlay) = self.overlay.write() {
+            overlay.deleted_frns.remove(&frn);
+            overlay.updated_entries.insert(frn, index_entry);
+        }
+        if flags.is_dir {
+            self.clear_path_cache();
+        }
+    }
+
+    /// Returns the number of entries dynamically deleted by USN deltas.
+    pub fn deleted_count(&self) -> usize {
+        self.overlay.read().map(|o| o.deleted_frns.len()).unwrap_or(0)
+    }
+
+    /// Returns the number of entries dynamically updated by USN deltas.
+    pub fn updated_count(&self) -> usize {
+        self.overlay.read().map(|o| o.updated_entries.len()).unwrap_or(0)
     }
 
     // =========================================================================

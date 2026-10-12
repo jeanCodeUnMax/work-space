@@ -139,6 +139,20 @@ impl Volume {
     pub fn drive_letter(&self) -> &str {
         &self.drive_letter
     }
+
+    #[cfg(windows)]
+    pub fn handle(&self) -> HANDLE {
+        self.handle
+    }
+
+    #[cfg(windows)]
+    pub fn volume_handle(&self) -> Option<HANDLE> {
+        if self.handle == INVALID_HANDLE_VALUE {
+            None
+        } else {
+            Some(self.handle)
+        }
+    }
 }
 
 impl BlockReader for Volume {
