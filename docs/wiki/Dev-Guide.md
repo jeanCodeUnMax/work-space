@@ -1,129 +1,77 @@
 # Dev Guide
 
-## Dev setup
+## Prérequis
 
-Requirements: Windows, Python 3.11+, Everything.exe running. No pip
-dependencies — stdlib + ctypes only.
+- Windows 10/11, **PowerShell 7** (`pwsh`)
+- Rust toolchain (stable) — build du workspace `hphe/`
+- Python 3.11+ seulement pour les tests (`tests/test_pipe_client.py`, pywin32)
+- Compte/agent `lascard-m` authentifié `gh` (push `projet-temporaire` + `lascard-m`)
 
-```bash
-git clone https://github.com/projet-temporaire/everything-mcp.git
-cd everything-mcp
-python server.py        # starts the stdio server, waits on stdin
-```
+## Layout (dépôts)
 
-Environment variables:
+Repo umbrella `projet-temporaire/hephaistos2-kit` + 4 sous-modules :
 
-| Var | Default | Purpose |
+| Chemin | Repo | Contenu |
 |---|---|---|
-| `EVERYTHING_EXE` | `C:\Program Files\Everything\Everything.exe` | used by `everything_open_gui` |
-| `EVERYTHING_MCP_AGENT` | `default` | active `.mcp-access` profile |
-| `EVERYTHING_MCP_ROOTS` | *(empty = unrestricted)* | `;`-separated fs_* allowlist |
-| `EVERYTHING_MCP_ACCESS_FILE` | `<repo>/.mcp-access` | policy file location |
+| `hphe/` | `hephaistos2-engine` | workspace Rust (`crates/hphe-*`) |
+| `extension/` | `hephaistos2-search-ext` | ext VS Code recherche + `server/` binaires |
+| `extensions/orchestrator-monitor/` | `hephaistos2-monitor-ext` | ext monitor + `ws-bridge` |
+| `.agent/` | `hephaistos2-agent` | scripts, agents, skills, workflows, règles |
 
-## Run standalone / manual JSON-RPC
+Commit dans un sous-module → push → puis `git add <chemin>` dans l'umbrella
+pour enregistrer le gitlink. Push umbrella ensuite.
 
-The server speaks NDJSON JSON-RPC on stdin — one message per line:
+## Build & deploy
 
-```json
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
-{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
-{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"everything_search","arguments":{"query":"dots folder:","max_results":5}}}
+```powershell
+cd hphe ; cargo build --release --workspace   # build seul
+pwsh -File ..\install.ps1                     # build + deploy vers INSTALL
+pwsh -File ..\install.ps1 -SkipBuild          # redeploy binaires existants
+pwsh -File ..\install.ps1 -Elevated           # + tâche hphe-indexd (admin)
 ```
 
-Supported methods: `initialize`, `ping`, `tools/list`, `tools/call`,
-`resources/list` (empty), `prompts/list` (empty), `shutdown`/`exit`.
-Notifications (`notifications/*`) are ignored; malformed lines are skipped.
+`install.ps1` copie `hphe-mcp.exe`, `hphe-rest.exe`, `hphe-indexd.exe` vers
+`INSTALL\extension\server\` (+ miroir projet), régénère les `.cmd`, écrit la
+config MCP Devin, crée l'autostart REST et la tâche planifiée.
 
-## Smoke tests (pre-merge checklist)
+## Tests & smoke
 
-From `docs/ORGANISATION.md`:
+```powershell
+# pipe protocol (Python, faux serveur)
+python -m pytest tests/test_pipe_client.py
 
-1. **IPC smoke** — `python -c "import everything_ipc; print(everything_ipc.search('test'))"`
-2. **Server smoke** — run the JSON-RPC sequence `initialize` → `tools/list`
-   → `tools/call everything_search` above.
-3. Verify a known path is found and the query answers in <1 s.
+# santé runtime
+curl http://127.0.0.1:8792/health        # status/pipe_connected/ingest_busy
+curl http://127.0.0.1:8792/tools | python -m json.tool | findstr /c:"name"
 
-Quick status check:
-
-```bash
-python -c "import everything_ipc; ipc=everything_ipc.EverythingIPC.get(); print(ipc.status()); print('total:', everything_ipc.count(''))"
+# smoke recherche
+curl -X POST http://127.0.0.1:8792/tools/everything_search -d '{"query":"install.ps1","max_results":3}' -H "Content-Type: application/json"
 ```
 
-## Git workflow
+## Workflow git
 
-Remote: `https://github.com/projet-temporaire/everything-mcp.git`
+- `main` = branche par défaut (stable, tag `v2.0.0` posé)
+- `dev` = ex-branche de travail (conservée à distance, non requise)
+- Convention commit : `type(scope): message` (historique en français)
+- **Avant push** : `git status` + scan secrets (patterns `nvapi-`, `sk-`,
+  `ghp_/gho_`, `AIza`, `AKIA`, `PRIVATE KEY`) + `.env` hors index
 
-| Branch | Role | Protected |
-|---|---|---|
-| `main` | stable, deployable | yes — merges only |
-| `dev` | working branch | no |
+## Règles propres au projet
 
-Rules (`docs/ORGANISATION.md`):
+- JAMAIS d'édition directe de `C:\Program Files\servers\hephaistos2-kit` —
+  c'est du runtime régénéré par `install.ps1`.
+- JAMAIS d'ingestion lancée à la main pendant le dev — la boucle
+  `hphe-rest` + la tâche IDE s'en chargent ; le gate sérialise.
+- `memory-maintenance` reste un writer SQLite externe — point d'attention
+  connu (contention pendant les gros ingests ; voir `.agent/ARCHITECTURE.md`).
 
-- Work on `dev` (default development branch).
-- `main` receives merges from `dev` only when stable and smoke-tested.
-- Larger features: `feat/<name>` off `dev`, merge back with `--no-ff`.
-- Urgent hotfix: `fix/<name>` off `main`, merge to `main` + back-merge/cherry-pick into `dev`.
+## Points d'entrée code
 
-```bash
-git checkout -b feat/my-feature dev
-# ... commits ...
-git checkout dev && git merge --no-ff feat/my-feature
-```
-
-### Commit convention
-
-`type(scope): message` — `feat` `fix` `chore` `docs` `refactor` `test`
-`perf`; one commit = one thing. History so far is in French
-(`feat(security): controle d'acces par agent via .mcp-access`,
-`feat(fs): parite complete avec le serveur filesystem officiel`,
-`chore: initial commit — serveur MCP everything-search sur IPC natif`) —
-match the existing style.
-
-## Project status / roadmap
-
-Current organisation is intentionally minimal: flat single-purpose modules,
-no packaging, no CI, no pytest suite. Planned evolutions if the project
-grows (`docs/ORGANISATION.md`): `pyproject.toml` packaging, `tests/` pytest,
-CI syntax check + smoke.
-
-### VS Code extension (VSIX) — in progress
-
-Next step: an in-IDE Everything-style search dashboard
-(`extension/everything-search/`), design inspired by
-`Hephaistos-Kit/extensions/orchestrator-monitor` (TS `src/` → `out/`,
-webview `media/`, build `npx tsc && npx @vscode/vsce package`).
-
-The integration contract is already satisfied — the server is a standard
-stdio MCP: the extension spawns `python server.py`, keeps a long-lived
-JSON-RPC client, calls `everything_search` / `fs_*`. No `snapshot`/`ws-bridge`
-style bridge needed (nothing to poll; queries are synchronous and ms-fast).
-
-Planned layout:
-
-```
-extension/everything-search/
-├── package.json        # contributes: views/webview, commands, activation
-├── tsconfig.json
-├── src/
-│   ├── extension.ts    # activation, spawn server.py, MCP stdio client
-│   ├── mcpClient.ts    # line-based JSON-RPC (initialize, tools/call)
-│   └── searchView.ts   # webview provider: input + virtualized results
-├── media/
-│   ├── panel.js        # search UI (field, list, column sorting)
-│   └── panel.css
-└── out/                # tsc output
-```
-
-Webview → workspace drag & drop via `text/uri-list` on result items (native
-VS Code drop into editor/explorer). Manual UI search and agent MCP calls
-share the same Everything backend.
-
-## Housekeeping notes
-
-- `__pycache__/`, `.agent/`, `.vscode/`, `*.code-workspace`,
-  `memory-database` (symlink), `*.db`/`*.sqlite`, logs and secrets are
-  gitignored — don't commit them.
-- `_obsolete/` is reference-only; nothing may import from it.
-- Coding constraint to preserve: **no listening sockets** — see
-  [[Security]].
+| Sujet | Fichier |
+|---|---|
+| routes REST + gate ingest | `hphe/crates/hphe-mcp/src/rest.rs` |
+| registry des 57 outils | `hphe/crates/hphe-mcp/src/tools/` |
+| orchestrateur (tasks/agents/dispatch/worktrees) | `hphe/crates/hphe-kit/src/orch.rs` |
+| protocole pipe | `hphe/crates/hphe-ipc/src/protocol.rs` |
+| daemon index | `hphe/crates/hphe-daemon/` (+ `hphe-index`, `hphe-mft`, `hphe-usn`) |
+| extensions | `extension/src/`, `extensions/orchestrator-monitor/src/` |

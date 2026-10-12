@@ -1,6 +1,6 @@
-### everything-search MCP
+### Hephaistos2-Kit
 
-*Thin stdio MCP client over the live Everything.exe index — ~15.8M entries, ms latency, zero admin.*
+*Recherche NTFS native Rust ($MFT + USN) — MCP unifié 57 outils, sans Everything.exe.*
 
 - [[Home]]
 - [[Architecture]]
@@ -10,9 +10,3 @@
 - [[Security]]
 - [[Benchmarks]]
 - [[Dev-Guide]]
-
-**Sources**
-- `server.py` — MCP registry + JSON-RPC loop
-- `everything_ipc.py` — WM_COPYDATA/QUERY2 client
-- `fs_tools.py` — fs tools + .mcp-access engine
-- `docs/GUIDE.md` — local guide

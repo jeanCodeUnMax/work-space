@@ -1,8 +1,8 @@
-# Faisabilité — intégration au Hephaistos-Kit et unification des bases
+# Faisabilité — intégration au Hephaistos2-Kit et unification des bases
 
 > Deux questions distinctes :
 > 1. Le moteur (`hphe-indexd`) peut-il s'intégrer au système d'indexation du
->    Hephaistos-Kit (pipeline RAG, Beacon, mémoire unifiée) ?
+>    Hephaistos2-Kit (pipeline RAG, Beacon, mémoire unifiée) ?
 > 2. Peut-on remplacer **en partie ou en totalité** l'architecture de stockage
 >    actuelle (Qdrant + Zvec + SQLite) par un système intégré dans ce processus ?
 

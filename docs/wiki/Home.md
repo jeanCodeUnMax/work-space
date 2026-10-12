@@ -1,66 +1,40 @@
-# everything-search MCP — Wiki
+# Hephaistos2-Kit — Wiki
 
-**everything-search** is a stdio MCP server that gives an AI agent
-Everything-class search speed over the whole PC, plus a merged set of
-filesystem tools. It is a *thin client*: it maintains no index of its own.
-Queries are forwarded to the running **Everything.exe** through the official
-`WM_COPYDATA` / `QUERY2` IPC protocol — the same channel the Everything GUI
-and the Everything SDK use. The Everything service keeps its NTFS index live
-at all times, so this server never enumerates the MFT, never rebuilds, and
-needs no administrator rights.
+**Hephaistos2-Kit** est une plateforme Windows de recherche filesystem
+ultra-rapide pour agents IA. Un démon Rust (`hphe-indexd`, tâche planifiée
+SYSTEM) lit directement le `$MFT` NTFS et suit le journal USN en continu :
+recherches en **< 50 ms** sur tout le PC, **sans `Everything.exe`**.
 
-Zero dependencies: Python 3.11+ stdlib + `ctypes` only.
+Au-dessus de l'index, un serveur MCP unique (`hphe-mcp`, **57 outils**)
+couvre recherche NTFS, indexation de contenu (Tantivy), recherche vectorielle
+(usearch 2048D), orchestration multi-agents, routage de modèles NIM, mémoire
+unifiée et ingestion. La passerelle `hphe-rest` (`127.0.0.1:8792`) expose les
+mêmes outils en HTTP plus une boucle d'ingestion automatique.
 
-## Key numbers
+## Chiffres clés
 
-| Metric | Value |
+| Métrique | Valeur |
 |---|---|
-| Indexed entries | ~15.8 M (15,862,251 measured via `everything_index_stats` on the dev machine) |
-| Search latency | ~30–400 ms typical (identical index and speed to the Everything GUI) |
-| Admin rights | none required for search |
-| Local index | none — no SQLite, no MFT enumeration, no rebuilds |
-| Transport | stdio only — the server opens **no network port** |
-| Tools exposed | 18 (6 `everything_*` + 12 `fs_*`) |
+| Entrées indexées | ~6,4 M (démon `hphe-indexd`, 4 volumes NTFS) |
+| Latence recherche | ~30–50 ms typique (snapshot mmap, USN live) |
+| Droits admin | démon SYSTEM uniquement ; clients sans droits |
+| Backend | Rust — aucun binaire externe |
+| Transport | stdio MCP + named pipe `\\.\pipe\hphe-index` + REST :8792 |
+| Outils | 57 (6 familles) — voir `docs/MCP-TOOLS.md` |
 
-## What it is for
+## Ce que ça remplace
 
-- Instant whole-PC filename/path search for agents (`everything_search`,
-  `everything_count`) using native Everything query syntax.
-- Full filesystem tool parity with the official `filesystem` MCP server
-  (`fs_*` tools) so a single server covers "find it + read it + edit it".
-- Per-agent access control via the `.mcp-access` policy file and the
-  `EVERYTHING_MCP_AGENT` / `EVERYTHING_MCP_ROOTS` environment variables.
+v1 reposait sur `Everything.exe` (thin client Python IPC) + une galaxie de
+serveurs MCP : orchestrator Node, agentMemory, nim-router, model-discovery,
+qdrant, zvec, pont RAG. Tout est absorbé par `hphe-mcp`. Les anciens serveurs
+sont dans `servers\servers_backup\` (rollback possible).
 
-## Requirements
+## Pages
 
-- Windows, with **Everything.exe running** (the Everything service maintains
-  the index). Located via `FindWindowW("EVERYTHING_TASKBAR_NOTIFICATION")`.
-- Everything 1.4.1+ for the QUERY2 protocol.
-- No administrator rights needed for search.
-
-## Wiki pages
-
-| Page | Content |
-|---|---|
-| [[Architecture]] | IPC flow, why the MFT/SQLite design was abandoned, file map |
-| [[IPC-Protocol]] | QUERY2/LIST2 wire format, WM_COPYDATA mechanics, flags, timeouts |
-| [[Tools-Reference]] | All 18 MCP tools with real input schemas and behaviors |
-| [[Query-Syntax]] | Native Everything query syntax as passed through, `matchpath:` translation |
-| [[Security]] | `.mcp-access` policy engine, profiles, `EVERYTHING_MCP_ROOTS`, stdio-only rule |
-| [[Benchmarks]] | Measured comparison vs the official filesystem MCP |
-| [[Dev-Guide]] | Git workflow, dev setup, smoke tests, VSIX extension roadmap |
-
-## Repository layout (short)
-
-```
-everything-mcp/
-├── server.py            # MCP stdio JSON-RPC server (entry point)
-├── everything_ipc.py    # WM_COPYDATA / QUERY2 IPC client (ctypes)
-├── categories.py        # filter category extension maps
-├── fs_tools.py          # fs_* tools + .mcp-access policy engine
-├── .mcp-access          # per-agent access rules
-├── docs/                # GUIDE.md, ORGANISATION.md, wiki/
-└── _obsolete/           # previous MFT/SQLite architecture (reference only)
-```
-
-See [[Architecture]] for the full file map and data flow.
+- [[Architecture]] — composants et flux de données
+- [[IPC-Protocol]] — protocole NDJSON du named pipe hphe
+- [[Tools-Reference]] — pointeur vers `docs/MCP-TOOLS.md` (57 outils)
+- [[Query-Syntax]] — syntaxe de requête (compatible Everything)
+- [[Security]] — `.mcp-access`, allowlist, gestion des secrets
+- [[Benchmarks]] — protocole de mesure et résultats
+- [[Dev-Guide]] — build, tests, release, sous-modules

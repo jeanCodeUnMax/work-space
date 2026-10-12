@@ -1,126 +1,50 @@
 # Security
 
-Two independent layers gate filesystem access, plus a hard transport rule.
+## Contrôle d'accès filesystem
+
+Deux couches indépendantes, appliquées dans `hphe-mcp` (`AccessPolicy`) :
 
 ```
 tool call
-  └─► _check(path, write)
-        ├─► EVERYTHING_MCP_ROOTS allowlist   (coarse, env-set)
-        └─► .mcp-access profile rules        (fine-grained, per agent)
+  └─► check(path, write)
+        ├─► EVERYTHING_MCP_ROOTS — allowlist grossière (env, noms conservés compat)
+        └─► .mcp-access          — règles fines par profil d'agent
 ```
 
-`everything_search` results are additionally post-filtered by the same
-`.mcp-access` engine (denied rows are dropped from `results`; the count is
-reported in `filtered_by_policy`).
+`.mcp-access` (racine du projet / cwd du serveur) :
 
-## Layer 1 — `.mcp-access` policy file
+- `[default]` = profil sans `EVERYTHING_MCP_AGENT` → `allow: **` (Devin, Antigravity)
+- `[external]` = agents muxés externes → lecture bornée, `deny-write: **`
+- Deny prioritaires sur les grants : `.ssh`, `.gnupg`, `.aws`, `.azure`,
+  `**/.env*`, `*.pem`, `*.key`, `*credential*`, `id_rsa*`, `token*.json`,
+  `secrets.*`, `AppData/**`, `C:/Program Files/Everything/**`
 
-Gitignore-style rules at `C:\Program Files\servers\everything-mcp\.mcp-access`
-(override path: env `EVERYTHING_MCP_ACCESS_FILE`). Parsed once and cached by
-`fs_tools._load_policy()`.
+`everything_search` post-filtre aussi ses résultats par la même politique.
 
-### Profiles
+## Secrets — règles du repo
 
-Sections `[name]` (or `[profile:name]`) define rule lists. The active
-profile is the `EVERYTHING_MCP_AGENT` env var, which each client sets in
-**its own MCP server config** — i.e. the agent cannot self-select a weaker
-name, the profile is bound at spawn time:
+- **Jamais de clé dans un fichier commité.** `NVIDIA_API_KEY`,
+  `NVIDIA_API_KEY_2`, `MISTRAL_API_KEY`, `GEMINI_API_KEY` vivent en variables
+  d'environnement utilisateur (HKCU) — le `.env` ne contient que
+  `AGENT_DB_ROOT` + commentaires.
+- `.gitignore` : `.env`, `.env.*` (sauf `!.env.example`), `*.pem`, `*.key`,
+  `secrets.*`, `credentials.*`, bases `*.db*`, `data/`, `target/`, logs.
+- `.ragignore` : filet SAFETY embarqué (`.env`, `*.key/pem/pfx`, `*.db*`,
+  `node_modules`, `target`, `_archive/`…) — empêche l'**ingestion** de zones
+  sensibles dans l'index Tantivy.
+- Avant tout push : scanner les fichiers trackés
+  (`nvapi-`, `sk-`, `ghp_`/`gho_`, `AIza`, `AKIA`, `BEGIN … PRIVATE KEY`).
 
-```json
-"everything-search": {
-  "command": "python",
-  "args": ["-u", "C:/Program Files/servers/everything-mcp/server.py"],
-  "env": { "EVERYTHING_MCP_AGENT": "external" }
-}
-```
+## Surface réseau
 
-Missing or empty `EVERYTHING_MCP_AGENT` → profile `default`.
+- `hphe-rest` écoute `127.0.0.1:8792` uniquement (loopback).
+- `ws-bridge` (monitor) : `127.0.0.1:7477`.
+- `hphe-indexd` : named pipe local, aucune socket.
+- NIM/embeddings sortants vers `integrate.api.nvidia.com` — clé via env.
 
-### Rule syntax
+## Agents dispatchés — règles durcies
 
-```
-<action>:<glob-pattern>     # one per line, # comments allowed
-```
-
-Patterns are matched with `fnmatch.fnmatchcase` against the path normalized
-to absolute, forward-slash, **lowercase** — so write patterns lowercase too
-(`F:/dir/**`, `**/.env*`).
-
-| Action | Grants |
-|---|---|
-| `allow:` | read **and** write |
-| `read:` | read only (read/list/info/tree/multi-read/search results) |
-| `write:` | read + write (same effect as `allow:`) |
-| `deny-write:` | blocks write tools only (`fs_write_file`, `fs_edit_file`, `fs_create_directory`, `fs_move`, `fs_delete`) |
-| `deny:` | blocks everything |
-
-### Evaluation — last match wins
-
-```python
-grant = False
-for action, pat in rules:
-    if not fnmatch.fnmatchcase(np, pat): continue
-    if   action == "deny":       grant = False
-    elif action == "deny-write": grant = False if write else grant
-    elif action == "read":       grant = True  if not write else grant
-    elif action in ("write","allow"): grant = True
-```
-
-Order matters: later rules override earlier ones, so the shipped
-`[external]` profile grants broad subtrees first and ends with
-`deny-write: **`. Caveats:
-
-- **A profile with no matching rules is unrestricted** — `path_allowed`
-  returns `True` when the profile has no rules at all (`if not rules:
-  return True`). This is a *fail-open* design: a typo'd
-  `EVERYTHING_MCP_AGENT` name silently gets full access. Define profiles
-  explicitly and treat `default` as trusted-local only.
-- A profile *with* rules is effectively whitelist: `grant` starts `False`,
-  so nothing is accessible unless a rule grants it.
-
-### Shipped profiles (`.mcp-access`)
-
-```ini
-[default]
-allow: **                      # local trusted agents (Devin, Antigravity)
-
-[external]                     # used by mcp-mux for external agents
-read: F:/Promgramation-teste/**
-read: C:/Program Files/servers/**
-read: C:/Users/Administrator/Desktop/**
-deny: **/.ssh/**  **/.gnupg/**  **/.aws/**  **/.azure/**
-deny: **/.env  **/.env.**  **/*.pem  **/*.key  **/*credential*
-deny: **/id_rsa*  **/token*.json  **/secrets.*
-deny: C:/Users/Administrator/AppData/**
-deny: C:/Program Files/Everything/**
-deny-write: **                 # never any write
-```
-
-The `deny:` patterns are placed after the `read:` grants, so a secret inside
-a granted tree is still refused (last-match-wins).
-
-## Layer 2 — `EVERYTHING_MCP_ROOTS`
-
-`;`-separated env allowlist applied to every `fs_*` call **before** the
-`.mcp-access` rules (`fs_tools._check`). Empty/unset = unrestricted. Paths
-must equal a root or be inside it (`normcase` + prefix comparison). Denial
-raises `PermissionError("path outside allowed roots")`. Inspect the active
-config with `fs_list_allowed_roots`.
-
-Both layers must pass: ROOTS narrows the universe, `.mcp-access` refines it
-per agent.
-
-## Result filtering
-
-`everything_search` drops rows failing `path_allowed` and reports
-`filtered_by_policy: <n>` (null when 0). `fs_list_directory`,
-`fs_directory_tree` and `fs_search_files` skip denied entries silently.
-`total` in a search response is the pre-filter count — do not treat it as
-the number of accessible rows under a restricted profile.
-
-## Transport rule — stdio only, no ports
-
-The server opens **no network port**, by design and permanently: all I/O is
-NDJSON JSON-RPC on stdin/stdout. Do not add a listening socket. If a network
-transport ever becomes necessary (remote extension), bind `127.0.0.1` and
-require a token — documented constraint in `docs/GUIDE.md`.
+- Commandes en argv (`spawn`), jamais `exec`/concaténation shell
+  (cf. `orch.rs` `templateToSpawnPlan` / `resolveCmdShim`).
+- Pas de script dispatch-capable dans un workspace agent (anti-récursion).
+- Livrable = fichier sur disque ; vérification post-run obligatoire.

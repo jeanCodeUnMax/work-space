@@ -1,97 +1,60 @@
 # Architecture
 
-The server is deliberately thin. All search work is delegated to the running
-Everything.exe; the Python side only serializes requests, applies the access
-policy, and formats MCP responses.
+Trois binaires Rust + deux extensions. Zéro dépendance externe à la recherche.
 
-## Request flow
+## Vue d'ensemble
 
 ```
-MCP client (Devin, mcp-mux, ...)
-        │  stdin: NDJSON, one JSON-RPC message per line (UTF-8)
-        ▼
-server.py  ── main() loop ──► handle()
-        │  tools/call → _HANDLERS[name](args)
-        ├──► everything_* tools ──► everything_ipc.py
-        │         │  EverythingIPC.get()  (singleton)
-        │         │  query(): pack QUERY2 (7 DWORDs + UTF-16 search)
-        │         ▼
-        │    WM_COPYDATA ──► Everything.exe  (EVERYTHING_TASKBAR_NOTIFICATION window)
-        │         │  Everything replies via WM_COPYDATA to our hidden
-        │         │  message-only window (class "EverythingMcpIpc")
-        │         ▼
-        │    _parse() LIST2 → dict → filtered through .mcp-access policy
-        ├──► fs_* tools ──► fs_tools.py (os.scandir / open / shutil,
-        │                   every call gated by _check() → EVERYTHING_MCP_ROOTS
-        │                   allowlist + .mcp-access profile rules)
-        ▼
-   stdout: JSON-RPC result (text content + structuredContent)
+IDE / agents (Devin, Antigravity, …)
+  │  stdio MCP (NDJSON)                │  HTTP
+  ▼                                    ▼
+hphe-mcp.exe ◄──── mêmes 57 outils ────► hphe-rest.exe  (127.0.0.1:8792)
+  │                                    │  + boucle d'ingestion 900 s
+  │                                    │  + gate mutex (file d'écriture)
+  ├───────── pipe NDJSON ──────────────┤
+  ▼                                    ▼
+hphe-indexd (SYSTEM)            stores d'état
+  $MFT scan + USN live           Tantivy  data\content-index
+  snapshot mmap                  usearch   migrated-vec (2048D)
+  \\.\pipe\hphe-index            sqlite    data\orchestrator.db
+                                 KG        F:\Sqlite-DB\agentmemory
 ```
 
-## Components
+## `hphe-indexd` — le moteur de vélocité
 
-| File | Role |
-|---|---|
-| `server.py` | MCP stdio server. NDJSON JSON-RPC loop (`main()` → `handle()`), the `TOOLS` registry (18 schemas), handlers, `matchpath:` → `MATCHPATH` flag translation, policy filtering of `everything_search` results. |
-| `everything_ipc.py` | IPC client. `EverythingIPC` singleton owns a hidden message-only window on a daemon thread; `query()` sends `WM_COPYDATA` QUERY2 requests and parses LIST2 replies; `ipc_call()` sends `WM_USER` control codes (version, db status, rebuild, save). |
-| `fs_tools.py` | The 12 `fs_*` tools plus the `.mcp-access` policy engine (`path_allowed`, `_check`, `filter_paths`) and the `EVERYTHING_MCP_ROOTS` allowlist. |
-| `categories.py` | `CATEGORIES` extension maps for `audio:` `video:` `document:` `executable:` `picture:` `compressed:` and `CATEGORY_ALIASES`. |
-| `.mcp-access` | Per-agent access policy (gitignore-style). See [[Security]]. |
-| `_obsolete/` | Previous architecture (see below). Not imported anywhere. |
+- Tâche planifiée **SYSTEM** (accès direct au volume).
+- Scan `$MFT` complet (~6,4 M entrées sur la machine de dev), index SoA en
+  mémoire + snapshot mmap pour redémarrage instantané.
+- Suit le **journal USN** en continu : l'index est vivant, jamais reconstruit.
+- Sert les requêtes sur le named pipe `\\.\pipe\hphe-index` en NDJSON.
 
-## Threading model
+## `hphe-mcp` — le serveur unifié
 
-`EverythingIPC` is a singleton (`EverythingIPC.get()`). Its `__init__` starts
-a daemon thread (`everything-ipc`) that registers window class
-`EverythingMcpIpc`, creates a `HWND_MESSAGE` (message-only) window, and runs
-a standard `GetMessage`/`DispatchMessage` loop. All inbound `WM_COPYDATA`
-replies are therefore marshalled onto that thread; the WNDPROC copies the
-payload when `dwData` matches the current `reply_id` and sets
-`_reply_event`.
+- stdio MCP classique, spawned par l'IDE (`Hephaistos-everything-search`).
+- Absorbe les anciens MCP : `orchestrator`, `nim-router`, `model-discovery`,
+  `agentmemory`, `qdrant`, `zvec`, pont RAG Python.
+- Applique la politique `.mcp-access` + allowlist `EVERYTHING_MCP_ROOTS`
+  (noms d'env conservés pour compat).
 
-Queries are serialized by `_query_lock` — required anyway because Everything
-cancels a previous pending query issued from the same reply window.
+## `hphe-rest` — passerelle + ordonnanceur d'écriture
 
-## Why the MFT/SQLite architecture was abandoned
+- Mêmes outils en HTTP (`GET /tools`, `POST /tools/{name}`, `POST /call`,
+  `GET /health` → `status`, `pipe_connected`, `ingest_busy`).
+- **Boucle d'ingestion** : `HPHE_INGEST_ROOTS` + registre persistant
+  `data/ingest-roots.txt` + découverte `HPHE_INGEST_SCAN` (marqueur `.agent/`),
+  cycle `HPHE_INGEST_INTERVAL_S` (900 s).
+- **Gate mutex** interne : un seul writer Tantivy. Les appels manuels
+  (`content_ingest`, `hephaistos_update[_force]`) sont **mis en file** au
+  lieu d'échouer en `LockBusy`. Le gate est pris par racine → attente
+  bornée à l'ingest d'une racine.
 
-The first version of this project (kept under `_obsolete/` for reference)
-built its own index:
+## PROJET vs INSTALL
 
-- `_obsolete/ntfs_index.py` — read the NTFS USN journal via
-  `FSCTL_ENUM_USN_DATA` / `FSCTL_READ_USN_JOURNAL` to enumerate ~14 M file
-  records directly from the MFT, stored them in SQLite, and applied deltas
-  from the journal.
-- `_obsolete/build_index.py`, `query_parser.py`, `elevated_setup.ps1`,
-  `register_task.ps1` — index builder, query layer, and the scheduled-task /
-  elevation plumbing.
+| | PROJET | INSTALL |
+|---|---|---|
+| Chemin | `C:\Program Files\Projet-complet\hephaistos2-kit` | `C:\Program Files\servers\hephaistos2-kit` |
+| Contenu | sources, `.agent`, git, sous-modules, docs, tests | binaires, `data/`, `migrated-vec/`, junctions |
+| Règle | seul endroit où l'on édite | régénéré par `install.ps1`, jamais édité à la main |
 
-It was replaced because it had real costs the Everything service already
-pays:
-
-| Problem with self-built index | Consequence |
-|---|---|
-| Python-side MFT enumeration of ~14 M records | minutes to build, **GBs of RAM** resident |
-| `FSCTL_*` USN journal ioctls | **admin rights required** (elevation scripts) |
-| USN delta application racing the live volume | index freshness race conditions, rebuild churn |
-| SQLite index to maintain and compact | extra on-disk state, corruption surface |
-
-Everything.exe already keeps the same data live in RAM with a battle-tested
-indexer. Querying it over IPC gives identical results and latency with none
-of the maintenance burden: no admin, no DB file, no rebuild logic on our
-side. A "rebuild" is now just an `IPC_REBUILD_DB` message to Everything.
-
-## Error handling
-
-- `EverythingError` (Everything not running / rejected query / reply
-  timeout) and `PermissionError` (policy denials) are returned as MCP tool
-  results with `isError: true`.
-- Any other exception in a handler is caught and returned as
-  `{"error": "<Type>: <msg>", "trace": <last 5 frames>}`.
-- Unknown tool → JSON-RPC error `-32602`; unknown method → `-32601`.
-
-## Transport
-
-Stdio only — NDJSON JSON-RPC on stdin/stdout, one message per line. The
-server opens **no network port** by design (see [[Security]]).
-`sys.stdin`/`stdout`/`stderr` are reconfigured to UTF-8 because Windows
-pipes default to cp1252 and would crash on non-ASCII paths.
+Shim de compatibilité : `C:\Program Files\servers\everything-mcp\` = jonctions
+vers les deux arbres ci-dessus.

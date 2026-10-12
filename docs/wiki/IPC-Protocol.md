@@ -1,166 +1,47 @@
-# IPC Protocol (WM_COPYDATA / QUERY2)
+# IPC-Protocol — named pipe `hphe-index`
 
-Everything.exe exposes two IPC channels, both implemented in
-`everything_ipc.py`:
+Canal de communication entre les clients (`hphe-mcp`, `hphe-rest`,
+`pipe_client.py`) et le démon `hphe-indexd`. Remplace le protocole v1
+`WM_COPYDATA`/`QUERY2` d'Everything.exe.
 
-1. **Control channel** — plain `SendMessageTimeoutW(hwnd, WM_USER, code, 0)`
-   for version queries, DB status, rebuild/save. Cheap, synchronous.
-2. **Query channel** — `WM_COPYDATA` with `dwData = 18`
-   (`EVERYTHING_IPC_COPYDATA_QUERY2W`) carrying a QUERY2 request; Everything
-   answers by sending `WM_COPYDATA` back to a reply window we own.
+## Transport
 
-## Locating Everything
+- **Named pipe Windows** : `\\.\pipe\hphe-index`
+- **Framing** : NDJSON — un objet JSON par ligne UTF-8, `\n` terminé
+- **Pattern** : request/response corrélé par `id` unique (UUID ou compteur) ;
+  la méthode `watch` ouvre un flux d'événements jusqu'à unsubscribe
 
-```python
-h = user32.FindWindowW("EVERYTHING_TASKBAR_NOTIFICATION", None)
-```
+## Méthodes
 
-If no window exists, `EverythingError("Everything.exe is not running")` is
-raised. This is the same window the official SDK targets.
-
-## Control channel — WM_USER (EVERYTHING_WM_IPC)
-
-`EverythingIPC.ipc_call(code, lparam=0)` sends
-`SendMessageTimeoutW(ehwnd, WM_USER, code, lparam, SMTO_ABORTIFHUNG, 5000)`
-and returns the `LRESULT` as int. Codes used:
-
-| Code | Constant | Meaning |
+| Méthode | Params | Réponse |
 |---|---|---|
-| 0 | `IPC_GET_MAJOR_VERSION` | version components → `"maj.min.rev.build"` |
-| 1 | `IPC_GET_MINOR_VERSION` | |
-| 2 | `IPC_GET_REVISION` | |
-| 3 | `IPC_GET_BUILD_NUMBER` | |
-| 5 | `IPC_GET_TARGET_MACHINE` | (defined, unused) |
-| 401 | `IPC_IS_DB_LOADED` | db loaded flag |
-| 402 | `IPC_IS_DB_BUSY` | db busy flag |
-| 403 | `IPC_IS_ADMIN` | Everything running elevated |
-| 405 | `IPC_REBUILD_DB` | trigger full index rebuild |
-| 407 | `IPC_SAVE_DB` | persist db to disk |
+| `ping` | `{}` | `PingResponse` (statut démon) |
+| `stats` | `{}` | `IndexStats` (entrées, volumes, âge snapshot) |
+| `search` | `{query, limit=100, offset=0, include_deleted=false}` | `SearchResponse` (lignes + `FileEntry[]`) |
+| `resolve` | `{row}` | `ResolveResponse` (chemin complet d'une ligne index) |
+| `watch` | `{subscribe, volume?}` | flux `UsnEvent` jusqu'à `{subscribe:false}` |
 
-`status()` aggregates version + db_loaded + db_busy + everything_is_admin.
+## Exemple de session
 
-## Query channel — QUERY2 request
+```jsonc
+→ {"id":"r1","method":"search","params":{"query":"hephaistos ext:rs","limit":20}}
+← {"id":"r1","ok":true,"result":{"total":3,"entries":[{...}],"took_ms":12}}
 
-Built in `EverythingIPC.query()` (`everything_ipc.py:227`). The payload is a
-28-byte header (7 little-endian DWORDs) followed by the search string in
-UTF-16LE, NUL-terminated:
-
-```python
-text = search.encode("utf-16-le") + b"\x00\x00"
-qsize = 28 + len(text)
-struct.pack("<7I",
-    int(self._hwnd),   # reply_hwnd  — our hidden message-only window
-    self._reply_id,    # reply_id    — echoed back in COPYDATASTRUCT.dwData
-    search_flags,      # see flags below
-    offset,            # first result index
-    max_results,       # max items (ALLRESULTS = 0xFFFFFFFF = all)
-    request_flags,     # which fields to return
-    sort_type)         # sort column + direction
+→ {"id":"r2","method":"watch","params":{"subscribe":true,"volume":"F"}}
+← {"id":"r2","ok":true,"result":{"subscribed":true}}
+← {"event":"usn","volume":"F","path":"F:/...","kind":"create","ts":"..."}   // stream
 ```
 
-Wrapped in `COPYDATASTRUCT(dwData=18, cbData=qsize, lpData=buf)` and sent
-with `SendMessageTimeoutW(..., WM_COPYDATA, self._hwnd, &cds,
-SMTO_ABORTIFHUNG, timeout_ms)`. `wParam` is our reply HWND.
+## Erreurs
 
-### search_flags (query semantics)
+Réponse `{"id":...,"ok":false,"error":{"code":...,"message":...}}` —
+codes dans `ErrorCode` (crate `hphe-ipc`, `protocol.rs`).
 
-| Flag | Value | Meaning |
-|---|---|---|
-| `MATCHCASE` | 0x01 | case-sensitive |
-| `MATCHWHOLEWORD` | 0x02 | whole word |
-| `MATCHPATH` | 0x04 | match terms against full path (set by `matchpath:` token — see [[Query-Syntax]]) |
-| `REGEX` | 0x08 | regex query |
-| `MATCHACCENTS` | 0x10 | accent-sensitive |
-| `MATCHPREFIX` | 0x40 | prefix match |
-| `MATCHSUFFIX` | 0x80 | suffix match |
+## Clients de référence
 
-Note: Everything's native `regex:`, `case:` etc. *query modifiers* are
-handled by Everything itself inside the search string — these flags are only
-needed for modifiers that have no inline syntax (`matchpath:`).
+- Rust : crate `hphe-ipc` (`client.rs`, reconnect + retry unique sur pipe cassé)
+- Python : `extension/server/pipe_client.py` (`HphePipeClient`, tests
+  `tests/test_pipe_client.py`)
 
-### request_flags (fields per result item)
-
-| Flag | Value | Field |
-|---|---|---|
-| `REQ_NAME` | 0x01 | file name |
-| `REQ_PATH` | 0x02 | directory path |
-| `REQ_FULL_PATH_AND_NAME` | 0x04 | combined full path |
-| `REQ_EXTENSION` | 0x08 | extension |
-| `REQ_SIZE` | 0x10 | int64 bytes |
-| `REQ_DATE_CREATED` | 0x20 | FILETIME |
-| `REQ_DATE_MODIFIED` | 0x40 | FILETIME |
-| `REQ_DATE_ACCESSED` | 0x80 | FILETIME |
-| `REQ_ATTRIBUTES` | 0x100 | DWORD attributes |
-
-`search()` always uses `_DEFAULT_REQ = REQ_FULL_PATH_AND_NAME | REQ_SIZE |
-REQ_DATE_MODIFIED | REQ_ATTRIBUTES`. `count()` uses `REQ_NAME` with
-`max_results=1` and reads only `total`.
-
-### sort_type
-
-`SORT` maps names to Everything sort constants; **descending = base + 1**:
-
-| Name | Code | Name | Code |
-|---|---|---|---|
-| name | 1 | date_modified / date | 13 |
-| path | 3 | attributes | 15 |
-| size | 5 | run_count | 19 |
-| ext / extension | 7 | date_recently_changed | 21 |
-| date_created | 11 | date_accessed | 23 |
-
-The `everything_search` tool enum exposes a subset: `name`, `path`, `ext`,
-`date`, `size`. The other constants are usable via `everything_ipc` directly.
-
-## LIST2 reply (parsing)
-
-`_parse()` (`everything_ipc.py:265`) reads:
-
-```
-header: <5I  →  total, num_items, offset, request_flags, sort_type   (20 bytes)
-per item: <2I →  item_flags, data_offset                             (8 bytes)
-          item_flags bit 0 = folder
-then at data_offset, fields in REQ_* bit order:
-  strings: <I char_count, UTF-16LE chars, NUL
-  size/dates: <q (int64; dates are FILETIME)
-  attributes: <I
-```
-
-FILETIME → epoch conversion: `(ft - 11644473600000000) / 10_000_000`
-(1601 → 1970 delta in 100 ns units).
-
-`total` is the full match count regardless of `max_results`, which is what
-`everything_count` uses.
-
-## The hidden reply window
-
-Because Everything answers asynchronously via `WM_COPYDATA`, the client must
-own a window. `EverythingIPC` creates, on a dedicated daemon thread:
-
-- window class `"EverythingMcpIpc"` (`RegisterClassW`; error 1410
-  `ERROR_CLASS_ALREADY_EXISTS` is tolerated)
-- a **message-only** window (`parent = HWND_MESSAGE = -3`) — invisible, gets
-  only messages
-- a `GetMessageW`/`TranslateMessage`/`DispatchMessageW` loop
-
-The WNDPROC inspects `WM_COPYDATA`: when `COPYDATASTRUCT.dwData ==
-self._reply_id` it copies `cbData` bytes out of `lpData`
-(`ctypes.string_at`) and sets `_reply_event`. Anything else falls through to
-`DefWindowProcW`.
-
-`_reply_id` cycles `1 .. 0x7FFFFFFF` so a stale late reply can never be
-mistaken for the current query's data.
-
-## Serialization and timeouts
-
-- `_query_lock` serializes all queries on the singleton — Everything would
-  cancel a pending query from the same reply window anyway.
-- Window creation readiness: `_ready.wait(10)` s.
-- `SendMessageTimeoutW` on the query send: `self._timeout` (default **15 s**)
-  with `SMTO_ABORTIFHUNG`.
-- Reply wait: `_reply_event.wait(self._timeout)` — raises
-  `EverythingError("timed out waiting for Everything reply")`.
-- Control channel: fixed 5 s with `SMTO_ABORTIFHUNG`.
-
-A timeout is possible on very large replies (thousands of rows ×
-path+size+date payload over `WM_COPYDATA`). Mitigate with `max_results`
-paging rather than huge single requests.
+> Historique : v1 parlait `WM_COPYDATA`/`QUERY2` à Everything.exe — doc
+> archivée, ne plus utiliser.

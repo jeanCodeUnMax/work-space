@@ -3,7 +3,7 @@
 > Étude + spec d'un moteur de recherche/indexation **autonome et détenu**,
 > destiné à remplacer la dépendance à `Everything.exe` (voidtools) et,
 > à terme, à unifier le stockage fichier / vectoriel / graphe du
-> Hephaistos-Kit dans un seul processus Rust.
+> Hephaistos2-Kit dans un seul processus Rust.
 
 **Statut :** cible arrêtée (scénario C, 2026-10-12) — PRD rédigé, prêt pour
 l'implémentation. Aucun code encore produit.
@@ -17,7 +17,7 @@ l'implémentation. Aucun code encore produit.
 |---|---|---|
 | 01 | [SPEC-MOTEUR](01-SPEC-MOTEUR.md) | Spec design du moteur : démon élevé, parseur `$MFT`, index RAM orienté colonnes, deltas USN, named pipe, protocole requêtes, phases de livraison |
 | 02 | [PORTABILITE-RUST](02-PORTABILITE-RUST.md) | Étude de portage complet en Rust : ce qui bascule (moteur, serveur MCP, fs_tools, policy), ce qui reste (extension JS), élimination de la dépendance Python |
-| 03 | [FAISABILITE-UNIFICATION](03-FAISABILITE-UNIFICATION.md) | Intégration au système d'indexation Hephaistos-Kit + étude du remplacement partiel/total de Zvec, Qdrant et SQLite par un store intégré — **décision arrêtée §0** |
+| 03 | [FAISABILITE-UNIFICATION](03-FAISABILITE-UNIFICATION.md) | Intégration au système d'indexation Hephaistos2-Kit + étude du remplacement partiel/total de Zvec, Qdrant et SQLite par un store intégré — **décision arrêtée §0** |
 | 04 | [PRD](04-PRD.md) | Product Requirements Document : architecture figée, phases P0→P6 étape par étape, critères d'acceptation, matrice de délégation Orchestrateur MCP |
 
 ---
