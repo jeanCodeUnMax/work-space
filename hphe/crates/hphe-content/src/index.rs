@@ -140,8 +140,8 @@ struct ContentIndexInner {
     reader: IndexReader,
     /// tantivy IndexWriter is not Sync-safe to share directly behind a plain
     /// Mutex across async contexts, so we guard it and hand out short-lived
-    /// borrows for batch operations.
-    writer: Mutex<IndexWriter>,
+    /// borrows for batch operations. None if opened in read-only mode.
+    writer: Option<Mutex<IndexWriter>>,
     /// Ingest directory (where segments live).
     dir: PathBuf,
 }
@@ -189,6 +189,32 @@ impl ContentIndex {
         Self::from_index(index, cs, dir, config)
     }
 
+    /// Opens an existing content index in read-only mode (no IndexWriter created).
+    /// Safe for concurrent read access across multiple processes and threads
+    /// without directory write-lock contention.
+    pub fn open_read_only<P: AsRef<Path>>(dir: P) -> Result<Self, ContentError> {
+        let cs = ContentSchema::build();
+        let dir = dir.as_ref().to_path_buf();
+        if !dir.join("meta.json").exists() {
+            return Err(ContentError::Io(format!(
+                "no tantivy index found at {} (meta.json missing)",
+                dir.display()
+            )));
+        }
+        let index = Index::open_in_dir(&dir)?;
+        let reader = index.reader_builder().try_into()?;
+
+        Ok(Self {
+            inner: Arc::new(ContentIndexInner {
+                cs,
+                index,
+                reader,
+                writer: None,
+                dir,
+            }),
+        })
+    }
+
     /// Opens an existing index, or creates one if `dir` is empty.
     pub fn open_or_create<P: AsRef<Path>>(
         dir: P,
@@ -222,7 +248,7 @@ impl ContentIndex {
                 cs,
                 index,
                 reader,
-                writer: Mutex::new(writer),
+                writer: Some(Mutex::new(writer)),
                 dir,
             }),
         })
@@ -277,7 +303,10 @@ impl ContentIndex {
 
         // Delete old version (if any) then add the new one.
         let term = file_id_term(cs.file_id, row.frn);
-        let writer = self.inner.writer.lock().unwrap();
+        let writer_mutex = self.inner.writer.as_ref().ok_or_else(|| {
+            ContentError::Tantivy("cannot write to content index opened in read-only mode".to_string())
+        })?;
+        let writer = writer_mutex.lock().unwrap();
         writer.delete_term(term);
         writer.add_document(doc)?;
         Ok(true)
@@ -286,14 +315,20 @@ impl ContentIndex {
     /// Deletes the document with the given FRN. Visible after `commit()`.
     pub fn delete(&self, frn: u64) -> Result<(), ContentError> {
         let term = file_id_term(self.inner.cs.file_id, frn);
-        let writer = self.inner.writer.lock().unwrap();
+        let writer_mutex = self.inner.writer.as_ref().ok_or_else(|| {
+            ContentError::Tantivy("cannot write to content index opened in read-only mode".to_string())
+        })?;
+        let writer = writer_mutex.lock().unwrap();
         writer.delete_term(term);
         Ok(())
     }
 
     /// Deletes all documents (rebuild support). Visible after `commit()`.
     pub fn delete_all(&self) -> Result<(), ContentError> {
-        let writer = self.inner.writer.lock().unwrap();
+        let writer_mutex = self.inner.writer.as_ref().ok_or_else(|| {
+            ContentError::Tantivy("cannot write to content index opened in read-only mode".to_string())
+        })?;
+        let writer = writer_mutex.lock().unwrap();
         writer.delete_all_documents()?;
         Ok(())
     }
@@ -301,8 +336,8 @@ impl ContentIndex {
     /// Commits all pending add/delete operations. Blocks until persisted,
     /// then refreshes the searcher so subsequent reads see the new state.
     pub fn commit(&self) -> Result<(), ContentError> {
-        {
-            let mut writer = self.inner.writer.lock().unwrap();
+        if let Some(writer_mutex) = &self.inner.writer {
+            let mut writer = writer_mutex.lock().unwrap();
             writer.commit()?;
         }
         // Default reload policy is Manual — refresh the reader explicitly so

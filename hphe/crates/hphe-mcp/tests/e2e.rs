@@ -771,7 +771,7 @@ async fn test_e2e_3_health_categories_policy() {
         err_msg
     );
 
-    // 5. V1 stubs: content_search & semantic_search
+    // 5. Real tools without indexes: clean index_absent status without crash
     let cs_req = json!({
         "jsonrpc": "2.0",
         "id": 44,
@@ -782,7 +782,7 @@ async fn test_e2e_3_health_categories_policy() {
         }
     });
     let cs_resp = client.send_request(&cs_req).await;
-    assert_eq!(cs_resp["result"]["structuredContent"]["status"], "stub_v1");
+    assert_eq!(cs_resp["result"]["structuredContent"]["status"], "index_absent");
 
     let ss_req = json!({
         "jsonrpc": "2.0",
@@ -794,7 +794,7 @@ async fn test_e2e_3_health_categories_policy() {
         }
     });
     let ss_resp = client.send_request(&ss_req).await;
-    assert_eq!(ss_resp["result"]["structuredContent"]["status"], "stub_v1");
+    assert_eq!(ss_resp["result"]["structuredContent"]["status"], "index_absent");
 
     client.close().await;
 }
@@ -1001,6 +1001,9 @@ async fn test_e2e_6_stdio_latency_benchmark() {
         ("fs_list_allowed_roots", json!({})),
         ("content_search", json!({ "query": "hello" })),
         ("semantic_search", json!({ "query": "hello" })),
+        ("vec_search", json!({ "vector": [0.1, 0.2, 0.3, 0.4] })),
+        ("vec_stats", json!({})),
+        ("hybrid_search", json!({ "query": "test_doc" })),
     ];
 
     println!("\n=== E2E SUBPROCESS STDIO JSON-RPC BENCHMARK (N={} iters) ===", iterations);

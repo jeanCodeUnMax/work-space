@@ -287,7 +287,7 @@ async fn test_mock_pipe_tools_call_roundtrip() {
     let cat_struct = &cat_resp.result.unwrap()["structuredContent"];
     assert!(cat_struct["categories"]["document"].as_array().unwrap().contains(&json!("pdf")));
 
-    // 6. Call content_search (V1 stub)
+    // 6. Call content_search (real tool, index absent fallback)
     let content_req = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
         id: Some(json!(15)),
@@ -299,9 +299,9 @@ async fn test_mock_pipe_tools_call_roundtrip() {
     };
     let content_resp = server.handle_message(content_req).await.expect("content response");
     let content_struct = &content_resp.result.unwrap()["structuredContent"];
-    assert_eq!(content_struct["status"], "stub_v1");
+    assert_eq!(content_struct["status"], "index_absent");
 
-    // 7. Call semantic_search (V1 stub)
+    // 7. Call semantic_search (real tool, index absent fallback)
     let semantic_req = JsonRpcRequest {
         jsonrpc: "2.0".to_string(),
         id: Some(json!(16)),
@@ -313,7 +313,7 @@ async fn test_mock_pipe_tools_call_roundtrip() {
     };
     let semantic_resp = server.handle_message(semantic_req).await.expect("semantic response");
     let semantic_struct = &semantic_resp.result.unwrap()["structuredContent"];
-    assert_eq!(semantic_struct["status"], "stub_v1");
+    assert_eq!(semantic_struct["status"], "index_absent");
 }
 
 #[tokio::test]
