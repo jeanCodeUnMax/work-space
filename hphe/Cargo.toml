@@ -7,6 +7,7 @@ members = [
     "crates/hphe-ipc",
     "crates/hphe-usn",
     "crates/hphe-vec",
+    "crates/hphe-daemon",
 ]
 resolver = "2"
 
