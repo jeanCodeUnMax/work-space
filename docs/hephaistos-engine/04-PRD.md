@@ -215,9 +215,11 @@ systématiquement le livrable **sur disque** avant d'accepter la complétion.
 
 | ID | Titre | Phase | `task_type` | Agent proposé | Dépendances |
 |---|---|---|---|---|---|
-| T-001 | POC lecteur MFT `C:` — stats + décision crate | P0 | `code` | `agy` | — |
-| T-002 | Éval crates `ntfs`/`usearch`/`tantivy`/`rusqlite`/`redb` | P0 | `explore` | ~~kilo-nim1~~ → **fait (#309, rapport complet)** | — |
-| T-010 | Index SoA + scan `memchr` SIMD + résolution paths | P1 | `code` | `vibe` | T-001 |
+| T-001 | POC lecteur MFT `C:` — stats + décision crate | P0 | `code` | `agy` | — | **FAIT** (#310, mergé `a63b19a` : 8 modules, 10/10 tests, gate GO, scan réel = élevé) |
+| T-002 | Éval crates `ntfs`/`usearch`/`tantivy`/`rusqlite`/`redb` | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#309) |
+| T-020-prep | Recherche API journal USN (FSCTL, wrap) | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#312) |
+| T-010-prep | Design index SoA (layout, memchr, paths) | P0 | `explore` | `kilo-nim1` | — | **FAIT** (#313) |
+| T-010 | Index SoA + scan `memchr` SIMD + résolution paths | P1 | `code` | `vibe` | T-001 | 🔄 #314 (worktree `task-314`) |
 | T-011 | Query engine (parser syntaxe Everything → prédicats) | P1 | `code` | `vibe` | T-010 |
 | T-020 | Deltas USN continus + wrap recovery | P1 | `code` | `vibe` | T-010 |
 | T-021 | Snapshot mmap + warm start | P1 | `code` | `vibe` | T-010 |
