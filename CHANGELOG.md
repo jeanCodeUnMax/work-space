@@ -1,5 +1,17 @@
 # Changelog — everything-mcp
 
+## 1.0.2 — 2026-10-12
+
+VSIX 100% autonome côté Python : le binaire Rust `hphe-mcp.exe` est embarqué et
+spawné directement. Fin définitive de `spawn python ENOENT`. Fallback Python
+conservé (`preferHphe`).
+
+| Changement | Détail |
+|---|---|
+| `hphe-mcp.exe` embarqué dans `extension/server/` (2.53 MB) | `mcpClient.js` le spawn en priorité ; plus d'interpréteur à détecter |
+| Nouvelles options `everythingSearch.preferHphe` / `hpheBinaryPath` | Bascule binaire Rust / Python par réglage |
+| Script `package-vsix.sh` | Build Rust + copie + `vsce package` en une commande |
+
 ## 1.0.1 — 2026-10-12
 
 VSIX autonome : corrige `spawn python ENOENT` sur les machines sans
