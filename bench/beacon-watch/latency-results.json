@@ -1,0 +1,25 @@
+{
+  "debounce_production_s": 2.0,
+  "samples": 3,
+  "evenement_isole_avec_debounce": {
+    "min_ms": 2003.239,
+    "median_ms": 2014.189,
+    "mean_ms": 2010.856,
+    "max_ms": 2015.138
+  },
+  "overhead_mecanisme_debounce_0s": {
+    "min_ms": 0.166,
+    "median_ms": 0.166,
+    "mean_ms": 0.19,
+    "max_ms": 0.238
+  },
+  "rafale_10_evenements_5ms": {
+    "events": 10,
+    "spacing_s": 0.005,
+    "ingests": 1,
+    "coalesced": true,
+    "latence_dernier_evenement_ms": 160.43879999779165,
+    "latence_premier_evenement_ms": 205.43879999604542
+  },
+  "note": "ingest_once est un stub instantané : on mesure la latence du mécanisme watch+debounce, pas celle du pipeline d'indexation."
+}
