@@ -8,7 +8,7 @@
 //!
 //! - **Named Pipes**: Windows named pipe communication
 //! - **NDJSON Protocol**: Newline-delimited JSON message framing
-//! - **Restrictive ACL**: DACL limited to owner + SYSTEM + local admins
+//! - **Restrictive ACL**: DACL limited to owner + SYSTEM + admins + authenticated users
 //! - **Concurrent Connections**: Multiple simultaneous client connections
 //! - **Async**: Built on Tokio async runtime
 //!

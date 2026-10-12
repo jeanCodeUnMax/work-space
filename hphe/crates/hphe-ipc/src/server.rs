@@ -591,10 +591,15 @@ pub mod security {
     /// SDDL string restricting access to:
     /// - SYSTEM (SY)
     /// - Built-in Administrators (BA)
+    /// - Authenticated Users (AU) — required: MCP clients (IDE extensions)
+    ///   run with a UAC-filtered token and are NOT effectively in BA, so a
+    ///   BA-only DACL denies every real client. The fs_* write tools remain
+    ///   protected by the daemon-side allowed_roots policy.
     /// - Current Owner Rights (OW)
     /// - Creator Owner (CO)
     /// Protected DACL (P) prevents inheritance.
-    pub const RESTRICTIVE_SDDL: &str = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;OW)(A;;GA;;;CO)";
+    pub const RESTRICTIVE_SDDL: &str =
+        "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;AU)(A;;GA;;;OW)(A;;GA;;;CO)";
 
     /// Create a restrictive SecurityDescriptor using SDDL
     pub fn create_restrictive_security_descriptor() -> IpcResult<SecurityDescriptor> {
@@ -652,7 +657,7 @@ impl NamedPipeServer {
         if config.apply_restrictive_acl {
             let sd = security::create_restrictive_security_descriptor()?;
             options = options.security_descriptor(Some(sd));
-            debug!("Applied restrictive DACL (Owner + SYSTEM + Administrators)");
+            debug!("Applied restrictive DACL (Owner + SYSTEM + Administrators + Authenticated Users)");
         }
 
         let listener = options
