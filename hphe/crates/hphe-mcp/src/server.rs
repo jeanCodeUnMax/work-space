@@ -10,7 +10,7 @@ use hphe_ipc::client::Client;
 use crate::policy::AccessPolicy;
 use crate::protocol::{
     JsonRpcRequest, JsonRpcResponse, ToolResult, CODE_INVALID_PARAMS, CODE_METHOD_NOT_FOUND,
-    MCP_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION,
+    CODE_PARSE_ERROR, MCP_PROTOCOL_VERSION, SERVER_NAME, SERVER_VERSION,
 };
 use crate::tools::{execute_tool, get_tool_definitions};
 
@@ -64,11 +64,26 @@ impl McpServer {
             "resources/list" => Some(JsonRpcResponse::success(id, json!({ "resources": [] }))),
             "prompts/list" => Some(JsonRpcResponse::success(id, json!({ "prompts": [] }))),
             "tools/call" => {
-                let params = req.params.unwrap_or(Value::Null);
-                let tool_name = params
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let params = match req.params {
+                    Some(Value::Object(map)) => Value::Object(map),
+                    _ => {
+                        return Some(JsonRpcResponse::error(
+                            id,
+                            CODE_INVALID_PARAMS,
+                            "tools/call params must be an object",
+                        ));
+                    }
+                };
+                let tool_name = match params.get("name").and_then(|v| v.as_str()) {
+                    Some(name) if !name.is_empty() => name,
+                    _ => {
+                        return Some(JsonRpcResponse::error(
+                            id,
+                            CODE_INVALID_PARAMS,
+                            "Missing tool name parameter in tools/call",
+                        ));
+                    }
+                };
                 let empty_args = json!({});
                 let arguments = params.get("arguments").unwrap_or(&empty_args);
 
@@ -132,6 +147,11 @@ impl McpServer {
                 Ok(r) => r,
                 Err(e) => {
                     error!("JSON parse error: {}", e);
+                    let resp = JsonRpcResponse::error(None, CODE_PARSE_ERROR, format!("Parse error: {}", e));
+                    let serialized = serde_json::to_string(&resp)?;
+                    stdout.write_all(serialized.as_bytes()).await?;
+                    stdout.write_all(b"\n").await?;
+                    stdout.flush().await?;
                     continue;
                 }
             };
