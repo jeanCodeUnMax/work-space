@@ -32,4 +32,6 @@ bench/
 # Caches/outils
 __pycache__/
 _obsolete/
+_archive/
+agent-scripts-memory-database/
 *.pyc

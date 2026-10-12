@@ -5,33 +5,34 @@ __pycache__/
 *$py.class
 *.egg-info/
 .eggs/
-build/
-dist/
 wheels/
 
-# ---- Virtualenvs ----
-.venv/
-venv/
-env/
+# ---- Rust build artifacts (hphe/) ----
+target/
+*.rlib
+*.rmeta
 
-# ---- Node (extension) ----
+# ---- Node ----
 node_modules/
-*.vsix
+dist/
 
-# ---- Agent / IDE workspace ----
-.agent/
+# ---- IDE workspace (local, pas versionné) ----
 .vscode/
 *.code-workspace
 .idea/
 .cursor/
 
-# ---- Workspace symlinks / local data ----
+# ---- Workspace junctions / runtime data ----
 memory-database
 *.db
 *.db-shm
 *.db-wal
 *.sqlite
 *.sqlite3
+data/
+semantic-cache-data/
+migrated-vec/
+ingest-roots.txt
 
 # ---- Logs / locks / temp ----
 *.log
@@ -48,14 +49,14 @@ desktop.ini
 $RECYCLE.BIN/
 .DS_Store
 
-# ---- Secrets (parano) ----
+# ---- Secrets ----
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 secrets.*
 credentials.*
-migrated-vec/
 
 # ---- Agent IDE local configs ----
 .clinerules/
@@ -63,7 +64,13 @@ migrated-vec/
 .kilo/
 .roo/
 
-# ---- Runtime data (index tantivy, orchestrator.db, logs) ----
-data/
-semantic-cache-data/
-bench/
+# ---- Runtime state .agent (bus, états d'ingestion, logs) ----
+.agent/comms.jsonl
+.agent/logs/
+.agent/**/ingestion.state.json
+.agent/**/.ingestion-state.json
+.agent/**/.*-state.json
+.agent/**/.beacon-*-state.json
+
+# ---- Bench output ----
+bench/out/
