@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/hphe-mft",
+    "crates/hphe-index",
 ]
 resolver = "2"
 
