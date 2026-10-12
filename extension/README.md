@@ -104,7 +104,7 @@ Ce projet est un client fin au-dessus de l'index vivant d'Everything, via le mê
   <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos-Kit" width="70%" />
 </p>
 
-**Everything Search** est un module du **[Hephaistos-Kit](https://github.com/art-qalam-fr/Hephaistos-Kit)** — le forgeron des environnements de développement agentiques — développé par l'organisation **[art-qalam.fr](https://art-qalam.fr)**.
+**Everything Search** est un module du **[Hephaistos-Kit](https://github.com/projet-temporaire/hephaistos2-kit)** — le forgeron des environnements de développement agentiques — développé par l'organisation **projet-temporaire**.
 
 ### ☕ Offrir un café
 

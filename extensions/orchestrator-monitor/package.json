@@ -7,12 +7,12 @@
 	"publisher": "hephaistos",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/art-qalam-fr/Hephaistos-Kit.git",
+		"url": "https://github.com/projet-temporaire/hephaistos2-kit.git",
 		"directory": "extensions/orchestrator-monitor"
 	},
-	"homepage": "https://github.com/art-qalam-fr/Hephaistos-Kit",
+	"homepage": "https://github.com/projet-temporaire/hephaistos2-kit",
 	"bugs": {
-		"url": "https://github.com/art-qalam-fr/Hephaistos-Kit/issues"
+		"url": "https://github.com/projet-temporaire/hephaistos2-kit/issues"
 	},
 	"engines": {
 		"vscode": "^1.85.0"
