@@ -2,6 +2,7 @@
 members = [
     "crates/hphe-mft",
     "crates/hphe-index",
+    "crates/hphe-ipc",
 ]
 resolver = "2"
 

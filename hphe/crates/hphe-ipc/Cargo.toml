@@ -1,0 +1,64 @@
+[package]
+name = "hphe-ipc"
+version = "0.1.0"
+edition = "2021"
+authors = ["Hephaistos Team"]
+license = "MIT"
+description = "Named pipe IPC with NDJSON protocol for hphe-index daemon"
+readme = "README.md"
+keywords = ["ipc", "named-pipe", "ndjson", "windows", "tokio"]
+categories = ["os::windows-apis", "network-programming"]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Named pipe IPC on Windows
+interprocess = { version = "2", features = ["tokio"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async trait
+async-trait = "0.1"
+
+# Memchr for SIMD byte searching
+memchr = "2"
+
+# Windows API bindings for ACL/security descriptors
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Threading",
+    "Win32_System_IO",
+    "Win32_Storage_FileSystem",
+] }
+widestring = "1"
+
+# For better error handling
+thiserror = "1"
+tracing = "0.1"
+
+[dev-dependencies]
+# For testing
+tokio-test = "0.4"
+criterion = { version = "0.4", features = ["async_tokio"] }
+
+[features]
+default = []
+
+
+[[example]]
+name = "server"
+path = "examples/server.rs"
+
+[[example]]
+name = "client"
+path = "examples/client.rs"
+
+[[bench]]
+name = "latency"
+harness = false
+path = "benches/latency.rs"
