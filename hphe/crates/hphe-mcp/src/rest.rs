@@ -49,6 +49,11 @@ struct Args {
     #[arg(long, env = "HPHE_INGEST_ROOTS")]
     ingest_roots: Option<String>,
 
+    /// Dossiers parents scannés pour marqueur `.agent/` (';' séparé) —
+    /// tout workspace inité est découvert et ingéré automatiquement.
+    #[arg(long, env = "HPHE_INGEST_SCAN")]
+    ingest_scan: Option<String>,
+
     /// Intervalle d'ingestion en secondes (défaut 900 = 15 min)
     #[arg(long, default_value_t = DEFAULT_INGEST_INTERVAL_S, env = "HPHE_INGEST_INTERVAL_S")]
     ingest_interval_s: u64,
@@ -87,10 +92,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(state);
 
     // Boucle d'ingestion automatisée — remplace la tâche planifiée
-    // ingest-workspace.ps1 : re-ingest incrémental des racines configurées.
-    if let Some(roots) = args.ingest_roots {
+    // ingest-workspace.ps1. Racines résolues À CHAQUE cycle :
+    //   1) HPHE_INGEST_ROOTS (liste explicite ';')
+    //   2) registre persistant <data>/ingest-roots.txt (toute racine passée
+    //      à content_ingest/hephaistos_update y est inscrite)
+    //   3) HPHE_INGEST_SCAN : parents scannés pour marqueur `.agent/`
+    //      (un workspace inité est découvert et ingéré tout seul)
+    if args.ingest_roots.is_some() || args.ingest_scan.is_some() {
         let interval = std::time::Duration::from_secs(args.ingest_interval_s.max(30));
-        let roots: Vec<std::path::PathBuf> = roots
+        let env_roots: Vec<std::path::PathBuf> = args
+            .ingest_roots
+            .unwrap_or_default()
+            .split(';')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(std::path::PathBuf::from)
+            .collect();
+        let scan_dirs: Vec<std::path::PathBuf> = args
+            .ingest_scan
+            .unwrap_or_default()
             .split(';')
             .map(|s| s.trim())
             .filter(|s| !s.is_empty())
@@ -98,6 +118,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect();
         tokio::spawn(async move {
             loop {
+                let mut roots: Vec<std::path::PathBuf> = env_roots.clone();
+                roots.extend(hphe_kit::ingest::read_ingest_registry());
+                for parent in &scan_dirs {
+                    roots.extend(hphe_kit::ingest::scan_agent_workspaces(parent));
+                }
+                roots.sort();
+                roots.dedup();
                 for root in &roots {
                     if !root.exists() {
                         continue;

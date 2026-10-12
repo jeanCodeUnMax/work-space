@@ -61,6 +61,7 @@ set HPHE_VEC_DIR=$INS\migrated-vec
 set HPHE_ORCH_DB=$DATA\orchestrator.db
 set HPHE_MEMORY_ROOT=F:\Sqlite-DB\agentmemory
 set HPHE_INGEST_ROOTS=$PRJ
+set HPHE_INGEST_SCAN=F:\Promgramation-teste
 set HPHE_INGEST_INTERVAL_S=900
 "$SRV\hphe-rest.exe" --addr 127.0.0.1:8792 >> "$DATA\hphe-rest.log" 2>&1
 "@ | Set-Content "$SRV\hphe-rest.cmd" -Encoding ASCII

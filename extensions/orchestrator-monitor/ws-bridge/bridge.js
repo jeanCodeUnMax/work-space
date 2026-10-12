@@ -28,7 +28,8 @@ function resolveCommsPaths() {
         process.cwd(),
         path.join(__dirname, '..', '..', '..'), // layout repo : ws-bridge → racine
         'F:/Promgramation-teste/Thot-Agents',   // workspace frère connu
-        'F:/Promgramation-teste/Hephaistos-Kit',
+        'C:/Program Files/Projet-complet/hephaistos2-kit', // kit v2 (projet)
+        'F:/Promgramation-teste/Hephaistos-Kit', // v1, peut encore avoir du bus
         'C:/Users/Administrator/Desktop/Sysinternals Suite',
     ].filter(Boolean);
     const seen = new Set();

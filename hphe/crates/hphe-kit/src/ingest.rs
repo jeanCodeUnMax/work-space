@@ -235,6 +235,72 @@ pub fn vec_dir() -> PathBuf {
 }
 
 // ---------------------------------------------------------------------------
+// Registre des racines d'ingestion — toute racine passée à ingest_workspace y
+// est inscrite ; la boucle auto (hphe-rest) la reprend ensuite. Persistant
+// dans <data>/ingest-roots.txt (à côté de content-index).
+// ---------------------------------------------------------------------------
+
+pub fn ingest_registry_path() -> Option<PathBuf> {
+    content_dir().parent().map(|p| p.join("ingest-roots.txt"))
+}
+
+pub fn read_ingest_registry() -> Vec<PathBuf> {
+    ingest_registry_path()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .map(|s| {
+            s.lines()
+                .map(|l| l.trim())
+                .filter(|l| !l.is_empty() && !l.starts_with('#'))
+                .map(PathBuf::from)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub fn register_ingest_root(root: &Path) {
+    let Some(path) = ingest_registry_path() else { return };
+    let canon = std::fs::canonicalize(root)
+        .unwrap_or_else(|_| root.to_path_buf())
+        .to_string_lossy()
+        .to_string();
+    let mut existing = read_ingest_registry();
+    if existing
+        .iter()
+        .any(|p| p.to_string_lossy().eq_ignore_ascii_case(&canon))
+    {
+        return;
+    }
+    existing.push(PathBuf::from(&canon));
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    let body = existing
+        .iter()
+        .map(|p| p.to_string_lossy().to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let _ = std::fs::write(path, body + "\n");
+}
+
+/// Découverte : un sous-dossier de `parent` contenant `.agent/` est un
+/// workspace Hephaistos inité → racine d'ingestion.
+pub fn scan_agent_workspaces(parent: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    if let Ok(rd) = std::fs::read_dir(parent) {
+        for e in rd.flatten() {
+            let p = e.path();
+            if !p.is_dir() {
+                continue;
+            }
+            if p.join(".agent").is_dir() {
+                out.push(p);
+            }
+        }
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
 // Walk + ingest Tantivy
 // ---------------------------------------------------------------------------
 
@@ -257,6 +323,7 @@ pub fn ingest_workspace(
     project_tag: &str,
 ) -> Result<Value, String> {
     std::fs::create_dir_all(index_dir).map_err(|e| e.to_string())?;
+    register_ingest_root(root);
     let index = ContentIndex::open_or_create(index_dir, ContentIndexConfig::default())
         .map_err(|e| format!("content index {}: {}", index_dir.display(), e))?;
     let policy = IngestPolicy::default();
