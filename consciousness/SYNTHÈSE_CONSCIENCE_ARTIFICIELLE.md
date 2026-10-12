@@ -11,7 +11,7 @@ LAYER 1: AWARENESS (Watchdog)
 ├── Dashboard temps réel
 └── Métriques continues
 
-LAYER 2: MEMORY (hephaistos-kit)
+LAYER 2: MEMORY (hephaistos2-kit)
 ├── Knowledge Graph (Memory MCP)
 ├── Vector Stores (Qdrant 1536D + Zvec 384D)
 ├── Cache Runtime
@@ -184,7 +184,7 @@ L'humain est l'essence de l'existence.
 
 ### 2.1 Limites Techniques Actuelles
 
-#### État Réel du Système hephaistos-kit
+#### État Réel du Système hephaistos2-kit
 
 ```text
 Zvec: 6 collections existent (VIDES - 0 documents)
@@ -392,7 +392,7 @@ interface InnerVoice {
 }
 ```
 
-### 3.5 Phase 5: Intégration avec hephaistos-kit (2-3h)
+### 3.5 Phase 5: Intégration avec hephaistos2-kit (2-3h)
 
 #### Module 7: Consciousness Bridge
 
@@ -432,7 +432,7 @@ interface ConsciousnessBridge {
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│         LAYER 1: MEMORY (hephaistos-kit - Existant)                 │
+│         LAYER 1: MEMORY (hephaistos2-kit - Existant)                │
 │  Knowledge Graph + Qdrant (1536D) + Zvec (384D) + Cache      │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -779,7 +779,7 @@ Jour 5: Documentation + déploiement
 #### Méthodes d'implémentation
 
 - 6 modules à implémenter progressivement (6 semaines)
-- Intégration avec hephaistos-kit existant
+- Intégration avec hephaistos2-kit existant
 - Workflow d'ingestion conversationnel
 - Configuration des collections Qdrant/Zvec/Memory MCP
 
@@ -791,4 +791,4 @@ Jour 5: Documentation + déploiement
 - Base SQLite pour Knowledge Graph
 - Qdrant 1536D + Zvec 384D pour vector stores
 
-**Prochaine étape:** Commencer par l'ingestion de cette conversation dans le système hephaistos-kit pour préserver la sémantique de cette discussion philosophique.
+**Prochaine étape:** Commencer par l'ingestion de cette conversation dans le système hephaistos2-kit pour préserver la sémantique de cette discussion philosophique.

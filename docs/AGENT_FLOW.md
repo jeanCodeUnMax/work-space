@@ -1,6 +1,6 @@
 # 🔄 Agent Flow Architecture
 
-> **Hephaistos-Kit** - Comprehensive AI Agent Workflow Documentation
+> **Hephaistos2-Kit** - Comprehensive AI Agent Workflow Documentation
 
 ---
 

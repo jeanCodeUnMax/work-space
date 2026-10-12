@@ -1,4 +1,4 @@
-# Hephaistos-Kit Architecture
+# Hephaistos2-Kit Architecture
 
 > Comprehensive AI Agent Capability Expansion Toolkit
 
@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-Hephaistos-Kit is a modular system consisting of:
+Hephaistos2-Kit is a modular system consisting of:
 
 - **22 Specialist Agents** - Role-based AI personas
 - **48 Skills** - Domain-specific knowledge modules (ajout intelligent-routing)

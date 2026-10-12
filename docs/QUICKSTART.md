@@ -1,4 +1,4 @@
-# Guide Quickstart - Hephaistos-Kit
+# Guide Quickstart - Hephaistos2-Kit
 
 ## 🚀 Démarrage Rapide
 

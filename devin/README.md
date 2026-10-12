@@ -1,4 +1,4 @@
-# Couche d'intégration Devin pour Hephaistos-Kit
+# Couche d'intégration Devin pour Hephaistos2-Kit
 
 Intégration **globale** de Devin CLI au système multi-agents (mémoire unifiée,
 orchestrateur MCP, Beacon, bus ACP). Contrairement à la couche `.agent/hermes/`

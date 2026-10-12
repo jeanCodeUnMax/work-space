@@ -1,0 +1,8 @@
+*-dispatch.log
+task-events.log
+comms.jsonl
+logs/
+**/ingestion.state.json
+**/.ingestion-state.json
+**/.*-state.json
+**/.*-learn-state.json
