@@ -49,8 +49,11 @@
 | `fs_directory_tree` | File System | Local FS | Recursive JSON directory tree bounded by depth/entries |
 | `fs_search_files` | File System | Local FS | Recursive directory traversal fallback search |
 | `fs_list_allowed_roots` | Security | Local Policy | Report active policy rules and allowed root directories |
-| `content_search` | Content | V1 Stub | BM25 content search stub (Tantivy backend active) |
-| `semantic_search` | Vector | V1 Stub | Semantic search stub (usearch HNSW backend active) |
+| `content_search` | Content | `hphe-content` (Tantivy BM25) | Full-text content search with HTML snippets (real, T-092) |
+| `vec_search` | Vector | `hphe-vec` (usearch HNSW) | k-NN vector search over persistent collections (real, T-092) |
+| `semantic_search` | Vector | `hphe-vec` (usearch HNSW) | Semantic search alias forwarding to `vec_search` (real, T-092) |
+| `vec_stats` | Vector | `hphe-vec` (usearch HNSW) | Statistics for all discovered vector collections (real, T-092) |
+| `hybrid_search` | Hybrid | Multi-Modal Engine | Merged filename + BM25 content + vector search (real, T-092) |
 
 ---
 

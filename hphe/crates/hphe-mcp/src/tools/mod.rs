@@ -1,9 +1,12 @@
 //! Tool registry and dispatcher for all MCP tools
 
+pub mod content;
 pub mod everything;
 pub mod fs;
 pub mod health;
+pub mod hybrid;
 pub mod stubs;
+pub mod vec;
 
 use hphe_ipc::client::Client;
 use serde_json::{json, Value};
@@ -300,26 +303,64 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
         },
         ToolDefinition {
             name: "content_search".to_string(),
-            description: "Full-text content search powered by Tantivy BM25 (V1 stub).".to_string(),
+            description: "Full-text content search powered by Tantivy BM25 (returns hits with path, score, snippet).".to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "query": { "type": "string", "description": "Text query to search inside files" },
-                    "limit": { "type": "integer", "default": 50 }
+                    "query": { "type": "string", "description": "Text query to search inside file contents" },
+                    "limit": { "type": "integer", "description": "Max hits to return (default 50)", "default": 50 }
                 },
                 "required": ["query"]
             }),
             annotations: Some(json!({ "readOnlyHint": true, "idempotentHint": true })),
         },
         ToolDefinition {
-            name: "semantic_search".to_string(),
-            description: "Semantic vector search powered by embedded usearch HNSW (V1 stub).".to_string(),
+            name: "vec_search".to_string(),
+            description: "Vector k-NN search powered by embedded usearch HNSW over persistent collection index files.".to_string(),
             input_schema: json!({
                 "type": "object",
                 "properties": {
-                    "query": { "type": "string", "description": "Natural language query to search by semantic vector" },
+                    "vector": { "type": "array", "items": { "type": "number" }, "description": "Query vector as float array" },
+                    "query_key": { "type": "integer", "description": "Existing FRN key to use its stored vector as query" },
+                    "k": { "type": "integer", "description": "Number of nearest neighbours to return (default 10)", "default": 10 },
+                    "collection": { "type": "string", "description": "Collection name (*.usearch file, default first available)" }
+                }
+            }),
+            annotations: Some(json!({ "readOnlyHint": true, "idempotentHint": true })),
+        },
+        ToolDefinition {
+            name: "semantic_search".to_string(),
+            description: "Semantic vector search (alias/convenience forwarding to vec_search).".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Query string or FRN key" },
+                    "vector": { "type": "array", "items": { "type": "number" } },
                     "k": { "type": "integer", "default": 10 },
-                    "dimension": { "type": "integer", "default": 384 }
+                    "collection": { "type": "string" }
+                }
+            }),
+            annotations: Some(json!({ "readOnlyHint": true, "idempotentHint": true })),
+        },
+        ToolDefinition {
+            name: "vec_stats".to_string(),
+            description: "Report vector collections statistics (collection names, dimensions, sizes, usearch backend).".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {}
+            }),
+            annotations: Some(json!({ "readOnlyHint": true, "idempotentHint": true })),
+        },
+        ToolDefinition {
+            name: "hybrid_search".to_string(),
+            description: "Hybrid multi-modal search combining filename search, Tantivy BM25 content search, and usearch vector search with deduplication and normalized ranking.".to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Search query for names and contents" },
+                    "k": { "type": "integer", "description": "Max results to return (default 10)", "default": 10 },
+                    "vector": { "type": "array", "items": { "type": "number" }, "description": "Optional vector for semantic search" },
+                    "collection": { "type": "string", "description": "Optional vector collection name" }
                 },
                 "required": ["query"]
             }),
@@ -370,8 +411,10 @@ pub async fn execute_tool(
         "fs_search_files" => fs::tool_fs_search_files(args, policy),
         "fs_list_allowed_roots" => Ok(fs::tool_fs_list_allowed_roots(policy)),
 
-        "content_search" => stubs::tool_content_search(args),
-        "semantic_search" => stubs::tool_semantic_search(args),
+        "content_search" => content::tool_content_search(args),
+        "vec_search" | "semantic_search" => vec::tool_vec_search(args),
+        "vec_stats" => vec::tool_vec_stats(args),
+        "hybrid_search" => hybrid::tool_hybrid_search(args, client, policy).await,
         "hphe_health" | "health" | "ping" => health::tool_health(client).await,
 
         other if other.starts_with("memory_") => stubs::tool_memory_stub(other, args),
