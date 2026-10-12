@@ -357,6 +357,7 @@ impl FileIndex {
             drive_letter,
             frn_to_row,
             dir_cache: RwLock::new(HashMap::new()),
+            overlay: RwLock::new(IndexOverlay::default()),
             stats,
         }
     }
