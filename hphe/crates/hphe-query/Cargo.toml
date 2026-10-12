@@ -1,0 +1,44 @@
+[package]
+name = "hphe-query"
+version = "0.1.0"
+edition = "2021"
+authors = ["Hephaistos Engine"]
+description = "Query engine for Everything syntax on SoA FileIndex - P1 component"
+license = "MIT"
+readme = "README.md"
+keywords = ["search", "query", "everything", "ntfs", "index"]
+categories = ["filesystem", "algorithms"]
+
+[dependencies]
+# Internal hphe crates
+hphe-index = { path = "../hphe-index", version = "0.1" }
+hphe-mft = { path = "../hphe-mft", version = "0.1" }
+
+# SIMD substring search
+memchr = "2.8"
+
+# Regex support
+regex = "1.10"
+
+# Error handling
+thiserror = "1.0"
+
+# CLI
+clap = { version = "4.4", features = ["derive"] }
+
+[dev-dependencies]
+# For tests
+rand = "0.8"
+criterion = "0.5"
+
+[lib]
+name = "hphe_query"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hphe-query"
+path = "src/main.rs"
+
+[features]
+default = []
+bench = []
