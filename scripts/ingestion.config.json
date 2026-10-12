@@ -23,7 +23,8 @@
     }
   },
   "beacon": {
-    "enabled": true,
+    "enabled": false,
+    "_note": "v2: pipeline Python qdrant/zvec archivée — beacon ingest en attente du portage Rust (hphe-kit). Réactiver quand l'outil existe.",
     "log_path": "%USERPROFILE%/.beacon/endpoint/logs/runtime.jsonl",
     "max_sessions": 20
   }
