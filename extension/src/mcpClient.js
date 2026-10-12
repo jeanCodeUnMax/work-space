@@ -5,6 +5,7 @@
 'use strict';
 
 const { spawn } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');
 
@@ -12,9 +13,13 @@ const PROTOCOL_VERSION = '2024-11-05';
 const MAX_BACKOFF_MS = 30_000;
 
 class McpClient {
-  /** @param {vscode.OutputChannel} output */
-  constructor(output) {
+  /**
+   * @param {vscode.OutputChannel} output
+   * @param {string} [extensionPath] install dir — used to locate the bundled server
+   */
+  constructor(output, extensionPath) {
     this.output = output;
+    this.extensionPath = extensionPath || '';
     this.proc = null;
     this.buf = '';
     this.nextId = 1;
@@ -30,10 +35,42 @@ class McpClient {
   _cfg() {
     const c = vscode.workspace.getConfiguration('everythingSearch');
     return {
-      serverPath: c.get('serverPath', 'C:/Program Files/servers/everything-mcp/server.py'),
-      pythonPath: c.get('pythonPath', 'python'),
+      serverPath: c.get('serverPath', ''),
+      pythonPath: c.get('pythonPath', ''),
       timeoutMs: c.get('requestTimeoutMs', 30_000),
     };
+  }
+
+  /**
+   * Resolve server.py: configured path first, then the copy bundled in the
+   * extension so the VSIX works on machines without the repo checkout.
+   */
+  _serverPath() {
+    const cfg = this._cfg().serverPath;
+    if (cfg) {
+      if (fs.existsSync(cfg)) return cfg;
+      this._log(`configured serverPath missing: ${cfg} — falling back to bundled server`);
+    }
+    const bundled = path.join(this.extensionPath, 'server', 'server.py');
+    if (fs.existsSync(bundled)) return bundled;
+    if (cfg) return cfg; // let the error surface for a clearer message
+    throw new Error(
+      'MCP server introuvable : configurez everythingSearch.serverPath ' +
+      'ou réinstallez l\'extension (server/server.py absent)'
+    );
+  }
+
+  /**
+   * Python interpreters to try, in order. A configured pythonPath wins;
+   * otherwise we probe python / python3 / py (Windows launcher).
+   */
+  _pythonCandidates() {
+    const cfg = this._cfg().pythonPath;
+    const list = cfg ? [cfg] : [];
+    for (const exe of ['python', 'python3', 'py']) {
+      if (!list.includes(exe)) list.push(exe);
+    }
+    return list;
   }
 
   _log(msg) {
@@ -132,14 +169,37 @@ class McpClient {
     return Math.min(1000 * Math.pow(2, this.crashCount), MAX_BACKOFF_MS);
   }
 
-  _spawn() {
-    const { serverPath, pythonPath } = this._cfg();
+  async _spawn() {
+    const serverPath = this._serverPath();
+    const tried = [];
+    let lastErr;
+    for (const exe of this._pythonCandidates()) {
+      // `py` is the Windows launcher: it needs `-3` to pick a Python 3.
+      const args = exe === 'py' ? ['-3', '-u', serverPath] : ['-u', serverPath];
+      try {
+        await this._trySpawn(exe, args, serverPath);
+        return;
+      } catch (e) {
+        lastErr = e;
+        tried.push(exe);
+        if (!/ENOENT/.test(e.message)) throw e; // real failure, not "not found"
+        this._log(`${exe} not found, trying next candidate`);
+      }
+    }
+    throw new Error(
+      `Python introuvable (essayé : ${tried.join(', ')}). ` +
+      'Installez Python 3.11+ ou définissez everythingSearch.pythonPath. ' +
+      `Dernière erreur : ${lastErr && lastErr.message}`
+    );
+  }
+
+  _trySpawn(exe, args, serverPath) {
     const cwd = path.dirname(serverPath);
-    this._log(`spawning: ${pythonPath} -u "${serverPath}" (cwd=${cwd})`);
+    this._log(`spawning: ${exe} ${args.join(' ')} (cwd=${cwd})`);
 
     return new Promise((resolve, reject) => {
       let settled = false;
-      const proc = spawn(pythonPath, ['-u', serverPath], {
+      const proc = spawn(exe, args, {
         cwd,
         // trusted local client -> pin the unrestricted [default] profile so a
         // stray EVERYTHING_MCP_AGENT in the env can never constrain the panel

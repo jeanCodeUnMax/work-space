@@ -13,7 +13,7 @@ let output;
 
 function activate(context) {
   output = vscode.window.createOutputChannel('everything-search');
-  client = new McpClient(output);
+  client = new McpClient(output, context.extensionPath);
 
   const provider = new SearchViewProvider(context, client, output);
 

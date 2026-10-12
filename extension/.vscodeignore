@@ -4,3 +4,5 @@ dev/**
 *.log
 README-DEV.md
 media/src/**
+__pycache__/
+*.pyc
