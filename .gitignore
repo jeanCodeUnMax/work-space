@@ -56,3 +56,14 @@ $RECYCLE.BIN/
 secrets.*
 credentials.*
 migrated-vec/
+
+# ---- Agent IDE local configs ----
+.clinerules/
+.kilocode/
+.kilo/
+.roo/
+
+# ---- Runtime data (index tantivy, orchestrator.db, logs) ----
+data/
+semantic-cache-data/
+bench/

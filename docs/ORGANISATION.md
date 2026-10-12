@@ -41,10 +41,10 @@ Non versionné (`.gitignore`) : `.agent/`, `.vscode/`, `*.code-workspace`,
 
 ## Branches
 
-| Branche | Rôle | Protégée |
-|---|---|---|
+| Branche  | Rôle                              | Protégée                          |
+| -------- | ---------------------------------- | ----------------------------------- |
 | `main` | État stable, déployé/utilisable | oui — commits via merge uniquement |
-| `dev` | Branche de travail courante | non |
+| `dev`  | Branche de travail courante        | non                                 |
 
 Règles :
 
