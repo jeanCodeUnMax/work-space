@@ -1,5 +1,7 @@
+  
+
 <p align="center">
-  <img src="extension/media/banner.png" alt="Hephaistos-Kit Search" width="100%">
+  <img src="extension/media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
 </p>
 
 # Hephaistos2-Kit
@@ -9,19 +11,19 @@
 > (**57 outils**) et boucle d'ingestion REST — **sans `Everything.exe`**.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
-![Backend](https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange)
-![Protocole](https://img.shields.io/badge/protocole-MCP%20stdio%20%2F%20REST%208792-blueviolet)
+![Backend](<https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange>)
+![Protocole](<https://img.shields.io/badge/protocole-MCP%20stdio%20%2F%20REST%208792-blueviolet>)
 ![Outils](https://img.shields.io/badge/outils-57-informational)
-![Index](https://img.shields.io/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success)
+![Index](<https://img.shields.io/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success>)
 ![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 
-| Chiffres clés | Valeur |
-|---|---|
-| Entrées indexées | ~6,4 M (démon `hphe-indexd`, 4 volumes NTFS) |
+| Chiffres clés       | Valeur                                              |
+| -------------------- | --------------------------------------------------- |
+| Entrées indexées   | ~6,4 M (démon`hphe-indexd`, 4 volumes NTFS)      |
 | Latence de recherche | **< 50 ms** typique, snapshot mmap + USN live |
-| Backend | Rust — aucune dépendance à Everything.exe |
-| Index contenu | Tantivy (incrémental, file d'attente sérialisée) |
-| Transport | stdio MCP + named pipe + REST `127.0.0.1:8792` |
+| Backend              | Rust — aucune dépendance à Everything.exe        |
+| Index contenu        | Tantivy (incrémental, file d'attente sérialisée) |
+| Transport            | stdio MCP + named pipe + REST`127.0.0.1:8792`     |
 
 Successeur direct de `everything-mcp` v1 (thin client Python sur Everything.exe)
 et de `Hephaistos-Kit` v1. Les anciens serveurs sont archivés, pas supprimés —
@@ -152,10 +154,10 @@ Jamais deux writers Tantivy en parallèle : tout passe par `hphe-rest`.
 
 ## Extensions VS Code
 
-| Extension | VSIX | Rôle |
-|---|---|---|
-| `projet-temporaire.hephaistos-kit-search` | `extension/hephaistos-kit-search-1.0.3.vsix` | Recherche NTFS dans l'IDE, embarque le MCP |
-| `hephaistos.orchestrator-monitor` | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.33.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
+| Extension                                   | VSIX                                                                 | Rôle                                                                |
+| ------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `projet-temporaire.hephaistos-kit-search` | `extension/hephaistos-kit-search-1.0.3.vsix`                       | Recherche NTFS dans l'IDE, embarque le MCP                           |
+| `hephaistos.orchestrator-monitor`         | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.33.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
 
 Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
 
@@ -184,10 +186,10 @@ scripts et configurations supprimés de l'arbre v2.
 
 ## Documentation
 
-| Doc | Contenu |
-|---|---|
-| [INSTALL.md](INSTALL.md) | Tutoriel d'installation pas à pas |
-| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md) | Référence des 57 outils |
-| [docs/VSIX.md](docs/VSIX.md) | Fiches techniques des extensions |
-| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence |
-| [docs/wiki/](docs/wiki/) | Wiki projet |
+| Doc                                             | Contenu                            |
+| ----------------------------------------------- | ---------------------------------- |
+| [INSTALL.md](INSTALL.md)                         | Tutoriel d'installation pas à pas |
+| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 57 outils          |
+| [docs/VSIX.md](docs/VSIX.md)                     | Fiches techniques des extensions   |
+| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence        |
+| [docs/wiki/](docs/wiki/)                         | Wiki projet                        |
