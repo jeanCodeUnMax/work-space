@@ -1,4 +1,4 @@
-# Adaptateur Mémoire — Hephaistos-Kit Unified Memory System
+# Adaptateur Mémoire — Hephaistos2-Kit Unified Memory System
 
 > Wrapper pour les opérations fréquentes sur le système mémoire unifié.
 

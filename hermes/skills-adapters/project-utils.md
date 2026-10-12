@@ -1,4 +1,4 @@
-# Adaptateur Projet — Hephaistos-Kit
+# Adaptateur Projet — Hephaistos2-Kit
 
 > Wrapper pour les opérations courantes sur les projets.
 
@@ -7,7 +7,7 @@
 ### Créer un MANIFEST.md
 
 ```
-Équivalent: Template Hephaistos-Kit (init-project.ps1)
+Équivalent: Template Hephaistos2-Kit (init-project.ps1)
 
 Usage: Initialiser un nouveau projet avec le MANIFEST standard.
 ```
@@ -81,7 +81,7 @@ mcp_filesystem_read_file(path="{project_root}/MANIFEST.md")
 ### Vérifier la structure du projet
 
 ```
-Équivalents: Scripts Hephaistos-Kit (checklist.py, verify_all.py) ou vérification manuelle
+Équivalents: Scripts Hephaistos2-Kit (checklist.py, verify_all.py) ou vérification manuelle
 
 Usage: Vérifier que la structure du projet est conforme aux standards.
 ```

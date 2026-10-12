@@ -57,5 +57,5 @@
 
 - **SOUL.md global** : $HOME/.hermes/SOUL.md
 - **AGENTS.md** : {{PROJECT_ROOT}}/AGENTS.md
-- **Config MCP Hephaistos-Kit** : .agent/mcp-config.json.exemple
+- **Config MCP Hephaistos2-Kit** : .agent/mcp-config.json.exemple
 - **Documentation mémoire** : .agent/memory/ARCHITECTURE-ANALYSIS.md

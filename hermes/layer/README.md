@@ -1,9 +1,9 @@
-# Hermès Integration Layer — Hephaistos-Kit Unified Memory System
+# Hermès Integration Layer — Hephaistos2-Kit Unified Memory System
 
 Ce dossier contient la **couche d'intégration Hermès** — un module autonome conçu pour être injecté directement dans la configuration de Hermes (`~/.hermes/`).
 
 Une fois injectée, cette couche donne à Hermes :
-- La connaissance du système de mémoire unifiée de Hephaistos-Kit (Memory, Qdrant, Zvec, sqlite-node)
+- La connaissance du système de mémoire unifiée de Hephaistos2-Kit (Memory, Qdrant, Zvec, sqlite-node)
 - Les patterns d'usage des MCP unifiés
 - Les règles spécifiques à ce système
 - La capacité de travailler avec le stockage dual (local + global)
@@ -24,7 +24,7 @@ Une fois injectée, cette couche donne à Hermes :
 Pour installer cette couche dans Hermes :
 
 ```powershell
-# Depuis le répertoire de Hephaistos-Kit
+# Depuis le répertoire de Hephaistos2-Kit
 pwsh -File .agent/hermes/inject-into-hermès.ps1
 
 # Ou explicitement
@@ -47,7 +47,7 @@ Le fichier `SOUL.hermes-extension.md` est automatiquement chargé par Hermès ap
 
 - La connaissance des MCP unifiés disponibles (Memory, Qdrant, Zvec, sqlite-node, filesystem, etc.)
 - Les patterns d'usage prioritaires pour chaque MCP
-- Les règles spécifiques au système de mémoire unifiée de Hephaistos-Kit
+- Les règles spécifiques au système de mémoire unifiée de Hephaistos2-Kit
 - La procédure de stockage dual (local + global via AGENT_DB_ROOT)
 
 ### 2. Règles projet (AGENTS.md)
@@ -60,7 +60,7 @@ Le fichier `AGENTS.md` dans `~/.hermes/` définit les règles applicables à TOU
 
 ### 3. Adaptateurs de compétences
 
-Le répertoire `skills-adapters/` contient des adaptateurs qui permettent à Hermès d'utiliser les compétences de Hephaistos-Kit via les MCP. Ces adaptateurs fournissent :
+Le répertoire `skills-adapters/` contient des adaptateurs qui permettent à Hermès d'utiliser les compétences de Hephaistos2-Kit via les MCP. Ces adaptateurs fournissent :
 
 - Des wrappers pour les appels MCP fréquents
 - Des procédures d'interaction avec le système de mémoire
@@ -68,7 +68,7 @@ Le répertoire `skills-adapters/` contient des adaptateurs qui permettent à Her
 
 ### 4. Références aux agents
 
-Le répertoire `agents-ref/` contient des descriptions des agents Hephaistos-Kit (orchestrator, project-planner, security-auditor, etc.) pour utilisation via `delegate_task` dans Hermès.
+Le répertoire `agents-ref/` contient des descriptions des agents Hephaistos2-Kit (orchestrator, project-planner, security-auditor, etc.) pour utilisation via `delegate_task` dans Hermès.
 
 ## Concept de couche
 
@@ -76,7 +76,7 @@ Cette approche permet de :
 
 1. **Séparer la couche d'intégration du projet** : La couche Hermès peut être mise à jour indépendamment des projets qui l'utilisent
 2. **Réutiliser la même couche pour tous les projets** : Une fois injectée dans Hermes, elle est disponible pour tous les workspaces
-3. **Maintenir Hephaistos-Kit intact** : Le projet original n'est pas modifié; la couche est un module adjacent
+3. **Maintenir Hephaistos2-Kit intact** : Le projet original n'est pas modifié; la couche est un module adjacent
 4. **Permettre une injection sélective** : L'utilisateur peut choisir d'injecter uniquement certaines parties de la couche
 
 ## Components détaillés
@@ -86,7 +86,7 @@ Cette approche permet de :
 Ce fichier s'applique au SOUL.md global de Hermès. Il ajoute :
 
 ```markdown
-# Extension — Hephaistos-Kit Unified Memory System
+# Extension — Hephaistos2-Kit Unified Memory System
 
 ## 🧠 MCP UNIFIÉS DISPONIBLES
 
@@ -169,7 +169,7 @@ Ce fichier s'applique au SOUL.md global de Hermès. Il ajoute :
 Ce fichier définit les règles pour tous les workspaces Hermès :
 
 ```markdown
-# AGENTS.md — Hermès Global (Hephaistos-Kit Integration)
+# AGENTS.md — Hermès Global (Hephaistos2-Kit Integration)
 
 > Ce fichier s'applique à TOUS les workspaces Hermès.
 > Il complète les règles spécifiques à chaque projet.
@@ -178,7 +178,7 @@ Ce fichier définit les règles pour tous les workspaces Hermès :
 
 ## 🔗 MCP UNIFIÉS — USAGE GLOBAL
 
-### Mémoire unifiée (Hephaistos-Kit)
+### Mémoire unifiée (Hephaistos2-Kit)
 
 Les serveurs MCP suivants sont configurés globalement :
 
@@ -221,7 +221,7 @@ Les serveurs MCP suivants sont configurés globalement :
 
 ## 🏗️ RÉFÉRENCES
 
-- **Documentation Hephaistos-Kit** : `<KIT_ROOT>\.agent\hermes\README.md`
+- **Documentation Hephaistos2-Kit** : `<KIT_ROOT>\.agent\hermes\README.md`
 - **Config MCP** : `<KIT_ROOT>\.agent\mcp-config.json.exemple`
 - **Architecture mémoire** : `<KIT_ROOT>\.agent\memory\ARCHITECTURE-ANALYSIS.md`
 ```
@@ -263,4 +263,4 @@ Remove-Item "$HOME/.hermes/hermes-integration/" -Recurse -Force
 - La couche ne remplace PAS le SOUL.md global de Hermès, elle s'y ajoute
 - La couche ne modifie PAS les configurations de projet existantes
 - La couche est réutilisable pour tous les projets Hermès
-- La couche peut être mise à jour indépendamment de Hephaistos-Kit
+- La couche peut être mise à jour indépendamment de Hephaistos2-Kit

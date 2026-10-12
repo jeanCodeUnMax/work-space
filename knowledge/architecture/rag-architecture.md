@@ -1,4 +1,4 @@
-# Architecture RAG Modulaire - Hephaistos-Kit
+# Architecture RAG Modulaire - Hephaistos2-Kit
 
 **Version:** 2.0
 **Date:** 2026-04-06

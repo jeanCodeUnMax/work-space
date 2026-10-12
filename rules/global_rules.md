@@ -454,7 +454,7 @@ Ordre de priorité OBLIGATOIRE pour kilo/hermes :
 - Daemon Node sur `:19825` (service, auto). Vérification : `opencli doctor`.
 - Chrome DOIT être lancé avec l'extension : `.agent/scripts/run_chrome_opencli.bat`
 
-  (injecté par Hephaistos-Kit) ou `chrome.exe --load-extension=%USERPROFILE%\.opencli\extension`.
+  (injecté par Hephaistos2-Kit) ou `chrome.exe --load-extension=%USERPROFILE%\.opencli\extension`.
 
 - **Point de défaillance n°1** : daemon OK + « Extension: not connected » = Chrome non lancé avec l'extension → relancer le lanceur. Ne pas chercher ailleurs.
 
@@ -704,7 +704,7 @@ L'agent DOIT utiliser le MCP Memory et zvec (sqlite-node: `${AGENT_DB_ROOT}/memo
 | graph-memory.db                 | 127 613 edges                                                                                                  |
 | Qdrant                          | 14 collections — utiles: doc_index 131k, config_index 3.7k, `<projet>_*` 768D                                  |
 | Zvec                            | 3 indexs seulement (entities 26k, concepts 502, actions 14.5k) — relations/context/learning_insights MANQUANTS |
-| Ingestion hephaistos-kit        | Active, mode DUAL global+local, dernier passage 2026-09-16 14:33                                               |
+| Ingestion hephaistos2-kit        | Active, mode DUAL global+local, dernier passage 2026-09-16 14:33                                               |
 
 #### DOCUMENTS DE RÉFÉRENCE
 
@@ -1187,7 +1187,7 @@ Quand un agent est appliqué automatiquement, informer l'utilisateur :
 
 ## 🏗️ RÈGLES D'INFRASTRUCTURE HEPHAISTOS (GLOBALEMENT APPLICABLES)
 
-# AGENTS.md — Hephaistos-Kit
+# AGENTS.md — Hephaistos2-Kit
 
 Guide pour agents travaillant sur ce dépôt.
 

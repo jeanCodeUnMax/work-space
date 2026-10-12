@@ -1,4 +1,4 @@
-# Adaptateur Recherche Vectorielle — Hephaistos-Kit
+# Adaptateur Recherche Vectorielle — Hephaistos2-Kit
 
 > Wrapper pour la recherche vectorielle via Qdrant (2048D NIM) et Zvec (384D local).
 
@@ -41,7 +41,7 @@ Les deux stores utilisent des modèles différents, par conception :
 | `config_index` | 2048 | Fichiers de configuration |
 | `skill_index` | 2048 | Compétences |
 | `workflow_index` | 2048 | Workflows (slash commands) |
-| `code_hephaistos_kit` | 2048 | Code Hephaistos-Kit |
+| `code_hephaistos_kit` | 2048 | Code Hephaistos2-Kit |
 | `ide_*` | 2048 | Index IDE-spécifiques |
 | `<projet>_algos` | 2048 | Algorithmes du projet |
 | `<projet>_runs` | 2048 | Exécutions du projet |

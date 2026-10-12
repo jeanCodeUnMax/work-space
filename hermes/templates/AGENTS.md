@@ -5,7 +5,7 @@
 
 ---
 
-## 🔗 CONNEXION AUX MCP UNIFIÉS (Hephaistos-Kit)
+## 🔗 CONNEXION AUX MCP UNIFIÉS (Hephaistos2-Kit)
 
 Les serveurs MCP suivants sont configurés globalement et disponibles dans ce projet :
 
@@ -15,7 +15,7 @@ Les serveurs MCP suivants sont configurés globalement et disponibles dans ce pr
 | **Qdrant** | 10 | Vector store 2048D (NVIDIA NIM) : collections, documents, search catégorique |
 | **Zvec** | 10 | Vector store 384D (local MiniLM-L6-v2) : stores, collections, semantic_search |
 | **sqlite-node** | 9 | SQLite multi-bases : connect, query, execute, describe, list_tables |
-| **filesystem** | 11 | Lecture/écriture/recherche de fichiers (étendu via Hephaistos-Kit) |
+| **filesystem** | 11 | Lecture/écriture/recherche de fichiers (étendu via Hephaistos2-Kit) |
 | **kaggle** | 51 | Compétitions, datasets, kernels (si pertinent) |
 | **colab-mcp** | 1 | Session Colab (si pertinent) |
 | **devin/context7** | 2 | Docs libraries (si pertinent) |

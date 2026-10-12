@@ -1,7 +1,7 @@
-# AGENTS.md — Hermès Global (Hephaistos-Kit Integration Layer)
+# AGENTS.md — Hermès Global (Hephaistos2-Kit Integration Layer)
 
 > Ce fichier s'applique à TOUS les workspaces Hermès.
-> Il définit les règles globales pour l'utilisation du système de mémoire unifiée de Hephaistos-Kit.
+> Il définit les règles globales pour l'utilisation du système de mémoire unifiée de Hephaistos2-Kit.
 
 ---
 
@@ -133,7 +133,7 @@ Les MCP configurés dans `config.yaml` sont automatiquement disponibles. Pour le
 
 ### Avec delegate_task
 
-Pour utiliser les agents Hephaistos-Kit via `delegate_task` :
+Pour utiliser les agents Hephaistos2-Kit via `delegate_task` :
 
 ```python
 # Exemple : déléguer une tâche de planification
@@ -148,11 +148,11 @@ result = delegate_task(
 
 ## ⚠️ RÈGLES SPÉCIFIQUES À LA COUCHE D'INTÉGRATION
 
-### Non-modification de Hephaistos-Kit
+### Non-modification de Hephaistos2-Kit
 
-- La couche d'intégration NE DOIT PAS modifier Hephaistos-Kit
+- La couche d'intégration NE DOIT PAS modifier Hephaistos2-Kit
 - Les fichiers de la couche sont dans `.agent/hermes/` (ou `~/.hermes/` après injection)
-- Hephaistos-Kit reste intact et utilisable avec ses propres IDE
+- Hephaistos2-Kit reste intact et utilisable avec ses propres IDE
 - **Lecture seule absolue** : `F:/Promgramation-teste/Hephaistos-Kit` est interdit en écriture pour tout agent hors de ce workspace — aucune modification, aucun commit. **Seule exception** : déposer un rapport dans `rapport-dysfonctionnement/` selon `TEMPLATE.md` (`YYYY-MM-DD-<lascard|webman>-<sujet>.md`, auteur obligatoire).
 - **Dysfonctionnement lié au kit** (install, config, MCP, beacon…) : réparer/contourner UNIQUEMENT dans son propre workspace, puis documenter via le rapport. La modification du kit est réservée à l'agent résident avec approbation explicite de l'utilisateur.
 
@@ -160,7 +160,7 @@ result = delegate_task(
 
 - La couche est conçue pour être injectée une fois dans Hermès
 - Elle est réutilisable pour tous les projets Hermès
-- Elle peut être mise à jour indépendamment de Hephaistos-Kit
+- Elle peut être mise à jour indépendamment de Hephaistos2-Kit
 
 ### Conflits de configuration
 
@@ -172,7 +172,7 @@ result = delegate_task(
 
 ## 📚 RÉFÉRENCES EXTERNES
 
-- **Hephaistos-Kit** : `<KIT_ROOT>\`
+- **Hephaistos2-Kit** : `<KIT_ROOT>\`
 - **Documentation mémoire** : `<KIT_ROOT>\.agent\memory\ARCHITECTURE-ANALYSIS.md`
 - **Config MCP exemple** : `<KIT_ROOT>\.agent\mcp-config.json.exemple`
 - **Manifeste** : `<KIT_ROOT>\wiki-doc\manifeste.md`

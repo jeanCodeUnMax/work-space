@@ -1,4 +1,4 @@
-# Adaptateur Gestion des tâches — Hephaistos-Kit (suite)
+# Adaptateur Gestion des tâches — Hephaistos2-Kit (suite)
 
 ### Planifier une tâche complexe
 

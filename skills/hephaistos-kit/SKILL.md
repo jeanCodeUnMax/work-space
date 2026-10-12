@@ -3,7 +3,7 @@ name: hephaistos-kit
 description: "Kit d'infrastructure agent injectable : installe/met à jour le standard .agent/ (règles, skills, agents, workflows, scripts) dans un projet. À invoquer pour injecter, mettre à jour, restaurer ou réparer la configuration agent d'un projet, ou quand l'utilisateur dit 'hephaistos', 'injecte le kit', 'répare .agent'."
 ---
 
-# Hephaistos-Kit — infrastructure agent injectable
+# Hephaistos2-Kit — infrastructure agent injectable
 
 > Le kit est le **template canonique** de l'infrastructure agent. Un projet injecté reçoit
 > `.agent/` complet + `.vscode/`. Source : `github.com/art-qalam-fr/Hephaistos-Kit`.
@@ -62,7 +62,7 @@ Sont exclus de la copie : `*.log`, `*.pid`, `__pycache__`, `node_modules`.
 
 ## Modifier le kit lui-même
 
-Le template vit dans le repo `Hephaistos-Kit` : éditer `.agent/` à la racine du repo,
+Le template vit dans le repo `Hephaistos2-Kit` : éditer `.agent/` à la racine du repo,
 commit, push → la prochaine injection embarque la modif. Ne jamais y mettre de
 données runtime (logs, pids, bases) ni de secrets.
 

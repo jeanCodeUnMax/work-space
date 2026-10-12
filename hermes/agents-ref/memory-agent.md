@@ -6,7 +6,7 @@
 - **Description** : Gestionnaire de connaissances (Memory Specialist). Gère la hiérarchie mémoire hybride (Workspace + Global), le routage vectoriel dual (Qdrant + Zvec), et la cohérence de la mémoire à long terme.
 
 ## Rôle
- gérer le système mémoire unifiée de Hephaistos-Kit :
+ gérer le système mémoire unifiée de Hephaistos2-Kit :
 - Curation : analyser les interactions locales pour identifier les patterns transversaux
 - Promotion : faire remonter les connaissances validées vers la mémoire globale
 - Optimisation de la retrieval across local et global

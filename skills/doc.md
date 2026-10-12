@@ -1,6 +1,6 @@
 # Antigravity Skills
 
-> **Guide to creating and using Skills in the Hephaistos-Kit**
+> **Guide to creating and using Skills in Hephaistos2-Kit**
 
 ---
 

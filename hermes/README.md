@@ -1,6 +1,6 @@
-# Couche d'intégration Hermès pour Hephaistos-Kit
+# Couche d'intégration Hermès pour Hephaistos2-Kit
 
-Ce dossier contient les éléments nécessaires pour utiliser le système de mémoire unifiée, les MCP, les agents et les compétences de Hephaistos-Kit dans un workspace **Hermès**, sans modifier le projet original.
+Ce dossier contient les éléments nécessaires pour utiliser le système de mémoire unifiée, les MCP, les agents et les compétences de Hephaistos2-Kit dans un workspace **Hermès**, sans modifier le projet original.
 
 ## Structure
 
@@ -33,7 +33,7 @@ pwsh -File .agent\hermes\hermes-init.ps1 `
 
 Le script crée :
 1. **Structure de stockage** (`memory-database/`) si absente
-2. **Junction** vers le workspace global (mode dual, comme Hephaistos-Kit)
+2. **Junction** vers le workspace global (mode dual, comme Hephaistos2-Kit)
 3. **Couche `.agent/hermes/`** (répertoires pour adaptateurs et refs)
 4. **Fichier `.env`** avec `AGENT_DB_ROOT` et `PROJECT_ID`
 5. **Fichier `AGENTS.md`** — règles projet compatibles Hermès
@@ -50,13 +50,13 @@ Le script crée :
 | 5 | Crée `AGENTS.md` (nouveau fichier) | Fichiers existants |
 | 6 | Crée `.agent/hermes/SOUL.hermes.md` | Rien |
 
-**Le projet Hephaistos-Kit reste intact.** L'injection ajoute uniquement ce qui est nécessaire pour Hermès.
+**Le projet Hephaistos2-Kit reste intact.** L'injection ajoute uniquement ce qui est nécessaire pour Hermès.
 
 ### Après l'injection
 
 1. **Redémarrer Hermès** (ou relancer la session) pour charger `AGENTS.md` + `SOUL.hermes.md`
 2. **Vérifier la mémoire** : utiliser `mcp_Memory_search_nodes` pour tester la connexion
-3. **Créer un MANIFEST.md** si nécessaire (procédure dans Hephaistos-Kit)
+3. **Créer un MANIFEST.md** si nécessaire (procédure dans Hephaistos2-Kit)
 
 ---
 
@@ -113,7 +113,7 @@ Le répertoire `skills-adapters/` est réservé aux adaptateurs de compétences 
 
 ## Références aux agents Hephaistos (futur)
 
-Le répertoire `agents-ref/` contiendra des références aux agents Hephaistos-Kit pour utilisation dans Hermès via `delegate_task`. Chaque fichier décrira :
+Le répertoire `agents-ref/` contiendra des références aux agents Hephaistos2-Kit pour utilisation dans Hermès via `delegate_task`. Chaque fichier décrira :
 
 - Le rôle de l'agent
 - Les compétences associées

@@ -1,11 +1,11 @@
-# SOUL.hermes-extension.md — Hephaistos-Kit Unified Memory System
+# SOUL.hermes-extension.md — Hephaistos2-Kit Unified Memory System
 
 > Ce fichier s'applique APRÈS le SOUL.md global de Hermès (`$HOME/.hermes/SOUL.md`).
-> Il ajoute la connaissance du système de mémoire unifiée de Hephaistos-Kit.
+> Il ajoute la connaissance du système de mémoire unifiée de Hephaistos2-Kit.
 
 ---
 
-## 🧠 MCP UNIFIÉS DISPONIBLES (Hephaistos-Kit)
+## 🧠 MCP UNIFIÉS DISPONIBLES (Hephaistos2-Kit)
 
 Les serveurs MCP suivants sont configurés globalement dans Hermès et disponibles pour tous les workspaces :
 
@@ -213,14 +213,14 @@ Les règles de ce fichier s'appliquent à TOUS les workspaces Hermès. Les `AGEN
 
 ### Avec les compétences (skills)
 
-Les compétences de Hephaistos-Kit peuvent être utilisées via :
+Les compétences de Hephaistos2-Kit peuvent être utilisées via :
 - `delegate_task` pour du traitement parallèle
 - Appels directs aux MCP pour les opérations de mémoire
 - Adaptateurs dans `skills-adapters/` pour les wrappers spécifiques
 
 ### Avec les agents délégués
 
-Les agents Hephaistos-Kit (orchestrator, project-planner, etc.) peuvent être délégués via `delegate_task`. Ils doivent :
+Les agents Hephaistos2-Kit (orchestrator, project-planner, etc.) peuvent être délégués via `delegate_task`. Ils doivent :
 - Utiliser les mêmes MCP que le workspace principal
 - Respecter les mêmes règles de mémoire unifiée
 - Partager le contexte via la mémoire (KG + vector stores)
@@ -229,7 +229,7 @@ Les agents Hephaistos-Kit (orchestrator, project-planner, etc.) peuvent être d�
 
 ## 📚 RÉFÉRENCES COMPLÈTES
 
-- **Documentation Hephaistos-Kit** : `<KIT_ROOT>\.agent\hermes\README.md`
+- **Documentation Hephaistos2-Kit** : `<KIT_ROOT>\.agent\hermes\README.md`
 - **Config MCP exemple** : `<KIT_ROOT>\.agent\mcp-config.json.exemple`
 - **Architecture mémoire** : `<KIT_ROOT>\.agent\memory\ARCHITECTURE-ANALYSIS.md`
 - **Manifeste** : `<KIT_ROOT>\wiki-doc\manifeste.md`

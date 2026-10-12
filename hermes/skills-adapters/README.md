@@ -1,7 +1,7 @@
 # Adaptateurs de compétences — Hermès Integration Layer
 
 Ce répertoire contient des adaptateurs (wrappers) qui permettent à Hermès d'utiliser
-les compétences et les MCP de Hephaistos-Kit de manière native.
+les compétences et les MCP de Hephaistos2-Kit de manière native.
 
 ## Structure
 
@@ -23,7 +23,7 @@ Ils ne nécessitent pas d'exécution — ce sont des références de procédures
 
 ## memory-utils.md
 
-# Adaptateur Mémoire — Hephaistos-Kit Unified Memory System
+# Adaptateur Mémoire — Hephaistos2-Kit Unified Memory System
 
 > Wrapper pour les opérations fréquentes sur le système mémoire unifié.
 
@@ -198,7 +198,7 @@ def open_node(node_name: str):
 
 ## vector-search.md
 
-# Adaptateur Recherche Vectorielle — Hephaistos-Kit
+# Adaptateur Recherche Vectorielle — Hephaistos2-Kit
 
 > Wrapper pour la recherche vectorielle via Qdrant et Zvec — NVIDIA NIM 2048D.
 
@@ -349,7 +349,7 @@ def dual_search(query: str, query_vector_qdrant: list[float], query_vector_zvec:
 
 ## sqlite-utils.md
 
-# Adaptateur SQLite — Hephaistos-Kit
+# Adaptateur SQLite — Hephaistos2-Kit
 
 > Wrapper pour les opérations courantes sur les bases SQLite gérées par sqlite-node MCP.
 
@@ -488,7 +488,7 @@ query("""
 
 ## task-management.md
 
-# Adaptateur Gestion des tâches — Hephaistos-Kit
+# Adaptateur Gestion des tâches — Hephaistos2-Kit
 
 > Wrapper pour la gestion des tâches via l'orchestrateur MCP (si disponible) ou fallback SQLite.
 
@@ -606,7 +606,7 @@ def update_task_status(task_id: int, status: str, result: str = None):
 
 ## project-utils.md
 
-# Adaptateur Projet — Hephaistos-Kit
+# Adaptateur Projet — Hephaistos2-Kit
 
 > Wrapper pour les opérations courantes sur les projets.
 
@@ -628,7 +628,7 @@ def create_manifest(
 ):
     """
     Crée un MANIFEST.md pour un nouveau projet.
-    Basé sur le template Hephaistos-Kit (init-project.ps1).
+    Basé sur le template Hephaistos2-Kit (init-project.ps1).
     """
     # Génère le fichier MANIFEST.md avec la structure standard
     # Voir: .agent/hermes/templates/AGENTS.md pour le template
