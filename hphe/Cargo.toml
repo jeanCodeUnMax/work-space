@@ -4,6 +4,7 @@ members = [
     "crates/hphe-index",
     "crates/hphe-query",
     "crates/hphe-content",
+    "crates/hphe-vec",
 ]
 resolver = "2"
 
