@@ -32,6 +32,15 @@ struct Args {
     /// Log level (error, warn, info, debug, trace)
     #[arg(long, default_value = "info", env = "RUST_LOG")]
     log_level: String,
+
+    /// Run a single tool non-interactively (CLI mode for scripts/scheduled tasks).
+    /// Example: hphe-mcp --tool hephaistos_update --args "{\"root\":\".\",\"force\":true}"
+    #[arg(long)]
+    tool: Option<String>,
+
+    /// JSON arguments for --tool
+    #[arg(long, default_value = "{}")]
+    args: String,
 }
 
 #[tokio::main]
@@ -62,6 +71,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut policy = AccessPolicy::load();
     if let Some(prof) = args.profile {
         policy.profile = prof;
+    }
+
+    // CLI mode: run one tool and print its JSON result on stdout.
+    if let Some(tool) = args.tool {
+        let tool_args: serde_json::Value =
+            serde_json::from_str(&args.args).unwrap_or_else(|_| serde_json::json!({}));
+        let result = hphe_mcp::tools::execute_tool(&tool, &tool_args, &client, &policy).await;
+        match result {
+            Ok(v) => {
+                println!("{}", serde_json::to_string_pretty(&v).unwrap_or_default());
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("tool error: {}", e);
+                std::process::exit(1);
+            }
+        }
     }
 
     let server = McpServer::new(client, policy);

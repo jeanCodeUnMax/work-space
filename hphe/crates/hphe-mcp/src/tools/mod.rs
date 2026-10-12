@@ -5,6 +5,7 @@ pub mod everything;
 pub mod fs;
 pub mod health;
 pub mod hybrid;
+pub mod kit;
 pub mod stubs;
 pub mod vec;
 
@@ -15,7 +16,7 @@ use crate::policy::AccessPolicy;
 use crate::protocol::ToolDefinition;
 
 pub fn get_tool_definitions() -> Vec<ToolDefinition> {
-    vec![
+    let mut defs = vec![
         ToolDefinition {
             name: "everything_search".to_string(),
             description: "Ultra-fast file search across local NTFS volumes, powered by the Hephaistos hphe-indexd daemon via IPC (Everything query syntax, ms latency, no admin). Supports full Everything syntax: wildcards *, ?, ext:, size:, dm:, path:, regex:, categories audio: video: document: executable: picture: compressed:. Returns full path, name, dir, size, mtime.".to_string(),
@@ -375,7 +376,9 @@ pub fn get_tool_definitions() -> Vec<ToolDefinition> {
             }),
             annotations: Some(json!({ "readOnlyHint": true, "idempotentHint": true })),
         },
-    ]
+    ];
+    defs.extend(kit::kit_tool_definitions());
+    defs
 }
 
 pub async fn execute_tool(
@@ -417,8 +420,6 @@ pub async fn execute_tool(
         "hybrid_search" => hybrid::tool_hybrid_search(args, client, policy).await,
         "hphe_health" | "health" | "ping" => health::tool_health(client).await,
 
-        other if other.starts_with("memory_") => stubs::tool_memory_stub(other, args),
-
-        _ => Err(format!("unknown tool {}", name)),
+        other => kit::execute_kit_tool(other, args).await,
     }
 }

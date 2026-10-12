@@ -9,6 +9,7 @@ members = [
     "crates/hphe-vec",
     "crates/hphe-daemon",
     "crates/hphe-mcp",
+    "crates/hphe-kit",
 ]
 resolver = "2"
 
