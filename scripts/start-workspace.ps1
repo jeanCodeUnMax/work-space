@@ -239,6 +239,22 @@ Write-Log "Vérification/ingestion initiale ($IngestMode)"
 
 & pwsh -NoProfile -ExecutionPolicy Bypass -File $autoIngest -Mode $IngestMode -ConfigPath $ingestConfig
 
+# --- CONSOLE HIDER : masque les fenetres console des process du kit ---
+# Windows cree une fenetre visible pour tout exe console spawne par un
+# parent sans console (IDE, services) : ACP servers, MCP node/python,
+# kilo/hermes/agy... Le script tourne cache (mutex single-instance) et
+# masque les fenetres ConsoleWindowClass des cmdlines du kit (~3s).
+$hider = Join-Path $ScriptRoot 'console-hider.ps1'
+if (Test-Path $hider) {
+    $already = Get-CimInstance Win32_Process -Filter "Name='pwsh.exe' or Name='powershell.exe'" |
+        Where-Object { $_.CommandLine -match 'console-hider\.ps1' } |
+        Select-Object -First 1
+    if (-not $already) {
+        Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',"`"$hider`"") -WindowStyle Hidden
+        Write-Log "Console hider lancé (masquage des terminaux du kit)"
+    }
+}
+
 # --- SYNC BEACON -> MÉMOIRE UNIFIÉE (non-bloquant, non-fatal) ---
 # Distille les traces d'agents capturées par Beacon (runtime.jsonl) et les
 # injecte dans le pipeline RAG (zvec/qdrant + memory_mcp.db) en mode dual.
