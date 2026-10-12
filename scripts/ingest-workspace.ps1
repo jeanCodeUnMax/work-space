@@ -69,10 +69,16 @@ Write-Log "[ingest] Rust backend — root=$ProjectRoot force=$Force mode=$Mode"
 # hphe-rest détient l'IndexWriter Tantivy pour sa boucle : passer par REST
 # (sérialisé) évite le LockBusy. Fallback exe direct seulement si REST down.
 $restUp = $false
-try {
-    $h = Invoke-RestMethod -Uri "http://127.0.0.1:8792/health" -TimeoutSec 2
-    $restUp = ($h.status -eq 'healthy')
-} catch { }
+# Timeout large + retry : sous commit Tantivy la reponse /health peut
+# prendre >2s. Un faux negatif basculerait sur l'exe direct -> LockBusy.
+foreach ($try in 1..2) {
+    try {
+        $h = Invoke-RestMethod -Uri "http://127.0.0.1:8792/health" -TimeoutSec 8
+        $restUp = ($h.status -eq 'healthy')
+        if ($restUp) { break }
+    } catch { }
+    Start-Sleep -Milliseconds 800
+}
 
 if ($restUp) {
     if ($h.ingest_busy) {
@@ -103,7 +109,15 @@ else {
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prevEap
     $json = $out | Where-Object { $_ -match '^\s*\{' } | Out-String
-    if ($code -ne 0) { throw "hephaistos_update a échoué (exit $code): $json" }
+    if ($code -ne 0) {
+        # LockBusy = un writer vit déjà (boucle rest relancée entre-temps,
+        # ou hphe-rest revenu). Non-fatal : la racine sera couverte au cycle.
+        if (($out | Out-String) -match 'LockBusy|index lock') {
+            Write-Log "[ingest] index occupé (writer actif) — racine couverte par la boucle, skip." "WARN"
+            return
+        }
+        throw "hephaistos_update a échoué (exit $code): $json"
+    }
 }
 Write-Log "[ingest] $json"
 
