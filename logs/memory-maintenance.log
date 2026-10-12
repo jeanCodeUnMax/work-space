@@ -1,0 +1,41 @@
+[2026-10-11 19:40:39] [INFO] memory_mcp : 24 relations orphelines supprimees
+[2026-10-11 19:40:39] [WARN] 8 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-11 19:40:49] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-11 19:40:50] [INFO] maintenance: sem=0 rt=0 orphelins=24 dupes=8 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-11 21:06:43] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-11 21:06:54] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-11 21:06:54] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-11 22:21:52] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-11 22:22:03] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-11 22:22:03] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-11 22:27:44] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-11 22:27:55] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-11 22:27:55] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-11 23:14:33] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-11 23:14:44] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-11 23:14:45] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 01:16:57] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 01:19:16] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 01:19:38] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 06:36:11] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 06:36:23] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 06:36:24] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 18:34:19] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 18:34:34] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 18:34:35] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 20:42:01] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 20:42:16] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 20:42:16] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 22:06:02] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 22:07:13] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 22:07:14] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 22:19:20] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 22:19:21] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 22:35:28] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 22:35:43] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 22:35:43] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0
+[2026-10-12 23:40:08] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 23:44:56] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 23:44:56] [WARN] 15 groupes d'entites quasi-dupliquees (casse/espaces) - candidats merge via /reflect
+[2026-10-12 23:45:03] [WARN] 4 entites mortes (ni observation ni relation) - candidates purge via /reflect
+[2026-10-12 23:45:05] [INFO] maintenance: sem=0 rt=0 orphelins=0 dupes=15 dead=4 superseded=0 zvec_stale=0 warnings=2 errors=0

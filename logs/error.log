@@ -1,0 +1,6 @@
+[2026-10-11 22:48:47] [ERROR] ERREUR CRITIQUE : L'ingestion Python a echoue pour C:\Program Files\servers\everything-mcp\extension\media\hephaistos-kit_banderole.jfif
+[2026-10-12 01:02:53] [ERROR] sqlite3 a échoué après 3 retries pour: F:\Sqlite-DB\current_workspace\graph\memory_mcp.db
+[2026-10-12 05:48:48] [ERROR] ERREUR CRITIQUE : L'ingestion Python a echoue pour C:\Program Files\servers\everything-mcp\.kilo\worktrees\task-308\hphe\target\debug\.fingerprint\hphe-mft-855c2011ba874624\output-lib-hphe_mft
+[2026-10-12 07:11:55] [ERROR] ERREUR CRITIQUE : L'ingestion Python a echoue pour C:\Program Files\servers\everything-mcp\.kilo\worktrees\task-322\hphe\target\debug\incremental\hphe_index-1hi8rcn1rnb2g\s-hn4saxg8qy-0ie58zj-working\dep-graph.part.bin
+[2026-10-12 18:40:13] [ERROR] ERREUR CRITIQUE : L'ingestion Python a echoue pour C:\Program Files\servers\everything-mcp\hphe\target\release\.fingerprint\hphe-usn-b78b5c1f9cf3dd1c\output-example-usn_probe
+[2026-10-12 21:06:20] [ERROR] ERREUR CRITIQUE : L'ingestion Python a echoue pour C:\Program Files\servers\everything-mcp\hphe\target\release\.fingerprint\hphe-kit-c4bf5f901820d616\output-lib-hphe_kit

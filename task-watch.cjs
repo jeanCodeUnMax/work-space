@@ -1,0 +1,42 @@
+// task-watch.cjs — watcher push des transitions de taches orchestrateur.
+// Se connecte au WS bridge (:7477) et imprime chaque transition de statut.
+// Persiste aussi dans .agent/task-events.log. Relance auto sur deconnexion.
+const fs = require('fs');
+const path = require('path');
+let WebSocket;
+try { WebSocket = require('ws'); }
+catch {
+  WebSocket = require('C:/Users/Administrator/.devin/extensions/hephaistos.orchestrator-monitor-0.0.33/ws-bridge/node_modules/ws');
+}
+
+const LOG = path.join(__dirname, 'task-events.log');
+const URL = 'ws://127.0.0.1:7477';
+const seen = new Map(); // task id -> last status
+
+function ts() { return new Date().toISOString().slice(11, 19); }
+function emit(line) {
+  const out = `[${ts()}] ${line}`;
+  console.log(out);
+  try { fs.appendFileSync(LOG, out + '\n'); } catch {}
+}
+function track(t) {
+  const prev = seen.get(t.id);
+  if (prev === t.status) return;
+  seen.set(t.id, t.status);
+  const tag = { completed: 'DONE', failed: 'FAIL', in_progress: 'RUN', pending: 'PEND' }[t.status] || t.status;
+  emit(`${tag} #${t.id} ${(t.title || '').slice(0, 80)}${t.result ? ' (result ok)' : ''}`);
+}
+
+function connect() {
+  let ws;
+  try { ws = new WebSocket(URL); } catch { return setTimeout(connect, 5000); }
+  ws.on('message', (raw) => {
+    let m; try { m = JSON.parse(raw); } catch { return; }
+    if (m.type === 'task_update' && m.task) track(m.task);
+    else if (m.type === 'snapshot' && Array.isArray(m.tasks)) m.tasks.forEach(track);
+  });
+  ws.on('open', () => emit('watcher connecte au bridge :7477'));
+  ws.on('close', () => { emit('bridge ferme — reconnexion dans 5s'); setTimeout(connect, 5000); });
+  ws.on('error', () => {}); // close handler fera la reconnexion
+}
+connect();
