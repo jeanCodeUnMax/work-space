@@ -8,11 +8,13 @@
 pub mod index;
 pub mod path_resolver;
 pub mod scanner;
+pub mod snapshot;
 pub mod synthetic;
 
 pub use index::{FileIndex, FileIndexStats, IndexEntry, IndexError, SearchResult};
 pub use path_resolver::{PathResolver, PathResolverStats, SegmentCache};
 pub use scanner::{IndexBuilder, IndexScanner, ScanResult};
+pub use snapshot::{Column, SectionHeader, SnapshotError, SnapshotHeader};
 pub use synthetic::{generate_synthetic_entries, SyntheticMftGenerator};
 
 // Re-export MftEntry and related types from hphe-mft

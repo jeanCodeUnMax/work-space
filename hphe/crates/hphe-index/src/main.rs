@@ -50,6 +50,21 @@ enum Commands {
         #[arg(long, default_value_t = 100)]
         queries: usize,
     },
+
+    /// Benchmark snapshot save/load vs rebuild on a synthetic index
+    Snapshot {
+        /// Number of synthetic entries (default 1_000_000)
+        #[arg(long, default_value_t = 1_000_000)]
+        count: usize,
+
+        /// Path to temporary snapshot file
+        #[arg(long, default_value = "target/bench_snapshot.snap")]
+        path: String,
+
+        /// Number of search queries to run on loaded index
+        #[arg(long, default_value_t = 50)]
+        queries: usize,
+    },
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -250,6 +265,82 @@ fn main() -> ExitCode {
             print_index_stats(&index);
             run_bench(&index, queries);
             sample_path_demo(&index);
+            ExitCode::SUCCESS
+        }
+        Commands::Snapshot {
+            count,
+            path,
+            queries,
+        } => {
+            let snap_path = std::path::PathBuf::from(&path);
+            println!("=== Snapshot Benchmark ({count} entries) ===");
+            println!("1. Building index from synthetic entries...");
+            let t_build = Instant::now();
+            let index = IndexBuilder::from_synthetic(count);
+            let build_sec = t_build.elapsed().as_secs_f64();
+            println!("   Rebuild wall time: {:.3} s", build_sec);
+            print_index_stats(&index);
+
+            println!();
+            println!("2. Saving snapshot to '{}'...", snap_path.display());
+            let t_save = Instant::now();
+            if let Err(e) = index.save(&snap_path) {
+                eprintln!("Save failed: {e}");
+                return ExitCode::FAILURE;
+            }
+            let save_ms = t_save.elapsed().as_millis() as f64;
+            let file_size = std::fs::metadata(&snap_path)
+                .map(|m| m.len())
+                .unwrap_or(0);
+            println!(
+                "   Snapshot saved in {:.2} ms (file size: {})",
+                save_ms,
+                format_bytes(file_size)
+            );
+
+            println!();
+            println!("3. Loading index from mmap snapshot...");
+            let t_load = Instant::now();
+            let loaded = match FileIndex::load_mmap(&snap_path) {
+                Ok(idx) => idx,
+                Err(e) => {
+                    eprintln!("Load failed: {e}");
+                    return ExitCode::FAILURE;
+                }
+            };
+            let load_ms = t_load.elapsed().as_millis() as f64;
+            println!(
+                "   Snapshot loaded in {:.2} ms ({:.3} s, is_mmap={})",
+                load_ms,
+                load_ms / 1000.0,
+                loaded.is_mmap()
+            );
+
+            // Validation check
+            assert_eq!(loaded.len(), index.len(), "Loaded index row count mismatch");
+
+            println!();
+            println!("=== Snapshot vs Rebuild Comparison ===");
+            println!("  Rebuild time:      {:.3} s", build_sec);
+            println!("  Snapshot save:     {:.2} ms", save_ms);
+            println!("  Snapshot load:     {:.2} ms ({:.3} s)", load_ms, load_ms / 1000.0);
+            if load_ms > 0.0 {
+                let speedup = (build_sec * 1000.0) / load_ms;
+                println!("  Cold start speedup: {:.1}x faster than rebuild", speedup);
+            }
+            let proj_16m_load_s = (load_ms / 1000.0) * (16_000_000.0 / count as f64);
+            println!(
+                "  Projected @16M:    {:.2} s (Target < 2.0 s: {})",
+                proj_16m_load_s,
+                if proj_16m_load_s < 2.0 { "PASS" } else { "FAIL" }
+            );
+
+            run_bench(&loaded, queries);
+            sample_path_demo(&loaded);
+
+            // Clean up temporary bench snapshot file
+            let _ = std::fs::remove_file(&snap_path);
+
             ExitCode::SUCCESS
         }
     }
