@@ -1,5 +1,14 @@
 # Changelog — everything-mcp
 
+## 1.0.1 — 2026-10-12
+
+VSIX autonome : corrige `spawn python ENOENT` sur les machines sans
+checkout du repo ou sans `python` dans le PATH.
+
+| Commit | Changement |
+|---|---|
+| `d3804a4` | Serveur MCP bundlé dans l'extension (`server/`) + auto-détection de l'interpréteur (`python` → `python3` → `py -3`) |
+
 ## 1.0.0 — 2026-10-11
 
 Première version stable. Le MCP est un client fin au-dessus de l'index vivant
