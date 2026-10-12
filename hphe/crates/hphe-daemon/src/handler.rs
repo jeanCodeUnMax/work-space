@@ -146,8 +146,10 @@ impl RequestHandler for DaemonHandler {
 
         let total = filtered_rows.len();
 
-        // 3. Paginate
-        let limit = params.limit.max(1);
+        // 3. Paginate — cap la taille de réponse (un client peut demander
+        // limit=usize::MAX et vider l'index entier en une frame NDJSON)
+        const MAX_SEARCH_RESULTS: usize = 10_000;
+        let limit = params.limit.clamp(1, MAX_SEARCH_RESULTS);
         let offset = params.offset;
 
         let entries: Vec<FileEntry> = filtered_rows

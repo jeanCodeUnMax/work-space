@@ -137,13 +137,17 @@ impl AccessPolicy {
         let abs = match fs::canonicalize(path) {
             Ok(p) => p,
             Err(_) => {
-                if path.is_absolute() {
+                // canonicalize échoue si le fichier n'existe pas (écriture nouvelle).
+                // Il FAUT normaliser lexicalement — sinon `allowed_root/../evil`
+                // passerait le starts_with roots (traversal bypass).
+                let joined = if path.is_absolute() {
                     path.to_path_buf()
                 } else if let Ok(cwd) = env::current_dir() {
                     cwd.join(path)
                 } else {
                     path.to_path_buf()
-                }
+                };
+                normalize_lexical(&joined)
             }
         };
 
@@ -225,6 +229,23 @@ impl AccessPolicy {
     }
 }
 
+/// Normalisation lexicale d'un chemin (sans FS) : résout `.` et `..`
+/// en dépilant les composants. `..` au-delà de la racine est ignoré.
+fn normalize_lexical(p: &Path) -> PathBuf {
+    use std::path::Component;
+    let mut out = PathBuf::new();
+    for c in p.components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
 pub fn strip_unc_prefix(p: &str) -> &str {
     if let Some(stripped) = p.strip_prefix(r"\\?\") {
         stripped
@@ -275,6 +296,24 @@ fn glob_to_regex(pat: &str) -> Result<Regex, regex::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_traversal_denied_on_missing_file() {
+        // Régression : allowed_root/../evil ne doit PAS passer le roots check
+        // quand le fichier n'existe pas (canonicalize échoue).
+        let mut p = AccessPolicy {
+            allowed_roots: vec![PathBuf::from("C:/nonexistent_allowed_root_xyz")],
+            access_file: PathBuf::from("__none__.mcp-access"),
+            profile: "default".into(),
+            profiles_rules: HashMap::new(),
+        };
+        let evil = Path::new("C:/nonexistent_allowed_root_xyz/../evil_outside_xyz.txt");
+        assert!(p.check_allowed(evil, true).is_err());
+        // et le chemin légitime dans la racine passe
+        let ok = Path::new("C:/nonexistent_allowed_root_xyz/sub/new_file.txt");
+        assert!(p.check_allowed(ok, true).is_ok());
+        p.allowed_roots.clear();
+    }
 
     #[test]
     fn test_glob_matching() {
