@@ -2,6 +2,7 @@
 members = [
     "crates/hphe-mft",
     "crates/hphe-index",
+    "crates/hphe-query",
 ]
 resolver = "2"
 
@@ -10,3 +11,15 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Hephaistos Team"]
 license = "MIT"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+strip = false
