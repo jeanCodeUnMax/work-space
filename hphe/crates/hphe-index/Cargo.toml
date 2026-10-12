@@ -1,0 +1,21 @@
+[package]
+name = "hphe-index"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+name = "hphe_index"
+path = "src/lib.rs"
+
+[[bin]]
+name = "hphe-index"
+path = "src/main.rs"
+
+[dependencies]
+hphe-mft = { path = "../hphe-mft" }
+clap = { version = "4.5", features = ["derive"] }
+memchr = "2.7"
+hashbrown = "0.14"
+rayon = "1.10"
