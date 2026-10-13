@@ -1,3 +1,5 @@
+> **OBSOLETE (v1)** — ce document décrit l architecture Python/Node pré-unification (Qdrant, Zvec, MCP séparés, Everything.exe). Conservé pour historique/rollback. Référence actuelle : `.agent/ARCHITECTURE.md` + `docs/hephaistos-engine/`.
+
 # 🏗️ INFRASTRUCTURE MÉMOIRE MCP - DIAGRAMME DÉTAILLÉ
 
 **Date de génération** : 2026-04-03

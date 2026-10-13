@@ -11,12 +11,12 @@ Toute délégation sans précision d'agent va à cet agent. Pour changer le déf
 | Agent | Type | Skills | Commande | Quota |
 |---|---|---|---|---|
 | `agy` | CLI Antigravity | tous (`*`) | `agy.exe --dangerously-skip-permissions --print="{msg}" --print-timeout 600s` | Abonnement — **toujours dispo**, modèles Gemini/Claude via `--model` |
-| `vibe` | CLI Mistral Vibe | code, review, docs, test, refactor | `vibe.exe -p "{msg}" --max-turns 40` | Mistral Coder — **requêtes illimitées** |
+| `vibe` | CLI Mistral Vibe | code, review, docs, test, refactor | `vibe.exe -p "{msg}" --max-turns 40` | Mistral Coder — requêtes illimitées. ⚠️ marqué **retiré de l'architecture** dans `agent-adapters.js` (2026-10-07) ; binaire encore installé, utilisable en manuel |
 | `kilo-nim1` | KiloCode CLI → NIM | explore, code, docs | `kilo run -m "{nim-model}"` | Canal NIM agentique — **validé #309 (~3 min)** |
 | `ollama-cloud` | Hermes CLI (scopé) | code, review, docs, explore | `hermes -z "{msg}" -m "{model}" --provider ollama-cloud` | Forfait payé — **1 connexion à la fois** |
 | `devin` | Agent principal | architecture, orchestration | — | Agent IDE principal |
 
-**NIM non-agentique** : appel direct via les outils `nim_*` du MCP `nim-router` (sous-appels invoqués par Devin/agent CLI — embeddings, raisonnement, rédaction).
+**NIM non-agentique** : appel direct via les outils `nim_*` de `hphe-mcp` (ex-`nim-router`, absorbé — sous-appels invoqués par Devin/agent CLI : embeddings, raisonnement, rédaction).
 
 **Désactivés (2026-10-12, `active: 0`)** : `kilo`, `kilo-free`, `hermes` — dernier recours absolu, modèles NIM uniquement.
 
@@ -68,12 +68,12 @@ Outils : `create_task` `update_task` `get_next_task` `register_agent` `update_ag
 
 ## MCP actifs (Devin)
 
-**17 directs** (2026-10-08) : agentmemory, filesystem, qdrant, sqlite-node, zvec, orchestrator, model-discovery, kaggle, colab-mcp, notebooks, beacon, **nim-router**, google-drive, github-mcp-server, puppeteer, data-agent-kit, visualization.
+**8 directs** (2026-10-13) : `Hephaistos-everything-search` (hphe-mcp.exe — 57 outils : fs_*, memory_*, orchestrateur, nim_*, index/contenu/vec), `sqlite-node`, `beacon`, `kaggle`, `colab-mcp`, `google-drive`, `opencli-mcp`, `puppeteer`. Les anciens agentmemory/qdrant/zvec/orchestrator/model-discovery/nim-router ont été absorbés par `hphe-mcp` (poste = `extension/server/hphe-mcp.exe`).
 
-**`mcp-mux` n'est plus dans Devin** — 13 de ses 17 serveurs doublonnaient les directs (~176 schémas facturés par appel). Mux = pipeline des **sub-agents** (`opencode-*.json`, kilo). Mux-only restants : `memory`, `memory-f`, `context7`, `postgres`.
+**`mcp-mux` = pipeline des sous-agents CLI/ACP** (kilo, opencode, hermes, gemini-cli) — sauf **Antigravity (agy) qui est démuxé** : ses MCP sont en direct dans `~/.gemini/config/mcp_config.json` + `~/.gemini/antigravity-ide/mcp_config.json` (hphe-mcp, sqlite-node, beacon, google-drive, opencli-mcp, puppeteer, kaggle, colab-mcp + datacloud + obsidian). Le mux sert hphe-mcp aux sub-agents avec `EVERYTHING_MCP_AGENT=external` (profil `.mcp-access` lecture bornée, pas d'écriture).
 
-- `nim-router` : serveur autonome, package `nim-router-mcp` (sous-module `mcp/servers/nim-router-mcp` du kit : `nim_mcp_server.py` + `router.py` + `registre-modeles.json`). **Enregistré aux deux endroits** (même chemin absolu, synchronisés) : `%APPDATA%/devin/mcp_config.json` (serveur direct Devin, outils `nim_*` natifs) et `~/.config/mcp-mux/mcp-mux.json` (mux multi-clients, outils `mcp-mux.nim-router__nim_*` via mcporter). En cas de `Failed to connect/initialize` : vérifier le chemin dans les DEUX fichiers — ils se modifient indépendamment.
 - `agy.exe` : `%LOCALAPPDATA%\agy\bin` est dans le **PATH utilisateur** (persistant). Un shell déjà ouvert conserve l'ancien PATH → rouvrir un shell, ou `export PATH="$PATH:$LOCALAPPDATA/agy/bin"` (bash) / `$env:Path += ";$env:LOCALAPPDATA\agy\bin"` (PowerShell). Ne jamais créer d'alias ou de shim.
+- ACP : `devin.acp.preferredAgent = antigravity-acp` (agy = second agent par défaut dans Devin).
 
 ## Règles d'usage
 

@@ -1,3 +1,5 @@
+> **OBSOLETE (v1)** — ce document décrit l architecture Python/Node pré-unification (Qdrant, Zvec, MCP séparés, Everything.exe). Conservé pour historique/rollback. Référence actuelle : `.agent/ARCHITECTURE.md` + `docs/hephaistos-engine/`.
+
 # Couche d'intégration Hermès pour Hephaistos2-Kit
 
 Ce dossier contient les éléments nécessaires pour utiliser le système de mémoire unifiée, les MCP, les agents et les compétences de Hephaistos2-Kit dans un workspace **Hermès**, sans modifier le projet original.

@@ -1,3 +1,5 @@
+> **OBSOLETE (v1)** — ce document décrit l architecture Python/Node pré-unification (Qdrant, Zvec, MCP séparés, Everything.exe). Conservé pour historique/rollback. Référence actuelle : `.agent/ARCHITECTURE.md` + `docs/hephaistos-engine/`.
+
 # ADR-001: Architecture du Système Multi-Agents Cascade
 
 ## Statut

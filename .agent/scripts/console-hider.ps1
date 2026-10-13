@@ -41,7 +41,6 @@ $HidePatterns = @(
 )
 $rx = ($HidePatterns | ForEach-Object { [regex]::Escape($_) }) -join '|'
 
-$procMap = @{}
 $cmdCache = @{}   # pid -> cmdline (rafraichi par passe)
 function Get-Cmdline([int]$procId) {
     if ($cmdCache.ContainsKey($procId)) { return $cmdCache[$procId] }

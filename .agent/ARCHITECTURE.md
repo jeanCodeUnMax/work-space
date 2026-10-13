@@ -61,7 +61,7 @@ d'ingestion automatique** (`HPHE_INGEST_ROOTS`, intervalle `HPHE_INGEST_INTERVAL
 `hphe-mcp.exe --tool hephaistos_update --args '{"root":".","force":true,"embed":false}'`
 
 **Scripts remplacés** : `.agent/rag/*.py` (cli/pipeline/chunker/embedder/router/
-rag_rest_bridge) → voir `.agent/rag/DEPRECATED-BY-RUST.md` ;
+rag_rest_bridge) → voir `_archive/agent-rag/DEPRECATED-BY-RUST.md` ;
 `ingest-workspace.ps1`/`auto-ingest.ps1` → wrappers fins vers le binaire.
 
 ---
@@ -81,7 +81,7 @@ rag_rest_bridge) → voir `.agent/rag/DEPRECATED-BY-RUST.md` ;
 ├── consciousness/           # Consciousness spec: 5-layer map (Awareness→Memory→
 │                            #   Reflection→Intention). Reflection/Intention = /reflect
 ├── memory/                  # Unified memory docs + policy
-├── rag/                     # RAG pipeline (chunker, embedder, beacon_ingest, router)
+│                            #   (rag/ archivé → _archive/agent-rag/)
 ├── scripts/                 # Master validation + ingestion scripts
 └── logs/                    # Runtime logs (gitignored)
 ```

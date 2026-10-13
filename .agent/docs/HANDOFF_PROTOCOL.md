@@ -1,3 +1,5 @@
+> **OBSOLETE (v1)** — ce document décrit l architecture Python/Node pré-unification (Qdrant, Zvec, MCP séparés, Everything.exe). Conservé pour historique/rollback. Référence actuelle : `.agent/ARCHITECTURE.md` + `docs/hephaistos-engine/`.
+
 # Protocole de Handoff Inter-Agents
 
 ## Vue d'ensemble

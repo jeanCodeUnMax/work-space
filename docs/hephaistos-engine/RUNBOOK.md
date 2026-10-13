@@ -15,7 +15,7 @@ hphe-indexd (démon/service Windows, crate hphe-daemon)
   ├─ hphe-usn    : deltas USN + wrap recovery
   ├─ hphe-content: index BM25 tantivy (contenu)
   ├─ hphe-vec    : store vectoriel usearch (HNSW, save/open)
-  └─ hphe-ipc    : named pipe \\.\pipe\hphe-indexd, NDJSON, ACL SDDL restreinte
+  └─ hphe-ipc    : named pipe \\.\pipe\hphe-index, NDJSON, ACL SDDL restreinte
         ▲
         │ pipe nommé (verbs: ping stats search resolve watch)
 hphe-mcp.exe (serveur MCP stdio unifié — 18 outils legacy + vec_*/content/health)
