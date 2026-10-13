@@ -63,7 +63,11 @@ set HPHE_MEMORY_ROOT=F:\Sqlite-DB\agentmemory
 set HPHE_INGEST_ROOTS=$PRJ
 set HPHE_INGEST_SCAN=F:\Promgramation-teste
 set HPHE_INGEST_INTERVAL_S=900
+:loop
 "$SRV\hphe-rest.exe" --addr 127.0.0.1:8792 >> "$DATA\hphe-rest.log" 2>&1
+echo %DATE% %TIME% hphe-rest termine - relance dans 10s >> "$DATA\hphe-rest.log"
+timeout /t 10 /nobreak >nul
+goto loop
 "@ | Set-Content "$SRV\hphe-rest.cmd" -Encoding ASCII
 
 @"
