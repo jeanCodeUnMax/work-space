@@ -38,7 +38,7 @@ hephaistos2-kit/                      (repo projet-temporaire/hephaistos2-kit)
 │       ├── ws-bridge/                # bridge :7477 (snapshots read-only)
 │       └── *.vsix
 │
-├── .agent/                           # SUBMODULE hephaistos2-agent
+├── .agent/                           # kit agents/scripts (intégré au repo)
 │   ├── ARCHITECTURE.md / REGISTRY.md # références infra
 │   ├── scripts/                      # start-workspace, ingest, maintenance…
 │   ├── agents/ skills/ workflows/    # couche d'agents

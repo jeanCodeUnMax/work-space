@@ -16,7 +16,7 @@ Repo umbrella `projet-temporaire/hephaistos2-kit` + 4 sous-modules :
 | `hphe/` | `hephaistos2-engine` | workspace Rust (`crates/hphe-*`) |
 | `extension/` | `hephaistos2-search-ext` | ext VS Code recherche + `server/` binaires |
 | `extensions/orchestrator-monitor/` | `hephaistos2-monitor-ext` | ext monitor + `ws-bridge` |
-| `.agent/` | `hephaistos2-agent` | scripts, agents, skills, workflows, règles |
+| `.agent/` | *(intégré au repo)* | scripts, agents, skills, workflows, règles |
 
 Commit dans un sous-module → push → puis `git add <chemin>` dans l'umbrella
 pour enregistrer le gitlink. Push umbrella ensuite.

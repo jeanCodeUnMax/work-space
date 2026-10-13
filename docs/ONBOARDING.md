@@ -16,11 +16,11 @@ multi-agents, routage NIM, mémoire unifiée et ingestion.
 ```
 projet-temporaire/
 ├── hephaistos2-kit            ← UMBRELLA (ce guide, docs, install.ps1, tests)
-│   └── .gitmodules pointe sur les 4 sous-modules ci-dessous
+│   └── .gitmodules pointe sur les 3 sous-modules ci-dessous
 ├── hephaistos2-engine         ← hphe/ : workspace Rust (indexd, mcp, rest, kit)
 ├── hephaistos2-search-ext     ← extension/ : ext VS Code recherche (VSIX 1.0.3)
 ├── hephaistos2-monitor-ext    ← extensions/orchestrator-monitor/ (VSIX 0.0.33)
-└── hephaistos2-agent          ← .agent/ : scripts, agents, skills, workflows
+└── (intégré) .agent/          ← scripts, agents, skills, workflows — dossier du repo
 ```
 
 Miroir personnel complet : `lascard-m/hephaistos2-*` (mêmes commits, même tag).
@@ -31,7 +31,6 @@ Miroir personnel complet : `lascard-m/hephaistos2-*` (mêmes commits, même tag)
 | engine | `projet-temporaire/hephaistos2-engine` | `lascard-m/hephaistos2-engine` | `v2.0.0` |
 | search-ext | `projet-temporaire/hephaistos2-search-ext` | `lascard-m/hephaistos2-search-ext` | `v2.0.0` |
 | monitor-ext | `projet-temporaire/hephaistos2-monitor-ext` | `lascard-m/hephaistos2-monitor-ext` | `v2.0.0` |
-| agent | `projet-temporaire/hephaistos2-agent` | `lascard-m/hephaistos2-agent` | `v2.0.0` |
 
 ## Clonage
 
@@ -73,7 +72,7 @@ artefacts de l'ingestion. Scan de secrets obligatoire avant tout push
 ## Contribution rapide
 
 - Code Rust → `hephaistos2-engine` (sous-module `hphe/`)
-- Kit agent (scripts, skills, workflows) → `hephaistos2-agent`
+- Kit agent (scripts, skills, workflows) → `.agent/` (intégré, pas de sous-module)
 - Extensions → leur sous-module respectif
 - Docs transverses, install, tests → umbrella `hephaistos2-kit`
 

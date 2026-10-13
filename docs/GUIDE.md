@@ -12,7 +12,7 @@ Recherche filesystem ultra-rapide pour agents IA — index NTFS natif en Rust
 | `hphe-rest` | passerelle HTTP :8792 + boucle d'ingestion + gate d'écriture | idem |
 | ext search | VSIX `hephaistos-kit-search` 1.0.3 | `extension/` |
 | ext monitor | VSIX `orchestrator-monitor` 0.0.33 (panel + ws-bridge :7477) | `extensions/orchestrator-monitor/` |
-| `.agent/` | kit agents/skills/scripts (sous-module `hephaistos2-agent`) | racine |
+| `.agent/` | kit agents/skills/scripts (intégré au repo) | racine |
 
 ## Prérequis
 
