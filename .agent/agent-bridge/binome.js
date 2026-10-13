@@ -83,11 +83,14 @@ async function pair() {
 }
 
 async function send(text, waitSec) {
-    const p = lastHandshake(peer);
-    let target = opt('--to') || p?.convId;
+    let target = opt('--to');
     if (!target) {
         if (me === 'agy') target = devinHub.getActiveCascade();
         else if (me === 'devin') target = await agyHub.getActiveCascade(agyHub.discoverHub(process.env.AGY_WORKSPACE || process.cwd()));
+        if (!target) {
+            const p = lastHandshake(peer);
+            target = p?.convId;
+        }
     }
     if (!target) { console.error(`[binome] pas de session ${peer} trouvée — lancez 'join' ou spécifiez --to <id>`); process.exit(1); }
     if (me === 'devin') {
