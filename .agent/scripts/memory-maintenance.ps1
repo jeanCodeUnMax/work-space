@@ -94,7 +94,7 @@ $nowUnixMs = "${nowUnix}000"
 
 # ============ 1. semantic-cache.db : purge expires_at + age ============
 $semDb = Join-Path $DbRoot "semantic-cache-data\semantic-cache.db"
-if (-not (Test-Path $semDb)) { $semDb = Join-Path $DbRoot "current_workspace\cache\semantic-cache.db" }
+if (-not (Test-Path $semDb)) { $semDb = Join-Path $DbRoot "current_workspace\agentmemory\cache\semantic-cache.db" }
 $semPurged = 0
 if (Test-Path $semDb) {
     try {
@@ -115,7 +115,7 @@ if (Test-Path $semDb) {
 }
 
 # ============ 2. runtime-cache.db : purge kv agees ============
-$rtDb = Join-Path $DbRoot "current_workspace\cache\runtime-cache.db"
+$rtDb = Join-Path $DbRoot "current_workspace\agentmemory\cache\runtime-cache.db"
 $rtPurged = 0
 if (Test-Path $rtDb) {
     try {
@@ -134,8 +134,8 @@ if (Test-Path $rtDb) {
 }
 
 # ============ 3-4. memory_mcp.db : relations orphelines + signalements ============
-# Canonique : la base GLOBALE uniquement (plus de fallback vers la racine, memory-f y est repointe)
-$kgDb = Join-Path $DbRoot "current_workspace\graph\memory_mcp.db"
+# Canonique v2 : agentmemory\graph (hphe-mcp + sqlite-node y sont repointes)
+$kgDb = Join-Path $DbRoot "current_workspace\agentmemory\graph\memory_mcp.db"
 $orphans = 0; $dupes = 0
 if (Test-Path $kgDb) {
     try {
