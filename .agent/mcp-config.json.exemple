@@ -1,0 +1,52 @@
+{
+  "_comment": "Configuration MCP Hephaistos2-Kit v2 — exemple à adapter. v1 (qdrant/zvec/orchestrator-server/memory node) : absorbée par hphe-mcp.exe (57 outils : recherche NTFS, contenu Tantivy, vecteurs, orchestrateur, mémoire, ingestion).",
+  "_instructions": [
+    "1. Fusionnez la section mcpServers dans le fichier de config de votre IDE :",
+    "   Devin       : %APPDATA%/devin/mcp_config.json",
+    "   Antigravity : ~/.antigravity/mcp_config.json",
+    "   Cursor      : ~/.cursor/mcp.json",
+    "   KiloCode    : ~/.kilocode/mcp_config.json (ou ~/.config/kilo/mcp_config.json)",
+    "   KiloCode ext. VS Code : %APPDATA%/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json",
+    "   Cline/Roo ext.        : %APPDATA%/<IDE>/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json",
+    "   Hermes CLI  : %LOCALAPPDATA%/hermes/config.yaml (clé agentmemory → hphe-mcp.exe)",
+    "2. Binaires serveur dans <INSTALL>/extension/server/ (install par défaut :",
+    "   C:/Program Files/servers/hephaistos2-kit/extension/server/)",
+    "3. Les secrets passent par les variables d'environnement, jamais en clair.",
+    "4. Serveurs RETIRÉS en v2 (ne plus configurer — outils absorbés dans hphe-mcp) :",
+    "   qdrant, zvec, agentMemory (node), orchestrator-server, model-discovery, nim-router."
+  ],
+  "mcpServers": {
+    "Hephaistos-everything-search": {
+      "_comment": "Serveur MCP Rust unique — 57 outils : recherche NTFS (pipe hphe-indexd), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), model-discovery, NIM, ingestion.",
+      "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
+      "args": [],
+      "disabled": false,
+      "env": {
+        "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
+        "HPHE_VEC_DIR": "C:/Program Files/servers/hephaistos2-kit/migrated-vec",
+        "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
+        "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
+      }
+    },
+    "sqlite-node": {
+      "_comment": "SQLite multi-bases — accès direct KG/cache. DB canonique = current_workspace/graph/memory_mcp.db",
+      "args": [
+        "[CHEMIN_SERVEURS]/mcp-quick-sqlite3/dist/index.js"
+      ],
+      "command": "node",
+      "disabled": false,
+      "env": {
+        "AGENT_DB_ROOT": "[CHEMIN_DATABASES]",
+        "CACHE_DB": "[CHEMIN_DATABASES]/current_workspace/cache/runtime-cache.db",
+        "CACHE_TABLE": "cache_table",
+        "DEFAULT_DB_PATH": "[CHEMIN_DATABASES]/current_workspace/graph/memory_mcp.db",
+        "DISABLE_DEBUG": "true",
+        "GRAPH_DB": "[CHEMIN_DATABASES]/current_workspace/graph/graph-memory.db",
+        "LOG_LEVEL": "error",
+        "MEMORY_DB": "[CHEMIN_DATABASES]/current_workspace/graph/memory_mcp.db",
+        "ORCHESTRATOR_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
+        "TTL_HOURS": "1"
+      }
+    }
+  }
+}

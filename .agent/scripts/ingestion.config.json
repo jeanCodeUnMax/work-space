@@ -1,0 +1,31 @@
+{
+  "ingestion": {
+    "version": "1.0.0",
+    "sources": {
+      "workspace_root": "../..",
+      "exclude": [
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.vscode/**",
+        "**/.cursor/**",
+        "**/.devin/**",
+        "**/.venv/**",
+        "**/venv/**",
+        "**/nul",
+        "**/NUL",
+        "**/nul.*"
+      ],
+      "max_file_size_mb": 5
+    },
+    "metadata": {
+      "workspace": "${workspaceBasename}"
+    }
+  },
+  "beacon": {
+    "enabled": false,
+    "_note": "v2: pipeline Python qdrant/zvec archivée — beacon ingest en attente du portage Rust (hphe-kit). Réactiver quand l'outil existe.",
+    "log_path": "%USERPROFILE%/.beacon/endpoint/logs/runtime.jsonl",
+    "max_sessions": 20
+  }
+}
