@@ -74,3 +74,12 @@ credentials.*
 
 # ---- Bench output ----
 bench/out/
+
+# ---- Voûte Antigravity/Obsidian (générée à la racine du workspace, ne doit pas être trackée) ----
+00_Agente/
+01_Skills/
+02_Proyectos/
+03_Sesiones/
+04_Herramientas/
+00 Antigravity Hub.md
+context-manifest.json
