@@ -104,8 +104,8 @@ projet/
     │   ├── memory_mcp.db
     │   └── graph-memory.db
     └── vector/
-        └── zvec-data/          (store natif zvec, index 384D locaux)
-        (+ Qdrant server http://localhost:6333 — collections 2048D NVIDIA NIM)
+        └── hphe-vec/           (index vectoriel hphe-mcp — usearch HNSW 2048D, NIM)
+        (les stores v1 zvec-data/ + Qdrant :6333 sont archivés — voir _archive/agent-rag/)
 ```
 
 #### Mode GLOBAL (via .env)

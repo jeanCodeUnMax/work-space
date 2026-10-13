@@ -3,7 +3,7 @@
 Ce dossier contient la **couche d'intégration Hermès** — un module autonome conçu pour être injecté directement dans la configuration de Hermes (`~/.hermes/`).
 
 Une fois injectée, cette couche donne à Hermes :
-- La connaissance du système de mémoire unifiée de Hephaistos2-Kit (Memory, Qdrant, Zvec, sqlite-node)
+- La connaissance de la stack unifiée Hephaistos2-Kit v2 (`Hephaistos-everything-search` / hphe-mcp : recherche NTFS, contenu BM25, vectoriel, mémoire KV, orchestrateur + sqlite-node pour le KG)
 - Les patterns d'usage des MCP unifiés
 - Les règles spécifiques à ce système
 - La capacité de travailler avec le stockage dual (local + global)
@@ -45,8 +45,8 @@ Le script :
 
 Le fichier `SOUL.hermes-extension.md` est automatiquement chargé par Hermès après le `SOUL.md` principal. Il ajoute :
 
-- La connaissance des MCP unifiés disponibles (Memory, Qdrant, Zvec, sqlite-node, filesystem, etc.)
-- Les patterns d'usage prioritaires pour chaque MCP
+- La connaissance de hphe-mcp (recherche, mémoire, orchestrateur) et sqlite-node (KG)
+- Les patterns d'usage prioritaires pour chaque outil
 - Les règles spécifiques au système de mémoire unifiée de Hephaistos2-Kit
 - La procédure de stockage dual (local + global via AGENT_DB_ROOT)
 
@@ -90,78 +90,48 @@ Ce fichier s'applique au SOUL.md global de Hermès. Il ajoute :
 
 ## 🧠 MCP UNIFIÉS DISPONIBLES
 
-### Memory MCP (Knowledge Graph)
-- `mcp_Memory_search_nodes` — Recherche dans le graphe
-- `mcp_Memory_add_observations` — Ajouter des observations
-- `mcp_Memory_create_entities` — Créer des entités
-- `mcp_Memory_create_relations` — Créer des relations
-- `mcp_Memory_read_graph` — Lire le graphe complet
-- `mcp_Memory_delete_entities` / `_delete_observations` / `_delete_relations`
-- `mcp_Memory_open_nodes` — Ouvrir des nœuds spécifiques
+### hphe-mcp (`Hephaistos-everything-search`, ~57 outils)
+- `everything_search` — index NTFS $MFT instantané (tout le disque)
+- `content_search` / `semantic_search` / `hybrid_search` — contenu BM25 + vectoriel 2048D du workspace
+- `vec_search` / `vec_stats` / `nim_embed` — vectoriel brut + embeddings NIM
+- `memory_write/read/search/list/update/stats` — KV agentmemory par projet
+- `fs_*` — fichiers bornés par `.mcp-access` (profil `external` = read-only)
+- `dispatch_task`, `*_task`, `*_agent`, `available_models`, `nim_*` — orchestrateur + modèles
 
-### Qdrant MCP (Vector 2048D)
-- `mcp_qdrant_create_collection` — Créer une collection
-- `mcp_qdrant_list_collections` — Lister les collections
-- `mcp_qdrant_get_collection_info` — Info d'une collection
-- `mcp_qdrant_search` — Recherche vectorielle
-- `mcp_qdrant_add_documents` — Ajouter des documents
-- `mcp_qdrant_delete_documents` — Supprimer des documents
-- `mcp_qdrant_delete_collection` — Supprimer une collection
-- `mcp_qdrant_create_instance` / `list_instances` / `switch_instance`
-
-### Zvec MCP (Vector 2048D)
-- `mcp_zvec_create_collection` — Créer une collection
-- `mcp_zvec_list_collections` — Lister les collections
-- `mcp_zvec_get_collection_info` — Info d'une collection
-- `mcp_zvec_semantic_search` — Recherche sémantique
-- `mcp_zvec_add_documents` — Ajouter des documents
-- `mcp_zvec_delete_documents` — Supprimer des documents
-- `mcp_zvec_delete_collection` — Supprimer une collection
-- `mcp_zvec_create_store` / `list_stores` / `switch_store`
-
-### sqlite-node MCP (SQLite multi-DB)
-- `mcp_sqlite_node_connect_database` — Se connecter à une DB
-- `mcp_sqlite_node_query_data` — SELECT
-- `mcp_sqlite_node_execute_query` — INSERT/UPDATE/DELETE
-- `mcp_sqlite_node_list_tables` — Lister les tables
-- `mcp_sqlite_node_describe_table` — Description d'une table
-- `mcp_sqlite_node_get_table_info` — Info complète d'une table
-- `mcp_sqlite_node_list_databases` — Lister les DB
-- `mcp_sqlite_node_switch_database` — Changer de DB
-- `mcp_sqlite_node_attach_database` — Attacher une DB
+### sqlite-node MCP (KG read-mostly)
+- `query_data` / `execute_query` — SQL sur les alias `memory` (memory_mcp.db), `graph` (edges), `cache`
+- `list_tables` / `describe_table` / `list_databases` — introspection
 
 ## 📋 PROCÉDURES D'USAGE
 
 ### Mémoire unifiée — Flux de travail
 
-1. **Début de session** : Consulter la mémoire existante via `mcp_Memory_search_nodes`
-2. **Avant une tâche** : Vérifier si le contexte existe déjà
-3. **Pendant la tâche** : Utiliser les MCP pour stocker/retrouver des informations
-4. **Après une décision** : Tracer dans le KG via `mcp_Memory_add_observations`
-5. **Fin de session** : Consolider les données vers le stockage global
+1. **Début de session** : `memory_search` (contexte, préférences, décisions)
+2. **Avant une tâche** : `hybrid_search`/`content_search` — réutiliser l'existant
+3. **Après une décision** : `memory_write` + tags ; ADR `.agent/knowledge/decisions/` si structurelle
+4. **Fin de session** : leçons via `memory_write` (tag `lesson`)
 
-### Recherche vectorielle — Routage
+### Recherche — Routage
 
-- **Tags catégoriques** (type, domain, scope, priority) → Qdrant
-- **Tags sémantiques** (concept, action, entity, relation) → Zvec
-- **Tags mixtes** → Routage dual (Qdrant + Zvec)
+- Fichier par nom (disque) → `everything_search`
+- Texte/code exact → `content_search` ; concept → `semantic_search` ; mixte → `hybrid_search`
+- Souvenirs agents → `memory_search` + `sqlite-node` `memory`/`graph`
 
 ### Stockage dual
 
-- **Local** : `memory-database/` dans le projet (toujours présent)
-- **Global** : `${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/` (junction vers local)
+- **Local** : `memory-database/` dans le projet (jonction → global)
+- **Global** : `${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/` (= `F:/Sqlite-DB/...`)
 
 ## ⚠️ RÈGLES SPÉCIFIQUES
 
 ### Architecture mémoire
 - Toutes les données de mémoire DOIVENT être stockées dans `${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/`
 - Ne pas créer de bases SQLite hors de ce chemin sans justification
-- Utiliser les tags `architecture`, `security`, `mcp-tool` systématiquement
+- Tags `architecture`, `security`, `decision` systématiques
 
 ### Intégrité des données
 - La junction entre local et global doit être maintenue
-- Ne pas modifier directement les fichiers .db sans passer par les MCP
-- Utiliser les procédures d'usage définies dans ce fichier
+- KG = read-mostly (écritures via le pipeline d'ingestion `mirror_kg`)
 ```
 
 ### AGENTS.md (dans ~/.hermes/)
@@ -184,17 +154,15 @@ Les serveurs MCP suivants sont configurés globalement :
 
 | Serveur | Type | Usage principal |
 |---------|------|-----------------|
-| **Memory** | Knowledge Graph | Entités, observations, relations |
-| **Qdrant** | Vector 2048D | Recherche catégorique |
-| **Zvec** | Vector 2048D | Recherche sémantique |
-| **sqlite-node** | SQLite | Bases multiples, cache, graph |
+| **hphe-mcp** | Unifié (~57 outils) | Recherche, mémoire KV, orchestrateur, modèles |
+| **sqlite-node** | SQLite | KG read-only, cache, orchestrator |
+| **beacon** | Traces | Sessions cross-agents |
 
 ### Procédures obligatoires
 
-1. **Avant toute tâche** : `mcp_Memory_search_nodes` pour vérifier le contexte
-2. **Après toute décision** : `mcp_Memory_add_observations` avec tags
-3. **Recherche catégorique** : `mcp_qdrant_search` (tags: type, domain)
-4. **Recherche sémantique** : `mcp_zvec_semantic_search` (tags: concept, action)
+1. **Avant toute tâche** : `memory_search` pour vérifier le contexte
+2. **Après toute décision** : `memory_write` avec tags
+3. **Recherche contenu** : `hybrid_search` / `content_search` ; fichiers : `everything_search`
 
 ### Stockage
 

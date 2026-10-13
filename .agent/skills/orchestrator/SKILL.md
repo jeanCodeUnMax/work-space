@@ -15,7 +15,7 @@ Utiliser ce skill quand : l'utilisateur dit « orchestrateur », « dispatche »
 
 1. Lire `.agent/REGISTRY.md` — agents réels, skills, providers, outils morts (Trae abandonné, `gemini` CLI stock bloqué → `agy` à la place, llama.cpp sans modèle).
 2. `orchestrator.list_agents` — agents actifs + leur `config` JSON (`skills`, `providers`, `command`, `model_prefs`, `full_prompt`).
-3. Agents enregistrés connus : `agy` (Antigravity CLI, abonnement, toujours dispo, skills `*`), `kilo` (code/refactor/review/test), `hermes` (code/debug/review/explore/docs/test).
+3. Agents enregistrés connus : `agy` (Antigravity CLI, abonnement, toujours dispo, skills `*`, **défaut**), `kilo-nim1` (KiloCode→NIM : explore, code, docs), `ollama-cloud` (Hermes scopé : code, review, docs, explore). `kilo`/`hermes`/`vibe` : désactivés/retirés — voir REGISTRY.
 
 ## Procédure de délégation
 

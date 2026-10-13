@@ -1,5 +1,7 @@
 # Walkthrough - Unification de l'Architecture RAG Hephaistos
 
+> ⚠️ **OBSOLETE (v1)** — Document historique : le pipeline Python (`.agent/rag/cli.py`, Qdrant, Zvec, pont `:8002`) est **archivé** dans `_archive/agent-rag/` et remplacé par le moteur Rust `hphe-mcp`/`hphe-ingest` (Tantivy + usearch + `mirror_kg`). Ne pas suivre ces instructions.
+
 Nous avons finalisé la remédiation complète du pipeline RAG. Le système est passé d'une architecture hybride fragmentée (PowerShell/Python avec stubs) à un moteur unifié piloté par Python, capable de gérer l'ingestion, l'embedding et le stockage de manière autonome et performante.
 
 ## 🚀 Changements Majeurs

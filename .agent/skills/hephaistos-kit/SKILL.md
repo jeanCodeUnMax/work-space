@@ -15,23 +15,23 @@ description: "Kit d'infrastructure agent injectable : installe/met à jour le st
 |---|---|
 | `.agent/rules/global_rules.md` | Règles universelles (délégation CLI, OpenCLI/puppeteer, uv, mémoire unifiée) |
 | `.agent/agents/*.md` | Définitions d'agents + triggers de routage |
-| `.agent/skills/*/` | ~45 skills métier (dont `hephaistos-kit`, `orchestrator`) |
+| `.agent/skills/*/` | ~40 skills métier (dont `hephaistos-kit`, `orchestrator`, `boost`) |
 | `.agent/workflows/`, `knowledge/`, `memory/` | Workflows slash-commands, docs mémoire |
-| `.agent/scripts/` | Infra : `run_chrome_opencli.bat`, `beacon-sync.ps1`, `ingest-workspace.ps1`… |
+| `.agent/scripts/` | Infra : `start-workspace.ps1`, `beacon-sync.ps1`, `ingest-workspace.ps1`, `auto-ingest.ps1`, `memory-maintenance.ps1`, `console-hider.ps1`, `sync-agent-layer.ps1`… |
 | `.agent/devin/`, `.agent/hermes/` | Hooks Devin + couche Hermes |
 | `.agent/REGISTRY.md` | Registre agents/providers + **agent par défaut** |
 | `.vscode/` | Configs MCP partagées |
 
-## Commandes
+## Commandes réelles (pas de binaire `hephaistos-kit` — scripts PowerShell)
 
-```bash
-hephaistos-kit init              # injecte .agent/ + .vscode/ dans le cwd
-hephaistos-kit init --path <dir> # autre cible
-hephaistos-kit init --dry-run    # simulation, rien n'est copié
-hephaistos-kit update --force    # = init --force : réaligne sur le template
+```powershell
+# Injection/sync de la couche .agent/ vers un projet cible :
+.agent/scripts/sync-agent-layer.ps1 -TargetPath <projet>   # copie hash-compare, préserve local_rules.md + runtime
+.agent/scripts/init-project.ps1 -Path <projet>             # init complète d'un nouveau projet
+.agent/bootstrap.ps1                                        # bootstrap workspace (auto-ingest)
 ```
 
-Depuis le repo local sans install : `node <KIT_ROOT>\bin\hephaistos-kit.js init`.
+Le kit se propage par ces scripts — il n'existe pas d'exécutable `bin/hephaistos-kit.js`.
 
 ## Préservations automatiques (update/--force)
 
@@ -44,8 +44,8 @@ Sont exclus de la copie : `*.log`, `*.pid`, `__pycache__`, `node_modules`.
 
 ## Réparer une injection ratée / .agent corrompu
 
-1. **Processus résiduels** : tuer `monitor.js`, `revue serve`, scripts `.agent/` —
-   un watcher ouvert verrouille les dossiers (EBUSY).
+1. **Processus résiduels** : tuer `hphe-rest`, `bridge.js` (orchestrator-monitor),
+   scripts `.agent/` — un watcher ouvert verrouille les dossiers (EBUSY).
 2. **Injection partielle** (`.agent` à moitié vide) : relancer `init --force` —
    le merge-copy complète sans rien perdre.
 3. **Dossier zombie** (handle fantôme qui refuse rmdir même après kill) : le
@@ -66,10 +66,11 @@ Le template vit dans le repo `Hephaistos2-Kit` : éditer `.agent/` à la racine 
 commit, push → la prochaine injection embarque la modif. Ne jamais y mettre de
 données runtime (logs, pids, bases) ni de secrets.
 
-## Stack MCP (`mcp/`)
+## Stack MCP — unifiée dans hphe-mcp
 
-Le kit embarque aussi la stack MCP canonique : `mcp/manifest.json` (18 serveurs),
-sous-modules dans `mcp/servers/` (chaque MCP = son repo épinglé), `install.ps1`
-(clone → build → génère la config de l'IDE), fiches `mcp/cards/`.
-Secrets : noms de variables uniquement — valeurs dans `~/.hephaistos/env.local`.
-Voir `mcp/README.md`.
+La stack MCP multi-serveurs v1 (orchestrator-server, agentmemory, nim-router,
+model-discovery, qdrant, zvec, memory-f…) est **absorbée** dans le serveur unique
+`extension/server/hphe-mcp.exe` (57 outils, Rust). Devin le déclare en direct dans
+`%APPDATA%/devin/mcp_config.json` ; les sous-agents CLI y accèdent via `mcp-mux`
+(profil `EVERYTHING_MCP_AGENT=external`, lecture bornée) — sauf `agy`, démuxé en
+direct. Voir `docs/MCP-TOOLS.md` pour la liste des outils.

@@ -9,18 +9,13 @@
 
 Les serveurs MCP suivants sont configurés globalement et disponibles dans ce projet :
 
-| Serveur | Outils | Usage dans ce projet |
-|---------|--------|----------------------|
-| **Memory** | 9 | Knowledge Graph : créér/lier/observer/supprimer entités, search, read_graph |
-| **Qdrant** | 10 | Vector store 2048D (NVIDIA NIM) : collections, documents, search catégorique |
-| **Zvec** | 10 | Vector store 384D (local MiniLM-L6-v2) : stores, collections, semantic_search |
-| **sqlite-node** | 9 | SQLite multi-bases : connect, query, execute, describe, list_tables |
-| **filesystem** | 11 | Lecture/écriture/recherche de fichiers (étendu via Hephaistos2-Kit) |
-| **kaggle** | 51 | Compétitions, datasets, kernels (si pertinent) |
-| **colab-mcp** | 1 | Session Colab (si pertinent) |
-| **devin/context7** | 2 | Docs libraries (si pertinent) |
+| Serveur | Usage dans ce projet |
+|---------|----------------------|
+| **Hephaistos-everything-search** (hphe-mcp, ~57 outils) | Recherche NTFS instantanée (`everything_search`), contenu/vectoriel workspace (`content`/`semantic`/`hybrid_search`), mémoire KV (`memory_*`), fichiers (`fs_*`), orchestrateur (`*_task`, `dispatch_task`), modèles (`available_models`, `nim_*`) |
+| **sqlite-node** | KG read-only (`memory`/`graph`), cache, orchestrator |
+| **beacon** | Traces de sessions cross-agents (si configuré) |
 
-> **Total : 103 outils MCP disponibles**, tous connectés.
+> v2 : les ex-Memory/Qdrant/Zvec/orchestrator/model-discovery sont absorbés dans hphe-mcp — ne pas chercher `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*`.
 
 ---
 
@@ -36,15 +31,13 @@ Les serveurs MCP suivants sont configurés globalement et disponibles dans ce pr
 | `memory_mcp.db` | `{{AGENT_DB_ROOT}}/current_workspace/{{PROJECT_ID}}/graph/memory_mcp.db` | Knowledge Graph principal |
 | `graph-memory.db` | `{{AGENT_DB_ROOT}}/current_workspace/{{PROJECT_ID}}/graph/graph-memory.db` | Edges rapides |
 | `runtime-cache.db` | `{{AGENT_DB_ROOT}}/current_workspace/{{PROJECT_ID}}/cache/runtime-cache.db` | Cache runtime |
-| `zvec-data/` | `{{AGENT_DB_ROOT}}/current_workspace/{{PROJECT_ID}}/vector/zvec-data/` | Index vectoriel 384D local (store natif) |
-| Qdrant server | `http://localhost:6333` (collection `memory_hybrid`) | Index vectoriel 2048D NVIDIA NIM |
+| Index hphe | géré par `hphe-mcp` (Tantivy + usearch HNSW 2048D, NIM) | Recherche contenu/vectorielle du workspace |
 
 ### Procédure d'usage
-1. **Avant toute tâche** : `mcp_Memory_search_nodes` pour vérifier le contexte existant
-2. **Après une décision** : `mcp_Memory_add_observations` avec tags (`architecture`, `security`, `mcp-tool`)
-3. **Recherche catégorique** : `mcp_qdrant_search` (tags: type, domain, scope)
-4. **Recherche sémantique** : `mcp_zvec_semantic_search` (tags: concept, action, entity)
-5. **Lecture BP** : `mcp_sqlite_node_query_data` sur `graph-memory.db` (lectures seule)
+1. **Avant toute tâche** : `memory_search` (hphe-mcp) pour vérifier le contexte existant
+2. **Après une décision** : `memory_write` avec tags (`architecture`, `security`, `decision`)
+3. **Recherche contenu** : `hybrid_search` / `content_search` ; fichiers disque : `everything_search`
+4. **Lecture KG** : `sqlite-node` `query_data` sur `memory`/`graph` (lectures seule)
 
 ---
 

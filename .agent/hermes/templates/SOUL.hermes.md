@@ -16,19 +16,18 @@
 
 ## 🔗 MCP TOOLS — Usage prioritaire dans ce projet
 
-### Mémoire (prioritaire absolu)
-1. `mcp_Memory_search_nodes` — Avant toute tâche, chercher le contexte existant
-2. `mcp_Memory_add_observations` — Après toute décision, tracer avec tags
-3. `mcp_Memory_create_entities` / `memory.create_relations` — Structurer le KG
+### Mémoire (prioritaire absolu — hphe-mcp `Hephaistos-everything-search`)
+1. `memory_search` — Avant toute tâche, chercher le contexte existant
+2. `memory_write` / `memory_update` — Après toute décision, tracer avec tags (`architecture`, `security`, `decision`)
 
-### Vector search
-4. `mcp_qdrant_search` — Recherche catégorique (tags: type, domain, scope, priority)
-5. `mcp_zvec_semantic_search` — Recherche sémantique (tags: concept, action, entity, relation)
+### Recherche (hphe-mcp)
+3. `hybrid_search` / `content_search` — contenu workspace (BM25 + vectoriel 2048D)
+4. `everything_search` — fichiers par nom sur tout le disque (NTFS $MFT)
+5. `semantic_search` — sens/concept ; `vec_search` + `nim_embed` pour le vectoriel brut
 
 ### SQLite
-6. `mcp_sqlite_node_connect_database` — Se connecter à une DB
-7. `mcp_sqlite_node_query_data` — SELECT sur une DB connectée
-8. `mcp_sqlite_node_execute_query` — INSERT/UPDATE/DELETE
+6. `sqlite-node` `query_data` — SELECT (alias `memory`/`graph`/`cache`, KG read-only)
+7. `sqlite-node` `execute_query` — INSERT/UPDATE/DELETE (hors KG/orchestrator)
 
 ### Fichiers
 9. `mcp_filesystem_read_file` / `write_file` / `edit_file`

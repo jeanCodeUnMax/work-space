@@ -165,11 +165,11 @@ Write-Host "`nCe que la couche apporte à Hermès :" -ForegroundColor Yellow
 Write-Host "  • Connaissance des 9 MCP unifiés (Memory, Qdrant, Zvec, sqlite-node, etc.)" -ForegroundColor White
 Write-Host "  • Procédures d'usage du système de mémoire unifiée" -ForegroundColor White
 Write-Host "  • Règles de stockage dual (local + global)" -ForegroundColor White
-Write-Host "  • Routage vectoriel automatique (Qdrant + Zvec)" -ForegroundColor White
+Write-Host "  • Routage recherche hphe (everything/content/semantic/hybrid)" -ForegroundColor White
 Write-Host "  • Intégration avec les agents Hephaistos via delegate_task" -ForegroundColor White
 
 Write-Host "`nProchaines étapes :" -ForegroundColor Yellow
 Write-Host "  1. Redémarrer Hermès pour charger les nouveaux fichiers" -ForegroundColor White
-Write-Host "  2. Tester la mémoire : mcp_Memory_search_nodes" -ForegroundColor White
+Write-Host "  2. Tester la mémoire : memory_search (hphe-mcp)" -ForegroundColor White
 Write-Host "  3. Créer des workspaces et lancer le script hermes-init.ps1" -ForegroundColor White
 Write-Host "  4. Remplir skills-adapters/ et agents-ref/ (futur)" -ForegroundColor White

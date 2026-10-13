@@ -57,7 +57,7 @@ Le script crée :
 ### Après l'injection
 
 1. **Redémarrer Hermès** (ou relancer la session) pour charger `AGENTS.md` + `SOUL.hermes.md`
-2. **Vérifier la mémoire** : utiliser `mcp_Memory_search_nodes` pour tester la connexion
+2. **Vérifier la mémoire** : utiliser `memory_search` (hphe-mcp) pour tester la connexion
 3. **Créer un MANIFEST.md** si nécessaire (procédure dans Hephaistos2-Kit)
 
 ---

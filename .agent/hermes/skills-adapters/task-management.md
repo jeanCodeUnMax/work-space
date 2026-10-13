@@ -1,151 +1,62 @@
-# Adaptateur Gestion des tâches — Hephaistos2-Kit (suite)
+# Adaptateur Gestion des tâches — Hephaistos2-Kit
+
+> Les tâches vivent dans `orchestrator.db` (HPHE_ORCH_DB) et se manipulent **uniquement** via les outils orchestrateur de `hphe-mcp` — jamais de SQL direct.
+>
+> ⚠️ v1 : le pattern « entités `task-*` + relations dans le KG via `mcp_Memory_*` » est **mort** — les tâches ne sont plus des nœuds du graphe, ce sont des lignes de la base orchestrateur.
+
+---
+
+## Outils (hphe-mcp)
+
+| Outil | Usage |
+|-------|-------|
+| `create_task` | Créer une tâche (sans notification — planification brute) |
+| `dispatch_task` | Créer + assigner + **spawner le CLI** de l'agent (effet de bord réel) |
+| `list_tasks` / `get_next_task` | Inventaire / prochaine tâche en attente |
+| `update_task` | Statut (`pending`/`in_progress`/`completed`/`failed`) + résultat — **clôture obligatoire** |
+| `delete_task` | Suppression |
+| `suggest_agent` | Quel agent pour un `task_type` |
+| `list_agents` / `register_agent` / `update_agent` | Roster |
+| `list_worktrees` / `worktree_cleanup` | Isolation git des tâches parallèles |
 
 ### Planifier une tâche complexe
 
-```
-Équivalent MCP: orchestrator MCP (si disponible) ou sqlite-node fallback
+1. Décomposer en sous-tâches (blocs indépendants).
+2. `create_task` pour les jalons / `dispatch_task` pour les sous-tâches exécutables (`task_type` ∈ `code|debug|review|docs|test|explore`).
+3. Dépendances : ordonner via les dispatches successifs (une tâche terminée débloque la suivante) — l'orchestrateur ne gère pas de DAG automatique.
 
-Usage: Planifier une tâche complexe avec décomposition, dépendances, et assignation.
-```
+### Suivre l'avancement
 
-**Procédure :**
-1. Analyser la tâche et identifier les sous-tâches
-2. Déterminer les dépendances entre sous-tâches
-3. Assigner les agents appropriés à chaque sous-tâche
-4. Créer les entités "task-{slug}" dans le KG avec les détails
-5. Créer les relations entre les tâches (dépendances, séquences)
+- `list_tasks` → état global ; `get_next_task` → file.
+- **L'agent exécutant DOIT appeler `update_task(id, status, result)`** — sinon la tâche reste pendante et le monitor ne la voit jamais finie.
+- Livrable = fichier sur disque (jamais stdout seul) — vérifier `git status`/`git diff --stat` après dispatch.
 
-**Exemple :**
-```
-# Créer une tâche de planification
-mcp_Memory_create_entities(entities=[{
-    "name": "task-auth-refactor",
-    "type": "task",
-    "description": "Refactoriser le système d'authentification",
-    "priority": "high",
-    "status": "pending",
-    "assignee": "security-auditor + backend-specialist",
-    "estimated_duration": "4h"
-}])
+### Récupérer le contexte d'une tâche passée
 
-# Créer les sous-tâches avec dépendances
-mcp_Memory_create_entities(entities=[
-    {"name": "task-audit-auth", "type": "subtask", "status": "pending"},
-    {"name": "task-implement-jwt", "type": "subtask", "status": "pending"},
-    {"name": "task-write-tests", "type": "subtask", "status": "pending"}
-])
-
-# Créer les relations de dépendance
-mcp_Memory_create_relations(relations=[
-    {"from": "task-auth-refactor", "to": "task-audit-auth", "type": "has_subtask", "weight": 1.0},
-    {"from": "task-auth-refactor", "to": "task-implement-jwt", "type": "has_subtask", "weight": 1.0},
-    {"from": "task-auth-refactor", "to": "task-write-tests", "type": "has_subtask", "weight": 1.0},
-    {"from": "task-implement-jwt", "to": "task-audit-auth", "type": "depends_on", "weight": 1.0},
-    {"from": "task-write-tests", "to": "task-implement-jwt", "type": "depends_on", "weight": 1.0}
-])
-```
-
-### Suivre l'avancement d'une tâche
-
-```
-Équivalent MCP: mcp_Memory_add_observations
-
-Usage: Mettre à jour le statut d'une tâche au fur et à mesure.
-```
-
-**Procédure :**
-1. Identifier l'entité tâche
-2. Ajouter une observation avec le nouveau statut et les détails
-3. Si la tâche est complétée, ajouter les leçons apprises
-
-**Exemple :**
-```
-mcp_Memory_add_observations(entity="task-audit-auth", content="""
-Statut: completed
-Résultat: Audit terminé, 3 vulnérabilités trouvées (2 moyennes, 1 haute)
-Leçons: Utiliser bcrypt au lieu de md5, ajouter rate limiting
-""", tags=["task", "security", "lesson"])
-```
-
-### Récupérer les tâches en attente
-
-```
-Équivalent MCP: mcp_Memory_search_nodes
-
-Usage: Lister les tâches en attente pour planification.
-```
-
-**Exemple :**
-```
-mcp_Memory_search_nodes(query="pending tasks", tags=["task"])
-→ Retourne: liste des tâches avec statut, priorité, et assignee
-```
+- `list_tasks` (historique) + `memory_search` (notes `task-<slug>` écrites par les agents).
 
 ---
 
 ## Bonnes pratiques
 
-1. **Créer les tâches avant de commencer** — Une tâche sans entité dans le KG est une tâche perdue.
-2. **Documenter les dépendances** — Les relations entre tâches permettent de comprendre l'ordre d'exécution.
-3. **Mettre à jour le statut régulièrement** — Un statut obsolète est pire que pas de statut.
-4. **Tracer les leçons apprises** — À la fin de chaque tâche, ajouter une observation avec les leçons.
-5. **Archiver les tâches terminées** — Après une period de temps, archiver les tâches complétées pour nettoyer le KG.
+1. **`dispatch_task` > `create_task`** quand le travail doit démarrer : `create_task` ne réveille personne.
+2. **`full_prompt` inline** : brief complet dans `context` (+ `files` scopés strictement) — l'agent CLI ne voit pas ta conversation.
+3. **`suggest_agent` en cas de doute** ; `agent_name` pour forcer (`agy` par défaut, `kilo-nim1`, `ollama-cloud` — voir `.agent/REGISTRY.md`).
+4. **Modèles** : `provider_prefs` (monitor) + `available_models` (probe live) — ne jamais coder un modèle en dur.
+5. **Worktrees** pour les tâches parallèles touchant du code (`worktree: true`) ; nettoyer avec `worktree_cleanup`.
+6. **Anti-récursion** : jamais d'instruction « appelle l'orchestrateur » ou « lance un CLI agent » dans le brief d'un agent.
 
 ---
 
-## Templates de tâche
+## Template de dispatch
 
-### Template: Tâche de développement
-
-```json
-{
-  "name": "task-{slug}",
-  "type": "task",
-  "description": "{description claire de la tâche}",
-  "priority": "high|medium|low",
-  "status": "pending|in_progress|completed|failed",
-  "assignee": "{agent-name}",
-  "estimated_duration": "{estimation}",
-  "tags": ["development", "{domaine}", "{technologie}"],
-  "acceptance_criteria": [
-    "{critère 1}",
-    "{critère 2}",
-    "{critère 3}"
-  ]
-}
 ```
-
-### Template: Tâche de sécurité
-
-```json
-{
-  "name": "task-{slug}",
-  "type": "task",
-  "description": "{description de l'audit ou de la correction}",
-  "priority": "high|medium|low",
-  "status": "pending|in_progress|completed|failed",
-  "assignee": "security-auditor",
-  "estimated_duration": "{estimation}",
-  "tags": ["security", "{vulnérabilité}", "{domaine}"],
-  "findings": [
-    {"severity": "critical|high|medium|low", "description": "{description}", "remediation": "{action}"}
-  ]
-}
-```
-
-### Template: Tâche de test
-
-```json
-{
-  "name": "task-{slug}",
-  "type": "task",
-  "description": "{description des tests à écrire ou améliorer}",
-  "priority": "high|medium|low",
-  "status": "pending|in_progress|completed|failed",
-  "assignee": "test-engineer",
-  "estimated_duration": "{estimation}",
-  "tags": ["testing", "{type}", "{domaine}"],
-  "coverage_target": "{cible de couverture}",
-  "test_types": ["unit", "integration", "e2e"]
-}
+dispatch_task(
+  title="task-<slug>: <verbe> <objet>",
+  task_type="code|debug|review|docs|test|explore",
+  context="<brief complet autonome : objectif, contraintes, livrable attendu>",
+  files=["<chemins absolus scopés>"],
+  workspace="<racine>",
+  agent_name="<optionnel>"
+)
 ```

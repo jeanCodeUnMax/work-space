@@ -7,20 +7,16 @@
 
 ## 🔗 MCP UNIFIÉS — CONFIGURATION GLOBALE
 
-Les serveurs MCP suivants sont configurés dans `$HOME/.hermes/config.yaml` et disponibles pour tous les workspaces :
+⚠️ **Stack v2 (2026-10)** : Memory/Qdrant/Zvec/orchestrator/model-discovery sont **absorbés** dans `Hephaistos-everything-search` (`hphe-mcp`). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus.
 
-| Serveur | Transport | Outils | Utilisation principale |
-|---------|-----------|--------|------------------------|
-| **Memory** | stdio (node) | 9 | Knowledge Graph : entités, observations, relations, search |
-| **Qdrant** | stdio (node) | 10 | Vector store 2048D (NVIDIA NIM) : collections, documents, search catégorique |
-| **Zvec** | stdio (node) | 10 | Vector store 384D (local MiniLM-L6-v2) : stores, collections, semantic_search |
-| **sqlite-node** | stdio (node) | 9 | SQLite multi-DB : connect, query, execute, describe, list_tables |
-| **filesystem** | stdio (node) | 11 | Fichiers : read, write, edit, search, directory, tree |
-| **kaggle** | stdio (exe) | 51 | Kaggle : compétitions, datasets, kernels, modèles |
-| **colab-mcp** | stdio (uvx) | 1 | Session Colab : ouverture de connexion navigateur |
-| **devin/context7** | stdio (node) | 2 | Documentation libraries : resolve + get-library-docs |
+| Serveur | Outils clés | Utilisation principale |
+|---------|-------------|------------------------|
+| **Hephaistos-everything-search** (hphe-mcp, ~57 outils) | `everything_search`, `content_search`, `semantic_search`, `hybrid_search`, `vec_search`, `nim_embed`, `memory_*`, `fs_*`, `dispatch_task`, `*_task`, `*_agent`, `available_models`, `nim_*` | Recherche NTFS instantanée, index contenu/vectoriel du workspace, mémoire KV, orchestrateur, modèles |
+| **sqlite-node** | `query_data`, `execute_query`, `list_tables`, `describe_table` | KG read-only (`memory`/`graph`), cache, orchestrator |
+| **beacon** | `search_activity`, `summarize_activity`, `search_memory` | Traces de sessions cross-agents |
+| **filesystem** | read, write, edit, search | Fichiers (si exposé en plus de `fs_*` hphe) |
 
-> **Total : 103 outils MCP disponibles**, tous connectés et fonctionnels.
+> Les agents CLI/ACP passent par **mcp-mux** ; l'entrée hphe y porte `EVERYTHING_MCP_AGENT=external` → policy `.mcp-access` read-only bornée (pas d'écriture `fs_write`, secrets refusés).
 
 ---
 
@@ -28,26 +24,25 @@ Les serveurs MCP suivants sont configurés dans `$HOME/.hermes/config.yaml` et d
 
 ### A. Sourcing systématique (AVANT toute tâche)
 
-1. **Utiliser `mcp_Memory_search_nodes`** pour vérifier si le contexte existe déjà
+1. **`memory_search`** (hphe-mcp) pour vérifier si le contexte existe déjà
 2. **Si le contexte existe** : réutiliser sans re-explorer (économie de tokens)
 3. **Si le contexte n'existe pas** : créer le contexte nécessaire avant de commencer
 
 ### B. Traçage des décisions (APRÈS toute décision importante)
 
-1. **Utiliser `mcp_Memory_add_observations`** pour documenter la décision
-2. **Inclure systématiquement les tags** :
-   - `architecture` — décisions structurelles
-   - `security` — aspects de sécurité
-   - `mcp-tool` — interactions avec les MCP
-3. ** Ajouter les métadonnées** pour la recherche future
+1. **`memory_write`** (hphe-mcp) pour documenter la décision
+2. **Inclure systématiquement les tags** : `architecture`, `security`, `decision`
+3. Décision structurelle → **aussi** ADR `.agent/knowledge/decisions/NNN-titre.md`
 
-### C. Recherche vectorielle (QUAND nécessaire)
+### C. Recherche (QUAND nécessaire)
 
-| Type de recherche | Tags | Store | Outil |
-|-------------------|------|-------|-------|
-| Catégorique | type, domain, scope, priority | Qdrant 2048D | `mcp_qdrant_search` |
-| Sémantique | concept, action, entity, relation | Zvec 384D | `mcp_zvec_semantic_search` |
-| Mixte | combinaison | Dual | Les deux |
+| Besoin | Outil |
+|--------|-------|
+| Fichier par nom (disque entier) | `everything_search` |
+| Texte/code exact (workspace) | `content_search` |
+| Concept/sens | `semantic_search` |
+| Mixte (défaut) | `hybrid_search` |
+| Souvenirs agents | `memory_search` |
 
 ### D. Gestion du stockage
 
@@ -124,25 +119,23 @@ $HOME/.hermes/
 
 ### Utilisation des MCP dans les sessions
 
-Les MCP configurés dans `config.yaml` sont automatiquement disponibles. Pour les utiliser :
+Les MCP configurés sont automatiquement disponibles. Pour les utiliser :
 
-1. **Memory** : `mcp_Memory_search_nodes(query="...")`
-2. **Qdrant** : `mcp_qdrant_search(collection="doc_index", vector=[...])`
-3. **Zvec** : `mcp_zvec_semantic_search(collection="entities_index", query_vector=[...])`
-4. **sqlite-node** : d'abord `mcp_sqlite_node_connect_database`, puis `query_data` ou `execute_query`
+1. **Recherche contenu** : `hybrid_search(query="...")` ou `content_search(query="...")`
+2. **Fichiers disque** : `everything_search(query="nom_fichier")`
+3. **Mémoire** : `memory_search(query="...")` / `memory_write(key="...", content="...", tags=[...])`
+4. **sqlite-node** : `query_data` / `execute_query` sur les alias `memory`, `graph`, `cache`
 
-### Avec delegate_task
+### Avec la délégation
 
-Pour utiliser les agents Hephaistos2-Kit via `delegate_task` :
+Pour déléguer aux agents CLI via l'orchestrateur hphe-mcp :
 
-```python
-# Exemple : déléguer une tâche de planification
-result = delegate_task(
-    goal="Planifier l'architecture du module X",
-    context="Le système utilise Memory, Qdrant, Zvec, et sqlite-node pour la mémoire unifiée.",
-    skills=["project-planner", "architecture"]
-)
 ```
+dispatch_task(title="...", task_type="code|debug|review|docs|test|explore",
+              context="<brief complet>", files=[...], workspace="<racine>")
+```
+
+⚠️ `dispatch_task` **spawne réellement le CLI** (effet de bord). Clôture : `update_task(id, status, result)`.
 
 ---
 

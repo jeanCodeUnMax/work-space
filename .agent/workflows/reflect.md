@@ -43,17 +43,16 @@ Avant d'écrire un nouvel apprentissage, vérifier s'il **contredit** une mémoi
 - `memory_search` sur le sujet → une observation existe qui dit le contraire ?
 - Le rapport `maintenance:last_report` signale des quasi-doublons à merger ?
 - Si oui → **ne pas supprimer**, **superseder** :
-  1. Écrire la nouvelle version (entité/observation)
-  2. `memory.create_relations` : `ancienne_entité —[superseded_by]→ nouvelle_entité`
-  3. Ajouter à l'ancienne une observation : `[SUPERSEDED YYYY-MM-DD] remplacé par <nouvelle> — raison : <pourquoi>`
-- Les entrées `superseded_by` restent lisibles (piste auditable) mais tout agent qui lit une observation `[SUPERSEDED]` DOIT suivre le lien vers la version courante.
+  1. Écrire la nouvelle version (`memory_write` / `memory_update`)
+  2. Préfixer le contenu de l'ancienne entrée : `[SUPERSEDED YYYY-MM-DD] remplacé par <nouvelle> — raison : <pourquoi>` (le KV n'a pas de relations typées : la piste auditable vit dans le corps de l'entrée)
+- Les entrées `[SUPERSEDED]` restent lisibles (piste auditable) mais tout agent qui en lit une DOIT ignorer son contenu et prendre la version courante.
 - **Corrections utilisateur = signal de vérité absolu** : si l'utilisateur a corrigé l'agent, la mémoire contradictoire est superseded immédiatement.
 
 ### 3. PERSISTANCE — Double écriture obligatoire
 
 | Destination | Quoi | Quand |
 |---|---|---|
-| **Memory MCP** (`memory_write`) | Entité `learning` / `pattern` + observations + relations | TOUJOURS |
+| **Mémoire unifiée** (`memory_write`, hphe-mcp) | Entrée `learning` / `pattern` + observations | TOUJOURS |
 | **`.agent/knowledge/decisions/NNN-titre.md`** | ADR complet (Statut/Contexte/Décision/Conséquences) | Décision structurelle |
 | **`.agent/knowledge/`** (autres dossiers) | Mise à jour doc existante devenue obsolète | Si écart constaté |
 | **Intentions** | Entité `intention` : prochaine action identifiée mais non faite | Si travail restant |

@@ -14,7 +14,7 @@ Comprendre et moderniser du code legacy avec empathie et rigueur :
 
 ## Compétences (skills)
 - clean-code
-- refactoring-patterns
+- architecture
 - code-review-checklist
 
 ## Quand l'utiliser

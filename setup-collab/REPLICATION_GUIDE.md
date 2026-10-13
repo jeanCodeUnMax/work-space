@@ -1,4 +1,4 @@
-# GUIDE DE REPLICATION SYSTEME : ANTIGRAVITY & DEVIN (ORCHESTRATION BOOST + HEPHAISTOS)
+# GUIDE DE REPLICATION SYSTEME : ANTIGRAVITY & DEVIN (ORCHESTRATION BOOST + HEPHAISTOS + OBSIDIAN)
 
 > Ce document est une consigne operationnelle directe destinee a un agent IA (Antigravity, Devin, Cursor, Cline) s'executant sur un poste distant (Windows). L'agent distant doit lire ce guide et appliquer les modifications de maniere autonome.
 
@@ -6,18 +6,23 @@
 
 ## 1. OBJECTIF ET PERIMETRE
 Reconcilier et aligner l'environnement de developpement distant avec le standard d'orchestration :
-1. **Activation de la commande `/boost` dans Devin** via un workflow d'orchestration haute precision.
-2. **Automatisation du serveur MCP Hephaistos (`Hephaistos-everything-search`)** dans Antigravity et Devin pour eliminer les scans disques lents (`Get-ChildItem`, `dir /s`, `find`).
-3. **Harmonisation des regles globales** : Rigueur chirurgicale, boucle de test/linter obligatoire, politique stricte de zero emoji.
+1. **Activation de la commande `/boost` dans Devin** via le format Skill moderne (`%APPDATA%\devin\skills\boost\SKILL.md`).
+2. **Activation de la commande `/obsidian` dans Devin** via le format Skill moderne (`%APPDATA%\devin\skills\obsidian\SKILL.md`).
+3. **Automatisation des serveurs MCP dans Devin** :
+   - `Hephaistos-everything-search` pour eliminer les scans disques lents (`Get-ChildItem`, `dir /s`, `find`).
+   - `antigravity-obsidian` pour la memoire persistante, triage de contexte et checkpoints de sessions.
+4. **Harmonisation des regles globales et des canaux de delegation** : `run_subagent` (IDE), `dispatch_task` (CLI Hephaistos), et `agy` (Antigravity CLI).
+5. **Outil d'audit multi-disques en lecture seule (`tools/audit-projects.py`)** pour cartographier sans risque les projets presents sur `F:` et `E:`.
 
 ---
 
 ## 2. PREREQUIS MACHINE DISTANTE
 - **OS :** Windows 10/11 (PowerShell disponible).
-- **Runtimes :** Node.js actif (`node -v`).
+- **Runtimes :** Node.js actif (`node -v`), Python 3.10+ actif (`python --version`).
 - **Serveur MCP Hephaistos :** L'executable `hphe-mcp.exe` de Hephaistos2-Kit accessible en local (par exemple dans `C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-mcp.exe` ou dans le clone du depot).
+- **Serveur MCP Obsidian :** Script `C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js` relie a la voute Obsidian `F:/doc_Obsidian/Doc`.
 - **Dossiers Utilisateur standard :**
-  - Config Devin : `%USERPROFILE%\.config\devin\`
+  - Skills Devin : `%APPDATA%\devin\skills\` ou `%USERPROFILE%\.agents\skills\`
   - MCP Devin : `%APPDATA%\devin\mcp_config.json`
   - Config Antigravity : `%USERPROFILE%\.gemini\config\`
 
@@ -26,8 +31,8 @@ Reconcilier et aligner l'environnement de developpement distant avec le standard
 ## 3. ETAPE 1 : CONFIGURATION DE DEVIN
 
 ### 1.1 Declaration MCP dans Devin
-Verifier ou creer le fichier `%APPDATA%\devin\mcp_config.json`.
-Ajouter dans l'objet `"mcpServers"` le serveur `Hephaistos-everything-search` :
+Verifier ou creer le fichier `%APPDATA%\devin\mcp_config.json` (un modele clef en main est fourni dans `setup-collab\mcp_config.example.json`).
+Ajouter dans l'objet `"mcpServers"` les serveurs `Hephaistos-everything-search` et `antigravity-obsidian` :
 
 ```json
 {
@@ -42,15 +47,31 @@ Ajouter dans l'objet `"mcpServers"` le serveur `Hephaistos-everything-search` :
         "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
         "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
       }
+    },
+    "antigravity-obsidian": {
+      "command": "node",
+      "args": [
+        "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "F:/doc_Obsidian/Doc"
+      }
     }
   }
 }
 ```
 
-### 1.2 Creation du Workflow `/boost` pour Devin
-Creer le fichier `%USERPROFILE%\.config\devin\workflows\boost.md` (ou copier le fichier `boost.md` present dans ce dossier).
+### 1.2 Creation de la Skill `/boost` pour Devin (Format SKILL.md moderne)
+> **NOTE CRITIQUE :** Dans les versions recentes de Devin, les slash commands utilisent le format Skill dans `%APPDATA%\devin\skills\<nom>\SKILL.md` (les fichiers `workflows/*.md` sont legacy).
 
-### 1.3 Injection des Regles dans Devin (`global_rules.md`)
+Creer le dossier `%APPDATA%\devin\skills\boost\` et y copier le fichier `setup-collab\skills\boost\SKILL.md` (avec `triggers: ["user"]` pour que `/boost` apparaisse immediatement dans la palette slash).
+
+### 1.3 Creation de la Skill `/obsidian` pour Devin (Format SKILL.md moderne)
+Creer le dossier `%APPDATA%\devin\skills\obsidian\` et y copier le fichier `setup-collab\skills\obsidian\SKILL.md` (avec `triggers: ["user"]` pour que `/obsidian` apparaisse immediatement dans la palette slash).
+
+La skill expose les outils MCP (`obsidian_triage`, `obsidian_peek`, `obsidian_session_save`, `obsidian_learn`, etc.) ainsi que le fallback CLI `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js"`.
+
+### 1.4 Injection des Regles dans Devin (`global_rules.md`)
 Ouvrir `%USERPROFILE%\.config\devin\global_rules.md` et ajouter a la fin la directive :
 
 ```markdown
@@ -59,7 +80,8 @@ Ouvrir `%USERPROFILE%\.config\devin\global_rules.md` et ajouter a la fin la dire
 - Outil Obligatoire : Utiliser systematiquement le serveur MCP Hephaistos-everything-search (everything_search, content_search, hybrid_search).
   - Via appel MCP direct si disponible dans le contexte.
   - Fallback CLI rapide : node "%USERPROFILE%\.config\devin\scripts\mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<motif>"}'.
-- Commande /boost : Des que la commande /boost est invoquee par l'utilisateur, appliquer le workflow ~/.config/devin/workflows/boost.md (cadrage Hephaistos prealable, decomposition rigoureuse et boucle de verification complete).
+- Commande /boost : Des que la commande /boost est invoquee, activer la skill boost v2 cablee sur Hephaistos (run_subagent en arriere-plan, dispatch_task via hphe, cadrage Hephaistos).
+- Commande /obsidian : Utiliser le second cerveau technique (obsidian_triage, obsidian_peek, obsidian_session_save).
 ```
 
 ---
@@ -82,3 +104,26 @@ Ajouter la section obligatoire :
 - Nom de l'agent : `Antigravity`
 - Profil : Ingenieur senior d'elite, autonome, pragmatique et de precision chirurgicale.
 - Politique : Zero emoji absolu.
+
+---
+
+## 5. ETAPE 3 : OUTIL D'AUDIT MULTI-DISQUES (READ-ONLY)
+Pour cartographier et comparer les depots entre disques (par exemple `F:\Promgramation-teste` et `E:\Promgramation-teste`) sans risque d'ecrasement ni de perte de donnees :
+
+```bash
+# Rapport synthetique en console
+python "tools/audit-projects.py"
+
+# Rapport detaille des projets communs
+python "tools/audit-projects.py" --details
+
+# Export complet au format Markdown
+python "tools/audit-projects.py" --output "rapport-audit.md"
+```
+
+---
+
+## 6. ETAPE 4 : VERIFICATION
+1. Executer `devin skills list` dans le terminal et verifier que `/boost [user]` et `/obsidian [user]` sont listes actifs.
+2. Taper `/boost` dans Devin : la palette slash et l'orchestration Hephaistos sont immediatement actives.
+3. Taper `/obsidian` dans Devin : les outils de memoire technique et de checkpoint sont disponibles.

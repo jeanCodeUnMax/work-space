@@ -44,7 +44,7 @@ toutes les sessions, quel que soit le client ACP (Desktop, Zed, JetBrains, Xcode
 | Kilo (KiloCode) | `kilo acp` | ✅ natif (v7.7.5) |
 | Gemini | `gemini --acp` | ✅ natif (v0.56.0) |
 | agy (Antigravity) | — | ❌ pas d'ACP ; fallback `agy --print --input-format stream-json` |
-| OpenRouter | — | N/A : provider, pas un agent (couvert par `model-discovery`) |
+| OpenRouter | — | N/A : provider, pas un agent (couvert par `available_models`/`nim_*` hphe-mcp) |
 
 ## Installation
 
@@ -74,7 +74,7 @@ notification de tâche, lit le détail via le MCP `orchestrator` et la traite.
 
 ## État partagé
 
-- **orchestrator** (`<HEPHAISTOS_ROOT>/mcp/servers/orchestrator-server`) : file de tâches
+- **orchestrateur** (outils `*_task`/`*_agent` de `hphe-mcp`, `orchestrator.db`) : file de tâches
 - **beacon** (`<HEPHAISTOS_ROOT>/Beacon/bin/beacon.exe mcp serve`) : journal d'activité cross-harness
-- **agentmemory** : mémoire durable par projet
+- **agentmemory** (outils `memory_*` de `hphe-mcp`, `F:/Sqlite-DB/agentmemory`) : mémoire durable par projet
 - État du hook : `~/.config/devin/state/awareness.json` (timestamp du dernier check)

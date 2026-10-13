@@ -106,7 +106,7 @@ beacon_ingest.py (au start-workspace) — distillation en digests
 Mémoire unifiée : memory_mcp.db (KG) + graph-memory.db + usearch embarqué
       (Qdrant/Zvec externes remplacés par hphe-vec — voir section Rust)
       ▲                                        │
-      │ memory_write + ADR                     │ memory_search / qdrant / zvec
+      │ memory_write + ADR                     │ memory_search / semantic_search
       │                                        ▼
 /reflect (fin de session/phase) ◄──── Agents (action + retrieval)
       │
@@ -135,12 +135,13 @@ Specialist AI personas for different domains.
 | ------------------------ | -------------------------- | -------------------------------------------------------- |
 | `orchestrator`           | Multi-agent coordination   | parallel-agents, behavioral-modes                        |
 | `project-planner`        | Discovery, task planning   | brainstorming, plan-writing, architecture                |
-| `frontend-specialist`    | Web UI/UX                  | frontend-design, react-best-practices, tailwind-patterns |
+| `frontend-specialist`    | Web UI/UX                  | frontend-design, nextjs-react-expert, tailwind-patterns  |
 | `backend-specialist`     | API, business logic        | api-patterns, nodejs-best-practices, database-design     |
-| `database-architect`     | Schema, SQL                | database-design, prisma-expert                           |
+| `api-designer`           | REST/GraphQL/OpenAPI       | api-patterns, architecture, clean-code                   |
+| `database-architect`     | Schema, SQL                | database-design                                          |
 | `mobile-developer`       | iOS, Android, RN           | mobile-design                                            |
 | `game-developer`         | Game logic, mechanics      | game-development                                         |
-| `devops-engineer`        | CI/CD, Docker              | deployment-procedures, docker-expert                     |
+| `devops-engineer`        | CI/CD, Docker              | deployment-procedures, server-management                 |
 | `security-auditor`       | Security compliance        | vulnerability-scanner, red-team-tactics                  |
 | `penetration-tester`     | Offensive security         | red-team-tactics                                         |
 | `test-engineer`          | Testing strategies         | testing-patterns, tdd-workflow, webapp-testing           |
@@ -152,12 +153,12 @@ Specialist AI personas for different domains.
 | `product-owner`          | Strategy, backlog, MVP     | plan-writing, brainstorming                              |
 | `qa-automation-engineer` | E2E testing, CI pipelines  | webapp-testing, testing-patterns                         |
 | `code-archaeologist`     | Legacy code, refactoring   | clean-code, code-review-checklist                        |
-| `explorer-agent`         | Codebase analysis          | codebase-analysis                                        |
-| `memory-agent`           | Memory management          | memory-systems, context-management                       |
+| `explorer-agent`         | Codebase analysis          | architecture, plan-writing, systematic-debugging         |
+| `memory-agent`           | Memory management          | architecture, systematic-debugging                       |
 
 ---
 
-## 🧩 Skills (48)
+## 🧩 Skills (40)
 
 Modular knowledge domains that agents can load on-demand. based on task context.
 
@@ -165,40 +166,30 @@ Modular knowledge domains that agents can load on-demand. based on task context.
 
 | Skill                   | Description                                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `react-best-practices`  | React & Next.js performance optimization (Vercel - 57 rules)                                                 |
+| `nextjs-react-expert`   | Next.js & React modern patterns                                                                              |
 | `web-design-guidelines` | Web UI audit - 100+ rules for accessibility, UX, performance (Vercel)                                        |
 | `tailwind-patterns`     | Tailwind CSS v4 utilities                                                                                    |
 | `frontend-design`       | UI/UX patterns, design systems                                                                               |
-| `ui-ux-pro-max`         | 50 styles, 21 palettes, 50 fonts (chargement sélectif recommandé – 27 fichiers, utiliser via /ui-ux-pro-max) |
 
 ### Backend & API
 
 | Skill                   | Description                    |
 | ----------------------- | ------------------------------ |
 | `api-patterns`          | REST, GraphQL, tRPC            |
-| `nestjs-expert`         | NestJS modules, DI, decorators |
 | `nodejs-best-practices` | Node.js async, modules         |
 | `python-patterns`       | Python standards, FastAPI      |
+| `rust-pro`              | Rust patterns, hphe codebase   |
 
 ### Database
 
 | Skill             | Description                 |
 | ----------------- | --------------------------- |
 | `database-design` | Schema design, optimization |
-| `prisma-expert`   | Prisma ORM, migrations      |
-
-### TypeScript/JavaScript
-
-| Skill                 | Description                         |
-| --------------------- | ----------------------------------- |
-| `typescript-expert`   | Type-level programming, performance |
-| `nextjs-react-expert` | Next.js & React modern patterns     |
 
 ### Cloud & Infrastructure
 
 | Skill                   | Description               |
 | ----------------------- | ------------------------- |
-| `docker-expert`         | Containerization, Compose |
 | `deployment-procedures` | CI/CD, deploy workflows   |
 | `server-management`     | Infrastructure management |
 
@@ -267,7 +258,14 @@ Modular knowledge domains that agents can load on-demand. based on task context.
 | `performance-profiling`   | Web Vitals, optimization                                |
 | `systematic-debugging`    | Troubleshooting                                         |
 | `intelligent-routing`     | Routage automatique des requêtes vers l'agent approprié |
-| `codebase-analysis`       | Analyse rapide du codebase pour explorer-agent          |
+
+### Hephaistos & Orchestration
+
+| Skill            | Description                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `boost`          | `/boost` — mode haute performance (délégation agressive, recherche Hephaistos-first) |
+| `hephaistos-kit` | Référence du kit : serveur unifié hphe-mcp, propagation `.agent/`                    |
+| `orchestrator`   | Playbook délégation `dispatch_task` (CLI agents, worktrees, providers)               |
 
 ---
 

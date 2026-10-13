@@ -10,21 +10,21 @@
  *   --supplier : limite à un supplier
  */
 
-import { createRequire } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const require = createRequire('C:/Program Files/servers/orchestrator-server/package.json');
-const Database = require('better-sqlite3');
-const DB = process.env.ORCHESTRATOR_DB || 'C:/Program Files/servers/orchestrator-server/data/orchestrator.db';
+// DB canonique = hphe-mcp (ex-orchestrator-server Node absorbé). Env prioritaire : HPHE_ORCH_DB.
+const DB = process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
+  || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db';
 
 const args = process.argv.slice(2);
 const ALL = args.includes('--all');
 const onlySupplier = args.includes('--supplier') ? args[args.indexOf('--supplier') + 1] : null;
 const TIMEOUT = args.includes('--timeout') ? +args[args.indexOf('--timeout') + 1] : 20000;
 
-// ---- Endpoints d'inférence par supplier (miroir de model-discovery::ping-model) ----
+// ---- Endpoints d'inférence par supplier (miroir du probe available_models de hphe-mcp) ----
 function endpoint(supplier) {
   switch (supplier) {
     case 'nim': return { url: `${process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1'}/chat/completions`, key: process.env.NVIDIA_API_KEY };
@@ -100,7 +100,7 @@ async function catalog(supplier) {
   } catch { return []; }
 }
 
-const db = new Database(DB);
+const db = new DatabaseSync(DB);
 db.exec(`CREATE TABLE IF NOT EXISTS model_health (
   id INTEGER PRIMARY KEY AUTOINCREMENT, supplier TEXT, provider TEXT, model TEXT,
   available INTEGER, latency_ms INTEGER, checked_at TEXT DEFAULT (datetime('now')))`);

@@ -58,11 +58,12 @@ Toute délégation sans précision d'agent va à cet agent. Pour changer le déf
 | llama.cpp | ⚠️ aucun GGUF | inutilisable sans télécharger un modèle |
 | `gemini` CLI (api-key) | ✅ opérationnel | `GEMINI_API_KEY` + `selectedType:"gemini-api-key"` — ≠ `agy` (CANON) |
 
-## Orchestrateur MCP v2 (fork local, `<HEPHAISTOS_ROOT>\mcp\servers\orchestrator-server`)
+## Orchestrateur (intégré à `hphe-mcp`, serveur `Hephaistos-everything-search`)
 
-Outils : `create_task` `update_task` `get_next_task` `register_agent` `update_agent` `list_agents` `list_tasks` `delete_task` **`dispatch_task`** `suggest_agent` `available_models` `set_prompt_template` `list_prompt_templates`
+Outils : `create_task` `update_task` `get_next_task` `register_agent` `update_agent` `list_agents` `list_tasks` `delete_task` **`dispatch_task`** `suggest_agent` `available_models` `set_prompt_template` `list_prompt_templates` `list_worktrees` `worktree_cleanup` `reconcile_tasks`
 
-- `dispatch_task(title, task_type, context, files, workspace)` : choisit l'agent par skill → sonde les modèles free live (cache 60 s) → rend le prompt du rôle → crée+assigne+notifie le CLI.
+- `dispatch_task(title, task_type, context, files, workspace)` : choisit l'agent par skill → sonde les modèles free live (cache 60 s) → rend le prompt du rôle → crée+assigne+**spawne le CLI** (effet de bord réel).
+- L'ex-serveur Node `mcp/servers/orchestrator-server` est absorbé dans hphe-mcp (`orchestrator.db`, env `HPHE_ORCH_DB`).
 - Rôles de prompt seedés : `code` `debug` `review` `docs` `test` `explore` (placeholders `{{task}} {{context}} {{files}} {{model}}`).
 - Config agent JSON : `{skills:[], providers:[], command:"…{message} {model} {provider} {workspace}…", model_prefs:[], full_prompt:true/false}`.
 

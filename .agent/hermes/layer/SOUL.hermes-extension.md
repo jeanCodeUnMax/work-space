@@ -7,83 +7,42 @@
 
 ## 🧠 MCP UNIFIÉS DISPONIBLES (Hephaistos2-Kit)
 
-Les serveurs MCP suivants sont configurés globalement dans Hermès et disponibles pour tous les workspaces :
+⚠️ **Stack v2 unifiée (2026-10)** : les ex-serveurs Memory/Qdrant/Zvec/orchestrator/model-discovery/nim-router sont **absorbés** dans le serveur unique `Hephaistos-everything-search` (`hphe-mcp`, ~57 outils). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus — ne jamais les appeler.
 
-### Memory MCP (Knowledge Graph)
-
-| Outil | Description |
-|-------|-------------|
-| `mcp_Memory_search_nodes` | Recherche dans le graphe par requête, type, ou tags |
-| `mcp_Memory_add_observations` | Ajouter des observations à des entités existantes |
-| `mcp_Memory_create_entities` | Créer de nouvelles entités dans le graphe |
-| `mcp_Memory_create_relations` | Créer des relations entre entités |
-| `mcp_Memory_read_graph` | Lire le graphe complet (entités + relations) |
-| `mcp_Memory_delete_entities` | Supprimer des entités |
-| `mcp_Memory_delete_observations` | Supprimer des observations |
-| `mcp_Memory_delete_relations` | Supprimer des relations |
-| `mcp_Memory_open_nodes` | Ouvrir des nœuds spécifiques par nom |
-
-**Usage prioritaire** :
-- Avant toute tâche : `mcp_Memory_search_nodes` pour vérifier le contexte existant
-- Après toute décision : `mcp_Memory_add_observations` avec tags (`architecture`, `security`, `mcp-tool`)
-- Pour structurer le KG : `mcp_Memory_create_entities` + `mcp_Memory_create_relations`
-
-### Qdrant MCP (Vector Store 2048D)
+### hphe-mcp (`Hephaistos-everything-search`)
 
 | Outil | Description |
 |-------|-------------|
-| `mcp_qdrant_create_collection` | Créer une nouvelle collection vectorielle |
-| `mcp_qdrant_list_collections` | Lister toutes les collections |
-| `mcp_qdrant_get_collection_info` | Obtenir les informations d'une collection |
-| `mcp_qdrant_search` | Recherche vectorielle dans une collection |
-| `mcp_qdrant_add_documents` | Ajouter des documents avec embeddings |
-| `mcp_qdrant_delete_documents` | Supprimer des documents d'une collection |
-| `mcp_qdrant_delete_collection` | Supprimer une collection |
-| `mcp_qdrant_create_instance` | Créer une instance Qdrant |
-| `mcp_qdrant_list_instances` | Lister les instances disponibles |
-| `mcp_qdrant_switch_instance` | Basculer vers une instance |
+| `memory_search` / `memory_read` / `memory_list` | KV agentmemory : recherche/lecture/inventaire (JSON par projet sous `F:/Sqlite-DB/agentmemory/`) |
+| `memory_write` / `memory_update` / `memory_stats` | Écriture/mise à jour d'entrées mémoire + compteurs |
+| `content_search` | Recherche BM25 exacte dans le contenu indexé du workspace (Tantivy) |
+| `semantic_search` | Recherche vectorielle sémantique (hphe-vec, usearch HNSW 2048D, NIM interne) |
+| `hybrid_search` | Fusion BM25 + vectoriel — défaut pour « où est implémenté X » |
+| `everything_search` / `everything_count` / `everything_index_stats` | Index NTFS $MFT instantané (tout le disque) |
+| `vec_search` / `vec_stats` | Appel vectoriel brut (vecteur via `nim_embed`) |
+| `nim_embed` / `nim_chat` / `nim_models` / `nim_domains` | Embeddings 2048D + inférence NVIDIA NIM |
+| `everything`/`fs_*` | Lecture/écriture fichiers bornée par `.mcp-access` (profil `external` = read-only restreint) |
+| `dispatch_task` / `create_task` / `update_task` / `list_tasks` / `get_next_task` / `list_agents` / `suggest_agent` | Orchestrateur : file de tâches + spawn CLI agents |
+| `available_models` / `set_prompt_template` / `list_prompt_templates` | Probe modèles live + rôles de prompt |
+| `hephaistos_update` | Relancer l'ingestion du workspace |
 
 **Usage prioritaire** :
-- Recherche catégorique : tags type, domain, scope, priority → Qdrant
-- Collections utilisées : `doc_index` (131k docs), `code_index`, `config_index`, `<projet>_*` (768D)
+- Avant toute tâche : `memory_search` (contexte/décisions existantes) + `hybrid_search` (code)
+- Après toute décision : `memory_write` avec tags (`architecture`, `security`, `decision`) + ADR `.agent/knowledge/decisions/` si structurelle
+- Localisation fichiers : `everything_search` (disque) / `content_search` (contenu workspace)
 
-### Zvec MCP (Vector Store 384D local)
+### sqlite-node MCP (SQLite multi-DB, read-mostly pour le KG)
 
 | Outil | Description |
 |-------|-------------|
-| `mcp_zvec_create_collection` | Créer une nouvelle collection vectorielle |
-| `mcp_zvec_list_collections` | Lister toutes les collections |
-| `mcp_zvec_get_collection_info` | Obtenir les informations d'une collection |
-| `mcp_zvec_semantic_search` | Recherche sémantique dans une collection |
-| `mcp_zvec_add_documents` | Ajouter des documents avec embeddings |
-| `mcp_zvec_delete_documents` | Supprimer des documents d'une collection |
-| `mcp_zvec_delete_collection` | Supprimer une collection |
-| `mcp_zvec_create_store` | Créer un store vectoriel |
-| `mcp_zvec_list_stores` | Lister les stores disponibles |
-| `mcp_zvec_switch_store` | Basculer vers un store |
+| `query_data` / `execute_query` | SELECT / écriture SQL sur les bases aliasées |
+| `list_tables` / `describe_table` / `list_databases` | Introspection |
+
+**Aliases utiles** : `memory` → KG (`memory_mcp.db`), `graph` → edges (`graph-memory.db`), `cache` → `runtime-cache.db`, `orchestrator` → tasks (lecture seule côté agent).
 
 **Usage prioritaire** :
-- Recherche sémantique : tags concept, action, entity, relation → Zvec
-- Collections utilisées : `entities_index` (26k), `concepts_index` (502), `actions_index` (14.5k)
-
-### sqlite-node MCP (SQLite multi-DB)
-
-| Outil | Description |
-|-------|-------------|
-| `mcp_sqlite_node_connect_database` | Se connecter à une base SQLite |
-| `mcp_sqlite_node_query_data` | Exécuter un SELECT sur une DB connectée |
-| `mcp_sqlite_node_execute_query` | Exécuter INSERT/UPDATE/DELETE |
-| `mcp_sqlite_node_list_tables` | Lister les tables d'une DB |
-| `mcp_sqlite_node_describe_table` | Obtenir la structure d'une table |
-| `mcp_sqlite_node_get_table_info` | Informations complètes d'une table |
-| `mcp_sqlite_node_list_databases` | Lister les bases connectées |
-| `mcp_sqlite_node_switch_database` | Changer de base connectée |
-| `mcp_sqlite_node_attach_database` | Attacher une autre base |
-
-**Usage prioritaire** :
-- Lecture de `graph-memory.db` (edges rapides) : connect + query_data (lecture seule)
-- Lecture de `runtime-cache.db` (cache runtime) : connect + query_data
-- Gestion de bases projet : connect + execute_query
+- KG read-only : traversals, requêtes de chemin, connectivité (`memory`/`graph`)
+- Le KG est **read-mostly** : ses écritures passent par le pipeline d'ingestion (`mirror_kg`), pas par des appels agent — pour enrichir le KG, écrire dans `.agent/knowledge/` ou `.agent/memory/`
 
 ---
 
@@ -91,52 +50,31 @@ Les serveurs MCP suivants sont configurés globalement dans Hermès et disponibl
 
 ### Flux de travail complet
 
-1. **Début de session** (dans n'importe quel workspace) :
-   - Utiliser `mcp_Memory_search_nodes` pour identifier le contexte existant
-   - Vérifier les préférences utilisateur et les décisions précédentes
-   - Identifier les workspaces et requêtes fréquentes
+1. **Début de session** : `memory_search` (contexte, préférences, décisions passées, requêtes fréquentes)
+2. **Avant une tâche** : `hybrid_search`/`content_search` sur le workspace — réutiliser l'existant (économie de tokens)
+3. **Pendant la tâche** : `memory_write` pour les jalons ; `everything_search`/`content_search` pour la navigation
+4. **Après une décision importante** : `memory_write` + tags (`architecture`, `security`, `decision`) ; ADR fichier si structurelle
+5. **Fin de session** : leçons via `memory_write` (tag `lesson`) ; intentions non réalisées (tag `intention`)
 
-2. **Avant une tâche spécifique** :
-   - Vérifier si le contexte existe déjà dans la mémoire
-   - Si oui : réutiliser sans re-explorer (économie de tokens)
-   - Si non : créer le contexte nécessaire
+### Routage recherche
 
-3. **Pendant la tâche** :
-   - Utiliser les MCP pour stocker/retrouver des informations
-   - Maintenir la cohérence du KG avec les étapes intermédiaires
-   - Mettre à jour le cache si nécessaire
-
-4. **Après une décision importante** :
-   - Utiliser `mcp_Memory_add_observations` pour tracer la décision
-   - Inclure systématiquement les tags : `architecture`, `security`, `mcp-tool`
-   - Ajouter les métadonnées appropriées pour la recherche future
-
-5. **Fin de session** :
-   - Consolider les données vers le stockage global
-   - Vérifier l'intégrité des données locale/global
-   - Documenter les leçons apprises
-
-### Routage vectoriel automatique
-
-| Type de recherche | Tags concernés | Store à utiliser | Outil MCP |
-|-------------------|----------------|------------------|-----------|
-| **Catégorique** | type, domain, scope, priority | Qdrant 2048D | `mcp_qdrant_search` |
-| **Sémantique** | concept, action, entity, relation | Zvec 384D | `mcp_zvec_semantic_search` |
-| **Mixte** | combinaison des deux | Dual (Qdrant + Zvec) | Les deux outils |
+| Besoin | Outil |
+|--------|-------|
+| Fichier par nom/chemin (disque entier) | `everything_search` |
+| Texte/code exact (workspace) | `content_search` |
+| Concept/sens (langage naturel) | `semantic_search` |
+| Mixte (défaut) | `hybrid_search` |
+| Souvenirs/décisions agents | `memory_search` + `sqlite-node` `memory`/`graph` |
 
 ### Stockage dual (local + global)
 
 ```
-LOCAL:  memory-database/
-          └─ agentmemory/    (toujours présent)
-          └─ graph/          (edges locaux)
-          └─ vector/         (index locaux)
-          └─ cache/          (runtime-cache.db)
+LOCAL:  memory-database/  (jonction → global)
+          └─ agentmemory/  (KV JSON par projet)
+          └─ graph/        (memory_mcp.db + graph-memory.db)
+          └─ cache/        (runtime-cache.db)
 
-GLOBAL: ${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/
-          └─ graph/          (memory_mcp.db + graph-memory.db)
-          └─ vector/         (zvec-data + qdrant-data)
-          └─ cache/          (runtime-cache.db)
+GLOBAL: ${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/  (= F:/Sqlite-DB/...)
 ```
 
 **Règle** : La junction locale → globale assure que le projet voit le stockage global comme local.
@@ -173,14 +111,13 @@ GLOBAL: ${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/
    - En cas de conflit, le global a priorité
 
 2. **Gestion des caches** :
-   - `runtime-cache.db` est le cache unifié pour MCP + Système + Agents
-   - TTL : 1 heure (configurable dans sqlite-node env)
-   - Nettoyage automatique : purge des entrées > 1000 avec TTL expiré
+   - `runtime-cache.db` est le cache unifié pour MCP + Système + Agents (alias `cache` sqlite-node)
+   - Nettoyage : `memory-maintenance.ps1` au `start-workspace` (purge expirés, orphelins KG, WAL checkpoint)
 
 3. **Indexation vectorielle** :
-   - Les documents ajoutés via MCP sont automatiquement indexés
-   - L'embedding se fait via les modèles configurés (NVIDIA NIM pour Qdrant et Zvec)
-   - En cas d'échec d'embedding, utiliser les alternatives (Ollama pour 768D)
+   - L'indexation se fait par le pipeline d'ingestion (`ingest-workspace.ps1` → `ingestion.config.json`, moteur Rust Tantivy + usearch + `mirror_kg`)
+   - L'embedding est NIM 2048D interne au serveur (`nvidia/nemotron-3-embed-1b`) — pas d'embedding manuel requis pour `semantic_search`/`hybrid_search`
+   - En cas d'échec d'embedding, `content_search` (BM25) reste fonctionnel sans NIM
 
 ### Sécurité
 

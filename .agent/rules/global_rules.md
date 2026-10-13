@@ -50,11 +50,12 @@ Si workspace contient .agent/agents/ → Activer INTELLIGENT AGENT ROUTING
 ## 📋 HIÉRARCHIE DES PRIORITÉS DES RÈGLES
 
 1. **LOIS D'ASIMOV** (Sécurité et bien-être) - Priorité absolue
-2. **RÈGLE DE ROUTAGE VECTORIEL CIBLÉ** (PRIORITÉ HAUTE - AVANT ÉVAL SKILLS)
-   - Si requête < 3 étapes ou mots-clés "code", "file", "bug", "test", "fixe" → Recherche vectorielle Qdrant (voir procédure EMBED-FIRST ci-dessous) sur collections réelles : `<projet>_algos`/`<projet>_runs`/`<projet>_timesfm` (2048D, préfixe = nom du workspace) puis `code_index`/`doc_index`/`config_index` (2048D)
-   - Si "interaction", "chat", "souvenir", "explique vite" → Zvec `zvec_semantic_search` sur `entities_index`/`concepts_index`/`actions_index` (384D local)
-   - Fallback : Qdrant vide → Zvec → Memory MCP → sqlite-node (`memory` = KG global ~225k entités)
-   - Skip étapes 2-4 de l'évaluation skills si appel vectoriel déclenché
+2. **RÈGLE DE ROUTAGE RECHERCHE CIBLÉ** (PRIORITÉ HAUTE - AVANT ÉVAL SKILLS)
+   - Si requête < 3 étapes ou mots-clés "code", "file", "bug", "test", "fixe" → `content_search` / `semantic_search` / `hybrid_search` (hphe-mcp) sur l'index du workspace actif
+   - Si "interaction", "chat", "souvenir", "explique vite" → `memory_search` (hphe-mcp, KV agentmemory) + `sqlite-node` `memory`/`graph` (KG global)
+   - Fichier précis à localiser → `everything_search` (index NTFS $MFT, instantané)
+   - Fallback : recherche vide → `hybrid_search` → `sqlite-node`
+   - Skip étapes 2-4 de l'évaluation skills si appel de recherche déclenché
 3. **RÈGLE D'ÉVALUATION DES SKILLS** (Processus obligatoire) - Priorité haute
 4. **LANGUE FRANÇAISE** (Communication) - Priorité haute
 5. **CLEAN GARDEN POLICY** (Organisation) - Priorité haute
@@ -70,18 +71,15 @@ Si workspace contient .agent/agents/ → Activer INTELLIGENT AGENT ROUTING
 
 ---
 
-### ROUTAGE VECTORIEL CIBLÉ (noms d'outils RÉELS — audit 2026-09-16)
+### ROUTAGE RECHERCHE CIBLÉ (outils réels — hphe-mcp unifié, 2026-10-13)
 
-- **ATTENTION** : asymétrie d'embedding — `qdrant.search` exige un **vecteur pré-calculé** (`vector`, 2048D), tandis que `zvec.semantic_search`/`zvec.hybrid_search` prennent la **requête en texte brut** (`query`) : le serveur zvec embarque `Xenova/all-MiniLM-L6-v2` (384D) en interne.
-- **Procédure EMBED-FIRST (Qdrant uniquement)** :
-  1. Générer le vecteur 2048D de la requête AVANT l'appel :
-     `POST https://integrate.api.nvidia.com/v1/embeddings {"model":"nvidia/nemotron-3-embed-1b","input":"...","input_type":"query"}` (clé : `NVIDIA_API_KEY` env)
-  2. Appeler `qdrant.search` avec `vector` (nommé `dense` pour collections hybrides)
-- **Zvec** : appeler directement `zvec.semantic_search` ou `zvec.hybrid_search` avec `query` (texte) — pas d'étape d'embedding.
-- Requête "code", "file", "bug", "test" → Qdrant `<projet>_*` (2048D, code du workspace actif) en priorité, puis `doc_index`
-- Requête "souvenir", "contexte", "décision passée" → sqlite-node `memory` (KG global) ou `graph` (edges)
-- Si résultat vide → fallback auto : Qdrant → Zvec → Memory MCP → sqlite-node
-- Skip eval skills si appel vectoriel déclenché (<3 étapes)
+- **`semantic_search` / `hybrid_search` / `content_search`** : requête en texte brut — le serveur gère l'embedding en interne. `content_search` = BM25 exact, `semantic_search` = vectoriel, `hybrid_search` = fusion des deux.
+- **`vec_search`** : exige un vecteur pré-calculé — générer d'abord via `nim_embed` (NIM `nemotron-3-embed-1b`, 2048D) si besoin d'un appel vectoriel brut.
+- **`everything_search`** : index NTFS $MFT instantané — localisation de fichiers par nom/chemin sur tout le disque.
+- Requête "code", "file", "bug", "test" → `content_search` puis `semantic_search`/`hybrid_search` sur le workspace actif.
+- Requête "souvenir", "contexte", "décision passée" → `memory_search` (KV agentmemory) + sqlite-node `memory` (KG global) ou `graph` (edges).
+- Si résultat vide → fallback auto : `hybrid_search` → `memory_search` → `sqlite-node`.
+- Skip eval skills si appel de recherche déclenché (<3 étapes).
 
 ---
 
@@ -123,6 +121,19 @@ Si "@strict" ou "/rigoureux" dans la requête : full 4 étapes obligatoires.
 Sinon : flow normal, éval light.
 
 Portail socratique : pose 1 question max si flou, skip si évident.
+
+---
+
+## ⚡ MODE BOOST (`/boost`)
+
+Quand l'utilisateur invoque `/boost` (skill `boost`, chargée via `.agent/skills/boost/SKILL.md` ou `devin skills`), le mode haute performance s'applique pour toute la durée de la tâche :
+
+- **Autonomie maximale** : skip systématique des confirmations pour les étapes évidentes et non destructives (création de fichiers, lectures, tests, scripts non destructifs).
+- **Parallélisation & délégation agressive** : toute sous-tâche d'exploration/recherche/analyse > 3 fichiers ou > 150 lignes est déléguée immédiatement à des sub-agents en tâche de fond (`run_subagent` — plusieurs en parallèle si indépendants).
+- **Rigueur chirurgicale** : zéro placeholder, zéro code mort, zéro supposition — chaque implémentation complète et fonctionnelle.
+- **Recherche Hephaistos-first (obligatoire)** : `everything_search` (fichiers), `content_search`/`hybrid_search`/`semantic_search` (symboles, contenu). **Interdiction formelle** des scans récursifs lents (`Get-ChildItem -Recurse`, `find`, `dir /s`). Fallback CLI : `node "$env:USERPROFILE/.config/devin/scripts/mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<terme>"}'`.
+- **Plan strict** : verrouiller le cadrage, diviser en blocs indépendants, injecter les chemins absolus trouvés par Hephaistos dans le contexte.
+- **Boucle de validation** : linters + syntaxe + compilation + tests unitaires/intégration ; toute régression → diagnostic racine → correction → re-test avant de clore.
 
 ---
 
@@ -226,14 +237,16 @@ Tu ne commences à coder ou à répondre à l'utilisateur qu'APRÈS avoir affich
 
 ### RÈGLE OBLIGATOIRE
 
-**TOUTES les informations concernant les tâches (tasks) doivent obligatoirement passer par l'orchestrateur MCP** via ses outils officiels :
+**TOUTES les informations concernant les tâches (tasks) doivent obligatoirement passer par les outils orchestrateur de `hphe-mcp`** (serveur `Hephaistos-everything-search` — l'ex-orchestrator-server Node est absorbé) :
 
-- `list_agents` - pour connaître les agents disponibles
-- `get_next_task` - pour récupérer les tâches en attente
-- `create_task` - pour créer de nouvelles tâches
-- `update_task` - pour mettre à jour le statut ou le résultat
-- `register_agent` - pour enregistrer un nouvel agent
-- `delete_task` - pour supprimer une tâche
+- `list_agents` - agents disponibles
+- `get_next_task` - tâches en attente
+- `create_task` - nouvelle tâche (⚠️ ne **notifie pas** l'agent — préférer `dispatch_task`)
+- `dispatch_task` - crée + assigne + **spawne réellement le CLI** de l'agent
+- `update_task` - statut ou résultat
+- `list_tasks` / `delete_task` / `register_agent` / `update_agent` / `suggest_agent`
+- `list_prompt_templates` / `set_prompt_template` - rôles de prompt
+- `list_worktrees` / `worktree_cleanup` - isolation git des tâches parallèles
 
 ### INTERDICTIONS STRICTES
 
@@ -244,7 +257,7 @@ Tu ne commences à coder ou à répondre à l'utilisateur qu'APRÈS avoir affich
 
 ### JUSTIFICATION
 
-L'orchestrateur MCP est le système nerveux central qui :
+L'orchestrateur (dans hphe-mcp) est le système nerveux central qui :
 
 - Gère les dépendances entre tâches
 - Assure la cohérence de l'état
@@ -282,7 +295,7 @@ L'agent principal agit d'abord comme architecte et orchestrateur. Il doit délé
 
 ### ORDRE OBLIGATOIRE DE SÉLECTION
 
-1. Interroger `model-discovery` (`model://available/free` et `ping-supplier`) pour connaître les modèles réellement disponibles — couvre désormais Ollama + OpenRouter-free + NVIDIA NIM (143 modèles au 2026-10-05).
+1. Interroger `available_models` (outil `hphe-mcp` — probe live des modèles free/local, cache 60 s : Ollama, OpenRouter `:free`, NVIDIA NIM).
 2. Choisir en priorité un modèle **cloud** : Ollama `:cloud`, NVIDIA NIM (`nim_chat`/`nim_chat_model`), OpenRouter `:free`. Local Ollama : uniquement sur décision explicite de l'utilisateur.
 3. Sélectionner l'interface native du fournisseur :
    - KiloCode : `kilo run` ou `kilo acp` ;
@@ -290,7 +303,7 @@ L'agent principal agit d'abord comme architecte et orchestrateur. Il doit délé
    - Antigravity : ACP/agy lorsqu'il est disponible ;
    - Ollama : agent ACP `ollama` (opencode + `opencode-ollama.json`, défaut `gpt-oss:120b-cloud`) ou API directe ;
    - OpenRouter : client ou MCP OpenRouter configuré.
-4. Enregistrer le choix du modèle, du fournisseur et de la tâche dans Memory MCP avant dispatch si l'état doit survivre à la session.
+4. Enregistrer le choix du modèle, du fournisseur et de la tâche via `memory_write` (hphe-mcp) avant dispatch si l'état doit survivre à la session.
 5. Utiliser Orchestrator MCP pour créer, affecter et suivre les tâches ; ne jamais écrire directement dans sa base SQLite. ⚠️ `dispatch_task` **spawne réellement le CLI** de l'agent choisi (effet de bord réel, pas une mise en file).
 
 ### RÈGLE D'ARCHITECTURE
@@ -313,7 +326,7 @@ L'agent principal ne doit pas exécuter seul une tâche multi-domaine si un agen
 - Sécurité : security-auditor ;
 - Performance : performance-optimizer ;
 - Documentation : documentation-writer ;
-- Coordination : Orchestrator MCP + Memory MCP.
+- Coordination : outils orchestrateur + mémoire de `hphe-mcp` (`dispatch_task`, `memory_write`, `memory_search`).
 
 ### MODÈLES OLLAMA — CLOUD D'ABORD (politique 2026-10-05)
 
@@ -363,7 +376,7 @@ Tâches courantes / rapides / lourdes / importantes :
 `NVIDIA NIM compte 1 (NVIDIA_API_KEY) → NVIDIA NIM compte 2 (NVIDIA_API_KEY_2) → Ollama Cloud :cloud`.
 Automatismes et tâches parallélisées : **KiloCode** et **Hermes** (agents multi-modèles, utilisent les providers ci-dessus dans le même ordre).
 Suppléments : `OpenRouter :free` (dernier recours, si manquement des modèles externes) → Nous portal `:free` (hermes) → HF (API directe) → agy (abonnement, toujours dispo).
-Découverte live : `model-discovery` (`nim` par défaut → `nim2` → `ollama-cloud` → `openrouter`).
+Découverte live : `available_models` (hphe-mcp) ; ordre providers = `provider_prefs` (`nim` par défaut → `nim2` → `ollama-cloud` → `openrouter`).
 **Jamais de repli automatique sur Ollama local** — réservé à l'utilisateur (décision explicite requise).
 
 ---
@@ -374,7 +387,7 @@ Découverte live : `model-discovery` (`nim` par défaut → `nim2` → `ollama-c
 
 **Avant toute délégation**, lire `.agent/REGISTRY.md` — il liste les agents réels, leurs skills, les providers/modèles disponibles et les outils morts à ne PAS utiliser (ex: Trae abandonné, gemini CLI stock : mode api-key requis, llama.cpp sans modèle).
 
-🎯 **Agent par défaut = celui déclaré dans `.agent/REGISTRY.md`** (section « Agent exécutant par défaut »). Ne pas présumer kilo ni aucun autre ; si le REGISTRY est absent, ordre de repli `agy` → `kilo` → `hermes`.
+🎯 **Agent par défaut = celui déclaré dans `.agent/REGISTRY.md`** (section « Agent exécutant par défaut » — actuellement `agy`). Ne pas présumer kilo ni aucun autre ; si le REGISTRY est absent, ordre de repli `agy` → `kilo-nim1` → `ollama-cloud`.
 
 ### RÈGLE OBLIGATOIRE DE DÉLÉGATION
 
@@ -389,7 +402,7 @@ Tu DOIS automatiser la délégation d'une grande partie du travail d'exécution 
    - Forcer un agent : passer `agent_name`. Vérifier le bon agent : `suggest_agent(task_type)`.
    - Nouveau rôle récurrent : `set_prompt_template` au lieu de réécrire un prompt.
    - `create_task` reste disponible pour les tâches sans notification (planification brute).
-   - *Le Sidecar (Poller SQLite + CLI)* se chargera alors de "réveiller" automatiquement KiloCode pour qu'il exécute cette tâche.
+   - ⚠️ **`dispatch_task` spawne réellement le CLI** de l'agent (processus réel lancé côté serveur Rust — effet de bord concret, pas une mise en file). Il n'existe pas de sidecar/poller : la notification = le spawn lui-même.
 
 2. **Via le CLI Hermes (Pour requêtes instantanées / One-shot)** :
    - Hermes est installé localement sur ton poste (`hermes -V` ou `hermes --version`).
@@ -403,12 +416,12 @@ Tu DOIS automatiser la délégation d'une grande partie du travail d'exécution 
    - `agy --print "x" --dangerously-skip-permissions` → ERREUR : `--print` avale le flag comme prompt.
    - Enregistré dans l'orchestrateur avec `full_prompt:true` — `dispatch_task` lui envoie le prompt complet directement.
    - ⚠️ `agy` ≠ `gemini` : deux canaux distincts (CANON ci-dessous). `agy` = abonnement Antigravity ; `gemini` = CLI @google/gemini-cli authentifié par `GEMINI_API_KEY` (api Developer), fonctionnel depuis le fix `gemini-api-key`.
-   - ⚠️ `dispatch_task`/`create_task` crée la tâche mais **ne réveille PAS l'agent** — lancer le CLI soi-même ensuite (le sidecar poller n'est pas fiable).
+   - ⚠️ `dispatch_task` **spawne réellement le CLI** (effet de bord) — ne pas l'appeler « pour voir ». `create_task` ne notifie pas (planification brute uniquement).
 
 4. **« Sous-agents » vs sub-agents** :
    - « Sous-agents » = CLI agents externes (`agy`, `kilo`, `hermes`) via `orchestrator.dispatch_task`, `acp-dispatch.mjs` ou appel direct — c'est la délégation attendue pour économiser les tokens de l'agent principal.
    - « Sub-agents » = agents internes à l'IDE/client — usage complémentaire seulement.
-   - `nim-router` (MCP) : package autonome `nim-router-mcp` (`nim_mcp_server.py` + `router.py` + `registre-modeles.json` — sous-module `mcp/servers/nim-router-mcp` du kit ou répertoire déployé). Enregistré aux DEUX endroits (même chemin absolu) : `%APPDATA%/devin/mcp_config.json` (Devin, rechargé à chaud) et `~/.config/mcp-mux/mcp-mux.json` (mux — nécessite kill du broker `node … broker.mjs` pour recharger). Outils `nim_domains`/`nim_models`/`nim_chat`/`nim_chat_model`/`nim_embed` — routage NIM par domaine + embeddings 2048D.
+   - `nim_*` (outils hphe-mcp) : l'ex-MCP `nim-router` est **absorbé** dans `hphe-mcp` — outils `nim_domains`/`nim_models`/`nim_chat`/`nim_chat_model`/`nim_embed` (routage NIM par domaine + embeddings 2048D, clé `NVIDIA_API_KEY`/`NVIDIA_API_KEY_2`). Plus de serveur séparé à configurer.
 
 ### SCÉNARIOS TYPIQUES DE DÉLÉGATION
 
@@ -526,54 +539,41 @@ Ordre de priorité OBLIGATOIRE pour kilo/hermes :
 
 ### 4b. CORRECTION SÉMANTIQUE (SUPERSEDE)
 
-- **Correction utilisateur = signal de vérité absolu.** Après TOUTE correction de l'utilisateur sur un fait mémorisé : `memory_search` l'entrée contradictoire → l'écrire à jour → `create_relations` `ancienne —[superseded_by]→ nouvelle` + observation `[SUPERSEDED YYYY-MM-DD]` sur l'ancienne. Ne JAMAIS supprimer (piste auditable).
-- **Lecture** : toute observation marquée `[SUPERSEDED]` → suivre le lien vers la version courante, ne pas utiliser l'ancienne.
+- **Correction utilisateur = signal de vérité absolu.** Après TOUTE correction de l'utilisateur sur un fait mémorisé : `memory_search` l'entrée contradictoire → `memory_update`/`memory_write` l'entrée à jour en préfixant l'ancienne version `[SUPERSEDED YYYY-MM-DD]` dans le contenu (le KG relationnel est read-mostly : la piste auditable vit dans le corps de l'entrée KV). Ne JAMAIS supprimer (piste auditable).
+- **Lecture** : toute entrée marquée `[SUPERSEDED]` → ne pas l'utiliser ; la version courante est l'entrée non marquée la plus récente.
 - **Doute** : en cas de contradiction mémoire ↔ réalité observée (fichier absent, commande qui échoue), la réalité gagne → supersede + log.
 
 ### 5. GRAPH MEMORY COMPLÉMENTAIRE
 
-#### Deux Bases Graph Complémentaires
+#### Deux Bases Graph Complémentaires (sous `agentmemory/graph/` — jonction → `C:\Hephaistos-DB\agentmemory`, NVMe)
 
-| Base                | Rôle                | Données                                     | Usage                                          |
-| ------------------- | ------------------- | ------------------------------------------- | ---------------------------------------------- |
-| **memory_mcp.db**   | Knowledge Graph MCP | 82 entités, 131 observations, 584 relations | Entités riches, observations, relations typées |
-| **graph-memory.db** | Traversals rapides  | 530 edges                                   | Relations simples (from_id, to_id, type)       |
+| Base                | Rôle                | Usage                                          |
+| ------------------- | ------------------- | ---------------------------------------------- |
+| **memory_mcp.db**   | Knowledge Graph     | Entités riches, observations, relations typées |
+| **graph-memory.db** | Traversals rapides  | Relations simples (from_id, to_id, type)       |
 
-#### Quand Utiliser Chacune
+#### Accès
 
-- **memory_mcp.db** : Création d'entités, observations détaillées, relations typées
-- **graph-memory.db** : Traversals rapides, requêtes de chemin, analyse de connectivité
-
-#### Outils MCP Disponibles
-
-- `memory.create_entities` / `memory.add_observations` / `memory.create_relations` - Memory MCP
-- `sqlite-node.execute_query` - Requêtes SQL sur graph-memory.db (lecture seule)
+- **Lecture** : `sqlite-node` `execute_query` / `query_data` (aliases `memory`, `graph` — mux only ; en direct Devin : `ORCHESTRATOR_DB` seul).
+- **Écriture** : pas d'outil d'écriture KG côté agent — le KG est alimenté par le **pipeline d'ingestion** (`hphe-ingest`/`hphe-rest`, `mirror_kg` : 1 entité+1 relation par document indexé). Pour enrichir le KG : écrire dans `.agent/knowledge/` (indexé par auto-ingest) ou `.agent/memory/`.
 
 ### BEACON - MÉMOIRE DES TRACES D'AGENTS
 
 Beacon capture passivement les sessions de tous les agents (Devin, Antigravity,
 Claude, Codex, Gemini, opencode, Kiro...) dans `~/.beacon/endpoint/logs/runtime.jsonl`.
-Le script `.agent/rag/beacon_ingest.py` (lancé par `beacon-sync.ps1` au
-`start-workspace`) distille chaque session en digest (prompts, fichiers
-modifiés, erreurs, commandes) et l'indexe dans la mémoire unifiée avec
-`metadata.source = "beacon"` et `source_file = "beacon://<harness>/<session>"`.
+
+⚠️ **L'ingestion Beacon vers la mémoire unifiée est désactivée** (`ingestion.config.json` → `beacon.enabled: false`) : l'ancien pipeline Python (`beacon_ingest.py`/`beacon_learn.py`) est archivé dans `_archive/agent-rag/` en attente du portage Rust. Le MCP `beacon` reste actif pour la fouille des traces brutes — seule la distillation→index est en pause.
 
 #### QUAND L'UTILISER
 
-- **Avant de déboguer** un problème d'infra, MCP, config ou outillage :
-
-  chercher dans memory/zvec si un digest Beacon décrit déjà la résolution
-  (ex: erreur identique, même fichier de config).
-
-- **Requêtes "comment ça a été résolu" / "session passée" / "autre agent"** :
-
-  les digests Beacon sont la source — ils traversent les projets et les agents.
+- **Avant de déboguer** un problème d'infra, MCP, config ou outillage : fouiller les traces brutes Beacon (erreur identique, même fichier de config).
+- **Requêtes "comment ça a été résolu" / "session passée" / "autre agent"** : les traces traversent les projets et les agents.
 
 #### OUTILS
 
 - `beacon.search_activity` / `beacon.summarize_activity` — fouille les traces brutes
 - `beacon.search_memory` / `beacon.get_memory_context` — mémoire Beacon approuvée
-- Recherche unifiée habituelle (memory_search, zvec, qdrant) — inclut les digests
+- Recherche unifiée habituelle (`memory_search`, `semantic_search`, `hybrid_search`) — inclura les digests quand l'ingest Beacon sera réactivée
 
 #### SUPERVISION
 
@@ -582,22 +582,21 @@ modifiés, erreurs, commandes) et l'indexe dans la mémoire unifiée avec
 
 #### LIMITES
 
-- Digests structurels (pas d'analyse sémantique — le service Jev est désactivé)
-- Une session n'est indexée qu'une fois ; capture = lecture seule côté agent
+- Capture = lecture seule côté agent ; distillation en pause (voir ci-dessus).
 
 ### BOUCLE D'APPRENTISSAGE — /reflect (FERMETURE OBLIGATOIRE)
 
 La mémoire unifiée n'est utile que si la boucle est fermée :
 
 ```text
-sessions agents → Beacon (capture, service BeaconCollector) → beacon_ingest
-  → mémoire unifiée + knowledge/ (indexés par auto-ingest)
-  → retrieval (memory_search / qdrant / zvec) → action de l'agent
+sessions agents → Beacon (capture, service BeaconCollector) → [ingest Beacon : EN PAUSE, portage Rust]
+  → mémoire unifiée + knowledge/ (indexés par auto-ingest Rust)
+  → retrieval (memory_search / semantic_search / hybrid_search / content_search) → action de l'agent
   → /reflect → memory_write + ADR knowledge/decisions/ → réindexé → retrieval
 
   + memory-maintenance.ps1 (au start-workspace, après beacon-sync) :
     purge caches expirés, relations orphelines KG, WAL checkpoint,
-    rapport auto-observé dans kv 'maintenance:last_report' → lu par /reflect
+    sweep _MEI*/pip cache, rapport auto-observé dans kv 'maintenance:last_report' → lu par /reflect
 ```
 
 - **Fin de session ou phase majeure → `/reflect`** (`.agent/workflows/reflect.md`) :
@@ -620,98 +619,65 @@ interrogeable par n'importe quel agent, depuis n'importe quel workspace :
 
 |Couche|Où|Contenu|Accès|
 |---|---|---|---|
-|**Registre SQL**|`$AGENT_DB_ROOT/projects-registry.db`|`projects` (état, stack, taille, git, dates), `project_techs` (1614 liens), `project_relations`, `scan_runs`|`sqlite-node` ou sqlite3 direct|
-|**Qdrant**|collection `projects_index` (2048D)|1 point/projet : nom+description+stack vectorisés|`qdrant.search` (EMBED-FIRST NVIDIA)|
-|**Knowledge Graph**|entités `project:<nom>`, `tech:<lang>`|état, chemin, remote, description + relations `utilise`/`contient`|`memory_search`|
+|**Registre SQL**|`$AGENT_DB_ROOT/projects-registry.db`|`projects` (état, stack, taille, git, dates), `project_techs`, `project_relations`, `scan_runs`|`sqlite-node` ou sqlite3 direct|
+|**Index workspace**|index hphe du workspace concerné|code/docs vectorisés du projet|`semantic_search`/`hybrid_search`/`content_search` (hphe-mcp)|
+|**Knowledge Graph**|entités `project:<nom>`, `tech:<lang>`|état, chemin, remote, description + relations|`sqlite-node` `memory`/`graph`|
 
 #### QUAND L'UTILISER — REGISTRE DES PROJETS
 
-- « Est-ce que j'ai déjà un projet qui fait X ? » → `qdrant.search` sur `projects_index`
+- « Est-ce que j'ai déjà un projet qui fait X ? » → SQL `projects-registry.db` (+ `semantic_search` sur le workspace si indexé)
 - « Quels sont mes projets Python/embryonnaires/dormants ? » → SQL `projects-registry.db`
 - « Ce projet dépend de quoi / contient quoi ? » → KG `project:*` + relations
 
 #### RAFRACHISSEMENT
 
-- `python .agent/scripts/scan-projects.py [RACINE]` — rescan complet (idempotent).
 - États possibles : `developpement`, `embryonnaire`, `abouti`, `dormant`, `disparu`.
+- ⚠️ Le script `scan-projects.py` est archivé (`_archive/scripts/`) — le rescan se fait via l'ingestion hphe du workspace concerné.
 
-### MCP MEMORY - MÉMOIRE PERSISTANTE
+### MÉMOIRE PERSISTANTE — STACK v3 (hphe-mcp unifié, 2026-10-13)
 
 #### OBLIGATION D'UTILISATION
 
-L'agent DOIT utiliser le MCP Memory et zvec (sqlite-node: `${AGENT_DB_ROOT}/memory_mcp.db`) pour :
+L'agent DOIT utiliser la mémoire unifiée (hphe-mcp + sqlite-node) pour :
 
-- **Enregistrer** les préférences utilisateur découvertes au fil des interactions
-- **Consulter** l'historique des workspaces et requêtes fréquentes
-- **Mettre à jour** les observations existantes avec nouvelles informations
-- **Créer des relations** entre entités pour contextualiser les demandes
-- **Utiliser l'indexation hybride** pour recherche unifiée (Memory + Zvec)
-- **Tirer parti du cache vectoriel** pour optimiser les performances de recherche
-- **Bénéficier de la réplication partielle** pour cohérence automatique des données
+- **Enregistrer** les préférences utilisateur découvertes au fil des interactions (`memory_write`)
+- **Consulter** l'historique des workspaces et requêtes fréquentes (`memory_search`, `memory_list`)
+- **Mettre à jour** les entrées existantes (`memory_update`)
+- **Rechercher** dans le KG et le vectoriel (`sqlite-node`, `semantic_search`, `hybrid_search`)
 
-#### ARCHITECTURE MÉMOIRE COMPLÈTE (v2.0)
+#### ARCHITECTURE RÉELLE
 
-| Composant           | Type            | Données                      | Usage                                          |
-| ------------------- | --------------- | ---------------------------- | ---------------------------------------------- |
-| **memory_mcp.db**   | Knowledge Graph | 82 entités, 131 obs, 584 rel | Entités riches, observations, relations typées |
-| **graph-memory.db** | Traversals      | 530 edges                    | Relations simples, requêtes de chemin          |
-| **Qdrant**          | Vector 2048D    | 5 collections                | Recherche catégorique                          |
-| **Zvec**            | Vector 2048D    | 6 indexs                     | Recherche sémantique                           |
-| **Cache Runtime**   | KV Store        | 2 bases optimisées           | MCP Cache + Système unifié                     |
+| Composant | Backend | Accès |
+|---|---|---|
+| **KV agentmemory** | `hphe-mcp` `memory_*` — JSON par projet sous `$AGENT_DB_ROOT/agentmemory/<projectId>/` | `memory_write/read/search/list/update/stats`, `project_init` |
+| **Knowledge Graph** | `memory_mcp.db` + `graph-memory.db` (`agentmemory/graph/` → jonction NVMe `C:\Hephaistos-DB`) | lecture : `sqlite-node` ; écriture : pipeline ingest `mirror_kg` |
+| **Index vectoriel workspace** | hphe `hphe-vec` (usearch HNSW) + `hphe-content` (BM25 tantivy) | `vec_search`, `semantic_search`, `hybrid_search`, `content_search` |
+| **Index NTFS fichiers** | `hphe-index` ($MFT + USN, daemon `hphe-indexd`) | `everything_search` (pipe `\\.\pipe\hphe-index`) |
+| **Cache runtime** | `cache/runtime-cache.db` | `sqlite-node` `cache` (mux) |
 
-#### STRUCTURE DE LA BASE memory_mcp.db
+⚠️ Qdrant, Zvec, Memory MCP, Cache MCP, model-discovery, nim-router, orchestrator-server, agentmemory (Node) sont **absorbés** dans `hphe-mcp` ou archivés — ne jamais référencer leurs outils (`qdrant.*`, `zvec.*`, `memory.create_*`, `cache.*`).
 
-| Table        | Usage                                                     |
-| ------------ | --------------------------------------------------------- |
-| entities     | Utilisateur, Préférences, Workspaces, Requêtes fréquentes |
-| observations | Contenu associé à chaque entité                           |
-| relations    | Liens entre entités                                       |
+#### ROUTAGE
 
-#### ARCHITECTURE VECTOR STORE DUAL
+- **Recherche exacte/code** → `content_search` (BM25) / `everything_search` (fichiers)
+- **Recherche sémantique** → `semantic_search` ; mixte → `hybrid_search`
+- **Souvenirs/décisions** → `memory_search` (KV) + `sqlite-node` `memory`/`graph` (KG)
+- **Embeddings** → `nim_embed` (NIM 2048D) puis `vec_search` si appel brut
 
-| Store           | Dimensions | Usage              | Collections                                                                                                                              |
-| --------------- | ---------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Qdrant**      | 2048D      | Catégorique        | `doc_index`, `code_index`, `config_index`, `code_hephaistos_kit`, `skill_index`, `workflow_index`, `ide_*` — embed via NVIDIA NIM `nvidia/nemotron-3-embed-1b` |
-| **Qdrant**      | 2048D      | Collections projet | `<projet>_algos` / `<projet>_runs` / `<projet>_timesfm` (préfixe = nom du workspace) — embed via NVIDIA NIM                                |
-| **Zvec**        | 2048D      | Sémantique         | `entities_index`, `concepts_index`, `actions_index`, `relations_index`, `context_index`, `learning_insights` — embed via NVIDIA NIM        |
-| **sqlite-node** | KG         | Mémoire graphe     | `memory` → KG global workspace (149k entités), `default` → agentmemory (122k), `graph` → edges (127k)                                                     |
+#### STATISTIQUES (point-in-time, 2026-10-13)
 
-#### ROUTAGE AUTOMATIQUE
-
-- **Tags catégoriques** (type, domain, scope, priority) → Qdrant
-- **Tags sémantiques** (concept, action, entity, relation) → Zvec
-- **Tags mixtes** → Routage dual (les deux stores)
-
-#### DÉCLENCHEURS
-
-- **Début de session** : Consulter Utilisateur et Preferences-Globales
-- **Nouvelle préférence détectée** : Ajouter observation à l'entité appropriée
-- **Requête récurrente** : Enrichir Requetes-Frequentes
-- **Interaction significative** : Logger dans Interactions-Session
-- **Recherche complexe** : Routage manuel Qdrant (catégorique) + Zvec (sémantique) — pas d'outil unifié, combiner les appels
-- **Performance critique** : sqlite-node `cache` (runtime-cache.db) + lecture partielle de fichiers plutôt que lectures complètes
-- **Mise à jour données** : Laisser la réplication partielle gérer automatiquement la cohérence
-- **Recherche catégorique** : Utiliser Qdrant (tags: type, domain, scope)
-- **Recherche sémantique** : Utiliser Zvec (tags: concept, action, entity)
-- **Recherche mixte** : Routage dual (Qdrant + Zvec)
-
-#### STATISTIQUES ACTUELLES (audit 2026-09-16)
-
-| Composant                       | Données                                                                                                        |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| memory_mcp.db (global `graph/`) | 149 530 entités, 158 458 observations, 211 230 relations                                                       |
-| memory_mcp.db (agentmemory)     | 122 225 entités (sous-ensemble)                                                                                |
-| graph-memory.db                 | 127 613 edges                                                                                                  |
-| Qdrant                          | 14 collections — utiles: doc_index 131k, config_index 3.7k, `<projet>_*` 768D                                  |
-| Zvec                            | 3 indexs seulement (entities 26k, concepts 502, actions 14.5k) — relations/context/learning_insights MANQUANTS |
-| Ingestion hephaistos2-kit        | Active, mode DUAL global+local, dernier passage 2026-09-16 14:33                                               |
+| Composant | Données |
+|---|---|
+| KG (`graph/memory_mcp.db`) | ~101 561 entités (après ré-ingest Rust — les stats 149k/122k d'avant sont historiques) |
+| KV agentmemory | par projet, `$AGENT_DB_ROOT/agentmemory/` |
+| hphe content/vec | index actifs du workspace courant |
 
 #### DOCUMENTS DE RÉFÉRENCE
 
-- `ARCHITECTURE-ANALYSIS.md` - Architecture complète multi-bases
-- `RAG-AUDIT-REPORT.md` - Audit système RAG (Score: 100/100)
-- `CACHE-RUNTIME-UNIFICATION.md` - Optimisation caches (3→2 copies)
-- `GRAPH-MEMORY-CLARIFICATION.md` - Rôles graph-memory vs memory_mcp
+- `.agent/memory/UNIFIED_MEMORY_SYSTEM.md` — système mémoire unifié (canonique)
+- `.agent/memory/memory-policy.md` — politiques
+- `docs/MCP-TOOLS.md` — référence des 57 outils hphe-mcp
+- `_archive/agent-rag/DEPRECATED-BY-RUST.md` — table de correspondance v1→v2
 
 ## 🎯 PLANIFICATION ET VÉRIFICATION (QUALITÉ DU CODE)
 
@@ -736,7 +702,7 @@ L'agent DOIT utiliser le MCP Memory et zvec (sqlite-node: `${AGENT_DB_ROOT}/memo
 
 - **AVANT** de lire un fichier avec `read_file`, TOUJOURS tenter d'abord :
   1. `code_search` ou `grep_search` avec une requête ciblée
-  2. `memory_search` / `qdrant` / `zvec` pour retrouver le contexte existant
+  2. `memory_search` / `semantic_search` / `hybrid_search` / `content_search` (hphe-mcp) pour retrouver le contexte existant
   3. Si le résultat est suffisant → NE PAS lire le fichier complet
 - **Exception** : Fichier de config à modifier, ou fichier < 50 lignes
 
@@ -1159,10 +1125,10 @@ Quand un agent est appliqué automatiquement, informer l'utilisateur :
 
 ### Config MCP — référence unique
 
-- **SEULE référence client** : `%APPDATA%/devin/mcp_config.json` (Devin, rechargé à chaud). Ne pas recréer de `mcp_config.json`/`mcp.json`/`mcp_settings.json` pour Windsurf, Antigravity, Cursor, KiloCode ou Claude Desktop — ces copies ont été supprimées (dérive + secrets en clair).
-- **mcp-mux = clients uniquement** (2026-10-05) : retiré de la config Devin — 13 de ses 17 serveurs y étaient déjà en direct (~176 schémas par appel). Mux sert les **sub-agents** (`opencode-*.json`, kilo) qui n'ont pas leur propre stack MCP.
+- **Références clients directes** : `%APPDATA%/devin/mcp_config.json` (Devin, rechargé à chaud) et les configs Antigravity (`~/.gemini/config/mcp_config.json` partagée + `~/.gemini/antigravity-ide/mcp_config.json` IDE) — toutes deux en **direct** (8 serveurs hphe/sqlite-node/beacon/…, pas de mux). Ne pas recréer de `mcp_config.json`/`mcp.json`/`mcp_settings.json` pour Windsurf, Cursor, KiloCode ou Claude Desktop — ces copies ont été supprimées (dérive + secrets en clair).
+- **mcp-mux = sub-agents uniquement** (2026-10-14) : retiré de Devin ET d'Antigravity (tous deux en direct). Mux sert les **sub-agents CLI/ACP** (`opencode-*.json`, kilo, hermes, gemini-cli) qui n'ont pas leur propre stack MCP ; son entrée `Hephaistos-everything-search` porte `EVERYTHING_MCP_AGENT=external` (policy read-only `.mcp-access`).
 - **Broker** : `~/.config/mcp-mux/mcp-mux.json` — config propre du multiplexeur (mcporter/dashboard/sub-agents), distincte du registre client. Kill du broker `node … broker.mjs` pour recharger.
-- sqlite-node expose 9 alias de bases (default, memory, graph, cache, zvec, qdrant, n8n_main, n8n_templates, orchestrator). Racine de stockage : `AGENT_DB_ROOT`.
+- sqlite-node expose des alias de bases (default, memory, graph, cache, n8n_main, n8n_templates, orchestrator ; les alias `zvec`/`qdrant` existent encore mais pointent des données migrées — préférer les outils hphe `semantic_search`/`vec_search`). Racine de stockage : `AGENT_DB_ROOT`.
 
 > 🔐 **AUCUN secret en clair dans les JSON MCP.** Les clés vivent en variables d'environnement User (`NVIDIA_API_KEY`, `OPENAI_API_KEY`, `GITHUB_TOKEN`, `POSTGRES_PASSWORD`, `HF_TOKEN`) — les serveurs enfants héritent l'env du parent. Pour les serveurs distants (headers), utiliser l'interpolation `${env:NOM_VAR}` (validée dans Devin).
 
@@ -1200,15 +1166,15 @@ Guide pour agents travaillant sur ce dépôt.
 
 ## Autorité des remotes
 
-- **`temporaire`** (`projet-temporaire/Hephaistos-Kit`) : remote de développement **autoritaire**. Tous les changements partent ici.
-- **`origin`** (`art-qalam-fr/Hephaistos-Kit`) : organisation de référence **figée**. Ne JAMAIS pousser dessus.
-- `upstream` (`ArchNext`) : source historique, lecture seule.
+- **`origin`** (`projet-temporaire/hephaistos2-kit`) : remote de développement **autoritaire**. Tous les changements partent ici.
+- **`personal`** (`lascard-m/hephaistos2-kit`) : miroir personnel — poussé en même temps qu'`origin`.
+- Pas de remote `upstream`/`art-qalam-fr` actif : les anciens remotes v1 sont figés, ne JAMAIS pousser dessus.
 
 ## Sécurité — règle non négociable (incident #116, 2026-10-07)
 
 **Jamais de donnée externe dans une commande shell.** Tout input (message, titre, workspace, URL, paramètre de requête, champ DB lu à chaud) qui aboutit à un processus fils passe par `spawn`/`spawnSync` avec **argv array** — jamais `exec`, `execSync`, `cmd /c`, backticks ni concaténation dans une ligne de commande. Échapper les quotes ne protège PAS (cmd n'a pas d'`\`-escape ; `\"` referme la chaîne). Si un shell est incontournable, c'est un défaut de conception — refactorer en argv + options natives (`cwd`, `stdio`). Incident de référence : RCE `a2a-gateway` commit `c651f2a7`, détectée par audit externe, remédiée via `templateToSpawnPlan`/`resolveCmdShim`. **Tout commit est contre-expertisé.**
 
-## Orchestrateur multi-agents (MCP `orchestrator`)
+## Orchestrateur multi-agents (outils `*_task`/`*_agent` de `hphe-mcp` — serveur `Hephaistos-everything-search`)
 
 Dispatch dynamique : ne jamais figer agents/providers/modèles dans un tableau statique — découvrir à chaud via `available_models`, `list_agents`, `suggest_agent`, puis `dispatch_task`.
 
@@ -1227,17 +1193,18 @@ ORDER BY CASE WHEN position IS NULL THEN 1 ELSE 0 END, position;
 
 ### Agents enregistrés et diversité
 
-| Agent | Provider principal | Fallback | Modèles préférés | Rôle |
-|---|---|---|---|---|
-| kilo (3) | `nvidia-nim2` (API 2) | — | ultra-550b → super-120b → lightning-30b | code/review/docs |
-| kilo-nim1 (6) | `nvidia-nim2` (API 2) | — | lightning-30b | docs/explore |
-| hermes (4) | `nvidia-nim2` (API 2) | — | super-120b → chatqa-1.5-70b → lightning-30b | docs/explore |
-| agy (2) | `antigravity-subscription` | — | modèle abonnement | explore/UI |
-| devin (5) | `devin-subscription` | — | SWE-2 Max | architecte |
+| Agent | Provider principal | Modèles préférés | Rôle |
+|---|---|---|---|
+| agy | `antigravity-subscription` | modèle abonnement | **défaut** — explore/UI/généraliste |
+| kilo-nim1 | `nvidia-nim2` (API 2) | lightning-30b → super-120b | code/docs/explore |
+| ollama-cloud | `ollama-cloud` (hermes scopé) | gpt-oss:120b-cloud | code/review/docs (1 connexion à la fois) |
+| devin | `devin-subscription` | SWE-2 Max | architecte/orchestrateur |
+
+(Legacy `kilo`/`kilo-free`/`hermes`/`vibe` : désactivés en DB — ne pas les dispatcher.)
 
 **Répartition des clés NIM** (2026-10-07) : `NVIDIA_API_KEY` (NIM1) = **réservée aux appels API directs** — `provider_prefs.nvidia-nim` est `enabled=0` pour le dispatch. `NVIDIA_API_KEY_2` (NIM2) = toutes les charges agent (kilo via prefix `nvidia2/`, hermes via `api_key_env` dans `%LOCALAPPDATA%/hermes/config.yaml`). Pas deux voisins sur la même clé.
 
-**Chaîne provider obligatoire** : la sélection provider/modèle d'un dispatch suit `provider_prefs` (ordre/toggles du monitor) puis `available_models`/`suggest_agent` — pour le choix fin de modèle passer par le routage discovery (MCP `model-discovery` / `nim-router`). Jamais de tableau provider/modèle codé en dur, jamais de bypass de la chaîne du monitor hors tests explicites.
+**Chaîne provider obligatoire** : la sélection provider/modèle d'un dispatch suit `provider_prefs` (ordre/toggles du monitor) puis `available_models`/`suggest_agent` — le choix fin de modèle passe par `available_models` (probe live) et les outils `nim_*` de hphe-mcp (`nim_chat_model`, `nim_domains`). Jamais de tableau provider/modèle codé en dur, jamais de bypass de la chaîne du monitor hors tests explicites.
 
 **Règle de diversité** : ne jamais mettre deux dispatches voisins sur le même provider ni le même modèle — répartir API 1 / API 2 / subscription.
 
@@ -1258,14 +1225,13 @@ ORDER BY CASE WHEN position IS NULL THEN 1 ELSE 0 END, position;
 - Suivi : table `worktrees` + outils `list_worktrees` / `worktree_cleanup` (remove --force + branche -D).
 - Le plugin kilo `hephaistos` (global `~/.config/kilo/plugin/`, source `cli/kilo-plugin/`) lit `HEPHAISTOS_TASK_ID`/`HEPHAISTOS_WORKTREE`/`ORCHESTRATOR_DB` et écrit les événements dans `task_events`.
 - **Anti-récursion** : jamais de script dispatch-capable dans le workspace — un agent `--auto` exécutera tout `.js`/`.ps1` trouvé. Interdire dans les briefs d'appeler l'orchestrateur ou de lancer des CLIs agents.
-- **Réponse dans la conversation d'origine** : si la réponse d'un agent doit revenir dans le chat Devin qui a émis la requête, embedder `[cascade:<uuid>]` dans le titre/contexte de la tâche (id via `extensions/agent-ws-bridge/current-cascade.js` = plus récent `~/.codeium/windsurf/cascade/*.pb`). L'extension monitor bascule cette conversation au premier plan (sauf si déjà active) puis injecte le wake — **sans tag, AUCUNE injection chat** (monitor ≥ 0.0.21 : le wake ne va que sur le bus comms + feed monitor ; pour être réveillé sans toucher le chat : `node extensions/agent-ws-bridge/listener.js --agent Devin` en tâche de fond, les `[WS-WAKE]` arrivent sur stdout).
+- **Réponse dans la conversation d'origine** : si la réponse d'un agent doit revenir dans le chat qui a émis la requête, embedder le tag de routage dans le titre/contexte de la tâche — `[cascade:<uuid>]` pour Devin (id via `extensions/agent-ws-bridge/current-cascade.js`), `[agycascade:<uuid>]` pour agy. **Sans tag, AUCUNE injection chat** : le wake ne va que sur le bus comms + feed monitor (pour être réveillé sans toucher le chat : `node extensions/agent-ws-bridge/listener.js --agent Devin` en tâche de fond, les `[WS-WAKE]` arrivent sur stdout).
 
-## RAG — invariants
+## RAG / INGESTION — invariants
 
-- `.ragignore` = **unique source** d'exclusions (gitignore, dernier match gagne) ; lu par `pipeline.py` (RagIgnore) et `ingest-workspace.ps1` (Test-RagIgnore). `SAFETY_PATTERNS` restent obligatoires en plus.
-- IDs chunks déterministes `source::chunk-NNNN` ; `.agent/rag/index-state.json` = checkpoint par fichier (sha256, done) → skip/reprise.
-- Réindex = purge préalable des anciens IDs dans Qdrant + Zvec + Memory (`DELETE /entities` du pont, port 8002).
-- Qdrant = exécutable Windows standalone sous NSSM (PAS Docker), auth `QDRANT_API_KEY`.
+- `.ragignore` = **unique source** d'exclusions (gitignore, dernier match gagne) ; lu par `ingest-workspace.ps1` (Test-RagIgnore) et le pipeline Rust. `SAFETY_PATTERNS` restent obligatoires en plus.
+- Ingestion = **moteur Rust** (`hphe-ingest`/`hphe-rest` + `ingest-workspace.ps1` → `ingestion.config.json`) : index `hphe-content` (BM25 tantivy) + `hphe-vec` (usearch HNSW 2048D) + `mirror_kg` (entité+relation par document). L'ancien pipeline Python (`pipeline.py`, pont `:8002`, Qdrant/Zvec) est archivé dans `_archive/agent-rag/`.
+- Réindex = relancer l'ingest du workspace (idempotent) — pas de purge manuelle de stores externes.
 - `hephaistos-kit init/update` déploie `.ragignore` sans écraser l'existant ; `--force` outrepasse les filtres.
 
 ## Extension `extensions/orchestrator-monitor/`
@@ -1274,7 +1240,7 @@ Monitor VS Code : `out/` compilé (tsc), webview `media/panel.js` (protocole `sn
 
 ## 🔒 PROTOCOLE HEPHAISTOS-KIT — PROTECTION DU KIT
 
-**Chemin protégé** : `F:/Promgramation-teste/Hephaistos-Kit`
+**Chemin protégé** : `C:/Program Files/Projet-complet/hephaistos2-kit` (ex-`F:/Promgramation-teste/Hephaistos-Kit`, déplacé)
 
 - **Lecture seule pour tout agent externe** : un agent travaillant hors du workspace du kit n'a AUCUN droit d'écriture dessus — aucune modification, aucun commit, aucun patch. Aucune modification d'un autre projet vers le kit n'est autorisée.
 - **Seule écriture autorisée** : déposer un rapport dans `rapport-dysfonctionnement/`.

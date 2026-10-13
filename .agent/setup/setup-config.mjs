@@ -2,7 +2,7 @@
 // Hephaistos — injection de la configuration de référence (2026-10-07).
 // Idempotent : ré-exécutable sans casse. Backup .bak-<ts> avant chaque écriture.
 // Usage : node .agent/setup/setup-config.mjs [--db <chemin-orchestrator.db>]
-import { createRequire } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +13,10 @@ const ROOT = join(here, '..', '..');                    // racine Hephaistos2-Ki
 const HOME = homedir();
 const argv = process.argv.slice(2);
 const dbArg = argv.indexOf('--db');
+// DB canonique = hphe-mcp (ex-orchestrator-server Node absorbé). Env prioritaire : HPHE_ORCH_DB.
 const DB = dbArg > -1 ? argv[dbArg + 1]
-  : process.env.ORCHESTRATOR_DB || 'C:/Program Files/servers/orchestrator-server/data/orchestrator.db';
+  : process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
+    || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db';
 
 let ok = 0, warn = 0, fail = 0;
 const pass = (m) => { ok++; console.log('  [OK]   ' + m); };
@@ -69,20 +71,18 @@ try {
 
 console.log('=== [4/5] orchestrator.db — agents + provider_prefs ===');
 try {
-  const req = createRequire(join(ROOT, 'mcp/servers/orchestrator-server/package.json'));
-  const Database = req('better-sqlite3');
-  const db = new Database(DB);
+  const db = new DatabaseSync(DB);
+  // Roster actif (REGISTRY.md, 2026-10-14) : agy (défaut), kilo-nim1, ollama-cloud, devin.
+  // Les entrées legacy kilo/kilo-free/hermes restent en DB mais désactivées — ne pas les réinjecter.
   const AGENTS = {
-    kilo:        { providers: ['nvidia-nim2'],
-      command: 'cd /d "{workspace}" && "C:/Users/Administrator/AppData/Roaming/npm/kilo.cmd" run -m "nvidia2/{model}" --auto "{message}" > .agent\\kilo-dispatch.log 2>&1' },
     'kilo-nim1': { providers: ['nvidia-nim2'],
       command: 'cd /d "{workspace}" && "C:/Users/Administrator/AppData/Roaming/npm/kilo.cmd" run -m "nvidia2/{model}" --auto "{message}" > .agent\\kilo-nim1-dispatch.log 2>&1 < NUL' },
-    'kilo-free': { providers: ['openrouter-free'],
-      command: 'cd /d "{workspace}" && "C:/Users/Administrator/AppData/Roaming/npm/kilo.cmd" run -m "kilo/kilo-auto/free" --auto "{message}" > .agent\\kilo-free-dispatch.log 2>&1 < NUL' },
-    hermes:      { providers: ['nvidia-nim2'],
-      command: 'cd /d "{workspace}" && "C:/Users/Administrator/.local/bin/hermes.exe" -z "{message}" -m "{model}" --yolo --no-restore-cwd > .agent\\hermes-dispatch.log 2>&1 < NUL' },
+    'ollama-cloud': { providers: ['ollama-cloud'],
+      command: 'cd /d "{workspace}" && "C:/Users/Administrator/.local/bin/hermes.exe" -z "{message}" -m "{model}" --provider ollama-cloud --yolo --no-restore-cwd > .agent\\ollama-cloud-dispatch.log 2>&1 < NUL' },
     agy:         { providers: ['antigravity-subscription'],
       command: '"C:/Users/Administrator/AppData/Local/agy/bin/agy.exe" --dangerously-skip-permissions --print="{message}" --print-timeout 600s' },
+    devin:       { providers: ['devin-subscription'],
+      command: 'devin -p "{message}" --respect-workspace-trust false' },
   };
   const sel = db.prepare('SELECT id, config FROM agents WHERE agent_name=?');
   const upd = db.prepare('UPDATE agents SET config=? WHERE id=?');
@@ -107,7 +107,7 @@ try {
     PREFS.forEach(r => db.prepare('INSERT INTO provider_prefs VALUES(?,?,?)').run(...r));
     pass('provider_prefs réécrites'); }
   db.close();
-} catch (e) { bad('DB : ' + e.message + ' (npm install dans mcp/servers/orchestrator-server si better-sqlite3 manque)'); }
+} catch (e) { bad('DB : ' + e.message + ' (vérifier HPHE_ORCH_DB — node:sqlite natif, pas de dépendance externe)'); }
 
 console.log('=== [5/5] Hooks git ===');
 const hooks = ['pre-commit', 'pre-push'].map(h => join(ROOT, '.githooks', h));

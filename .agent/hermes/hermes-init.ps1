@@ -69,7 +69,7 @@ if (-not (Test-Path $ProjectWorkspace)) {
 }
 
 # Créer les sous-dossiers globaux si absents
-$globalSubdirs = @('cache', 'graph', 'vector', 'vector/zvec-data')
+$globalSubdirs = @('cache', 'graph', 'vector')   # v2 : plus de vector/zvec-data (store absorbé dans hphe-vec)
 foreach ($sub in $globalSubdirs) {
     $gd = Join-Path $ProjectWorkspace $sub
     if (-not (Test-Path $gd)) {
@@ -171,15 +171,13 @@ Les serveurs MCP suivants sont configurés globalement et disponibles dans ce pr
 | `memory_mcp.db` | `<HEPHAISTOS_DATA>/current_workspace/$ProjectId/graph/memory_mcp.db` | Knowledge Graph principal |
 | `graph-memory.db` | `<HEPHAISTOS_DATA>/current_workspace/$ProjectId/graph/graph-memory.db` | Edges rapides |
 | `runtime-cache.db` | `<HEPHAISTOS_DATA>/current_workspace/$ProjectId/cache/runtime-cache.db` | Cache runtime |
-| `zvec-data/` | `<HEPHAISTOS_DATA>/current_workspace/$ProjectId/vector/zvec-data/` | Index vectoriel 384D local (store natif zvec) |
-| Qdrant server | `http://localhost:6333` (collection `memory_hybrid`) | Index vectoriel 2048D NVIDIA NIM |
+| Index hphe | géré par `hphe-mcp` (Tantivy + usearch HNSW 2048D, NIM) | Recherche contenu/vectorielle du workspace |
 
 ### Procédure d'usage
-1. **Avant toute tâche** : `mcp_Memory_search_nodes` pour vérifier le contexte existant
-2. **Après une décision** : `mcp_Memory_add_observations` avec tags (`architecture`, `security`, `mcp-tool`)
-3. **Recherche catégorique** : `mcp_qdrant_search` (tags: type, domain, scope)
-4. **Recherche sémantique** : `mcp_zvec_semantic_search` (tags: concept, action, entity)
-5. **Lecture BP** : `mcp_sqlite_node_query_data` sur `graph-memory.db` (lectures seule)
+1. **Avant toute tâche** : `memory_search` (hphe-mcp) pour vérifier le contexte existant
+2. **Après une décision** : `memory_write` avec tags (`architecture`, `security`, `decision`)
+3. **Recherche contenu** : `hybrid_search` / `content_search` ; fichiers disque : `everything_search`
+4. **Lecture KG** : `sqlite-node` `query_data` sur `memory`/`graph` (lectures seule)
 
 ---
 
@@ -248,19 +246,18 @@ $soulHermes = @"
 
 ## 🔗 MCP TOOLS — Usage prioritaire dans ce projet
 
-### Mémoire (prioritaire absolu)
-1. `mcp_Memory_search_nodes` — Avant toute tâche, chercher le contexte existant
-2. `mcp_Memory_add_observations` — Après toute décision, tracer avec tags
-3. `mcp_Memory_create_entities` / `memory.create_relations` — Structurer le KG
+### Mémoire (prioritaire absolu — hphe-mcp `Hephaistos-everything-search`)
+1. `memory_search` — Avant toute tâche, chercher le contexte existant
+2. `memory_write` / `memory_update` — Après toute décision, tracer avec tags
 
-### Vector search
-4. `mcp_qdrant_search` — Recherche catégorique (tags: type, domain, scope, priority)
-5. `mcp_zvec_semantic_search` — Recherche sémantique (tags: concept, action, entity, relation)
+### Recherche (hphe-mcp)
+3. `hybrid_search` / `content_search` — contenu workspace (BM25 + vectoriel 2048D)
+4. `everything_search` — fichiers par nom sur tout le disque (NTFS $MFT)
+5. `semantic_search` — sens/concept ; `vec_search` + `nim_embed` pour le vectoriel brut
 
 ### SQLite
-6. `mcp_sqlite_node_connect_database` — Se connecter à une DB
-7. `mcp_sqlite_node_query_data` — SELECT sur une DB connectée
-8. `mcp_sqlite_node_execute_query` — INSERT/UPDATE/DELETE
+6. `sqlite-node` `query_data` — SELECT (alias `memory`/`graph`/`cache`, KG read-only)
+7. `sqlite-node` `execute_query` — INSERT/UPDATE/DELETE (hors KG/orchestrator)
 
 ### Fichiers
 9. `mcp_filesystem_read_file` / `write_file` / `edit_file`
@@ -316,5 +313,5 @@ Write-Host "`nStockage global : $ProjectWorkspace" -ForegroundColor Cyan
 Write-Host "Junction locale : $localMemoryDb -> $ProjectWorkspace" -ForegroundColor Cyan
 Write-Host "`nProchaines étapes :" -ForegroundColor Yellow
 Write-Host "  1. Redémarrer Hermès (ou relancer la session) pour charger AGENTS.md + SOUL.hermes.md" -ForegroundColor White
-Write-Host "  2. Tester la mémoire : mcp_Memory_search_nodes sur ce projet" -ForegroundColor White
+Write-Host "  2. Tester la mémoire : memory_search (hphe-mcp) sur ce projet" -ForegroundColor White
 Write-Host "  3. Créer un MANIFEST.md si nécessaire" -ForegroundColor White

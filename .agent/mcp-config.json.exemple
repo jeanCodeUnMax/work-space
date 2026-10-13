@@ -17,7 +17,7 @@
   ],
   "mcpServers": {
     "Hephaistos-everything-search": {
-      "_comment": "Serveur MCP Rust unique — 57 outils : recherche NTFS (pipe hphe-indexd), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), model-discovery, NIM, ingestion.",
+      "_comment": "Serveur MCP Rust unique — 57 outils : recherche NTFS (pipe \\\\.\\pipe\\hphe-index), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), modèles (available_models), NIM (nim_*), ingestion.",
       "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
       "args": [],
       "disabled": false,
