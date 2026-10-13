@@ -13,12 +13,20 @@
  * --task-id : clôture la tâche dans orchestrator.db (status completed/failed)
  * — le worker est de l'infra, pas un agent tiers ; seuls devin/agy dispatch.
  */
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, isAbsolute } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-const DB = process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
-  || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db';
+// Résolution DB : env explicite > install standard (%ProgramFiles%\servers) >
+// profil user > dernier recours (chemin historique).
+const DB_CANDIDATES = [
+  process.env.HPHE_ORCH_DB,
+  process.env.ORCHESTRATOR_DB,
+  process.env.ProgramFiles && join(process.env.ProgramFiles, 'servers', 'hephaistos2-kit', 'data', 'orchestrator.db'),
+  process.env.USERPROFILE && join(process.env.USERPROFILE, 'hephaistos2-kit', 'data', 'orchestrator.db'),
+  'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db',
+].filter(Boolean);
+const DB = DB_CANDIDATES.find((p) => existsSync(p)) || DB_CANDIDATES[DB_CANDIDATES.length - 1];
 
 function closeTask(taskId, status, result) {
   if (!taskId) return;

@@ -255,6 +255,27 @@ if (Test-Path $hider) {
     }
 }
 
+# --- WS BRIDGE :7477 — canal binôme Devin<->AGY + push monitor ---
+# L'extension orchestrator-monitor le spawn aussi à l'activation ; ici on
+# garantit l'écoute même si l'IDE n'a pas (encore) ouvert le monitor.
+# Multi-candidats : le script peut tourner depuis le kit OU depuis un projet
+# cible dont le .agent est synchronisé (extensions\... n'existe pas là-bas).
+$bridgeCandidates = @(
+    (Join-Path $ScriptRoot '..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js'),
+    "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
+)
+$bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+$bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+$bridgeJs = $bridgeCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+if ($bridgeJs) {
+    $up = Get-NetTCPConnection -LocalPort 7477 -State Listen -ErrorAction SilentlyContinue
+    if (-not $up) {
+        $wsRoot = Split-Path (Split-Path $ScriptRoot -Parent) -Parent
+        Start-Process -FilePath 'node' -ArgumentList "`"$bridgeJs`"" -WorkingDirectory (Split-Path $bridgeJs -Parent) -WindowStyle Hidden -Environment @{ HEPHAISTOS_WORKSPACE = $wsRoot }
+        Write-Log "ws-bridge lancé (:7477) — $bridgeJs"
+    }
+}
+
 # --- SYNC BEACON -> MÉMOIRE UNIFIÉE (non-bloquant, non-fatal) ---
 # Distille les traces d'agents capturées par Beacon (runtime.jsonl) et les
 # injecte dans le pipeline RAG (zvec/qdrant + memory_mcp.db) en mode dual.

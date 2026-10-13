@@ -87,6 +87,16 @@ if (-not (Test-Path "$INS\memory-database")) {
 if (-not (Test-Path "$INS\migrated-vec")) { New-Item -ItemType Directory -Force "$INS\migrated-vec" | Out-Null }
 Write-Host "  + content-index, orchestrator.db, memory-database, migrated-vec"
 
+# Seed orchestrateur : roster agents (nim1/nim2 workers directs, kilo/hermes
+# renforts, agy/devin) + provider_prefs (chaîne par défaut). Idempotent :
+# n'insère que les agents absents, ne seede provider_prefs que si vide.
+$seed = "$PRJ\.agent\scripts\seed-orchestrator.mjs"
+if (Test-Path $seed) {
+  node $seed --db "$DATA\orchestrator.db" | Out-Null
+  if ($LASTEXITCODE -eq 0) { Write-Host "  + orchestrator.db seedé (agents + provider_prefs)" }
+  else { Write-Warning "seed-orchestrator a échoué (code $LASTEXITCODE) — roster à créer manuellement" }
+} else { Write-Warning "seed-orchestrator.mjs introuvable : $seed" }
+
 # 4) Config MCP Devin -> INSTALL ------------------------------------------------
 Write-Host "[4/6] mcp_config.json (Devin)"
 $cfgPath = "$env:APPDATA\devin\mcp_config.json"

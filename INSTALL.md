@@ -36,7 +36,7 @@ pwsh -ExecutionPolicy Bypass -File install.ps1 -SkipBuild # redeploy sans rebuil
 
 1. `cargo build --release --workspace` dans `hphe/`
 2. Copie `hphe-mcp.exe`, `hphe-rest.exe`, `hphe-indexd.exe` → `INSTALL\extension\server\` (+ miroir projet)
-3. Crée `INSTALL\data\` (content-index, orchestrator.db), `migrated-vec\`, jonction `memory-database`
+3. Crée `INSTALL\data\` (content-index, orchestrator.db), `migrated-vec\`, jonction `memory-database` **+ seed `orchestrator.db`** : roster agents (nim1/nim2 = workers NIM directs, kilo/hermes = renforts, agy/devin = agents directs) et `provider_prefs` par défaut — idempotent, n'écrase jamais un ordre existant
 4. Écrit `Hephaistos-everything-search` dans `%APPDATA%\devin\mcp_config.json`
 5. Autostart `hphe-rest` via Startup folder
 6. (avec `-Elevated`) tâche planifiée `hphe-indexd` en SYSTEM
@@ -45,8 +45,10 @@ pwsh -ExecutionPolicy Bypass -File install.ps1 -SkipBuild # redeploy sans rebuil
 
 ```powershell
 code --install-extension extension\hephaistos-kit-search-1.0.3.vsix
-code --install-extension extensions\orchestrator-monitor\orchestrator-monitor-0.0.33.vsix
+code --install-extension extensions\orchestrator-monitor\orchestrator-monitor-0.0.35.vsix
 ```
+
+Le vsix `orchestrator-monitor` embarque `agent-bridge/` complet (binôme Devin⇄AGY : `binome.js`, `devin-hub.js`, `agy-hub.js`, `comms.js`, `current-cascade.js`, `listener.js`) + `ws-bridge/` (daemon `ws://127.0.0.1:7477`). Le bridge est aussi auto-démarré par `start-workspace.ps1` si le port 7477 n'écoute pas.
 
 (ou glisser-déposer dans le panneau Extensions)
 

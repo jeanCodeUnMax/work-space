@@ -84,8 +84,12 @@ async function pair() {
 
 async function send(text, waitSec) {
     const p = lastHandshake(peer);
-    const target = opt('--to') || p?.convId;
-    if (!target) { console.error(`[binome] pas de handshake ${peer} — lancez 'join' des deux côtés (ou --to <id>)`); process.exit(1); }
+    let target = opt('--to') || p?.convId;
+    if (!target) {
+        if (me === 'agy') target = devinHub.getActiveCascade();
+        else if (me === 'devin') target = await agyHub.getActiveCascade(agyHub.discoverHub(process.env.AGY_WORKSPACE || process.cwd()));
+    }
+    if (!target) { console.error(`[binome] pas de session ${peer} trouvée — lancez 'join' ou spécifiez --to <id>`); process.exit(1); }
     if (me === 'devin') {
         const hub = agyHub.discoverHub(process.env.AGY_WORKSPACE || process.cwd());
         if (waitSec) {

@@ -14,6 +14,15 @@
  */
 'use strict';
 
+const os = require('os');
+const path = require('path');
+const HOME = os.homedir();
+const APPDATA = process.env.APPDATA || path.join(HOME, 'AppData', 'Roaming');
+const LOCALAPPDATA = process.env.LOCALAPPDATA || path.join(HOME, 'AppData', 'Local');
+
+/** Binaire d'un agent : override env (<AGENT>_BIN) puis chemin user standard. */
+const bin = (envVar, ...parts) => process.env[envVar] || path.join(...parts);
+
 /**
  * sessionFlag: template pour reprendre une session connue.
  *   {flag:'-s'}            → '-s <id>'
@@ -23,7 +32,7 @@
  */
 const ADAPTERS = {
     agy: {
-        bin: 'C:/Users/Administrator/AppData/Local/agy/bin/agy.exe',
+        bin: bin('AGY_BIN', LOCALAPPDATA, 'agy', 'bin', 'agy.exe'),
         headless: ['--dangerously-skip-permissions', '--print'],
         sessionFlag: '--conversation',      // agy --conversation <id>
         continueFlag: '--continue',
@@ -31,7 +40,7 @@ const ADAPTERS = {
         replyVia: 'hub RPC SendUserCascadeMessage + GetCascadeTrajectorySteps (agy-hub.js)'
     },
     kilo: {
-        bin: 'C:/Users/Administrator/AppData/Roaming/npm/kilo.cmd',
+        bin: bin('KILO_BIN', APPDATA, 'npm', 'kilo.cmd'),
         headless: ['run', '--auto'],
         sessionFlag: '-s',                  // kilo run -s <id>
         continueFlag: '-c',
@@ -40,8 +49,8 @@ const ADAPTERS = {
         replyVia: 'kilo export <id> | jq messages'
     },
     opencode: {
-        bin: 'C:/Users/Administrator/AppData/Roaming/npm/opencode',
-        headless: ['run'],
+        bin: bin('OPENCODE_BIN', APPDATA, 'npm', 'opencode.cmd'),
+        headless: ['run', '--auto'],
         sessionFlag: '-s',                  // opencode run -s <id> (+ --fork pour brancher)
         continueFlag: '-c',
         forkFlag: '--fork',
@@ -50,7 +59,7 @@ const ADAPTERS = {
         replyVia: 'opencode export <id>'
     },
     gemini: {
-        bin: 'C:/Users/Administrator/AppData/Roaming/npm/gemini',
+        bin: bin('GEMINI_BIN', APPDATA, 'npm', 'gemini.cmd'),
         headless: ['-p'],
         sessionFlag: '--resume',            // gemini --resume <id|latest|index>
         newSessionFlag: '--session-id',     // impose un UUID neuf
@@ -61,8 +70,8 @@ const ADAPTERS = {
     /* mistral-vibe : RETIRÉ de l'architecture (2026-10-07) — plus de tier
        gratuit Mistral ; agent hors pipeline. */
     hermes: {
-        bin: 'C:/Users/Administrator/.local/bin/hermes.exe',
-        headless: ['-z', '--yolo'],
+        bin: bin('HERMES_BIN', HOME, '.local', 'bin', 'hermes.exe'),
+        headless: ['-z'],
         sessionFlag: '--resume',            // hermes --resume <SESSION>
         continueFlag: '--continue',         // [--continue SESSION_NAME]
         listCmd: 'hermes sessions list',
@@ -71,7 +80,7 @@ const ADAPTERS = {
         acp: 'hermes acp  (serveur ACP natif)'
     },
     cline: {
-        bin: 'C:/Users/Administrator/AppData/Roaming/npm/cline',
+        bin: bin('CLINE_BIN', APPDATA, 'npm', 'cline.cmd'),
         headless: [],
         sessionFlag: '--id',                // cline --id <session-id>
         listCmd: 'cline history',
@@ -79,7 +88,7 @@ const ADAPTERS = {
         replyVia: 'cline history / --id'
     },
     codex: {
-        bin: 'C:/Users/Administrator/AppData/Roaming/npm/codex',
+        bin: bin('CODEX_BIN', APPDATA, 'npm', 'codex.cmd'),
         headless: ['exec'],
         sessionFlag: 'resume',              // codex resume <id> (sous-commande)
         subcommand: true,
