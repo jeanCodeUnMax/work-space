@@ -26,6 +26,7 @@ read: F:/Promgramation-teste/**
 read: C:/Program Files/servers/**
 read: C:/Program Files/Projet-complet/**
 read: C:/Users/Administrator/Desktop/**
+
 # secrets et zones sensibles : toujours refusés, en priorité sur les grants
 deny: **/.ssh/**
 deny: **/.gnupg/**

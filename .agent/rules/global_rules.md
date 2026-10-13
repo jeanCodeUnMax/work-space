@@ -285,9 +285,11 @@ La table **`provider_prefs`** (`orchestrator.db`), réglée dans l'extension **o
 SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 ```
 
-- Toute utilisation automatisée de l'archi lit cette table avant de choisir : `enabled=0` → provider sauté ; `position` → priorité. `pickModel`/`dispatch_task` l'appliquent côté serveur.
+- Toute utilisation automatisée de l'archi lit cette table avant de choisir : `enabled=0` → provider sauté ; `position` → priorité. `pick_agent`/`pick_model`/`dispatch_task` l'appliquent côté serveur (le rang d'un agent = position de son **premier provider activé**).
 - Dérogation uniquement sur **demande explicite de l'utilisateur** (test ciblé, debug) — jamais par défaut.
-- Clés : `NVIDIA_API_KEY` (NIM1) = appels API directs ; `NVIDIA_API_KEY_2` (NIM2) = agents kilo/hermes. `GEMINI_API_KEY` = gemini-cli seul.
+- Clés : `NVIDIA_API_KEY` (NIM1) et `NVIDIA_API_KEY_2` (NIM2) = **protocoles directs** OpenAI-compat vers `integrate.api.nvidia.com` — workers `nim1`/`nim2` (`.agent/scripts/nim-worker.mjs`, `--account 1|2`) + outils `nim_*`. `GEMINI_API_KEY` = gemini-cli seul.
+- **NIM n'est PAS un transport kilo/hermes** : les requêtes NVIDIA ne doivent jamais s'afficher ni s'exécuter sous "kilo-nim". Kilo/hermes = renforts 3e/4e recours sur modèles `:free`, NIM seulement en dernier pour ajouter de la capacité sans saturer les clés.
+- **Habilitation** : seuls `devin` et `agy` utilisent la chaîne, l'orchestrateur et `dispatch_task` — les autres agents sont des workers (reçoivent, ne dispatchent pas).
 
 ### RÈGLE FONDAMENTALE
 
@@ -370,13 +372,20 @@ Config permanente dans `%LOCALAPPDATA%\hermes\.env` : `OLLAMA_BASE_URL=http://lo
 - **Gemini CLI** : fonctionne headless via clé API — `gemini -p "…"` → exit 0 (~20-30 s). Prérequis : `GEMINI_API_KEY` en variable d'environnement + `~/.gemini/settings.json` → `security.auth.selectedType: "gemini-api-key"`. ⚠️ `oauth-personal` est MORT (`IneligibleTierError`, backend Code Assist retiré par Google) — ne jamais y revenir. Voir CANON ci-dessous.
 - **Benchmark** : si un script `bench-models.*` existe dans le workspace, l'utiliser pour pinger les modèles en parallèle ; trier sur le contenu (`READY`) car hermes exit 0 même sur erreur API. OpenRouter `:free` = quota journalier, se vide vite → fallback Nous/Ollama/Kilo.
 
-### FALLBACK — ordre de priorité (2026-10-06)
+### FALLBACK — chaîne dynamique (monitor = autorité, relevé 2026-10-13)
 
-Tâches courantes / rapides / lourdes / importantes :
-`NVIDIA NIM compte 1 (NVIDIA_API_KEY) → NVIDIA NIM compte 2 (NVIDIA_API_KEY_2) → Ollama Cloud :cloud`.
-Automatismes et tâches parallélisées : **KiloCode** et **Hermes** (agents multi-modèles, utilisent les providers ci-dessus dans le même ordre).
-Suppléments : `OpenRouter :free` (dernier recours, si manquement des modèles externes) → Nous portal `:free` (hermes) → HF (API directe) → agy (abonnement, toujours dispo).
-Découverte live : `available_models` (hphe-mcp) ; ordre providers = `provider_prefs` (`nim` par défaut → `nim2` → `ollama-cloud` → `openrouter`).
+L'ordre réel = `provider_prefs.position` (modifiable en live dans l'extension Monitor — ne pas le figer ici) :
+`antigravity-subscription → mistral-vibe(⛔ budget) → nvidia-nim (NIM1 direct) → nvidia-nim2 (NIM2 direct) → ollama-cloud → kilo-free → hermes-free → openrouter-free`.
+
+Sélection d'un modèle pour une tâche — **3 paramètres dans l'ordre** :
+1. **Chaîne** : `provider_prefs` (position + enabled) — ordonne les providers d'un agent ET le choix de l'agent (rang = premier provider activé).
+2. **Ping** : `model_health` (latence + échec récent, alimentée par `.agent/scripts/ping-models.mjs`) — exclut les morts, préfère les rapides.
+3. **Spécificité** : `model_prefs` de l'agent (sous-chaîne sur l'ID modèle).
+
+**Registre modèles** : `.agent/model-registry/<supplier>.md` — état annoté de chaque modèle pingé (OK/KO/latence + section Notes préservée). Les modèles non-répondants (ex. `nemotron-3-ultra-550b`, raisonneurs lents) DOIVENT y être annotés pour accélérer les choix futurs.
+
+Suppléments : OpenRouter `:free` → Nous `:free` (hermes) → HF (API directe) → agy (abonnement).
+Découverte live : `available_models` (hphe-mcp) ; ordre providers = `provider_prefs`.
 **Jamais de repli automatique sur Ollama local** — réservé à l'utilisateur (décision explicite requise).
 
 ---
@@ -387,7 +396,7 @@ Découverte live : `available_models` (hphe-mcp) ; ordre providers = `provider_p
 
 **Avant toute délégation**, lire `.agent/REGISTRY.md` — il liste les agents réels, leurs skills, les providers/modèles disponibles et les outils morts à ne PAS utiliser (ex: Trae abandonné, gemini CLI stock : mode api-key requis, llama.cpp sans modèle).
 
-🎯 **Agent par défaut = celui déclaré dans `.agent/REGISTRY.md`** (section « Agent exécutant par défaut » — actuellement `agy`). Ne pas présumer kilo ni aucun autre ; si le REGISTRY est absent, ordre de repli `agy` → `kilo-nim1` → `ollama-cloud`.
+🎯 **Agent par défaut = celui déclaré dans `.agent/REGISTRY.md`** (section « Agent exécutant par défaut » — actuellement `agy`). Ne pas présumer kilo ni aucun autre ; si le REGISTRY est absent, ordre de repli = la chaîne `provider_prefs` (agy → nim1 → nim2 → ollama-cloud → renforts free).
 
 ### RÈGLE OBLIGATOIRE DE DÉLÉGATION
 

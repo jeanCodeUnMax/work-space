@@ -11,9 +11,16 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+// Registre lisible des modèles : .agent/model-registry/<supplier>.md
+// (régénéré depuis model_health ; la section "## Notes" de chaque fichier
+// est préservée — c'est là qu'on annonce les modèles morts/lents).
+const REGISTRY_DIR = join(HERE, '..', 'model-registry');
 
 // DB canonique = hphe-mcp (ex-orchestrator-server Node absorbé). Env prioritaire : HPHE_ORCH_DB.
 const DB = process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
@@ -136,3 +143,41 @@ for (const [s, rs] of Object.entries(bySupplier)) {
   rs.sort((a, b) => a.latency_ms - b.latency_ms);
   for (const r of rs.slice(0, 3)) console.log(`  ${s}: ${r.model} (${r.latency_ms}ms)`);
 }
+
+// ---- Registre lisible : .agent/model-registry/<supplier>.md ----
+// Une ligne par modèle (état + latence du dernier ping). La section "## Notes"
+// de chaque fichier est préservée entre les régénérations.
+function writeRegistry() {
+  mkdirSync(REGISTRY_DIR, { recursive: true });
+  const latest = db.prepare(
+    `SELECT supplier, provider, model, available, latency_ms, checked_at
+     FROM model_health
+     WHERE id IN (SELECT MAX(id) FROM model_health GROUP BY provider, model)`
+  ).all();
+  const groups = {};
+  for (const r of latest) (groups[r.supplier] ||= []).push(r);
+  const stamp = new Date().toISOString();
+  for (const [supplier, rows] of Object.entries(groups)) {
+    rows.sort((a, b) => (b.available - a.available) || ((a.latency_ms ?? 9e9) - (b.latency_ms ?? 9e9)));
+    const file = join(REGISTRY_DIR, `${supplier}.md`);
+    let notes = '';
+    if (existsSync(file)) {
+      const prev = readFileSync(file, 'utf-8');
+      const i = prev.indexOf('\n## Notes');
+      if (i >= 0) notes = prev.slice(i);
+    }
+    const lines = [
+      `# Registre ${supplier} — ${stamp}`,
+      '',
+      'État = dernier ping réel (model_health). `OK`=répond, `KO`=mort/indispo, `—`=pas de latence mesurée.',
+      'Tri : disponibles d\'abord, puis par latence croissante. Annotations humaines/agent en bas, section préservée.',
+      '',
+      '| État | Modèle | Provider | Latence | Dernier ping |',
+      '|---|---|---|---|---|',
+      ...rows.map(r => `| ${r.available ? 'OK' : 'KO'} | \`${r.model}\` | ${r.provider} | ${r.latency_ms != null ? r.latency_ms + 'ms' : '—'} | ${r.checked_at || '—'} |`),
+    ];
+    writeFileSync(file, lines.join('\n') + (notes || '\n\n## Notes\n\n') + '\n');
+    console.log(`registre: ${file} (${rows.length} modèles)`);
+  }
+}
+writeRegistry();

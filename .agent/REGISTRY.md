@@ -1,54 +1,82 @@
 # REGISTRE INFRASTRUCTURE — source de vérité
-Dernière vérification : 2026-10-05. Mettre à jour à chaque changement d'agent/provider/MCP.
+Dernière vérification : 2026-10-13. Mettre à jour à chaque changement d'agent/provider/MCP.
 
-## Agent exécutant par défaut
+## Habilitation orchestration
 
-**`agy`** (abonnement, tous skills `*`, incl. `generate_image`).
-Toute délégation sans précision d'agent va à cet agent. Pour changer le défaut : modifier cette ligne, pas les règles. Fallbacks one-shot : `kilo` (code) → `hermes` (debug/docs).
+**Seuls `devin` (IDE) et `agy` (Antigravity, CLI + IDE) sont habilités** à utiliser la chaîne de providers, l'orchestrateur et les outils `dispatch_*`/`update_task`/`register_agent`. Les autres agents sont des **workers** : ils reçoivent des tâches, n'en créent pas, ne dispatch pas (anti-récursion).
+
+## Chaîne de providers — dynamique, pilotée par le Monitor
+
+L'ordre réel = `provider_prefs` dans `orchestrator.db` (position + enabled), modifiable par drag & drop dans l'extension Monitor. Ordre courant (2026-10-13) :
+
+| Pos | Provider | État | Clé / transport |
+|---|---|---|---|
+| 0 | `antigravity-subscription` | ✅ | `agy` — abonnement |
+| 1 | `mistral-vibe` | ⛔ off (HTTP 402, budget mort) | `vibe` |
+| 2 | `nvidia-nim` (**NIM1**) | ✅ | **`NVIDIA_API_KEY` — protocole direct**, worker `nim1` |
+| 3 | `nvidia-nim2` (**NIM2**) | ✅ | **`NVIDIA_API_KEY_2` — protocole direct**, worker `nim2` |
+| 4 | `ollama-cloud` | ⚠️ quota mensuel | `hermes` scopé `--provider ollama-cloud` |
+| 5 | `kilo-free` | ✅ | `kilo` — renfort free |
+| 6 | `hermes-free` | ✅ | `hermes` — renfort free (nous) |
+| 7 | `openrouter-free` | ✅ | supplément 1000 req/j |
+| 8-10 | `kilocode` / `hermes` / `ollama` | ⛔ off | dernier recours / réservé utilisateur |
+
+**NIM ≠ transport** : `nvidia-nim`/`nvidia-nim2` = protocole OpenAI-compat direct vers `integrate.api.nvidia.com`, clés reliées directement (`NVIDIA_API_KEY` / `NVIDIA_API_KEY_2`). Les workers `nim1`/`nim2` = `.agent/scripts/nim-worker.mjs` (POST direct, `--account 1|2`). **Kilo et hermes ne portent JAMAIS NIM en primaire** — ils sont renforts free (3e/4e recours), NIM seulement pour ajouter de la capacité sans saturer les clés.
+
+## Sélection agent + modèle — 3 paramètres (hphe-mcp `pick_agent`/`pick_model`)
+
+1. **Chaîne de providers** : l'agent retenu est celui dont le premier provider activé est le plus haut dans `provider_prefs` (skill match requis d'abord, `*` en fallback). `priority` = tiebreak.
+2. **Ping** : `model_health` (latence + échec récent, alimentée par `ping-models.mjs`) exclut les morts et préfère les rapides.
+3. **Spécificité** : `model_prefs` de l'agent (sous-chaîne du modèle).
+
+**Registre modèles** : `.agent/model-registry/<supplier>.md` — régénéré à chaque ping, section `## Notes` préservée pour annoter morts/lents (ex. `nemotron-3-ultra-550b` = très lent, ne répond presque jamais → réserver `deep_analysis`).
 
 ## Agents exécutants (enregistrés dans l'orchestrateur)
 
-| Agent | Type | Skills | Commande | Quota |
+| Agent | Provider principal | Transport | Priority | Quota |
 |---|---|---|---|---|
-| `agy` | CLI Antigravity | tous (`*`) | `agy.exe --dangerously-skip-permissions --print="{msg}" --print-timeout 600s` | Abonnement — **toujours dispo**, modèles Gemini/Claude via `--model` |
-| `vibe` | CLI Mistral Vibe | code, review, docs, test, refactor | `vibe.exe -p "{msg}" --max-turns 40` | Mistral Coder — requêtes illimitées. ⚠️ marqué **retiré de l'architecture** dans `agent-adapters.js` (2026-10-07) ; binaire encore installé, utilisable en manuel |
-| `kilo-nim1` | KiloCode CLI → NIM | explore, code, docs | `kilo run -m "{nim-model}"` | Canal NIM agentique — **validé #309 (~3 min)** |
-| `ollama-cloud` | Hermes CLI (scopé) | code, review, docs, explore | `hermes -z "{msg}" -m "{model}" --provider ollama-cloud` | Forfait payé — **1 connexion à la fois** |
-| `devin` | Agent principal | architecture, orchestration | — | Agent IDE principal |
+| `agy` | `antigravity-subscription` | `agy --print` | 10 | Abonnement — **toujours dispo** |
+| `nim1` | `nvidia-nim` | **direct** `nim-worker --account 1` | 20 | `NVIDIA_API_KEY` — ~80 modèles |
+| `nim2` | `nvidia-nim2` | **direct** `nim-worker --account 2` | 30 | `NVIDIA_API_KEY_2` — même catalogue |
+| `ollama-cloud` | `ollama-cloud` | `hermes --provider ollama-cloud` | 40 | Forfait — 1 connexion à la fois |
+| `kilo` | `kilo-free` | `kilo run -m {model}` | 80 | free + NIM dernier recours |
+| `hermes` | `hermes-free` | `hermes -z --provider {p}` | 90 | free + NIM dernier recours |
+| `devin` | `devin-subscription` | — (agent IDE principal) | — | — |
+| `vibe` | `mistral-vibe` | `vibe -p` | off | ⛔ HTTP 402 budget épuisé |
 
-**NIM non-agentique** : appel direct via les outils `nim_*` de `hphe-mcp` (ex-`nim-router`, absorbé — sous-appels invoqués par Devin/agent CLI : embeddings, raisonnement, rédaction).
-
-**Désactivés (2026-10-12, `active: 0`)** : `kilo`, `kilo-free`, `hermes` — dernier recours absolu, modèles NIM uniquement.
+**Désactivés** : `kilo-nim1` (design erroné — kilo ne doit pas porter NIM), `kilo-free`, `vibe`.
 
 **Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
 
 **Routage wake-up (règle 2026-10-12)** : l'extension Monitor réveille Devin (`sendCascadeInput`) uniquement si la description de la tâche contient `cascade: <uuid-de-la-session>` (ou `conv:`/`agycascade:`). L'uuid = `.pb` vivant dans `~/.codeium/windsurf/cascade/` (le seul non `.archived`, réécrit en continu). Sans tag → `(non routé)`, wake perdu volontairement. Toute tâche dispatchée par Devin DOIT porter le tag de la session courante. Watcher filet de secours : `.agent/task-watch.cjs` → `task-events.log`.
 
-## Providers & modèles — ordre de priorité (politique 2026-10-06)
+**Awareness Devin** : `~/.config/devin/scripts/awareness.mjs` — hooks SessionStart/UserPromptSubmit/Stop : injecte les tâches pending/in_progress dans le contexte et bloque le stop tant qu'une tâche m'est assignée. Canal temps réel = chaque interaction, pas de polling manuel.
 
-**Tâches courantes / rapides / lourdes / importantes → modèles free dans cet ordre :**
+**Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
 
-| Priorité | Provider | État | Modèles notables | Usage |
-|---|---|---|---|---|
-| **1** | `nvidia-nim` (NIM1) | ✅ | 80+ modèles servis : nemotron-3-embed-1b (2048D), nemotron-3-super-120b-a12b, lightning-30b… | **Embeddings (tous stores)** + chat cloud `nim_chat` — clé `NVIDIA_API_KEY` |
-| **2** | `nvidia-nim2` (NIM2) | ✅ | même catalogue | Fallback compte 1 : `NVIDIA_API_KEY_2` — `nim_* account:2`, ACP `nim2`, fallback auto `router.py` sur 429 |
-| **3** | `ollama-cloud` | ⚠️ quota mensuel (épuisé au relevé 10-05) | gpt-oss:120b-cloud, nemotron-3-ultra:cloud, gemma4:31b-cloud… | Via daemon local `:11434`, suffixe `:cloud` |
+**Routage wake-up (règle 2026-10-12)** : l'extension Monitor réveille Devin (`sendCascadeInput`) uniquement si la description de la tâche contient `cascade: <uuid-de-la-session>` (ou `conv:`/`agycascade:`). L'uuid = `.pb` vivant dans `~/.codeium/windsurf/cascade/` (le seul non `.archived`, réécrit en continu). Sans tag → `(non routé)`, wake perdu volontairement. Toute tâche dispatchée par Devin DOIT porter le tag de la session courante. Watcher filet de secours : `.agent/task-watch.cjs` → `task-events.log`.
 
-**Automatismes et tâches parallélisées → agents multi-modèles :**
+## Providers — rôles (détail)
 
-| Agent | Rôle |
-|---|---|
-| `kilo` (KiloCode) | automatisations, tâches parallèles — providers `nvidia-nim → nvidia-nim2 → ollama-cloud → openrouter-free` |
-| `hermes` | automatisations, tâches parallèles — mêmes providers |
-
-**Suppléments / dernier recours :**
-
-| Provider | État | Usage |
-|---|---|---|
-| `openrouter-free` | ✅ ~24 modèles `:free` | **Supplément uniquement**, en cas de manquement des modèles externes (1000 req/jour) |
+| Provider | État | Modèles notables | Usage |
+|---|---|---|---|
+| `nvidia-nim` (NIM1) | ✅ | ~80 modèles : nemotron-3-embed-1b (2048D embeddings), super-120b, lightning-30b… | Protocole direct `NVIDIA_API_KEY` — embeddings + `nim_chat` + worker `nim1` |
+| `nvidia-nim2` (NIM2) | ✅ | même catalogue | Protocole direct `NVIDIA_API_KEY_2` — worker `nim2` + `nim_* account:2`, fallback auto sur 429 |
+| `ollama-cloud` | ⚠️ quota mensuel (épuisé au relevé 10-05) | gpt-oss:120b-cloud, nemotron-3-ultra:cloud, gemma4:31b-cloud | Via daemon local `:11434`, suffixe `:cloud` |
+| `kilo-free` | ✅ | modèles `:free` gateway Kilo | Renfort agentique free (agent `kilo`) |
+| `hermes-free` / `nous` | ✅ | laguna-xs/s-2.1, step-*, ling-* `:free` | Renfort agentique free (agent `hermes`) |
+| `openrouter-free` | ✅ ~24 `:free` | Supplément — 1000 req/jour |
 | `huggingface` | ✅ clé `HF_TOKEN` | API directe + supplier `hf`. **ACP désactivé** : fenêtre 131k < prompt opencode |
-| `nous` portal | ✅ auth hermes | laguna-xs/s-2.1 `:free` — fallback hermes |
-| `antigravity` (agy) | ✅ abonnement | Agent à tout faire garanti, modèles Gemini/Claude |
+
+**Hors service :**
+
+| Provider | État | Raison |
+|---|---|---|
+| `mistral-vibe` | ⛔ | HTTP 402 budget épuisé (2026-10-13) — provider + agent off |
+| `ollama` local (:11434) | ✅ UP | ⚠️ **réservé à l'utilisateur** — jamais pour l'automatisation |
+| llama.cpp | ⚠️ aucun GGUF | inutilisable sans télécharger un modèle |
+| `gemini` CLI (api-key) | ✅ opérationnel | `GEMINI_API_KEY` + `selectedType:"gemini-api-key"` — ≠ `agy` (CANON) |
+| `kilocode` (paid) | ⛔ off | dernier recours payant |
 
 **Hors service :**
 
