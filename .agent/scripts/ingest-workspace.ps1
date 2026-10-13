@@ -86,14 +86,16 @@ if ($restUp) {
     }
     try {
         $resp = Invoke-RestMethod -Uri "http://127.0.0.1:8792/tools/hephaistos_update" `
-            -Method Post -ContentType 'application/json' -Body $argsJson -TimeoutSec 600
+            -Method Post -ContentType 'application/json' -Body $argsJson -TimeoutSec 1800
         $json = ($resp | ConvertTo-Json -Compress -Depth 6)
     }
     catch {
         # LockBusy = la boucle hphe-rest ingère déjà (elle couvre cette racine via
         # HPHE_INGEST_ROOTS/découverte .agent) — non-fatal, on ne double pas le writer.
-        $detail = $_.ErrorDetails.Message
-        if (-not $detail) { $detail = $_.Exception.Message }
+        $detail = $null
+        try { $detail = $_.ErrorDetails.Message } catch {}
+        if (-not $detail) { try { $detail = $_.Exception.Message } catch {} }
+        if (-not $detail) { $detail = "$_" }
         if ($detail -match 'LockBusy|index lock') {
             Write-Log "[ingest] index occupé (boucle hphe-rest en cours) — racine déjà couverte, skip." "WARN"
             return
@@ -101,7 +103,7 @@ if ($restUp) {
         # Connexion coupée = hphe-rest a redémarré pendant l'attente en
         # file (déploiement/crash). La boucle reprendra la racine au cycle
         # suivant — non-fatal, on ne plante pas le workspace.
-        if ($detail -match 'transport connection|hôte distant|forcibly closed|closed the connection|connection.*closed|aborted') {
+        if ($detail -match 'transport connection|hôte distant|forcibly closed|closed the connection|connection.*closed|aborted|timed out|timeout|délai|502|503|504|Bad Gateway|Service Unavailable|Gateway') {
             Write-Log "[ingest] connexion REST interrompée (redémarrage hphe-rest) — racine couverte au prochain cycle, skip." "WARN"
             return
         }
