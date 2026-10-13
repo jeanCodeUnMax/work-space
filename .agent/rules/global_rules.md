@@ -291,6 +291,26 @@ SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 - **NIM n'est PAS un transport kilo/hermes** : les requêtes NVIDIA ne doivent jamais s'afficher ni s'exécuter sous "kilo-nim". Kilo/hermes = renforts 3e/4e recours sur modèles `:free`, NIM seulement en dernier pour ajouter de la capacité sans saturer les clés.
 - **Habilitation** : seuls `devin` et `agy` utilisent la chaîne, l'orchestrateur et `dispatch_task` — les autres agents sont des workers (reçoivent, ne dispatchent pas).
 
+### 🤝 CANAL BINÔME DEVIN ⇄ AGY (mot-clé `/binome`)
+
+Devin et agy sont les **deux agents directs** — pas des sous-agents. Le canal binôme passe par `agent-bridge/` (WS 7477 + Connect-RPC hub agy) — **hors orchestrateur**.
+
+**Activation** : le mot-clé `/binome` (tapé par l'utilisateur ou envoyé par un agent à l'autre) déclenche le **handshake d'adressage** :
+
+1. Chaque agent publie son propre `cascadeId` dans `.agent/comms.jsonl` : `{src, kind:'handshake', convId, session:'binome'}`.
+   - Devin : `node extensions/orchestrator-monitor/agent-bridge/current-cascade.js`
+   - agy : son cascadeId de conversation active (`agy-hub.js list`).
+2. Le pair lit l'id de l'autre dans `comms.jsonl` (`comms.js tail`) → **les deux fenêtres actives deviennent le canal binôme**. Jamais de devinette sur le `.pb` le plus récent — c'est le bug qui envoyait les messages dans la mauvaise fenêtre.
+
+**Échange** (après handshake, IDs explicites) :
+
+- Devin → agy : `node agent-bridge/agy-hub.js send <agyCascadeId> "<texte>"` (Connect-RPC direct vers le hub agy) ou `ask` pour send+attente+réponse.
+- agy → Devin : `node agent-bridge/devin-hub.js send "<texte>" <devinCascadeId>` → `wake_devin` via WS → l'extension injecte dans le chat Devin ciblé.
+- Retour automatisé : `wake_antigravity` avec `replyToCascadeId` → l'extension attend l'idle agy et relaie sa réponse dans le chat Devin (round-trip sans intervention).
+- Journal : tout passe par `comms.jsonl` (tail dans le monitor) — `comms.js log <src> <dst> <kind> <texte>`.
+
+**Clôture** : `/binome off` ou fin de tâche → entrée `kind:'handshake', text:'fin binôme'` dans comms.
+
 ### RÈGLE FONDAMENTALE
 
 L'agent principal agit d'abord comme architecte et orchestrateur. Il doit déléguer au maximum les tâches d'analyse, de revue, de documentation, de test et d'implémentation aux agents disponibles, en utilisant **impérativement les modèles cloud** pour l'automatisation (Ollama `:cloud`, NVIDIA NIM, OpenRouter `:free`, abonnement agy). **Les modèles Ollama locaux sont réservés aux besoins personnels de l'utilisateur et ne s'utilisent que sur sa décision explicite.** Si un modèle cloud ne répond pas (quota journalier/mensuel épuisé), basculer sur un autre provider cloud — ne jamais retomber sur du local par défaut.
