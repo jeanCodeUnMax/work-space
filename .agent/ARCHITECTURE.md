@@ -158,7 +158,7 @@ Specialist AI personas for different domains.
 
 ---
 
-## 🧩 Skills (40)
+## 🧩 Skills (41)
 
 Modular knowledge domains that agents can load on-demand. based on task context.
 
@@ -265,6 +265,7 @@ Modular knowledge domains that agents can load on-demand. based on task context.
 | ---------------- | ---------------------------------------------------------------------------------- |
 | `boost`          | `/boost` — mode haute performance (délégation agressive, recherche Hephaistos-first) |
 | `hephaistos-kit` | Référence du kit : serveur unifié hphe-mcp, propagation `.agent/`                    |
+| `obsidian`       | `/obsidian` — second cerveau partagé Devin↔agy (triage, sessions, anti-patrons)      |
 | `orchestrator`   | Playbook délégation `dispatch_task` (CLI agents, worktrees, providers)               |
 
 ---

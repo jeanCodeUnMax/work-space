@@ -612,6 +612,18 @@ sessions agents → Beacon (capture, service BeaconCollector) → [ingest Beacon
 
   `intention` en mémoire — consultée au prochain `/plan` ou `/reflect`.
 
+### OBSIDIAN — SECOND CERVEAU PARTAGÉ (Devin ↔ agy)
+
+Le MCP `antigravity-obsidian` connecte la voûte `F:\doc_Obsidian\Doc` — canal de continuité **entre les agents**, distinct de la mémoire unifiée (qui est machine) : la voûte est lisible par l'utilisateur dans Obsidian.
+
+- **Début de tâche complexe** : `obsidian_triage` (<100 tokens) ou `obsidian_session_last` pour récupérer les milestones des sessions précédentes — y compris celles écrites par agy.
+- **Fin de tâche/phase** : `obsidian_session_save` (projet, résumé, détails techniques, fichiers) — le checkpoint devient lisible par agy ET par l'utilisateur.
+- **Leçons** : `obsidian_save_memory` (fiche technique durable), `obsidian_add_antipattern` (erreur interdite → synchronisé dans `.agents/rules/project-rules.md` du workspace), `obsidian_learn` (préférence utilisateur).
+- **Anti-gaspillage** : `obsidian_peek` avant `obsidian_read_note` — ne jamais lire une note entière si le résumé suffit.
+- **Skill `/obsidian`** (`.agent/skills/obsidian/`) — protocole complet. Fallback CLI : `node ~/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js <cmd>`.
+- ⚠️ La voûte est **partagée** : `memory_update`/`skill_save` modifient aussi l'identité d'agy (USER.md/SOUL.md bornés) — écriture identitaire seulement sur demande explicite.
+- ⚠️ `obsidian_tool_install`/`tool_create`/`tool_run`/`tool_uninstall` : **désactivés par défaut** (gate `OBSIDIAN_ALLOW_TOOL_MGMT=1`) — installation de code tiers, pas le rôle de ce plugin dans l'architecture.
+
 ### REGISTRE GLOBAL DES PROJETS
 
 Tous les projets de la racine de développement sont référencés dans un registre
