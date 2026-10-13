@@ -186,6 +186,25 @@ if (Test-Path $zvecData) {
     } catch { Add-Err "zvec-scan: $($_.Exception.Message)" }
 }
 
+# ============ 6b. Sweep _MEI* (extractions PyInstaller agy/antigravity) ============
+# Chaque spawn du CLI packagé extrait ~880 Mo dans %TEMP%\_MEIxxxxxx ; les
+# dossiers fuient quand le process est tué -> ~90 Go accumulés en 48h constatés.
+# On supprime ceux de plus de 24h (les live des process en cours sont <24h).
+$meiPurged = 0
+if (-not $DryRun) {
+    try {
+        $cutoff = (Get-Date).AddHours(-24)
+        Get-ChildItem (Join-Path $env:LOCALAPPDATA 'Temp') -Directory -Filter '_MEI*' -ErrorAction SilentlyContinue |
+            Where-Object { $_.LastWriteTime -lt $cutoff } |
+            ForEach-Object {
+                try { Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop; $script:meiPurged++ }
+                catch { }
+            }
+        if ($meiPurged -gt 0) { Write-Log "sweep _MEI : $meiPurged dossiers PyInstaller supprimes (>24h)" }
+        Add-Action "mei_swept" $meiPurged
+    } catch { Add-Err "mei-sweep: $($_.Exception.Message)" }
+}
+
 # ============ 7. Rapport auto-observe dans la memoire ============
 $summary = "maintenance: sem=$semPurged rt=$rtPurged orphelins=$orphans dupes=$dupes dead=$dead superseded=$sup zvec_stale=$staleCount warnings=$($report.warnings.Count) errors=$($report.errors.Count)"
 if (Test-Path $rtDb) {
