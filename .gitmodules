@@ -7,6 +7,3 @@
 [submodule "extensions/orchestrator-monitor"]
 	path = extensions/orchestrator-monitor
 	url = https://github.com/projet-temporaire/hephaistos2-monitor-ext.git
-[submodule ".agent"]
-	path = .agent
-	url = https://github.com/projet-temporaire/hephaistos2-agent.git
