@@ -190,6 +190,44 @@ $ManifestPath = Join-Path $ProjectRoot "MANIFEST.md"
 $ManifestContent | Set-Content $ManifestPath -Encoding UTF8
 Write-Host "  ✓ MANIFEST.md créé" -ForegroundColor Green
 
+# === PHASE 4: COUCHE AGENT & BRIDGE ===
+Write-Host "`n[PHASE 4] Injection de la couche Agent et vérification du bridge" -ForegroundColor Yellow
+
+$SyncScript = Join-Path $PSScriptRoot "sync-agent-layer.ps1"
+if (Test-Path $SyncScript) {
+    Write-Host "  Synchronisation de la couche .agent..." -ForegroundColor Cyan
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $SyncScript -Target $ProjectRoot
+}
+
+# Vérification du daemon WS Bridge (:7477)
+$bridgeUp = $false
+try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $tcp.Connect('127.0.0.1', 7477)
+    $tcp.Close()
+    $bridgeUp = $true
+} catch { }
+
+if ($bridgeUp) {
+    Write-Host "  ✓ WS Bridge actif sur le port 7477" -ForegroundColor Green
+} else {
+    Write-Host "  ! WS Bridge inactif sur le port 7477 - tentative de démarrage..." -ForegroundColor Yellow
+    $bridgeCandidates = @(
+        (Join-Path $PSScriptRoot "..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js"),
+        "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
+    )
+    $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+    $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+    $bridgeJs = $bridgeCandidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    if ($bridgeJs) {
+        Start-Process node -ArgumentList "`"$bridgeJs`"" -WorkingDirectory (Split-Path $bridgeJs -Parent) -WindowStyle Hidden -Environment @{ HEPHAISTOS_WORKSPACE = $ProjectRoot } -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        Write-Host "  ✓ WS Bridge démarré ($bridgeJs)" -ForegroundColor Green
+    } else {
+        Write-Host "  ! Bridge script non trouvé, il sera démarré par start-workspace.ps1" -ForegroundColor DarkGray
+    }
+}
+
 # === RÉSUMÉ ===
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  INJECTION TERMINÉE" -ForegroundColor Cyan
