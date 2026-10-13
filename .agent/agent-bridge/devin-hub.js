@@ -52,7 +52,7 @@ function getActiveCascade() {
 
 function sendToDevin(text, cascadeId, port = 7477) {
     return new Promise((resolve, reject) => {
-        const targetId = cascadeId || null;
+        const targetId = cascadeId || getActiveCascade();
         const ws = new WebSocket(`ws://127.0.0.1:${port}`);
         const timeout = setTimeout(() => {
             ws.close();
@@ -63,7 +63,7 @@ function sendToDevin(text, cascadeId, port = 7477) {
             const payload = {
                 command: 'wake_devin',
                 text: text,
-                ...(targetId ? { cascadeId: targetId } : {})
+                cascadeId: targetId
             };
             ws.send(JSON.stringify(payload));
             if (comms) {
@@ -72,7 +72,7 @@ function sendToDevin(text, cascadeId, port = 7477) {
                     dst: 'devin',
                     kind: 'prompt',
                     text: text,
-                    convId: targetId || getActiveCascade()
+                    convId: targetId
                 });
             }
             clearTimeout(timeout);
