@@ -295,6 +295,8 @@ SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 
 Devin et agy sont les **deux agents directs** — pas des sous-agents. Le canal binôme passe par `agent-bridge/` (WS 7477 + Connect-RPC hub agy) — **hors orchestrateur**.
 
+**Exclusivité** : aucun worker/sous-agent (kilo, hermes CLI, nim1/nim2, goose, scripts) n'utilise ce canal — `binome.js --as` n'accepte que `devin|agy`. « Hermes » en tant que nom interne d'Antigravity n'autorise pas le worker `hermes` CLI.
+
 **Activation** : le mot-clé `/binome` (tapé par l'utilisateur ou envoyé par un agent à l'autre) déclenche le **handshake d'adressage** :
 
 1. Chaque agent publie son propre `cascadeId` dans `.agent/comms.jsonl` : `{src, kind:'handshake', convId, session:'binome'}`.
