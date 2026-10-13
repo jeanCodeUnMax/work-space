@@ -17,7 +17,8 @@ node_modules/
 dist/
 
 # ---- IDE workspace (local, pas versionné) ----
-.vscode/
+.vscode/*
+!.vscode/settings.json
 *.code-workspace
 .idea/
 .cursor/
