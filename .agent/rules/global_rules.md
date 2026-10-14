@@ -291,27 +291,33 @@ SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 - **NIM n'est PAS un transport kilo/hermes** : les requêtes NVIDIA ne doivent jamais s'afficher ni s'exécuter sous "kilo-nim". Kilo/hermes = renforts 3e/4e recours sur modèles `:free`, NIM seulement en dernier pour ajouter de la capacité sans saturer les clés.
 - **Habilitation** : seuls `devin` et `agy` utilisent la chaîne, l'orchestrateur et `dispatch_task` — les autres agents sont des workers (reçoivent, ne dispatchent pas).
 
-### 🤝 CANAL BINÔME DEVIN ⇄ AGY (mot-clé `/binome`)
+### CANAL BINÔME DEVIN ⇄ AGY (mot-clé `/binome`)
 
-Devin et agy sont les **deux agents directs** — pas des sous-agents. Le canal binôme passe par `agent-bridge/` (WS 7477 + Connect-RPC hub agy) — **hors orchestrateur**.
+Devin et agy sont les **deux agents directs** — pas des sous-agents. Le canal binôme passe par `agent-bridge/` (WS 7477 + Connect-RPC hub agy) — **hors orchestrateur**. Version courante de l'extension : **0.0.54**.
 
 **Exclusivité** : aucun worker/sous-agent (kilo, hermes CLI, nim1/nim2, goose, scripts) n'utilise ce canal — `binome.js --as` n'accepte que `devin|agy`. « Hermes » en tant que nom interne d'Antigravity n'autorise pas le worker `hermes` CLI.
 
 **Activation** : le mot-clé `/binome` (tapé par l'utilisateur ou envoyé par un agent à l'autre) déclenche le **handshake d'adressage** :
 
-1. Chaque agent publie son propre `cascadeId` dans `.agent/comms.jsonl` : `{src, kind:'handshake', convId, session:'binome'}`.
-   - Devin : `node extensions/orchestrator-monitor/agent-bridge/current-cascade.js`
+1. Chaque agent publie son propre `cascadeId` / `sessionId` dans `.agent/comms.jsonl` : `{src, kind:'handshake', convId, session:'binome'}`.
+   - Devin : `node extensions/orchestrator-monitor/agent-bridge/current-cascade.js` (résout session ACP `devin-cli` ou cascade UUID)
    - agy : son cascadeId de conversation active (`agy-hub.js list`).
-2. Le pair lit l'id de l'autre dans `comms.jsonl` (`comms.js tail`) → **les deux fenêtres actives deviennent le canal binôme**. Jamais de devinette sur le `.pb` le plus récent — c'est le bug qui envoyait les messages dans la mauvaise fenêtre.
+2. Le pair lit l'id de l'autre dans `comms.jsonl` (`comms.js tail`) -> **les deux fenêtres actives deviennent le canal binôme**. Jamais de devinette sur le `.pb` le plus récent.
 
 **Échange** (après handshake, IDs explicites) :
 
-- Devin → agy : `node agent-bridge/agy-hub.js send <agyCascadeId> "<texte>"` (Connect-RPC direct vers le hub agy) ou `ask` pour send+attente+réponse.
-- agy → Devin : `node agent-bridge/devin-hub.js send "<texte>" <devinCascadeId>` → `wake_devin` via WS → l'extension injecte dans le chat Devin ciblé.
-- Retour automatisé : `wake_antigravity` avec `replyToCascadeId` → l'extension attend l'idle agy et relaie sa réponse dans le chat Devin (round-trip sans intervention).
+- Devin -> agy : `node agent-bridge/agy-hub.js send <agyCascadeId> "<texte>"` (Connect-RPC direct vers le hub agy) ou `ask` pour send+attente+réponse.
+- agy -> Devin : `node agent-bridge/devin-hub.js send "<texte>" <devinCascadeId>` -> WebSocket bridge (`ws://127.0.0.1:7477`) -> `wake_devin`.
+  - **Route cible `acp/*` (Devin Desktop `devin-cli` ACP, ex: `acp/devin-cli/<slug>`)** :
+    1. Si `focusedSessionId !== cible` mais connue (`providerId === 'devin-cli'`) : exécution préalable de `vscode.open` sur `vscode-cascade-editor:///cascade-<sessionId>` pour restaurer le focus in-place.
+    2. Injection native : `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et payload = UN `TextOrScopeItem` brut base64 (field1 UTF-8) -> livré à `session/prompt` comme message utilisateur.
+    3. Si focus impossible ou inconnue : skipped (`wake-noroute`), **JAMAIS** de toast, copie presse-papier ni nouvelle conversation.
+  - **Route cible UUID classique (`cascade`)** :
+    `setCascadeId` (switch in-place) puis `sendCascadeInput`.
+- Retour automatisé : `wake_antigravity` avec `replyToCascadeId` -> l'extension attend l'idle agy et relaie sa réponse dans le chat Devin (round-trip sans intervention).
 - Journal : tout passe par `comms.jsonl` (tail dans le monitor) — `comms.js log <src> <dst> <kind> <texte>`.
 
-**Clôture** : `/binome off` ou fin de tâche → entrée `kind:'handshake', text:'fin binôme'` dans comms.
+**Clôture** : `/binome off` ou fin de tâche -> entrée `kind:'handshake', text:'fin binôme'` dans comms.
 
 ### RÈGLE FONDAMENTALE
 

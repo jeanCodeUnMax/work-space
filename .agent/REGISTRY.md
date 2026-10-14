@@ -48,13 +48,10 @@ L'ordre réel = `provider_prefs` dans `orchestrator.db` (position + enabled), mo
 
 **Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
 
-**Routage wake-up (règle 2026-10-12)** : l'extension Monitor réveille Devin (`sendCascadeInput`) uniquement si la description de la tâche contient `cascade: <uuid-de-la-session>` (ou `conv:`/`agycascade:`). L'uuid = `.pb` vivant dans `~/.codeium/windsurf/cascade/` (le seul non `.archived`, réécrit en continu). Sans tag → `(non routé)`, wake perdu volontairement. Toute tâche dispatchée par Devin DOIT porter le tag de la session courante. Watcher filet de secours : `.agent/task-watch.cjs` → `task-events.log`.
-
-**Awareness Devin** : `~/.config/devin/scripts/awareness.mjs` — hooks SessionStart/UserPromptSubmit/Stop : injecte les tâches pending/in_progress dans le contexte et bloque le stop tant qu'une tâche m'est assignée. Canal temps réel = chaque interaction, pas de polling manuel.
-
-**Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
-
-**Routage wake-up (règle 2026-10-12)** : l'extension Monitor réveille Devin (`sendCascadeInput`) uniquement si la description de la tâche contient `cascade: <uuid-de-la-session>` (ou `conv:`/`agycascade:`). L'uuid = `.pb` vivant dans `~/.codeium/windsurf/cascade/` (le seul non `.archived`, réécrit en continu). Sans tag → `(non routé)`, wake perdu volontairement. Toute tâche dispatchée par Devin DOIT porter le tag de la session courante. Watcher filet de secours : `.agent/task-watch.cjs` → `task-events.log`.
+**Routage wake-up (règle 2026-10-14, extension 0.0.54)** :
+- Session ACP `acp/*` (ex. `acp/devin-cli/<slug>`) : wake direct via WebSocket 7477 -> restauration du focus in-place via `vscode.open` sur `vscode-cascade-editor:///cascade-<sessionId>` -> `explainAndFixProblem` (payload brut `TextOrScopeItem` base64 UTF-8) -> livré dans `session/prompt` comme message utilisateur sans toast ni nouvel onglet.
+- Session classique Cascade `uuid` : `setCascadeId` + `sendCascadeInput` (avec tag `cascade: <uuid>` ou `conv:`/`agycascade:`).
+- Sans tag ou session inconnue : `(non routé)` / `wake-noroute`, wake ignoré sans pollution. Watcher filet de secours : `.agent/task-watch.cjs` -> `task-events.log`.
 
 ## Providers — rôles (détail)
 

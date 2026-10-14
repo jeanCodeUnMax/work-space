@@ -30,7 +30,7 @@
 - [ ] Création de la tâche planifiée **hphe‑indexd** avec l’option `-Elevated` (exécuter avec les plus hauts privilèges)  
 - [ ] Installation des extensions VSIX :  
   - `hephaistos-kit-search.vsix`  
-  - `orchestrator-monitor.vsix` (inclut `agent-bridge` → `binome.js` / `devin-hub.js`)  
+  - `orchestrator-monitor.vsix` (v0.0.54+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)  
 
 ---
 
@@ -48,11 +48,14 @@
 
 ---
 
-## 5️⃣ Vérification du binome (Devin ↔ AGY)
-- [ ] Le script `binome.js` a effectué le **join** : une entrée apparaît dans `.agent/comms.jsonl` contenant `"type":"join"` et l’ID du binome  
-- [ ] Le **pairing** est confirmé : une seconde entrée `"type":"pair"` avec le même ID de binome  
-- [ ] Le **bridge WebSocket** écoute sur le port **7477** : `netstat -ano | findstr :7477` montre une connexion en état **ESTABLISHED**  
-- [ ] Messagerie fonctionnelle : un message de test envoyé via `agy-hub (Connect‑RPC)` est reçu par `devin-hub` (wake_devin) et vice‑versa  
+## 5. Vérification du binôme (Devin ⇄ AGY)
+- [ ] Extension `hephaistos.orchestrator-monitor` en version attendue (>= 0.0.54) installée dans l'IDE
+- [ ] Le script `binome.js` a effectué le **join** : une entrée apparaît dans `.agent/comms.jsonl` contenant `"kind":"handshake"` et l'ID de session de l'agent
+- [ ] Le **pairing** est confirmé : présence des IDs publiés pour les deux agents (`agy` et `devin`)
+- [ ] Le **bridge WebSocket** écoute sur le port **7477** : `netstat -ano | findstr :7477` (ou `Test-NetConnection 127.0.0.1 -Port 7477`)
+- [ ] Messagerie fonctionnelle :
+  - Devin -> agy via Connect-RPC (`agy-hub.js`)
+  - agy -> Devin via `devin-hub.js` (wake_devin sur WS 7477) -> restauration automatique de focus `vscode.open` si session ACP `acp/*` -> `explainAndFixProblem` -> rendu direct dans la session sans toast ni onglet parasite
 
 ---
 

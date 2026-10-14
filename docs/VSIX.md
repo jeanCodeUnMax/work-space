@@ -44,10 +44,18 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
   - `orchestratorMonitor.clearCompleted` / `clearFailed` / `clearPending` — purge des files
   - `orchestratorMonitor.sendToChat` — injecter un résumé dans le chat Devin
 - **Bridge agents** : `agent-bridge/agy-hub.js` (RPC vers `agy.exe --hub`, Connect-RPC), `agent-adapters.js` (agy, kilo, opencode, gemini, hermes, cline, codex), `comms.js` (bus append-only `.agent/comms.jsonl`).
-- **Wake Devin↔agy** : les messages directs passent par `wake_devin` et une cible explicite du handshake. Pour les notifications de tâches uniquement, injection si tag `[cascade:<id>]` / `[conv:<id>]` / `[agycascade:<uuid>]`, sinon feed uniquement.
-  - Cible `acp/*` (sessions Devin Desktop `devin-cli`) : envoi via `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et un payload = UN `TextOrScopeItem` brut en base64 (field1 = texte UTF-8, **pas** de wrapper `SendCascadeInputRequest`). Le handler route sur la session focalisée : si `focusedSessionId !== cible` mais que la session est connue (`providerId === 'devin-cli'`), l'extension restaure le focus via `vscode.open` sur l'URI `vscode-cascade-editor:///cascade-<sessionId>` (switch vers l'onglet existant), re-vérifie, puis envoie — sinon skip propre (`wake-noroute`). L'acceptation de la commande = soumission prise en compte, pas preuve de livraison. Aucun fallback toast/presse-papier, aucune ouverture de nouvelle conversation.
-  - Cible `uuid` (sessions 'cascade' classiques) : `setCascadeId` (focus in-place) puis `sendCascadeInput`. Une cible explicite inconnue est skippée — jamais de reroutage vers une autre conversation.
-- **Filet de secours** : `.agent/task-watch.cjs` (client WS → `.agent/task-events.log`, auto-reconnect).
+- **Route finale de transport et wake (agy -> devin)** :
+  Le flux direct emprunte :
+  `devin-hub.js` (ou `binome.js --as agy send`) -> WebSocket bridge (`ws://127.0.0.1:7477`) -> `wake_devin`.
+  
+  1. **Si cible `acp/*` (sessions Devin Desktop `devin-cli`, ex. `acp/devin-cli/<slug>`)** :
+     - **Restauration de focus dynamique** : interrogation de l'état ACP via `workbench.action.getAcpState`. Si la session focalisée (`focusedSessionId`) n'est pas la session cible mais que celle-ci est bien enregistrée (`providerId === 'devin-cli'`), l'extension exécute `vscode.open` sur l'URI `vscode-cascade-editor:///cascade-<sessionId>`. Cela commute l'onglet existant sans modifier l'arborescence ni créer de session fantôme.
+     - **Injection ACP native** : soumission via `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et un payload = UN `TextOrScopeItem` brut base64 (champ 1 = texte UTF-8, sans wrapper `SendCascadeInputRequest`). Devin achemine ce payload vers `session/prompt` et le rend comme un message utilisateur dans la session ACP focalisée.
+     - **Garde-fou strict** : si la cible n'est ni focalisée ni restaurable, ou inconnue, l'envoi est purement sauté (`skipped` / `wake-noroute`). **JAMAIS** de notification toast, **JAMAIS** de copie dans le presse-papier, **JAMAIS** d'ouverture de nouvelle conversation parasite.
+  2. **Si cible UUID classique (sessions Cascade `.pb` historiques)** :
+     - `setCascadeId` (switch in-place) puis `sendCascadeInput`.
+     - Une cible explicite inconnue est ignorée sans reroutage intempestif.
+- **Filet de secours** : `.agent/task-watch.cjs` (client WS -> `.agent/task-events.log`, auto-reconnect).
 - **Build** : `npm run compile` / `vscode:prepublish` (TypeScript).
 
 ---
