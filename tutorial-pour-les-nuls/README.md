@@ -1,66 +1,69 @@
-# 🧸 Tutorial pour les nuls — Hephaistos2-Kit
+# Guide d'installation pas-a-pas — Hephaistos2-Kit
 
-> **C'est quoi ?** Un kit qui transforme ton PC en moteur de recherche ultra-rapide et qui fait parler les agents IA (Devin et Antigravity) comme un walkie-talkie.  
-> **Pour qui ?** Toi, même si tu n'as jamais touché à l'installation avant.  
-> **Combien de temps ?** Environ 10 minutes si tout se passe bien.
+> **C'est quoi ?** Un kit qui transforme ton PC en moteur de recherche ultra-rapide et qui relie deux intelligences artificielles (Devin et Antigravity) comme avec un talkie-walkie.  
+> **Pour qui ?** Pour toi, meme si tu n'as jamais installe de serveur ni tape de ligne de commande complexe.  
+> **Combien de temps ?** Moins de 10 minutes en suivant les etapes tranquillement.
 
 ---
 
-## 🗺️ La carte du monde (on voyage ensemble)
+## La carte du parcours (on avance pas a pas)
 
-| Étape | Fichier | C'est quoi ? |
+| Etape | Fichier | Ce que l'on fait |
 |---|---|---|
-| 0 | `01-avant-de-commencer.md` | Ce qu'il faut préparer (comme sortir les chaussures avant de marcher) |
-| 1 | `02-installation.md` | On installe tout (comme faire un puzzle, on pose les pièces) |
-| 2 | `03-verification.md` | On vérifie que tout marche (comme tester une recette) |
-| 3 | `04-le-ping-pong.md` | Comment Devin et Antigravity se parlent (le walkie-talkie) |
-| 4 | `05-quand-ca-marche-pas.md` | Si ça coince (on débloque ensemble) |
+| 0 | `01-avant-de-commencer.md` | Ce qu'il faut preparer (comme mettre ses chaussures avant de sortir) |
+| 1 | `02-installation.md` | On installe tout (comme assembler un jeu de construction, piece par piece) |
+| 2 | `03-verification.md` | On teste que tout fonctionne (comme gouter un plat avant de servir) |
+| 3 | `04-le-ping-pong.md` | On teste le talkie-walkie entre Devin et Antigravity |
+| 4 | `05-quand-ca-marche-pas.md` | La trousse de secours si un voyant reste rouge |
 
-> **Astuce** : suis les étapes dans l'ordre. Ne saute pas d'étape, c'est comme oublier une chaussette — ça se sent après.
+> **Regle d'or** : suis bien les etapes dans l'ordre, du chapitre 0 au chapitre 4. Ne saute rien.
 
 ---
 
-## 🚀 La version ultra-rapide (pour les impatients)
+## La methode express en un seul clic
 
-Si tu es pressé, ouvre PowerShell 7 en administrateur et tape :
+Si tes cles sont deja pretes et que tu veux aller vite :
+1. Fais un clic droit sur l'icone de **PowerShell 7**.
+2. Choisis **Executer en tant qu'administrateur**.
+3. Copie et colle cette commande :
 
 ```powershell
 cd "C:\Program Files\Projet-complet\hephaistos2-kit\tutorial-pour-les-nuls\scripts"
 .\1-installe-moi.ps1
 ```
 
-Puis relance Devin et Antigravity. C'est tout !
+Une fois termine, recharge les fenetres de Devin et Antigravity. Tout est en place.
 
 ---
 
-## 🧰 Ce que tu vas installer (en gros)
+## Les elements installes (explique simplement)
 
-| Morceau | C'est quoi ? | Où ça va ? |
+| Element | A quoi ca sert ? | Ou c'est range ? |
 |---|---|---|
-| **hphe-indexd** | Un petit robot qui lit tous les fichiers de ton disque dur NTFS en une seconde | `C:\Program Files\servers\hephaistos2-kit\` |
-| **hphe-mcp** | Le cerveau qui répond aux questions des agents IA | Idem |
-| **hphe-rest** | Un répondeur automatique pour les tests rapides | Idem + démarrage auto |
-| **Extensions VSIX** | Les deux téléphones : `orchestrator-monitor` et `hephaistos-kit-search` | `~/.devin/extensions/` ou `~/.vscode/extensions/` |
-| **Scripts binôme** | Le walkie-talkie entre Devin et Antigravity | `.agent/agent-bridge/` dans le projet |
-| **Règles + skills** | Les bonnes habitudes et les livres de cuisine pour les agents | `~/.claude/`, `~/.gemini/`, `~/.config/devin/` |
+| **hphe-indexd** | Le robot d'indexation. Il scanne tous les disques en une seconde chrono. | `C:\Program Files\servers\hephaistos2-kit\` |
+| **hphe-mcp** | Le cerveau de liaison. Il repond aux questions des assistants IA. | Idem |
+| **hphe-rest** | Le repondeur rapide. Il permet de verifier en une seconde que le moteur tourne. | Idem + demarrage auto |
+| **Extensions VSIX** | Les modules d'ecran : ils affichent le tableau de bord dans ton editeur de code. | `~/.devin/extensions/` ou `~/.vscode/extensions/` |
+| **Passerelle binome** | Le talkie-walkie entre Devin et Antigravity pour travailler en equipe. | `.agent/agent-bridge/` dans le projet |
+| **Regles et skills** | Les guides de travail pour que les IA respectent tes methodes. | `~/.claude/`, `~/.gemini/`, `~/.config/devin/` |
 
 ---
 
-## 🆘 En cas de problème
+## En cas de doute ou de panne
 
-- **Ça ne démarre pas ?** → Va voir `05-quand-ca-marche-pas.md`
-- **Tu veux juste vérifier ?** → Lance `.\2-verifie-tout.ps1` dans `scripts/`
-- **Tu veux tester le ping-pong ?** → Lance `.\3-teste-le-ping-pong.ps1` dans `scripts/`
+- **Tu veux verifier si tout est operationnel ?** Lance `.\2-verifie-tout.ps1` dans le dossier `scripts/`.
+- **Tu veux tester l'envoi d'un message ?** Lance `.\3-teste-le-ping-pong.ps1` dans le dossier `scripts/`.
+- **Quelque chose bloque ?** Ouvre `05-quand-ca-marche-pas.md` pour trouver la solution immediate.
 
 ---
 
-## 🎯 Checklist finale (tu coches comme une liste de courses)
+## Liste de verification finale
 
-- [ ] Le robot d'indexation (`hphe-indexd`) tourne
-- [ ] Le cerveau (`hphe-mcp`) répond
-- [ ] Le répondeur (`hphe-rest`) écoute sur le port 8792
-- [ ] Les extensions VSIX sont installées dans Devin
-- [ ] Devin et Antigravity se parlent (ping-pong)
-- [ ] Les workers NIM répondent quand on les appelle
+- [ ] Le robot d'indexation (`hphe-indexd`) est actif
+- [ ] Le cerveau (`hphe-mcp`) repond
+- [ ] Le repondeur rapide (`hphe-rest`) repond sur le port 8792
+- [ ] L'extension `orchestrator-monitor` est installee dans Devin
+- [ ] Devin et Antigravity s'echangent des messages (ping-pong valide)
+- [ ] Les modeles distants repondent a l'appel
 
-Si tout est coché, bravo ! Tu as installé le kit. 🎉
+Quand chaque point est valide, ton systeme est pret a l'emploi.

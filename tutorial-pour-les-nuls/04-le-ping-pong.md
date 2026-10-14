@@ -1,102 +1,104 @@
-# Étape 3 — Le ping-pong (le walkie-talkie Devin ↔ Antigravity)
+# Etape 3 — Le ping-pong (le talkie-walkie Devin <-> Antigravity)
 
-> **Objectif** : faire que Devin et Antigravity se parlent en direct, sans passer par des messages copiés-collés à la main.
-
----
-
-## 📻 C'est quoi le ping-pong ?
-
-Imagine deux enfants avec des talkies-walkies. Chacun a sa fréquence (son ID de conversation). Quand l'un parle, l'autre entend **dans sa conversation**, pas ailleurs.
-
-- **Devin** parle dans `acp/devin-cli/clumsy-cockroach` (ou ta session actuelle)
-- **Antigravity** parle dans `db362c86-cdb8-4ec9-94f5-1abed85abc98` (ou sa session actuelle)
-
-Le canal passe par :
-- **Devin → Antigravity** : `agy-hub.js` → Connect-RPC → `SendUserCascadeMessage`
-- **Antigravity → Devin** : `devin-hub.js` → WebSocket 7477 → `wake_devin` → focus + `explainAndFixProblem` → `session/prompt`
+> **Objectif** : faire communiquer Devin et Antigravity en direct, sans devoir copier-coller du texte a la main entre deux fenetres.
 
 ---
 
-## 🚀 Lancer le ping-pong (3 étapes)
+## Comment fonctionne le talkie-walkie ?
 
-### Étape 1 — Devin publie son ID
+Imagine deux personnes avec des appareils radio. Pour s'entendre, chacune doit se caler sur la bonne frequence et dire qui elle est :
 
-Dans le projet (`C:\Program Files\Projet-complet\hephaistos2-kit`), tape :
+1. **Devin** s'annonce et donne son numero de session.
+2. **Antigravity** fait la meme chose de son cote.
+3. Quand l'un parle, le message s'affiche directement dans la conversation active de l'autre, sans creer de nouvel onglet ni faire sonner d'alerte parasite.
+
+Le chemin emprunte :
+- **De Devin vers Antigravity** : un tuyau reseau rapide (Connect-RPC) depose le texte directement dans la session d'Antigravity.
+- **D'Antigravity vers Devin** : la commande transite par la ligne interne (port 7477). L'extension remet en avant le bon onglet de discussion et insere le message comme une reponse utilisateur.
+
+---
+
+## Les 3 etapes pour tester la liaison
+
+### Etape 1 — Devin annonce son identifiant
+
+Dans une fenetre PowerShell a la racine du projet (`C:\Program Files\Projet-complet\hephaistos2-kit`) :
 
 ```powershell
 node .agent/agent-bridge/binome.js --as devin join
 ```
 
-Ça écrit dans `.agent/comms.jsonl` : `"src":"devin","kind":"handshake"` avec ton `convId`.
+Cela enregistre la session de Devin dans le carnet de bord (`.agent/comms.jsonl`).
 
-### Étape 2 — Antigravity publie son ID
+### Etape 2 — Antigravity annonce son identifiant
 
-Idem, mais depuis le côté Antigravity (son terminal ou son agent) :
+Depuis le terminal d'Antigravity :
 
 ```powershell
 node .agent/agent-bridge/binome.js --as agy join
 ```
 
-### Étape 3 — On envoie un message test
+Les deux assistants se connaissent desormais.
 
-Depuis Devin :
+### Etape 3 — Envoi d'un message test
 
-```powershell
-node .agent/agent-bridge/binome.js --as devin send "coucou agy, tu me reçois ?"
-```
-
-Si tout marche, le message apparaît dans la conversation d'Antigravity.
-
-Et depuis Antigravity :
+Pour envoyer un message depuis Devin vers Antigravity :
 
 ```powershell
-node .agent/agent-bridge/binome.js --as agy send "coucou devin, je t'entends"
+node .agent/agent-bridge/binome.js --as devin send "coucou agy, transmission validee"
 ```
 
-Le message arrive ici.
+Le texte arrive directement dans la session live d'Antigravity.
+
+Et pour repondre depuis Antigravity vers Devin :
+
+```powershell
+node .agent/agent-bridge/binome.js --as agy send "bien recu devin, le canal fonctionne"
+```
+
+Le texte arrive directement dans la fenetre de Devin.
 
 ---
 
-## 🧪 Le script de test automatique
+## Le script de test automatique
 
-Dans `scripts/` :
+Pour aller plus vite, utilise le script fourni dans le dossier `scripts/` :
 
 ```powershell
+cd "C:\Program Files\Projet-complet\hephaistos2-kit\tutorial-pour-les-nuls\scripts"
 .\3-teste-le-ping-pong.ps1
 ```
 
-Ça fait les deux `join` et envoie un message dans chaque sens. Tu vois tout se passer.
+Il annonce l'agent, envoie un message date et affiche les derniers echanges inscrits dans le carnet.
 
 ---
 
-## 🔧 Si le ping-pong ne marche pas
+## Si le message n'arrive pas
 
-| Problème | Pourquoi | Solution |
+| Constat | Raison la plus frequente | Action a mener |
 |---|---|---|
-| `binome.js` ne trouve pas le bridge | Le port 7477 n'écoute pas | Lance `install-extension-hub.ps1 -CheckOnly` et reload l'extension |
-| Le message n'arrive pas | Focus sur la mauvaise session | La 0.0.54 restaure le focus automatiquement — vérifie qu'elle est installée |
-| `convId` absent | `join` pas lancé | Relance `binome.js --as <agent> join` |
-| `wake-noroute` | Cible inconnue | Vérifie que les deux `join` ont bien écrit dans `.agent/comms.jsonl` |
+| Le port 7477 ne repond pas | L'extension monitor n'est pas active | Ouvre le panneau Orchestrator Monitor dans Devin et recharge la fenetre |
+| L'identifiant est introuvable | La commande `join` n'a pas ete lancee | Relance `binome.js --as devin join` et `binome.js --as agy join` |
+| Erreur "wake-noroute" | La cible n'est plus ouverte dans Devin | Relance `node .agent/agent-bridge/binome.js pair` pour rafraichir |
 
 ---
 
-## 📁 Les fichiers du canal
+## Les fichiers de la passerelle binome
 
-| Fichier | Rôle |
+| Fichier | Role |
 |---|---|
-| `.agent/agent-bridge/binome.js` | La CLI du canal (`join`, `send`, `pair`, `tail`) |
-| `.agent/agent-bridge/agy-hub.js` | Parle à Antigravity via Connect-RPC |
-| `.agent/agent-bridge/devin-hub.js` | Parle à Devin via WebSocket 7477 |
-| `.agent/agent-bridge/comms.js` | Écrit/lit `.agent/comms.jsonl` |
-| `.agent/comms.jsonl` | Le journal des messages (comme un log) |
+| `.agent/agent-bridge/binome.js` | L'outil de commande pour s'annoncer (`join`), envoyer (`send`) ou lire (`tail`) |
+| `.agent/agent-bridge/agy-hub.js` | La passerelle qui distribue les messages vers Antigravity |
+| `.agent/agent-bridge/devin-hub.js` | La passerelle qui injecte les messages dans l'editeur Devin |
+| `.agent/agent-bridge/comms.js` | Le module qui gere l'historique chronologique |
+| `.agent/comms.jsonl` | Le carnet de bord ou chaque echange est conserve |
 
 ---
 
-## ✅ Récapitulatif
+## Validation avant de continuer
 
-- [ ] `binome.js --as devin join` a écrit un handshake
-- [ ] `binome.js --as agy join` a écrit un handshake
-- [ ] `binome.js --as devin send` arrive chez agy
-- [ ] `binome.js --as agy send` arrive chez devin
+- [ ] L'identifiant de Devin est publie (`join`)
+- [ ] L'identifiant d'Antigravity est publie (`join`)
+- [ ] Un message test a traverse avec succes
 
-→ **Passer à** `05-quand-ca-marche-pas.md` si besoin
+Prochaine etape : `05-quand-ca-marche-pas.md` si tu rencontres un comportement inattendu.

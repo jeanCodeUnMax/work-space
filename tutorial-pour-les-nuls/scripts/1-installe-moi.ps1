@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Installation Hephaistos2-Kit pour les nuls — un seul clic.
 .DESCRIPTION

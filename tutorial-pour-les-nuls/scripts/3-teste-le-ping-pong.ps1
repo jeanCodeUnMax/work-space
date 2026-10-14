@@ -4,14 +4,28 @@
 .DESCRIPTION
     Fait les join, envoie un message test dans chaque sens,
     et montre les derniers messages du canal.
+.PARAMETER As
+    Qui envoie le test ('devin' par defaut, ou 'agy').
 .EXAMPLE
     pwsh -File 3-teste-le-ping-pong.ps1
+    pwsh -File 3-teste-le-ping-pong.ps1 -As agy
 #>
+[CmdletBinding()]
+param(
+    [ValidateSet('devin', 'agy')]
+    [string]$As = 'devin'
+)
+
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if (-not (Test-Path "$root\install.ps1")) {
+    $root = "C:\Program Files\Projet-complet\hephaistos2-kit"
+}
 $comms = "$root\.agent\comms.jsonl"
+$binome = "$root\.agent\agent-bridge\binome.js"
 
 Write-Host "=== Test ping-pong binome ===" -ForegroundColor Cyan
+Write-Host "Role actif pour ce test : $As"
 
 # 1) Verifie que le bridge 7477 est vivant
 try {
@@ -20,36 +34,40 @@ try {
     $tcp.Close()
     Write-Host "[OK] Bridge WS 7477 vivant" -ForegroundColor Green
 } catch {
-    Write-Host "[ERREUR] Bridge 7477 muet — lance install-extension-hub.ps1 d'abord" -ForegroundColor Red
+    Write-Host "[ERREUR] Bridge 7477 muet — verifie que l'extension orchestrator-monitor est active" -ForegroundColor Red
     exit 1
 }
 
 # 2) Verifie que binome.js existe
-$binome = "$root\.agent\agent-bridge\binome.js"
-if (-not (Test-Path $binome)) { Write-Host "[ERREUR] binome.js introuvable : $binome" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $binome)) {
+    Write-Host "[ERREUR] binome.js introuvable : $binome" -ForegroundColor Red
+    exit 1
+}
 
-# 3) Join devin (on est dans devin)
-Write-Host "`n[1/4] Devin publie son ID..."
-& node $binome --as devin join
+# 3) Publication de l'ID courant
+Write-Host "`n[1/3] Publication de l'identifiant ($As)..."
+& node $binome --as $As join
 
-# 4) Join agy (si on peut — sinon on simule)
-Write-Host "`n[2/4] Antigravity publie son ID (depuis son cote)..."
-Write-Host "  Si tu es dans Antigravity, fais-le aussi : node $binome --as agy join"
-
-# 5) Envoie un message test de devin vers agy
-Write-Host "`n[3/4] Devin envoie un message test..."
+# 4) Envoi du message test vers le binome
+$peer = if ($As -eq 'devin') { 'agy' } else { 'devin' }
+Write-Host "`n[2/3] Envoi d'un message test vers $peer..."
 $msg = "TEST-PING-PONG-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-& node $binome --as devin send "$msg — dis coucou si tu me recois"
+& node $binome --as $As send "$msg — coucou $peer, transmission validee"
 
-# 6) Montre les derniers messages
-Write-Host "`n[4/4] Derniers messages du canal :"
+# 5) Affichage des derniers echanges
+Write-Host "`n[3/3] Derniers messages du canal comms.jsonl :"
 if (Test-Path $comms) {
-    Get-Content $comms -Tail 5 | ForEach-Object {
+    Get-Content $comms -Tail 6 | ForEach-Object {
         $j = $_ | ConvertFrom-Json -ErrorAction SilentlyContinue
-        if ($j) { Write-Host "  $($j.ts) [$($j.src)->$($j.dst)] $($j.text.Substring(0,[Math]::Min(60,$j.text.Length)))..." }
+        if ($j) {
+            $txt = if ($j.text) { $j.text.Substring(0, [Math]::Min(70, $j.text.Length)) } else { "($($j.kind))" }
+            Write-Host "  $($j.ts) [$($j.src) -> $($j.dst)] $txt"
+        }
     }
-} else { Write-Host "  (comms.jsonl pas encore cree)" }
+} else {
+    Write-Host "  (comms.jsonl pas encore cree)"
+}
 
 Write-Host "`n=== Fin du test ===" -ForegroundColor Cyan
-Write-Host "Si tu vois le message dans la conversation d'Antigravity, c'est bon."
-Write-Host "Sinon, va voir 05-quand-ca-marche-pas.md`n"
+Write-Host "Si le message apparait chez ton binome ($peer), la liaison fonctionne."
+Write-Host "En cas de silence, consulte 05-quand-ca-marche-pas.md`n"
