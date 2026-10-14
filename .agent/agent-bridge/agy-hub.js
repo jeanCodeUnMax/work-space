@@ -43,7 +43,7 @@ function discoverHub(preferDir) {
     let rows;
     try {
         const out = execSync(`powershell.exe -NoProfile -Command "${ps}"`, {
-            encoding: 'utf8', timeout: 15000
+            encoding: 'utf8', timeout: 15000, windowsHide: true
         }).trim();
         rows = out ? JSON.parse(out) : [];
     } catch (e) {

@@ -1296,4 +1296,14 @@ Monitor VS Code : `out/` compilé (tsc), webview `media/panel.js` (protocole `sn
 - **Modification du kit** : réservée à l'agent résident (session sur le workspace du kit), UNIQUEMENT après approbation explicite de l'utilisateur.
 - **Dysfonctionnement lié au kit** (install, config, MCP, beacon, architecture, scripts) : réparer/contourner UNIQUEMENT dans son propre workspace, puis rédiger un rapport selon `rapport-dysfonctionnement/TEMPLATE.md` → `YYYY-MM-DD-<auteur>-<sujet>.md`, `<auteur>` = `lascard` ou `webman` — déclaration obligatoire de qui a rencontré le problème.
 
+## ⚠️ Ne JAMAIS auditer via `node -e` inline (faux positif Defender)
+
+Le 14/10/2026, un audit `node -e "...execSync(grep)..."` lancé par un agent a été bloqué par Windows Defender : `Trojan:Win32/SuspExec.SE` (heuristique sur les one-liners `-e` qui spawnent des processus). Le script était bénin mais ironiquement son propre `execSync` n'avait pas `windowsHide`.
+
+Règles :
+
+- Audits/scripts → toujours un fichier dans `.agent/scripts/`, jamais `node -e`/`powershell -c` avec du code inline contenant `child_process`/`Start-Process`.
+- Script canonique : `node .agent/scripts/audit-exec-hide.mjs [racine]` (pur Node, zéro `child_process` → ne déclenche pas l'heuristique).
+- Tout `spawn`/`execFile`/`execSync` dans le code → `windowsHide: true` obligatoire (fenêtre d'audit : 12 lignes après l'appel).
+
 

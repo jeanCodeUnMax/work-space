@@ -47,7 +47,7 @@ function getActiveCascade() {
     try {
         const id = execFileSync(process.execPath,
             [path.join(__dirname, 'current-cascade.js')],
-            { encoding: 'utf8', timeout: 10000 }).trim();
+            { encoding: 'utf8', timeout: 10000, windowsHide: true }).trim();
         if (id) return id;
     } catch { /* fallback .pb */ }
     // 2) Fallback : .pb le plus récemment écrit

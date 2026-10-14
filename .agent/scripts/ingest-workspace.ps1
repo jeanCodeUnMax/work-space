@@ -111,21 +111,25 @@ if ($restUp) {
     }
 }
 else {
-    # hphe-mcp logge sur stderr : pas de 2>&1 (NativeCommandError sous EAP=Stop)
+    # hphe-mcp logge sur stderr : on capture stderr dans un fichier à part
+    # (2>&1 polluerait $out d'ErrorRecords) — LockBusy n'apparait QUE là.
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    $out = & $HpheMcp --tool hephaistos_update --args $argsJson
+    $errFile = [IO.Path]::GetTempFileName()
+    $out = & $HpheMcp --tool hephaistos_update --args $argsJson 2>$errFile
     $code = $LASTEXITCODE
     $ErrorActionPreference = $prevEap
     $json = $out | Where-Object { $_ -match '^\s*\{' } | Out-String
+    $allText = ($out | Out-String) + "`n" + (Get-Content $errFile -Raw -ErrorAction SilentlyContinue)
+    Remove-Item $errFile -Force -ErrorAction SilentlyContinue
     if ($code -ne 0) {
         # LockBusy = un writer vit déjà (boucle rest relancée entre-temps,
         # ou hphe-rest revenu). Non-fatal : la racine sera couverte au cycle.
-        if (($out | Out-String) -match 'LockBusy|index lock') {
+        if ($allText -match 'LockBusy|index lock') {
             Write-Log "[ingest] index occupé (writer actif) — racine couverte par la boucle, skip." "WARN"
             return
         }
-        throw "hephaistos_update a échoué (exit $code): $json"
+        throw "hephaistos_update a échoué (exit $code): $($allText.Trim())"
     }
 }
 Write-Log "[ingest] $json"
