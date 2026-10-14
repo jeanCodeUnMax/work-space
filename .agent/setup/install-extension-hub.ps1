@@ -93,6 +93,14 @@ if (Test-Path $surfScript) {
     else { Warn 'surfaces de regles non conformes - lancer setup-agent-surfaces.ps1 pour resynchroniser' }
 } else { Warn "script surfaces introuvable : $surfScript" }
 
+# Configuration Devin pour le binome (hooks awareness + IDs)
+$devinBinomeScript = Join-Path $PSScriptRoot 'setup-devin-binome.ps1'
+if (Test-Path $devinBinomeScript) {
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $devinBinomeScript -Verify 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) { Pass 'config Devin binome conforme (hooks + extension + IDs)' }
+    else { Warn 'config Devin binome incomplete - lancer setup-devin-binome.ps1' }
+} else { Warn "script binome Devin introuvable : $devinBinomeScript" }
+
 # IDs binome publies
 $commsPath = Join-Path $root '.agent\comms.jsonl'
 if (Test-Path $commsPath) {
