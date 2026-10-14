@@ -36,6 +36,11 @@ function fromSessionInfo() {
           // providerId 'cascade' = vraie conversation Devin (ignore les
           // sessions ACP d'autres agents : kilo, hermes, devin-cli...)
           if (p.providerId !== 'cascade') continue;
+          // Les drafts vides ("Awaiting User's Request") ont un cascadeId
+          // ÉPHÉMÈRE : le premier sendCascadeInput les matérialise sous un
+          // id différent -> le message part dans une fenêtre neuve. On les
+          // exclut : une cible de handshake doit être une conv persistée.
+          if ((p.info?.title || '') === 'Awaiting User\'s Request') continue;
           const id = p.info?.sessionId || '';
           const ts = p.info?.updatedAt || '';
           if (id && ts > bestTs) { bestTs = ts; best = id; }

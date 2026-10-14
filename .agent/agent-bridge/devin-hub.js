@@ -16,6 +16,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { execFileSync } = require('child_process');
 let WebSocket;
 const wsCandidates = [
     path.join(__dirname, '..', '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
@@ -39,6 +40,17 @@ let comms;
 try { comms = require('./comms'); } catch { comms = null; }
 
 function getActiveCascade() {
+    // 1) Source fiable : sessioninfo.updatedAt du globalStorage Devin (activité
+    //    utilisateur réelle) — délégué à current-cascade.js. Le .pb mtime est
+    //    pollué par des writes de fond (chats vierges au reload, wakes injectés)
+    //    et ciblait la mauvaise conversation.
+    try {
+        const id = execFileSync(process.execPath,
+            [path.join(__dirname, 'current-cascade.js')],
+            { encoding: 'utf8', timeout: 10000 }).trim();
+        if (id) return id;
+    } catch { /* fallback .pb */ }
+    // 2) Fallback : .pb le plus récemment écrit
     try {
         const dir = path.join(os.homedir(), '.codeium', 'windsurf', 'cascade');
         const files = fs.readdirSync(dir)
