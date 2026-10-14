@@ -19,6 +19,13 @@ const os = require('os');
 
 const DRAFT_TITLES = new Set(['Awaiting User\'s Request', 'New Cascade', '']);
 
+// Providers acceptés : 'cascade' (conversations Devin classiques) et
+// 'devin-cli' (sessions agent Devin — la surface où tourne l'utilisateur dans
+// Devin Desktop ; ids de la forme "acp/devin-cli/<slug>"). Les autres
+// providers ACP (kilo, hermes, cline...) sont des workers, jamais la fenêtre
+// utilisateur.
+const USER_PROVIDERS = new Set(['cascade', 'devin-cli']);
+
 // 1) Source fiable : sessioninfo.updatedAt dans le globalStorage Devin
 //    raw=true → inclut les drafts (pour savoir si le panel est sur un composer vide)
 function fromSessionInfo(raw) {
@@ -36,15 +43,20 @@ function fromSessionInfo(raw) {
       for (const r of rows) {
         try {
           const p = JSON.parse(r.value);
-          // providerId 'cascade' = vraie conversation Devin (ignore les
-          // sessions ACP d'autres agents : kilo, hermes, devin-cli...)
-          if (p.providerId !== 'cascade') continue;
+          if (!USER_PROVIDERS.has(p.providerId)) continue;
           // Les drafts vides ont un cascadeId ÉPHÉMÈRE : le premier
           // sendCascadeInput les matérialise sous un id DIFFÉRENT -> le
           // message part dans une fenêtre neuve. On les exclut du pick,
           // sauf en mode raw où on veut justement savoir si on est dessus.
           const title = p.info?.title || '';
           if (!raw && DRAFT_TITLES.has(title)) continue;
+          // Sessions devin-cli avec 0 message utilisateur = sessions spawnées
+          // (sub-agents / daemons partageant un requestingTabId) — jamais la
+          // fenêtre où l'utilisateur écrit.
+          const meta = p.info?._meta || {};
+          if (p.providerId === 'devin-cli' && !raw &&
+              typeof meta['cognition.ai/userMessageCount'] === 'number' &&
+              meta['cognition.ai/userMessageCount'] === 0) continue;
           const id = p.info?.sessionId || '';
           const ts = p.info?.updatedAt || '';
           if (id && ts > bestTs) { bestTs = ts; best = id; bestTitle = title; }
