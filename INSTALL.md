@@ -45,7 +45,7 @@ pwsh -ExecutionPolicy Bypass -File install.ps1 -SkipBuild # redeploy sans rebuil
 
 ```powershell
 code --install-extension extension\hephaistos-kit-search-1.0.3.vsix
-code --install-extension extensions\orchestrator-monitor\orchestrator-monitor-0.0.38.vsix
+code --install-extension extensions\orchestrator-monitor\orchestrator-monitor-0.0.39.vsix
 ```
 
 Le vsix `orchestrator-monitor` embarque `agent-bridge/` complet (binôme Devin⇄AGY : `binome.js`, `devin-hub.js`, `agy-hub.js`, `comms.js`, `current-cascade.js`, `listener.js`) + `ws-bridge/` (daemon `ws://127.0.0.1:7477`). Le bridge est aussi auto-démarré par `start-workspace.ps1` si le port 7477 n'écoute pas.
