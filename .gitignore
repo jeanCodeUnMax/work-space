@@ -38,6 +38,8 @@ ingest-roots.txt
 # ---- Logs / locks / temp ----
 *.log
 *.lock
+!uv.lock
+!Cargo.lock
 *.tmp
 *.bak
 *~
