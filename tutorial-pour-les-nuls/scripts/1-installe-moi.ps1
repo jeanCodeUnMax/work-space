@@ -2,25 +2,14 @@
 .SYNOPSIS
     Installation Hephaistos2-Kit pour les nuls — un seul clic.
 .DESCRIPTION
-    Ce script fait tout : verification prerequis, appel install.ps1 -Elevated,
-    installation des extensions, synchronisation des regles.
-    A lancer en administrateur dans PowerShell 7.
-.PARAMETER SkipBuild
-    Saute la compilation Rust si les binaires sont deja prets.
+    Ce script fait tout : vérification prérequis, appel install.ps1 -Elevated,
+    installation des extensions, synchronisation des règles.
+    À lancer en administrateur.
 .EXAMPLE
     pwsh -File 1-installe-moi.ps1
-    pwsh -File 1-installe-moi.ps1 -SkipBuild
 #>
-[CmdletBinding()]
-param(
-    [switch]$SkipBuild
-)
-
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-if (-not (Test-Path "$root\install.ps1")) {
-    $root = "C:\Program Files\Projet-complet\hephaistos2-kit"
-}
 
 Write-Host "=== Installation Hephaistos2-Kit (pour les nuls) ===" -ForegroundColor Cyan
 Write-Host "Dossier projet : $root"
@@ -29,7 +18,7 @@ Write-Host "Dossier projet : $root"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "`n[ERREUR] Tu dois lancer ce script en administrateur." -ForegroundColor Red
-    Write-Host "Fais un clic droit sur PowerShell 7 -> 'Executer en tant qu'administrateur'`n" -ForegroundColor Yellow
+    Write-Host "Clic droit sur PowerShell 7 -> 'Executer en tant qu'administrateur'`n" -ForegroundColor Yellow
     exit 1
 }
 Write-Host "[OK] Tu es administrateur" -ForegroundColor Green
@@ -38,37 +27,17 @@ Write-Host "[OK] Tu es administrateur" -ForegroundColor Green
 Write-Host "`n[1/5] Verification des prerequis..."
 $prereqOk = $true
 if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] PowerShell 7" -ForegroundColor Red; $prereqOk = $false }
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] Rust (cargo)" -ForegroundColor Red; $prereqOk = $false }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] Node.js" -ForegroundColor Red; $prereqOk = $false }
-
-# Verification Rust ou binaires precompiles
-$hasCargo = [bool](Get-Command cargo -ErrorAction SilentlyContinue)
-$hasPrebuilt = (Test-Path "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-mcp.exe") -or (Test-Path "$root\hphe\target\release\hphe-mcp.exe")
-
-if ($hasCargo) {
-    Write-Host "[OK] Rust (cargo)" -ForegroundColor Green
-} elseif ($hasPrebuilt) {
-    Write-Host "[INFO] Rust absent mais binaires precompiles detectes (mode -SkipBuild actif)" -ForegroundColor Yellow
-    $SkipBuild = $true
-} else {
-    Write-Host "[MANQUE] Rust (cargo) requis pour compiler la premiere fois" -ForegroundColor Red
-    $prereqOk = $false
-}
-
-if (-not $env:NVIDIA_API_KEY) { Write-Host "[MANQUE] Variable NVIDIA_API_KEY" -ForegroundColor Red; $prereqOk = $false }
-if (-not $env:NVIDIA_API_KEY_2) { Write-Host "[MANQUE] Variable NVIDIA_API_KEY_2" -ForegroundColor Red; $prereqOk = $false }
-
-if (-not $prereqOk) {
-    Write-Host "`nInstalle ce qui manque et relance le script.`n" -ForegroundColor Yellow
-    exit 1
-}
-Write-Host "[OK] Tous les prerequis indispensables sont presents" -ForegroundColor Green
+if (-not $env:NVIDIA_API_KEY) { Write-Host "[MANQUE] NVIDIA_API_KEY" -ForegroundColor Red; $prereqOk = $false }
+if (-not $env:NVIDIA_API_KEY_2) { Write-Host "[MANQUE] NVIDIA_API_KEY_2" -ForegroundColor Red; $prereqOk = $false }
+if (-not $prereqOk) { Write-Host "`nInstalle ce qui manque et relance.`n" -ForegroundColor Yellow; exit 1 }
+Write-Host "[OK] Tous les prerequis sont la" -ForegroundColor Green
 
 # 2) Install principal
 Write-Host "`n[2/5] Installation du runtime (install.ps1 -Elevated)..."
-$installArgs = @('-File', "$root\install.ps1", '-Elevated')
-if ($SkipBuild) { $installArgs += '-SkipBuild' }
-& pwsh @installArgs
-if ($LASTEXITCODE -ne 0) { Write-Host "[ERREUR] install.ps1 a echoue (code $LASTEXITCODE)" -ForegroundColor Red; exit 1 }
+& pwsh -File "$root\install.ps1" -Elevated
+if ($LASTEXITCODE -ne 0) { Write-Host "[ERREUR] install.ps1 a plante (code $LASTEXITCODE)" -ForegroundColor Red; exit 1 }
 Write-Host "[OK] Runtime installe" -ForegroundColor Green
 
 # 3) Extensions VSIX
@@ -93,6 +62,6 @@ if ($checkOk) {
     Write-Host "Tout est bon ! Relance Devin et Antigravity (Reload Window)." -ForegroundColor Green
     Write-Host "Pour tester le ping-pong : .\3-teste-le-ping-pong.ps1`n" -ForegroundColor Cyan
 } else {
-    Write-Host "Quelques avertissements. Regarde ci-dessus et consulte 05-quand-ca-marche-pas.md`n" -ForegroundColor Yellow
+    Write-Host "Quelques warnings. Regarde ci-dessus et va voir 05-quand-ca-marche-pas.md`n" -ForegroundColor Yellow
 }
 exit $LASTEXITCODE

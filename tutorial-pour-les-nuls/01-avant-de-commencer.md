@@ -1,76 +1,74 @@
-# Etape 0 — Avant de commencer
- 
-> **Objectif** : preparer ton ordinateur comme on prepare les ingredients d'un gateau. Si un ingredient essentiel manque, le gateau ne peut pas cuire.
+# Étape 0 — Avant de commencer
+
+> **Objectif** : préparer ton PC comme on prépare un gâteau. Si un ingrédient manque, le gâteau ne lève pas.
 
 ---
 
-## La liste des ingredients indispensables
+## 🧾 La liste des ingrédients
 
-Pour que le kit fonctionne, tu as besoin de ces 5 elements :
+Tu as besoin de 5 choses :
 
-| Element | Comment verifier ? | Que faire s'il manque ? |
+| Ingrédient | Comment vérifier ? | Si tu ne l'as pas |
 |---|---|---|
-| **Windows avec disque NTFS** | Tu es sous Windows, tes disques sont en NTFS par defaut | Rien a faire, c'est le standard sous Windows |
-| **PowerShell 7** | Ouvre une fenetre et tape `pwsh -v` | Telecharge-le sur github.com/powershell/powershell |
-| **Node.js (version 18+)** | Ouvre une fenetre et tape `node -v` | Telecharge l'installeur sur nodejs.org |
-| **Rust (cargo)** | Tape `cargo --version` | Installe-le depuis rustup.rs (facultatif si les binaires sont deja presents) |
-| **Cles d'acces NVIDIA** | Verifie la presence de `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` | Cree un compte gratuit sur build.nvidia.com pour obtenir tes cles |
+| Windows + NTFS | Tu es sous Windows, normal | Installe Windows (lol) |
+| PowerShell 7 | Ouvre PowerShell, tape `pwsh -v` | Télécharge-le sur github.com/powershell/powershell |
+| Rust (cargo) | Tape `cargo --version` | Installe depuis rustup.rs |
+| Node.js 18+ | Tape `node --version` | Installe depuis nodejs.org |
+| Les clés magiques NVIDIA | Regarde si `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` sont dans tes variables d'environnement | Demande à ton admin ou crée un compte NVIDIA NIM |
 
-> **A retenir** : les deux cles NVIDIA permettent de faire travailler les agents legers gratuitement. Sans elles, les fonctions de delegation autonome ne peuvent pas tourner.
+> **Important** : les deux clés NVIDIA sont indispensables pour les workers `nim1` et `nim2`. Sans elles, les agents ne pourront pas bosser gratuitement.
 
 ---
 
-## Le test rapide de verification (30 secondes)
+## 🧪 Le test rapide (30 secondes)
 
-Ouvre **PowerShell 7** et colle ce bloc de test :
+Ouvre PowerShell et colle ça :
 
 ```powershell
 Write-Host "=== Test des prerequis ==="
 if (Get-Command pwsh -ErrorAction SilentlyContinue) { Write-Host "[OK] PowerShell 7" } else { Write-Host "[MANQUE] PowerShell 7" }
+if (Get-Command cargo -ErrorAction SilentlyContinue) { Write-Host "[OK] Rust" } else { Write-Host "[MANQUE] Rust" }
 if (Get-Command node -ErrorAction SilentlyContinue) { Write-Host "[OK] Node.js" } else { Write-Host "[MANQUE] Node.js" }
-if (Get-Command cargo -ErrorAction SilentlyContinue) { Write-Host "[OK] Rust (cargo)" } else { Write-Host "[INFO] Rust absent (mode binaire possible)" }
-if ($env:NVIDIA_API_KEY) { Write-Host "[OK] Variable NVIDIA_API_KEY" } else { Write-Host "[MANQUE] Variable NVIDIA_API_KEY" }
-if ($env:NVIDIA_API_KEY_2) { Write-Host "[OK] Variable NVIDIA_API_KEY_2" } else { Write-Host "[MANQUE] Variable NVIDIA_API_KEY_2" }
+if ($env:NVIDIA_API_KEY) { Write-Host "[OK] NVIDIA_API_KEY" } else { Write-Host "[MANQUE] NVIDIA_API_KEY" }
+if ($env:NVIDIA_API_KEY_2) { Write-Host "[OK] NVIDIA_API_KEY_2" } else { Write-Host "[MANQUE] NVIDIA_API_KEY_2" }
 ```
 
-Si les voyants obligatoires sont `[OK]`, tu peux passer a la suite.
+Si tout est `[OK]`, tu peux passer à l'étape suivante. Sinon, installe ce qui manque et relance le test.
 
 ---
 
-## Ou sont ranges les dossiers ?
+## 📁 Où sont les fichiers ?
 
-| Dossier | Ce que c'est | Est-ce que tu y touches ? |
+| Endroit | C'est quoi ? | Tu y touches ? |
 |---|---|---|
-| `C:\Program Files\Projet-complet\hephaistos2-kit\` | L'atelier de travail (le code source et les scripts) | Oui, c'est la qu'on lance les commandes |
-| `C:\Program Files\servers\hephaistos2-kit\` | La salle des machines (les executables en service) | Non, le script d'installation range tout automatiquement |
-| `C:\Program Files\servers\everything-mcp\` | L'ancienne passerelle de compatibilite | Non, c'est gere en coulisses |
+| `C:\Program Files\Projet-complet\hephaistos2-kit\` | Le projet (on code ici) | Oui, c'est là qu'on installe |
+| `C:\Program Files\servers\hephaistos2-kit\` | Le runtime (ça tourne ici) | Non, install.ps1 s'en charge |
+| `C:\Program Files\servers\everything-mcp\` | Un pont vers l'ancien système | Non, c'est juste un lien |
 
-> **Regle de securite** : on travaille dans `Projet-complet`, et les services tournent dans `servers`. Ne deplace aucun fichier manuellement.
-
----
-
-## Comment enregistrer tes cles NVIDIA
-
-Si tes cles ne sont pas encore enregistrees dans Windows :
-
-1. Appuie sur les touches `Touche Windows + R`.
-2. Tape `sysdm.cpl` puis valide avec Entree.
-3. Va dans l'onglet **Parametres systeme avances**, puis clique sur **Variables d'environnement** en bas a droite.
-4. Dans la section superieure (**Variables utilisateur**), clique sur **Nouvelle** :
-   - Nom de variable : `NVIDIA_API_KEY`
-   - Valeur de variable : colle ta premiere cle
-5. Recommence pour la deuxieme cle :
-   - Nom de variable : `NVIDIA_API_KEY_2`
-   - Valeur de variable : colle ta deuxieme cle
-6. Valide par OK partout, puis ferme et rouvre PowerShell.
+> **Règle d'or** : on code dans `Projet-complet`, ça tourne dans `servers`. Ne mélange pas.
 
 ---
 
-## Validation avant de continuer
+## 🔑 Les clés NVIDIA (comment les mettre)
 
-Avant d'ouvrir la page suivante, assure-toi d'avoir :
-- [ ] PowerShell 7 fonctionnel (`pwsh -v`)
-- [ ] Node.js installe (`node -v`)
-- [ ] Les variables `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` definies
+Si tu n'as pas les clés dans tes variables d'environnement :
 
-Prochaine etape : `02-installation.md`.
+1. Ouvre **Paramètres Windows** → **Comptes** → **Variables d'environnement** (ou tape `sysdm.cpl` dans Win+R)
+2. Clique sur **Variables d'environnement**
+3. Dans la partie **Utilisateur**, ajoute :
+   - `NVIDIA_API_KEY` = ta clé compte 1
+   - `NVIDIA_API_KEY_2` = ta clé compte 2
+4. Ferme et rouvre PowerShell pour que ça prenne effet.
+
+---
+
+## ✅ Récapitulatif
+
+Avant de passer à l'installation, tu dois avoir :
+- [ ] Windows avec NTFS
+- [ ] PowerShell 7 (`pwsh -v` fonctionne)
+- [ ] Rust (`cargo --version` fonctionne)
+- [ ] Node.js 18+ (`node --version` fonctionne)
+- [ ] `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` dans les variables d'environnement
+
+→ **Passer à** `02-installation.md`
