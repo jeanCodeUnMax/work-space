@@ -1,140 +1,128 @@
-# Étape 4 — Quand ça marche pas (le docteur est là)
+# Etape 4 — Quand ca ne marche pas (la trousse de secours)
 
-> **Objectif** : réparer les pannes courantes, comme un médecin mais pour ton PC.
+> **Objectif** : resoudre les pannes les plus courantes rapidement, sans paniquer.
 
 ---
 
-## 🩺 Les symptômes et les remèdes
+## Les situations courantes et leurs solutions
 
-### Symptôme : "hphe-indexd ne démarre pas"
+### Situation 1 : "hphe-indexd ne demarre pas"
 
-**Diagnostic** : la tâche planifiée n'existe pas ou n'est pas élevée.
+**Cause** : la tache planifiee Windows n'a pas pu etre creee avec les privileges administrateur.
 
-**Remède** :
+**Solution** :
+1. Fais un clic droit sur l'icone PowerShell 7 -> **Executer en tant qu'administrateur**.
+2. Lance la commande :
 ```powershell
-# En admin
 pwsh -File install.ps1 -Elevated -SkipBuild
 ```
 
-### Symptôme : "curl :8792 ne répond pas"
+---
 
-**Diagnostic** : `hphe-rest` n'est pas lancé.
+### Situation 2 : "Le repondeur REST (port 8792) ne repond pas"
 
-**Remède** :
+**Cause** : le service d'arriere-plan `hphe-rest` n'est pas encore lance.
+
+**Solution** :
 ```powershell
-# Vérifie le log
-Get-Content "C:\Program Files\servers\hephaistos2-kit\data\hphe-rest.log" -Tail 20
+# 1. Regarde les dernieres lignes du journal
+Get-Content "C:\Program Files\servers\hephaistos2-kit\data\hphe-rest.log" -Tail 20 -ErrorAction SilentlyContinue
 
-# Relance le service
-Restart-Service hphe-rest -Force -ErrorAction SilentlyContinue
-# Ou lance le .cmd manuellement
-& "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-rest.cmd"
+# 2. Relance manuellement le service
+Start-Process -FilePath "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-rest.cmd" -WindowStyle Minimized
 ```
 
-### Symptôme : "MCP rouge dans l'IDE"
+---
 
-**Diagnostic** : l'extension `orchestrator-monitor` n'est pas chargée ou mal installée.
+### Situation 3 : "Le voyant MCP reste rouge dans l'editeur"
 
-**Remède** :
+**Cause** : l'extension `orchestrator-monitor` n'a pas ete rechargee ou la version installee est inferieure a la 0.0.53.
+
+**Solution** :
 ```powershell
-pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
-# Si version < 0.0.54, réinstalle :
 pwsh -File .agent\setup\install-extension-hub.ps1
 ```
-Puis `Ctrl+Shift+P` → `Developer: Reload Window`.
+Puis, dans Devin : appuie sur `Ctrl+Shift+P` -> tape `Developer: Reload Window`.
 
-### Symptôme : "Bridge 7477 muet"
+---
 
-**Diagnostic** : l'extension n'a pas spawné `ws-bridge/bridge.js`.
+### Situation 4 : "Le bridge port 7477 est silencieux"
 
-**Remède** :
-1. Vérifie que `orchestrator-monitor` est activé dans l'IDE
-2. Reload window
-3. Si toujours muet, lance manuellement :
-   ```powershell
-   node "extensions\orchestrator-monitor\ws-bridge\bridge.js"
-   ```
+**Cause** : l'extension n'a pas encore lance le pont reseau en arriere-plan.
 
-### Symptôme : "Le binôme ne reçoit pas les messages"
+**Solution** :
+1. Dans Devin, ouvre le panneau lateral de l'extension `Hephaistos Orchestrator Monitor`.
+2. Fais `Ctrl+Shift+P` -> `Developer: Reload Window`.
+3. Si le port reste inerte, tu peux le demarrer directement en console de test :
+```powershell
+node "extensions\orchestrator-monitor\ws-bridge\bridge.js"
+```
 
-**Diagnostic** : les `join` n'ont pas été faits, ou les `convId` sont obsolètes.
+---
 
-**Remède** :
+### Situation 5 : "Le binome ne recoit aucun message"
+
+**Cause** : les deux assistants n'ont pas publie leur adresse de conversation (`convId`), ou une ancienne adresse est restee stockee.
+
+**Solution** :
+Re-synchronise les deux cotes :
 ```powershell
 node .agent/agent-bridge/binome.js --as devin join
 node .agent/agent-bridge/binome.js --as agy join
 node .agent/agent-bridge/binome.js pair
 ```
 
-### Symptôme : "Le message arrive dans une nouvelle conversation"
+---
 
-**Diagnostic** : c'est le bug des versions < 0.0.54. La route ACP n'existait pas.
+### Situation 6 : "Un worker distant NIM ne repond pas"
 
-**Remède** : installe la 0.0.54+ (voir `02-installation.md`).
+**Cause** : une cle NVIDIA manque dans les variables d'environnement.
 
-### Symptôme : "worker NIM ne répond pas"
-
-**Diagnostic** : clé NVIDIA manquante ou modèle non disponible.
-
-**Remède** :
+**Solution** :
+Verifie que les deux cles sont bien affichees par cette commande :
 ```powershell
-# Vérifie les clés
 $env:NVIDIA_API_KEY
 $env:NVIDIA_API_KEY_2
-
-# Vérifie les modèles disponibles
-# (via MCP hphe-mcp : available_models)
 ```
-
-### Symptôme : "PowerShell 5.1 plante sur les scripts"
-
-**Diagnostic** : les scripts avec accents/em-dashes sans BOM UTF-8.
-
-**Remède** : on a déjà corrigé les `.ps1` du kit. Si tu en as un qui plante, réencode-le en UTF-8 avec BOM :
-```powershell
-$content = Get-Content "script.ps1" -Raw
-[System.IO.File]::WriteAllText("script.ps1", $content, [System.Text.UTF8Encoding]::new($true))
-```
-
-### Symptôme : "tâche failed: spawn node syntaxe incorrecte"
-
-**Diagnostic** : le message contient des apostrophes qui cassent la commande Windows.
-
-**Remède** : évite les `'` dans les messages de `dispatch_task`, ou échappe-les.
+Si une cle est vide, consulte l'etape `01-avant-de-commencer.md` pour l'ajouter.
 
 ---
 
-## 🧰 La trousse à outils (commandes utiles)
+### Situation 7 : "Tache echouee : spawn node syntaxe incorrecte (erreur OS 123)"
 
-| Commande | À quoi ça sert |
+**Cause** : la commande de dispatch a ete envoyee sans preciser le dossier de travail (`workspace`), ou le message contient des apostrophes non protegees sous Windows.
+
+**Solution** :
+Passe toujours le chemin complet dans le parametre `workspace` :
+`workspace: "C:\Program Files\Projet-complet\hephaistos2-kit"`
+
+---
+
+## La trousse a outils (commandes utiles a conserver)
+
+| Ce que tu veux faire | La commande exacte a taper |
 |---|---|
-| `install.ps1 -Elevated` | Installe tout |
-| `install-extension-hub.ps1 -CheckOnly` | Vérifie tout sans toucher |
-| `setup-agent-surfaces.ps1 -Verify` | Vérifie les règles |
-| `binome.js join` | Publie l'ID de conversation |
-| `binome.js send "..."` | Envoie un message |
-| `binome.js tail` | Lit les derniers messages |
-| `hphe-mcp.exe --tool hphe_health` | Santé du moteur |
-| `Test-NetConnection 127.0.0.1 -Port 7477` | Teste le bridge |
+| Installer ou reparer tout le systeme | `pwsh -File install.ps1 -Elevated` |
+| Verifier la sante generale sans rien modifier | `pwsh -File tutorial-pour-les-nuls\scripts\2-verifie-tout.ps1` |
+| Verifier les regles des agents | `pwsh -File .agent\setup\setup-agent-surfaces.ps1 -Verify` |
+| Tester le talkie-walkie | `pwsh -File tutorial-pour-les-nuls\scripts\3-teste-le-ping-pong.ps1` |
+| Consulter les derniers messages du carnet | `node .agent/agent-bridge/binome.js tail` |
+| Tester la sante du moteur central | `& "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-mcp.exe" --tool hphe_health` |
+| Verifier l'ecoute du port reseau 7477 | `Test-NetConnection 127.0.0.1 -Port 7477` |
 
 ---
 
-## 🆘 Si rien ne marche
+## La procedure de remise a zero propre
 
-1. Relance `install.ps1 -Elevated` en admin
-2. Relance `install-extension-hub.ps1` (sans `-CheckOnly`)
-3. Relance `setup-agent-surfaces.ps1`
-4. Reload Devin et Antigravity
-5. Si toujours cassé, regarde les logs :
-   - `servers/hephaistos2-kit/data/*.log`
-   - `.agent/comms.jsonl`
-   - `extensions/orchestrator-monitor/out/extension.js` (erreurs)
-
----
-
-## ✅ Dernier recours
-
-Si vraiment rien ne fonctionne :
-- Copie le message d'erreur exact
-- Regarde dans `.agent/REGISTRY.md` les problèmes connus
-- Demande à ton binôme (Devin ou Antigravity) avec le canal
+Si rien ne semble repondre :
+1. Ferme Devin et Antigravity.
+2. Ouvre **PowerShell 7 en administrateur**.
+3. Lance successivement :
+```powershell
+cd "C:\Program Files\Projet-complet\hephaistos2-kit"
+pwsh -File install.ps1 -Elevated -SkipBuild
+pwsh -File .agent\setup\install-extension-hub.ps1
+pwsh -File .agent\setup\setup-agent-surfaces.ps1
+```
+4. Rouvre Devin et Antigravity.
+5. Lance `pwsh -File tutorial-pour-les-nuls\scripts\2-verifie-tout.ps1` pour confirmer que tous les feux sont au vert.
