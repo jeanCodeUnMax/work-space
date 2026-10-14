@@ -28,7 +28,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 | Champ | Valeur |
 |---|---|
 | ID | `orchestrator-monitor` |
-| Version | 0.0.34 |
+| Version | 0.0.54 |
 | Nom affiché | Hephaistos Orchestrator Monitor |
 | Source | `extensions/orchestrator-monitor/` (sous-module git) |
 | Rôle | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
@@ -44,9 +44,11 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
   - `orchestratorMonitor.clearCompleted` / `clearFailed` / `clearPending` — purge des files
   - `orchestratorMonitor.sendToChat` — injecter un résumé dans le chat Devin
 - **Bridge agents** : `agent-bridge/agy-hub.js` (RPC vers `agy.exe --hub`, Connect-RPC), `agent-adapters.js` (agy, kilo, opencode, gemini, hermes, cline, codex), `comms.js` (bus append-only `.agent/comms.jsonl`).
-- **Wake Devin↔agy** : injection dans le chat uniquement si la tâche porte un tag `[cascade:<uuid>]` / `[conv:<uuid>]` / `[agycascade:<uuid>]` — sinon skip délibéré (anti-contamination de prompt).
+- **Wake Devin↔agy** : les messages directs passent par `wake_devin` et une cible explicite du handshake. Pour les notifications de tâches uniquement, injection si tag `[cascade:<id>]` / `[conv:<id>]` / `[agycascade:<uuid>]`, sinon feed uniquement.
+  - Cible `acp/*` (sessions Devin Desktop `devin-cli`) : envoi via `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et un payload = UN `TextOrScopeItem` brut en base64 (field1 = texte UTF-8, **pas** de wrapper `SendCascadeInputRequest`). Le handler route sur la session focalisée : si `focusedSessionId !== cible` mais que la session est connue (`providerId === 'devin-cli'`), l'extension restaure le focus via `vscode.open` sur l'URI `vscode-cascade-editor:///cascade-<sessionId>` (switch vers l'onglet existant), re-vérifie, puis envoie — sinon skip propre (`wake-noroute`). L'acceptation de la commande = soumission prise en compte, pas preuve de livraison. Aucun fallback toast/presse-papier, aucune ouverture de nouvelle conversation.
+  - Cible `uuid` (sessions 'cascade' classiques) : `setCascadeId` (focus in-place) puis `sendCascadeInput`. Une cible explicite inconnue est skippée — jamais de reroutage vers une autre conversation.
 - **Filet de secours** : `.agent/task-watch.cjs` (client WS → `.agent/task-events.log`, auto-reconnect).
-- **Build** : `npm run compile` / `vscode:prepublish` (esbuild).
+- **Build** : `npm run compile` / `vscode:prepublish` (TypeScript).
 
 ---
 
