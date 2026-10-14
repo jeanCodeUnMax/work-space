@@ -209,9 +209,9 @@ try {
 } catch { }
 
 if ($bridgeUp) {
-    Write-Host "  ✓ WS Bridge actif sur le port 7477" -ForegroundColor Green
+    Write-Host "  [OK] WS Bridge actif sur le port 7477" -ForegroundColor Green
 } else {
-    Write-Host "  ! WS Bridge inactif sur le port 7477 - tentative de démarrage..." -ForegroundColor Yellow
+    Write-Host "  [INFO] WS Bridge inactif sur le port 7477 - tentative de demarrage..." -ForegroundColor Yellow
     $bridgeCandidates = @(
         (Join-Path $PSScriptRoot "..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js"),
         "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
@@ -222,9 +222,58 @@ if ($bridgeUp) {
     if ($bridgeJs) {
         Start-Process node -ArgumentList "`"$bridgeJs`"" -WorkingDirectory (Split-Path $bridgeJs -Parent) -WindowStyle Hidden -Environment @{ HEPHAISTOS_WORKSPACE = $ProjectRoot } -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 1
-        Write-Host "  ✓ WS Bridge démarré ($bridgeJs)" -ForegroundColor Green
+        Write-Host "  [OK] WS Bridge demarre ($bridgeJs)" -ForegroundColor Green
     } else {
-        Write-Host "  ! Bridge script non trouvé, il sera démarré par start-workspace.ps1" -ForegroundColor DarkGray
+        Write-Host "  [INFO] Bridge script non trouve, demarre au besoin par start-workspace.ps1" -ForegroundColor DarkGray
+    }
+}
+
+# Verification version orchestrator-monitor (>= 0.0.53)
+$expectedExtVer = '0.0.53'
+$extDirs = @()
+$extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
+$extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
+$foundExt = $null
+foreach ($d in $extDirs) {
+    $pkg = Join-Path $d.FullName 'package.json'
+    if (Test-Path $pkg) {
+        try {
+            $v = (Get-Content $pkg -Raw | ConvertFrom-Json).version
+            if (-not $foundExt -or [version]$v -gt [version]$foundExt) { $foundExt = $v }
+        } catch {}
+    }
+}
+if ($foundExt -and [version]$foundExt -ge [version]$expectedExtVer) {
+    Write-Host "  [OK] orchestrator-monitor v$foundExt detectee (attendue >= $expectedExtVer)" -ForegroundColor Green
+} else {
+    Write-Host "  [WARN] orchestrator-monitor >= $expectedExtVer non detectee (lancer .agent\setup\install-extension-hub.ps1)" -ForegroundColor Yellow
+}
+
+# Verification surfaces de regles (devin, claude, windsurf, gemini)
+$surfScript = Join-Path $PSScriptRoot "..\setup\setup-agent-surfaces.ps1"
+if (Test-Path $surfScript) {
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $surfScript -Verify 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  [OK] surfaces de regles conformes (devin, claude, windsurf, gemini)" -ForegroundColor Green
+    } else {
+        Write-Host "  [WARN] surfaces de regles non conformes (lancer setup-agent-surfaces.ps1)" -ForegroundColor Yellow
+    }
+}
+
+# Verification canal binome (comms.jsonl)
+$commsCandidates = @(
+    (Join-Path $ProjectRoot ".agent\comms.jsonl"),
+    "$env:ProgramFiles\Projet-complet\hephaistos2-kit\.agent\comms.jsonl"
+)
+$commsTarget = $commsCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($commsTarget) {
+    $cLines = Get-Content $commsTarget -Tail 80 -ErrorAction SilentlyContinue
+    $hasDevin = $cLines | Where-Object { $_ -match '"src":"devin"' -and $_ -match '"convId":' }
+    $hasAgy   = $cLines | Where-Object { $_ -match '"src":"agy"' -and $_ -match '"convId":' }
+    if ($hasDevin -and $hasAgy) {
+        Write-Host "  [OK] canal binome actif (IDs devin et agy publies)" -ForegroundColor Green
+    } else {
+        Write-Host "  [INFO] canal binome : lancer 'node .agent/agent-bridge/binome.js join' pour apparier" -ForegroundColor DarkGray
     }
 }
 

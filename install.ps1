@@ -19,8 +19,10 @@
   Ne rebuild pas les crates Rust — réutilise les binaires existants du projet.
 .PARAMETER Elevated
   Requis pour (re)créer la tâche planifiée hphe-indexd en SYSTEM.
+.PARAMETER SkipVerify
+  Saute les vérifications d'intégration finales.
 #>
-param([switch]$SkipBuild, [switch]$Elevated)
+param([switch]$SkipBuild, [switch]$Elevated, [switch]$SkipVerify)
 
 $ErrorActionPreference = 'Stop'
 $PRJ  = 'C:\Program Files\Projet-complet\hephaistos2-kit'
@@ -140,6 +142,70 @@ if ($Elevated) {
   schtasks /run /tn hphe-indexd | Out-Null
 } else {
   Write-Host "[6/6] tâche planifiée : relancer en admin avec -Elevated"
+}
+
+# 7) Vérifications post-installation (extension, bridge, surfaces, binôme) --------
+if (-not $SkipVerify) {
+  Write-Host "`n=== [Vérifications d'intégration] ===" -ForegroundColor Cyan
+  
+  # a) Extension orchestrator-monitor (>= 0.0.53)
+  $expectedExtVer = '0.0.53'
+  $extDirs = @()
+  $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
+  $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
+  $foundExt = $null
+  foreach ($d in $extDirs) {
+    $pkg = Join-Path $d.FullName 'package.json'
+    if (Test-Path $pkg) {
+      try {
+        $v = (Get-Content $pkg -Raw | ConvertFrom-Json).version
+        if (-not $foundExt -or [version]$v -gt [version]$foundExt) { $foundExt = $v }
+      } catch {}
+    }
+  }
+  if ($foundExt -and [version]$foundExt -ge [version]$expectedExtVer) {
+    Write-Host "  [OK]   orchestrator-monitor v$foundExt installée (attendue >= $expectedExtVer)" -ForegroundColor Green
+  } else {
+    Write-Warning "orchestrator-monitor >= $expectedExtVer non détectée dans les extensions IDE (exécuter .agent\setup\install-extension-hub.ps1)"
+  }
+
+  # b) WS Bridge 7477
+  $tcp7477 = $false
+  try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $tcp.Connect('127.0.0.1', 7477)
+    $tcp.Close()
+    $tcp7477 = $true
+  } catch {}
+  if ($tcp7477) {
+    Write-Host "  [OK]   WS Bridge actif sur 127.0.0.1:7477" -ForegroundColor Green
+  } else {
+    Write-Warning "WS Bridge 7477 inactif (démarre avec l'extension monitor dans Devin ou via .agent\bootstrap.ps1)"
+  }
+
+  # c) Surfaces de règles (devin, claude, windsurf, gemini)
+  $surfScript = "$PRJ\.agent\setup\setup-agent-surfaces.ps1"
+  if (Test-Path $surfScript) {
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $surfScript -Verify 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "  [OK]   surfaces de règles conformes (devin, claude, windsurf, gemini)" -ForegroundColor Green
+    } else {
+      Write-Warning "surfaces de règles non conformes - exécuter: pwsh -File .agent\setup\setup-agent-surfaces.ps1"
+    }
+  }
+
+  # d) Canal binôme / IDs publiés
+  $commsPath = "$PRJ\.agent\comms.jsonl"
+  if (Test-Path $commsPath) {
+    $cLines = Get-Content $commsPath -Tail 80 -ErrorAction SilentlyContinue
+    $hasDevin = $cLines | Where-Object { $_ -match '"src":"devin"' -and $_ -match '"convId":' }
+    $hasAgy   = $cLines | Where-Object { $_ -match '"src":"agy"' -and $_ -match '"convId":' }
+    if ($hasDevin -and $hasAgy) {
+      Write-Host "  [OK]   canal binôme configuré (IDs devin et agy publiés dans comms.jsonl)" -ForegroundColor Green
+    } else {
+      Write-Host "  [INFO] canal binôme : exécuter 'node .agent/agent-bridge/binome.js join' pour apparier" -ForegroundColor DarkGray
+    }
+  }
 }
 
 Write-Host "`n=== Terminé — redémarrer l'IDE ===" -ForegroundColor Green
