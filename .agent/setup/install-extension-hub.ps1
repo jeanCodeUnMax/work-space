@@ -1,5 +1,5 @@
-param(
-    [string]$ExpectedVersion = '0.0.53',
+﻿param(
+    [string]$ExpectedVersion = '0.0.54',
     [switch]$CheckOnly
 )
 
