@@ -64,7 +64,11 @@ function getActiveCascade() {
 
 function sendToDevin(text, cascadeId, port = 7477) {
     return new Promise((resolve, reject) => {
-        const targetId = cascadeId || getActiveCascade();
+        // La résolution live de la conv active PRIME sur le cascadeId passé :
+        // le peerCascade du handshake est en cache et peut être obsolète si
+        // l'utilisateur a changé de fenêtre depuis le join. Un send vers un id
+        // stale ouvrirait une vieille conversation au lieu de la fenêtre lue.
+        const targetId = getActiveCascade() || cascadeId;
         const ws = new WebSocket(`ws://127.0.0.1:${port}`);
         const timeout = setTimeout(() => {
             ws.close();
