@@ -17,8 +17,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const DRAFT_TITLES = new Set(['Awaiting User\'s Request', 'New Cascade', '']);
+
 // 1) Source fiable : sessioninfo.updatedAt dans le globalStorage Devin
-function fromSessionInfo() {
+//    raw=true → inclut les drafts (pour savoir si le panel est sur un composer vide)
+function fromSessionInfo(raw) {
   try {
     const { DatabaseSync } = require('node:sqlite');
     const appdata = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
@@ -29,19 +32,25 @@ function fromSessionInfo() {
       const rows = db.prepare(
         "SELECT value FROM ItemTable WHERE key LIKE 'windsurf.acp.sessioninfo.session.%'"
       ).all();
-      let best = '', bestTs = '';
+      let best = '', bestTs = '', bestTitle = '';
       for (const r of rows) {
         try {
           const p = JSON.parse(r.value);
           // providerId 'cascade' = vraie conversation Devin (ignore les
           // sessions ACP d'autres agents : kilo, hermes, devin-cli...)
           if (p.providerId !== 'cascade') continue;
+          // Les drafts vides ont un cascadeId ÉPHÉMÈRE : le premier
+          // sendCascadeInput les matérialise sous un id DIFFÉRENT -> le
+          // message part dans une fenêtre neuve. On les exclut du pick,
+          // sauf en mode raw où on veut justement savoir si on est dessus.
+          const title = p.info?.title || '';
+          if (!raw && DRAFT_TITLES.has(title)) continue;
           const id = p.info?.sessionId || '';
           const ts = p.info?.updatedAt || '';
-          if (id && ts > bestTs) { bestTs = ts; best = id; }
+          if (id && ts > bestTs) { bestTs = ts; best = id; bestTitle = title; }
         } catch { /* entrée non-JSON */ }
       }
-      return best;
+      return raw ? JSON.stringify({ id: best, title: bestTitle }) : best;
     } finally { db.close(); }
   } catch { return ''; }
 }
@@ -56,6 +65,13 @@ function fromPbMtime() {
       .sort((a, b) => b.m - a.m);
     return files.length ? files[0].f.replace(/\.pb$/, '') : '';
   } catch { return ''; }
+}
+
+if (process.argv.includes('--raw')) {
+  const raw = fromSessionInfo(true);
+  if (!raw || raw === '{"id":"","title":""}') { console.error('aucune session'); process.exit(1); }
+  console.log(raw);
+  process.exit(0);
 }
 
 const id = fromSessionInfo() || fromPbMtime();
