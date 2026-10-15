@@ -3,9 +3,6 @@
     [switch]$DryRun = $false
 )
 
-# Beacon Sync - synchronise les traces Beacon vers la mémoire unifiée.
-# Non-bloquant et non-fatal : toute erreur est loguée mais n'interrompt pas le workspace.
-
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Continue'
 
@@ -25,8 +22,7 @@ if ([string]::IsNullOrWhiteSpace($ConfigPath)) {
     $ConfigPath = Join-Path $ScriptRoot "ingestion.config.json"
 }
 
-# --- Config ---
-$beaconEnabled = $true
+$beaconEnabled = $false
 $beaconLogPath = Join-Path $env:USERPROFILE ".beacon\endpoint\logs\runtime.jsonl"
 $maxSessions = 20
 
@@ -39,7 +35,8 @@ if (Test-Path $ConfigPath) {
             if ($cfg.beacon.max_sessions) { $maxSessions = [int]$cfg.beacon.max_sessions }
         }
     } catch {
-        Write-Log "beacon-sync: config illisible, valeurs par défaut utilisées" "WARN"
+        Write-Log "beacon-sync: config illisible; ingestion refusée" "WARN"
+        exit 1
     }
 }
 
@@ -49,65 +46,55 @@ if (-not $beaconEnabled) {
 }
 
 if (-not (Test-Path $beaconLogPath)) {
-    Write-Log "beacon-sync: pas de journal Beacon ($beaconLogPath) — skip"
+    Write-Log "beacon-sync: journal Beacon absent; rien à ingérer" "WARN"
     exit 0
 }
 
-# --- .env : AGENT_DB_ROOT pour le mode dual ---
-$ProjectRootDir = Split-Path -Parent (Split-Path -Parent $ScriptRoot)
-$EnvFile = Join-Path $ProjectRootDir ".env"
-if (Test-Path $EnvFile) {
-    Get-Content $EnvFile | ForEach-Object {
-        if (-not $_.StartsWith('#') -and $_ -match '^\s*AGENT_DB_ROOT\s*=\s*(.+)$') {
-            $env:AGENT_DB_ROOT = $matches[1].Trim().Trim('"').Trim("'")
-        }
+$ProjectRootDir = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
+$InstallRoot = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "C:\Program Files\servers\hephaistos2-kit" }
+$HpheMcp = Join-Path $InstallRoot "extension\server\hphe-mcp.exe"
+if (-not (Test-Path $HpheMcp)) {
+    foreach ($candidate in @(
+        (Join-Path $ProjectRootDir "extension\server\hphe-mcp.exe"),
+        (Join-Path $ProjectRootDir "hphe\target\release\hphe-mcp.exe")
+    )) {
+        if (Test-Path $candidate) { $HpheMcp = $candidate; break }
     }
 }
-
-$IngestScript = Join-Path (Join-Path (Split-Path -Parent $ScriptRoot) "rag") "beacon_ingest.py"
-if (-not (Test-Path $IngestScript)) {
-    Write-Log "beacon-sync: beacon_ingest.py introuvable ($IngestScript)" "WARN"
-    exit 0
+if (-not (Test-Path $HpheMcp)) {
+    Write-Log "beacon-sync: hphe-mcp.exe introuvable; port Rust non déployé" "WARN"
+    exit 1
 }
 
-$env:PYTHONUTF8 = "1"
-$env:PYTHONIOENCODING = "utf-8"
+$argsJson = @{
+    workspace = $ProjectRootDir
+    projectId = (Split-Path -Leaf $ProjectRootDir)
+    limit = $maxSessions
+    dryRun = [bool]$DryRun
+    logPath = $beaconLogPath
+} | ConvertTo-Json -Compress
 
-$cliArgs = @($IngestScript, "--once", "--limit", "$maxSessions")
-if ($DryRun) { $cliArgs += "--dry-run" }
-
-Write-Log "beacon-sync: distillation des traces Beacon vers la mémoire unifiée..."
+Write-Log "beacon-sync: ingestion Beacon via hphe-mcp beacon_ingest (dryRun=$DryRun)"
 Push-Location $ProjectRootDir
+$errFile = [IO.Path]::GetTempFileName()
 try {
-    & python @cliArgs 2>&1 | ForEach-Object { Write-Log "  $_" }
-    if ($LASTEXITCODE -eq 0) {
-        Write-Log "beacon-sync: synchronisation terminée."
-    } else {
-        Write-Log "beacon-sync: terminé avec erreurs (exit $LASTEXITCODE)" "WARN"
+    $output = & $HpheMcp --tool beacon_ingest --args $argsJson 2>$errFile
+    $exitCode = $LASTEXITCODE
+    $outputText = ($output | Out-String).Trim()
+    $stderrText = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
+    if ($exitCode -ne 0) {
+        Write-Log "beacon-sync: hphe-mcp a échoué (exit $exitCode): $stderrText" "WARN"
+        exit 1
     }
+    $report = $outputText | ConvertFrom-Json
+    Write-Log "beacon-sync: events=$($report.events), sessions=$($report.sessions), mémoires=$($report.memoriesWritten), failed=$($report.failed), offsetAdvanced=$($report.offsetAdvanced)"
+    if ($report.failed -gt 0) { exit 1 }
 } catch {
     Write-Log "beacon-sync: exception $_" "WARN"
+    exit 1
 } finally {
+    Remove-Item $errFile -Force -ErrorAction SilentlyContinue
     Pop-Location
-}
-
-# --- Boucle d'apprentissage : candidates -> evaluations -> memories ---
-$LearnScript = Join-Path (Join-Path (Split-Path -Parent $ScriptRoot) "rag") "beacon_learn.py"
-if (Test-Path $LearnScript) {
-    Write-Log "beacon-sync: extraction des apprentissages (beacon_learn)..."
-    Push-Location $ProjectRootDir
-    try {
-        & python $LearnScript --once 2>&1 | ForEach-Object { Write-Log "  $_" }
-        if ($LASTEXITCODE -ne 0) {
-            Write-Log "beacon-sync: beacon_learn termine avec erreurs (exit $LASTEXITCODE)" "WARN"
-        }
-    } catch {
-        Write-Log "beacon-sync: beacon_learn exception $_" "WARN"
-    } finally {
-        Pop-Location
-    }
-} else {
-    Write-Log "beacon-sync: beacon_learn.py introuvable ($LearnScript) — skip" "WARN"
 }
 
 exit 0

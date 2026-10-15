@@ -34,13 +34,15 @@ Hephaistos2-Kit is a modular system consisting of:
 
 ---
 
-## ⚙️ Backend unifié Rust — `hphe-mcp` (57 outils, UN SEUL MCP)
+## ⚙️ Backend unifié Rust — `hphe-mcp` (58 outils, UN SEUL MCP)
 
 > **Depuis T-unification (commit `55fb057`), tous les services d'infrastructure
 > sont absorbés dans UN binaire Rust : `extension/server/hphe-mcp.exe`.**
 > Les MCP externes `orchestrator`, `nim-router`, `model-discovery`,
 > `agentmemory`, `qdrant`, `zvec` sont **désactivés** (config préservée,
 > rollback possible). `everything-search` = point d'entrée unique.
+>
+> Les 58 outils correspondent à la source du projet. Le runtime installé reste à 57 jusqu’à un déploiement autorisé; Beacon reste désactivé.
 
 | Famille | Outils | Backend |
 |---|---|---|
@@ -50,10 +52,10 @@ Hephaistos2-Kit is a modular system consisting of:
 | **Orchestration** | `list_agents`, `create_task`, `update_task`, `delete_task`, `list_tasks`, `get_next_task`, `dispatch_task`, `suggest_agent`, `register_agent`, `update_agent`, `list_prompt_templates`, `set_prompt_template`, `list_worktrees`, `worktree_cleanup` | `orchestrator.db` (env `HPHE_ORCH_DB`) — pickAgent/pickModel portés du JS |
 | **NIM/modèles** | `nim_domains` (17), `nim_models`, `nim_chat`, `nim_chat_model`, `nim_embed` (2048D), `available_models` | NVIDIA NIM x2 + OpenRouter free + Ollama — absorbe nim-router + model-discovery |
 | **Mémoire** | `memory_write`, `memory_read`, `memory_search`, `memory_list`, `memory_update`, `memory_stats`, `project_init` | agentmemory JSON **même fichier** `F:/Sqlite-DB/agentmemory` (`HPHE_MEMORY_ROOT`) |
-| **Ingestion** | `hephaistos_update` (= "Hephaistos update force") | Tantivy + KG mirror (`memory-database/agentmemory/graph/*.db`) + vecteurs optionnels + état incrémental + `.ragignore` |
+| **Ingestion** | `beacon_ingest`, `hephaistos_update` (= "Hephaistos update force") | Tantivy + KG mirror (`memory-database/agentmemory/graph/*.db`) + vecteurs optionnels + état incrémental + `.ragignore` |
 | **FS** | `fs_*` (18 outils) | allowed_roots inchangés |
 
-**REST** : `hphe-rest.exe` (127.0.0.1:8792, même 57 outils + `/health`).
+**REST** : `hphe-rest.exe` (127.0.0.1:8792, même 58 outils + `/health`).
 Démarré au logon via `Startup/hphe-rest.cmd` ; porte aussi la **boucle
 d'ingestion automatique** (`HPHE_INGEST_ROOTS`, intervalle `HPHE_INGEST_INTERVAL_S`=900s).
 

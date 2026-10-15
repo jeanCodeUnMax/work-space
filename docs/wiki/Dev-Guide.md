@@ -70,7 +70,7 @@ curl -X POST http://127.0.0.1:8792/tools/everything_search -d '{"query":"install
 | Sujet | Fichier |
 |---|---|
 | routes REST + gate ingest | `hphe/crates/hphe-mcp/src/rest.rs` |
-| registry des 57 outils | `hphe/crates/hphe-mcp/src/tools/` |
+| registry des 58 outils | `hphe/crates/hphe-mcp/src/tools/` |
 | orchestrateur (tasks/agents/dispatch/worktrees) | `hphe/crates/hphe-kit/src/orch.rs` |
 | protocole pipe | `hphe/crates/hphe-ipc/src/protocol.rs` |
 | daemon index | `hphe/crates/hphe-daemon/` (+ `hphe-index`, `hphe-mft`, `hphe-usn`) |

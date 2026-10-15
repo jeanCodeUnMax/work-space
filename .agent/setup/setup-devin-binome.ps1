@@ -5,8 +5,8 @@
     Installe/verifie tout ce qui touche Devin pour le binome :
       - hooks awareness.mjs (session-start, prompt-submit, stop)
       - settings.json : devin.acp.preferredAgent = antigravity-acp
-      - binome.js join (publication de l'ID de session)
-      - verification bridge WS 7477 + comms.jsonl
+      - binome.js pair (validation en lecture seule, sans handshake automatique)
+      - verification bridge WS 7477 + requête/ACK corrélés dans comms.jsonl
 
     Tous les chemins sont RELATIFS au script (via $PSScriptRoot).
     Aucun chemin absolu codé en dur.
@@ -59,8 +59,13 @@ if ($Verify) {
     $extDir = Join-Path $env:USERPROFILE '.devin\extensions'
     if (Test-Path $extDir) {
         $ext = Get-ChildItem $extDir -Filter 'hephaistos.orchestrator-monitor-*' -Directory | Sort-Object Name -Descending | Select-Object -First 1
-        if ($ext) { Pass "extension monitor installee : $($ext.Name)" }
-        else { Warn 'extension monitor non detectee dans .devin/extensions' }
+        if ($ext) {
+            try {
+                $version = (Get-Content (Join-Path $ext.FullName 'package.json') -Raw | ConvertFrom-Json).version
+                if ([version]$version -ge [version]'0.0.56') { Pass "extension monitor installee : $($ext.Name)" }
+                else { Warn "extension monitor ${version}; le bridge compatible Node 26 requiert 0.0.56+" }
+            } catch { Warn 'version extension monitor illisible' }
+        } else { Warn 'extension monitor non detectee dans .devin/extensions' }
     } else { Warn 'dossier .devin/extensions absent' }
 
     # 4. Bridge 7477
@@ -71,15 +76,34 @@ if ($Verify) {
         Pass 'bridge WS 7477 vivant'
     } catch { Fail 'bridge 7477 muet — extension orchestrator-monitor pas active' }
 
-    # 5. comms.jsonl avec IDs
-    $comms = Join-Path $KitRoot '.agent\comms.jsonl'
-    if (Test-Path $comms) {
-        $lines = Get-Content $comms -Tail 50
-        $hasDevin = $lines | Where-Object { $_ -match '"src":"devin"' -and $_ -match '"convId":' }
-        $hasAgy   = $lines | Where-Object { $_ -match '"src":"agy"'   -and $_ -match '"convId":' }
-        if ($hasDevin -and $hasAgy) { Pass 'IDs binome publies (devin + agy)' }
-        else { Warn 'IDs binome incomplets — relancer binome.js join' }
-    } else { Warn 'comms.jsonl absent' }
+    # 5. Vérification de la découverte ACP multi-agent (lecture seule)
+    $devinHub = Join-Path $KitRoot '.agent\agent-bridge\devin-hub.js'
+    if (Test-Path $devinHub) {
+        Push-Location $KitRoot
+        try {
+            $acpRaw = & node $devinHub acp-list 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $acpSessions = ($acpRaw | Out-String) | ConvertFrom-Json
+                Pass "ACP discovery active ($(@($acpSessions).Count) sessions dans ce workspace)"
+            } else { Warn 'ACP discovery non repondante; recharger la fenetre Devin' }
+        } catch { Warn 'ACP discovery impossible; verifier l extension 0.0.56 et recharger Devin' }
+        finally { Pop-Location }
+    } else { Warn 'devin-hub.js absent; discovery ACP indisponible' }
+
+    # 6. État du pair calculé par binome.js (lecture seule, handshakes corrélés)
+    $binome = Join-Path $KitRoot '.agent\agent-bridge\binome.js'
+    if (Test-Path $binome) {
+        Push-Location $KitRoot
+        try {
+            $pairRaw = & node $binome --as devin pair 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                $pair = ($pairRaw | Out-String) | ConvertFrom-Json
+                if ($pair.established -and $pair.pairId) { Pass "pair frais vérifié ($($pair.pairId))" }
+                else { Warn 'aucun pair frais; lancer /jointes AGY' }
+            } else { Warn 'vérification du pair échouée; lancer /jointes AGY' }
+        } catch { Warn 'vérification du pair impossible; lancer /jointes AGY' }
+        finally { Pop-Location }
+    } else { Warn 'binome.js absent' }
 
     Write-Host "`nRESULTAT : $script:ok OK, $script:warn avertissement(s), $script:fail echec(s)" -ForegroundColor Cyan
     if ($script:fail -gt 0) { exit 1 } else { exit 0 }
@@ -104,15 +128,10 @@ if (Test-Path $extDir) {
     else { Warn 'extension monitor pas encore installee — lance install-extension-hub.ps1' }
 } else { Warn 'dossier .devin/extensions absent — extension monitor pas installee' }
 
-# 3. binome.js join
+# 3. Disponibilité de la commande binôme (aucun handshake automatique à l'installation)
 $binome = Join-Path $KitRoot '.agent\agent-bridge\binome.js'
 if (Test-Path $binome) {
-    Push-Location $KitRoot
-    try {
-        $out = & node $binome --as devin join 2>&1
-        if ($LASTEXITCODE -eq 0) { Pass 'binome join devin OK' }
-        else { Warn "binome join devin a retourne $LASTEXITCODE" }
-    } finally { Pop-Location }
+    Pass 'binome.js disponible; établir un pair frais avec /jointes AGY'
 } else { Fail "binome.js introuvable : $binome" }
 
 # 4. Verification finale

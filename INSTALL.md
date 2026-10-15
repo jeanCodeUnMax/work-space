@@ -68,7 +68,7 @@ curl http://127.0.0.1:8792/health
 schtasks /query /tn hphe-indexd       # démon index actif
 ```
 
-Dans Devin : panneau MCP → `Hephaistos-everything-search` vert (57 outils).
+Dans Devin : panneau MCP → `Hephaistos-everything-search` vert (58 outils).
 
 ## Premier démarrage IDE
 

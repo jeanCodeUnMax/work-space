@@ -228,8 +228,8 @@ if ($bridgeUp) {
     }
 }
 
-# Verification version orchestrator-monitor (>= 0.0.54)
-$expectedExtVer = '0.0.54'
+# Verification version orchestrator-monitor (>= 0.0.56)
+$expectedExtVer = '0.0.56'
 $extDirs = @()
 $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
 $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue

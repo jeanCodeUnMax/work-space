@@ -8,7 +8,7 @@ Trois binaires Rust + deux extensions. Zéro dépendance externe à la recherche
 IDE / agents (Devin, Antigravity, …)
   │  stdio MCP (NDJSON)                │  HTTP
   ▼                                    ▼
-hphe-mcp.exe ◄──── mêmes 57 outils ────► hphe-rest.exe  (127.0.0.1:8792)
+hphe-mcp.exe ◄──── mêmes 58 outils ────► hphe-rest.exe  (127.0.0.1:8792)
   │                                    │  + boucle d'ingestion 900 s
   │                                    │  + gate mutex (file d'écriture)
   ├───────── pipe NDJSON ──────────────┤

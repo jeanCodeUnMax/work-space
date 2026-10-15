@@ -30,7 +30,7 @@
 - [ ] Création de la tâche planifiée **hphe‑indexd** avec l’option `-Elevated` (exécuter avec les plus hauts privilèges)  
 - [ ] Installation des extensions VSIX :  
   - `hephaistos-kit-search.vsix`  
-  - `orchestrator-monitor.vsix` (v0.0.54+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)  
+  - `orchestrator-monitor.vsix` (v0.0.56+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)
 
 ---
 
@@ -48,14 +48,14 @@
 
 ---
 
-## 5. Vérification du binôme (Devin ⇄ AGY)
-- [ ] Extension `hephaistos.orchestrator-monitor` en version attendue (>= 0.0.54) installée dans l'IDE
-- [ ] Le script `binome.js` a effectué le **join** : une entrée apparaît dans `.agent/comms.jsonl` contenant `"kind":"handshake"` et l'ID de session de l'agent
-- [ ] Le **pairing** est confirmé : présence des IDs publiés pour les deux agents (`agy` et `devin`)
-- [ ] Le **bridge WebSocket** écoute sur le port **7477** : `netstat -ano | findstr :7477` (ou `Test-NetConnection 127.0.0.1 -Port 7477`)
-- [ ] Messagerie fonctionnelle :
-  - Devin -> agy via Connect-RPC (`agy-hub.js`)
-  - agy -> Devin via `devin-hub.js` (wake_devin sur WS 7477) -> restauration automatique de focus `vscode.open` si session ACP `acp/*` -> `explainAndFixProblem` -> rendu direct dans la session sans toast ni onglet parasite
+## 5. Vérification du binôme Devin ⇄ ACP/CLI
+- [ ] Extension `hephaistos.orchestrator-monitor` en version >= 0.0.56 installée et rechargée pour `acp-list`/`wake_acp_agent`
+- [ ] Dans Devin, lancer `/jointes <agent>` et choisir un transport explicite si l’agent en propose plusieurs
+- [ ] Vérifier une requête/ACK **frais** dans `.agent/comms.jsonl` : même `pairId/session`, IDs exacts, transports/providers inversés; `established=true`; pas de fallback vers active/latest
+- [ ] ACP : session présente dans `devin-hub.js acp-list <providerId>`, activée et du workspace courant; CLI Kilo/Hermes : ID retourné par `agent-adapters.js sessions <agent>` et workspace vérifié
+- [ ] Vérifier le **bridge WebSocket** en loopback sur le port **7477** : `Test-NetConnection 127.0.0.1 -Port 7477` (ne pas ouvrir le port au réseau)
+- [ ] Vers Devin : ne cibler que son ID explicite `acp/devin-cli/...` ou UUID confirmé; session inconnue/non focalisable = `skipped`, sans nouvelle fenêtre, toast ou presse-papiers
+- [ ] Référence technique complète : `docs/protocole-binome/README.md`
 
 ---
 
@@ -65,7 +65,7 @@
 | `curl :8792/health` échoue | Service hphe‑rest pas démarré | `Restart-Service hphe-rest` ou vérifier les logs `servers/hephaistos2-kit/hphe-rest.log` |
 | Tâche hphe‑indexd absente ou non élevée | Schtasks mal créé | Ré‑exécuter `.\install.ps1` en tant qu’administrateur ou créer manuellement : `schtasks /Create /TN "hphe-indexd" /TR "C:\Program Files\Projet-complet\hephaistos2-kit\servers\hephaistos2-kit\hphe-indexd.exe -Elevated" /SC ONSTART /RL HIGHEST` |
 | MCP rouge dans l’IDE | Extension orchestrator‑monitor non chargée | Recharger l’extension (`Ctrl+Shift+P → Reload Window`) ou ré‑installer le VSIX |
-| Binome.js ne rejoint pas le canal | Variable d’environnement manquante ou port 7477 bloqué | Vérifier `NVIDIA_API_KEY/_2`, ouvrir le port 7477 dans le pare‑feu (`New-NetFirewallRule -DisplayName "Binome WS Bridge" -Direction In -Protocol TCP -LocalPort 7477 -Action Allow`) |
+| Binome.js ne rejoint pas le canal | Variable d’environnement manquante ou port 7477 bloqué | Vérifier l’extension Antigravity, l’ID de session AGY ciblé et le bridge loopback 127.0.0.1:7477; ne pas ouvrir de port pare-feu pour le join |
 | Erreur SQLite lors du démarrage | Fichier `data/orchestrator.db` corrompu ou permissions insuffisantes | Supprimer le fichier (il sera recréé) ou attribuer les droits `ICACLS data\orchestrator.db /grant "%USERNAME%:(OI)(CI)F"` |
 
 ---

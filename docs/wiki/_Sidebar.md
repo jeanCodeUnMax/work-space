@@ -1,6 +1,6 @@
 ### Hephaistos2-Kit
 
-*Recherche NTFS native Rust ($MFT + USN) — MCP unifié 57 outils, sans Everything.exe.*
+*Recherche NTFS native Rust ($MFT + USN) — MCP unifié 58 outils, sans Everything.exe.*
 
 - [[Home]]
 - [[Architecture]]

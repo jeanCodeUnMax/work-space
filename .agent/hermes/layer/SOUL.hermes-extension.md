@@ -7,7 +7,7 @@
 
 ## 🧠 MCP UNIFIÉS DISPONIBLES (Hephaistos2-Kit)
 
-⚠️ **Stack v2 unifiée (2026-10)** : les ex-serveurs Memory/Qdrant/Zvec/orchestrator/model-discovery/nim-router sont **absorbés** dans le serveur unique `Hephaistos-everything-search` (`hphe-mcp`, ~57 outils). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus — ne jamais les appeler.
+⚠️ **Stack v2 unifiée (2026-10)** : les ex-serveurs Memory/Qdrant/Zvec/orchestrator/model-discovery/nim-router sont **absorbés** dans le serveur unique `Hephaistos-everything-search` (`hphe-mcp`, ~58 outils). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus — ne jamais les appeler.
 
 ### hphe-mcp (`Hephaistos-everything-search`)
 

@@ -8,12 +8,14 @@
 
 > Plateforme unifiée de recherche filesystem **ultra-rapide** pour agents IA :
 > indexation NTFS native en Rust (`$MFT` + journal USN), serveur MCP unique
-> (**57 outils**) et boucle d'ingestion REST — **sans `Everything.exe`**.
+> (**58 outils dans la source**) et boucle d'ingestion REST — **sans `Everything.exe`**.
+>
+> Le runtime installé reste à 57 outils; par décision utilisateur, le nouveau binaire n'est pas déployé et Beacon reste désactivé.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![Backend](<https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange>)
 ![Protocole](<https://img.shields.io/badge/protocole-MCP%20stdio%20%2F%20REST%208792-blueviolet>)
-![Outils](https://img.shields.io/badge/outils-57-informational)
+![Outils](https://img.shields.io/badge/outils-58-informational)
 ![Index](<https://img.shields.io/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success>)
 ![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 
@@ -47,7 +49,7 @@ voir [Rollback](#rollback).
 ## Architecture
 
 ```
-Devin / IDE ──stdio──► hphe-mcp.exe      (57 outils MCP unifiés)
+Devin / IDE ──stdio──► hphe-mcp.exe      (58 outils MCP unifiés)
                     ──REST:8792──► hphe-rest.exe   (mêmes outils + /health
                                    + boucle d'ingestion + gate d'écriture)
                                    │
@@ -136,7 +138,7 @@ Nom canonique : **`Hephaistos-everything-search`** (unifié dans Devin).
 `install.ps1` écrit cette entrée automatiquement dans
 `%APPDATA%\devin\mcp_config.json` et retire l'ancienne `everything-search`.
 
-Les 57 outils par famille : [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md).
+Les 58 outils par famille : [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md).
 
 ## Ingestion
 
@@ -151,6 +153,8 @@ Les 57 outils par famille : [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md).
   `hephaistos_update_force` via MCP/REST.
 
 Jamais deux writers Tantivy en parallèle : tout passe par `hphe-rest`.
+
+- **Beacon** : `hphe-mcp beacon_ingest` lit le journal JSONL par offset, filtre au workspace et écrit des résumés redacted dans la mémoire HPHE. `beacon.enabled` reste désactivé jusqu’au déploiement du binaire et à l’accord d’activation.
 
 ## Extensions VS Code
 
@@ -189,7 +193,7 @@ scripts et configurations supprimés de l'arbre v2.
 | Doc                                             | Contenu                            |
 | ----------------------------------------------- | ---------------------------------- |
 | [INSTALL.md](INSTALL.md)                         | Tutoriel d'installation pas à pas |
-| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 57 outils          |
+| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 58 outils          |
 | [docs/VSIX.md](docs/VSIX.md)                     | Fiches techniques des extensions   |
 | [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence        |
 | [docs/wiki/](docs/wiki/)                         | Wiki projet                        |

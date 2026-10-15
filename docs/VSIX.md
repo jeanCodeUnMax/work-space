@@ -28,7 +28,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 | Champ | Valeur |
 |---|---|
 | ID | `orchestrator-monitor` |
-| Version | 0.0.54 |
+| Version | 0.0.56 |
 | Nom affiché | Hephaistos Orchestrator Monitor |
 | Source | `extensions/orchestrator-monitor/` (sous-module git) |
 | Rôle | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
@@ -37,24 +37,16 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 
 - **Activation** : `onStartupFinished` — spawne `node ws-bridge/bridge.js` avec `HEPHAISTOS_WORKSPACE`.
 - **Bridge** : poll `orchestrator.db` (snapshot read-only + connexions inscriptibles pour toggles providers/purges), sert `ws://127.0.0.1:7477`, broadcast `snapshot`/`task_update`.
+- **Native SQLite** : le packaging reconstruit `better-sqlite3` avec le Node courant avant de produire le VSIX. Le Node qui lance `ws-bridge/bridge.js` doit partager cet ABI; le test prépublication vérifie que le binding charge et que le bridge écoute.
 - **Commandes** :
   - `orchestratorMonitor.openPanel` — panneau webview principal
   - `orchestratorMonitor.refresh` — forcer un snapshot
   - `orchestratorMonitor.startBridge` / `restartBridge` — cycle de vie du bridge
   - `orchestratorMonitor.clearCompleted` / `clearFailed` / `clearPending` — purge des files
   - `orchestratorMonitor.sendToChat` — injecter un résumé dans le chat Devin
-- **Bridge agents** : `agent-bridge/agy-hub.js` (RPC vers `agy.exe --hub`, Connect-RPC), `agent-adapters.js` (agy, kilo, opencode, gemini, hermes, cline, codex), `comms.js` (bus append-only `.agent/comms.jsonl`).
-- **Route finale de transport et wake (agy -> devin)** :
-  Le flux direct emprunte :
-  `devin-hub.js` (ou `binome.js --as agy send`) -> WebSocket bridge (`ws://127.0.0.1:7477`) -> `wake_devin`.
-  
-  1. **Si cible `acp/*` (sessions Devin Desktop `devin-cli`, ex. `acp/devin-cli/<slug>`)** :
-     - **Restauration de focus dynamique** : interrogation de l'état ACP via `workbench.action.getAcpState`. Si la session focalisée (`focusedSessionId`) n'est pas la session cible mais que celle-ci est bien enregistrée (`providerId === 'devin-cli'`), l'extension exécute `vscode.open` sur l'URI `vscode-cascade-editor:///cascade-<sessionId>`. Cela commute l'onglet existant sans modifier l'arborescence ni créer de session fantôme.
-     - **Injection ACP native** : soumission via `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et un payload = UN `TextOrScopeItem` brut base64 (champ 1 = texte UTF-8, sans wrapper `SendCascadeInputRequest`). Devin achemine ce payload vers `session/prompt` et le rend comme un message utilisateur dans la session ACP focalisée.
-     - **Garde-fou strict** : si la cible n'est ni focalisée ni restaurable, ou inconnue, l'envoi est purement sauté (`skipped` / `wake-noroute`). **JAMAIS** de notification toast, **JAMAIS** de copie dans le presse-papier, **JAMAIS** d'ouverture de nouvelle conversation parasite.
-  2. **Si cible UUID classique (sessions Cascade `.pb` historiques)** :
-     - `setCascadeId` (switch in-place) puis `sendCascadeInput`.
-     - Une cible explicite inconnue est ignorée sans reroutage intempestif.
+- **Bridge agents** : `agy-hub.js` (Connect-RPC), `devin-hub.js` (WebSocket, inventaire ACP du workspace et routage ciblé), `agent-adapters.js` (sessions CLI Kilo/Hermes avec reprise par ID) et `comms.js` (bus append-only `.agent/comms.jsonl`).
+- **Protocole binôme** : commande Devin `/jointes <agent>`; chaque handshake corrèle `pairId`, `session`, transport, provider et IDs exacts, avec TTL de 15 minutes. Les modes hub/ACP/CLI ne basculent jamais implicitement.
+- **Garde-fou de routage** : l’extension vérifie le workspace, le provider ACP activé, le `sessionId` connu et le focus avant injection. La route de retour vers Devin reste limitée à `devin-cli`; cible inconnue ou non focalisable = `skipped`, sans nouvelle conversation, toast ou presse-papiers.
 - **Filet de secours** : `.agent/task-watch.cjs` (client WS -> `.agent/task-events.log`, auto-reconnect).
 - **Build** : `npm run compile` / `vscode:prepublish` (TypeScript).
 

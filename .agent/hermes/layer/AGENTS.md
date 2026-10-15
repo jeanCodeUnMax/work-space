@@ -11,7 +11,7 @@
 
 | Serveur | Outils clés | Utilisation principale |
 |---------|-------------|------------------------|
-| **Hephaistos-everything-search** (hphe-mcp, ~57 outils) | `everything_search`, `content_search`, `semantic_search`, `hybrid_search`, `vec_search`, `nim_embed`, `memory_*`, `fs_*`, `dispatch_task`, `*_task`, `*_agent`, `available_models`, `nim_*` | Recherche NTFS instantanée, index contenu/vectoriel du workspace, mémoire KV, orchestrateur, modèles |
+| **Hephaistos-everything-search** (hphe-mcp, ~58 outils) | `everything_search`, `content_search`, `semantic_search`, `hybrid_search`, `vec_search`, `nim_embed`, `memory_*`, `fs_*`, `dispatch_task`, `*_task`, `*_agent`, `available_models`, `nim_*` | Recherche NTFS instantanée, index contenu/vectoriel du workspace, mémoire KV, orchestrateur, modèles |
 | **sqlite-node** | `query_data`, `execute_query`, `list_tables`, `describe_table` | KG read-only (`memory`/`graph`), cache, orchestrator |
 | **beacon** | `search_activity`, `summarize_activity`, `search_memory` | Traces de sessions cross-agents |
 | **filesystem** | read, write, edit, search | Fichiers (si exposé en plus de `fs_*` hphe) |

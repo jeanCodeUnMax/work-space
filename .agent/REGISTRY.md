@@ -48,10 +48,11 @@ L'ordre réel = `provider_prefs` dans `orchestrator.db` (position + enabled), mo
 
 **Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
 
-**Routage wake-up (règle 2026-10-14, extension 0.0.54)** :
-- Session ACP `acp/*` (ex. `acp/devin-cli/<slug>`) : wake direct via WebSocket 7477 -> restauration du focus in-place via `vscode.open` sur `vscode-cascade-editor:///cascade-<sessionId>` -> `explainAndFixProblem` (payload brut `TextOrScopeItem` base64 UTF-8) -> livré dans `session/prompt` comme message utilisateur sans toast ni nouvel onglet.
-- Session classique Cascade `uuid` : `setCascadeId` + `sendCascadeInput` (avec tag `cascade: <uuid>` ou `conv:`/`agycascade:`).
-- Sans tag ou session inconnue : `(non routé)` / `wake-noroute`, wake ignoré sans pollution. Watcher filet de secours : `.agent/task-watch.cjs` -> `task-events.log`.
+**Routage ACP/cascade (extension 0.0.56)** :
+- Retour vers Devin Local ACP : `wake_devin` exige `providerId === 'devin-cli'` et l’ID `acp/*` exact; restauration du même onglet puis `explainAndFixProblem`.
+- Devin vers un autre ACP : `wake_acp_agent` exige le `providerId/sessionId` exact, provider activé et workspace concordant; l’extension restaure l’onglet existant, relit le focus, puis injecte.
+- Session classique Cascade `uuid` : `setCascadeId` + `sendCascadeInput` uniquement avec l’UUID vérifié.
+- Sans session connue, provider désactivé ou focus non confirmé : `skipped`/`wake-noroute`; aucun toast, presse-papiers, nouvel onglet ni fallback vers un chat actif.
 
 ## Providers — rôles (détail)
 
@@ -94,7 +95,7 @@ Outils : `create_task` `update_task` `get_next_task` `register_agent` `update_ag
 
 ## MCP actifs (Devin)
 
-**8 directs** (2026-10-13) : `Hephaistos-everything-search` (hphe-mcp.exe — 57 outils : fs_*, memory_*, orchestrateur, nim_*, index/contenu/vec), `sqlite-node`, `beacon`, `kaggle`, `colab-mcp`, `google-drive`, `opencli-mcp`, `puppeteer`. Les anciens agentmemory/qdrant/zvec/orchestrator/model-discovery/nim-router ont été absorbés par `hphe-mcp` (poste = `extension/server/hphe-mcp.exe`).
+**8 directs** (2026-10-13) : `Hephaistos-everything-search` (source hphe-mcp — 58 outils : fs_*, memory_*, beacon_ingest, orchestrateur, nim_*, index/contenu/vec; runtime installé à 57, non déployé par décision utilisateur), `sqlite-node`, `beacon`, `kaggle`, `colab-mcp`, `google-drive`, `opencli-mcp`, `puppeteer`. Les anciens agentmemory/qdrant/zvec/orchestrator/model-discovery/nim-router ont été absorbés par `hphe-mcp` (poste = `extension/server/hphe-mcp.exe`).
 
 **`mcp-mux` = pipeline des sous-agents CLI/ACP** (kilo, opencode, hermes, gemini-cli) — sauf **Antigravity (agy) qui est démuxé** : ses MCP sont en direct dans `~/.gemini/config/mcp_config.json` + `~/.gemini/antigravity-ide/mcp_config.json` (hphe-mcp, sqlite-node, beacon, google-drive, opencli-mcp, puppeteer, kaggle, colab-mcp + datacloud + obsidian). Le mux sert hphe-mcp aux sub-agents avec `EVERYTHING_MCP_AGENT=external` (profil `.mcp-access` lecture bornée, pas d'écriture).
 

@@ -1,8 +1,10 @@
-# MCP-TOOLS — référence des 57 outils `hphe-mcp` / `hphe-rest`
+# MCP-TOOLS — référence des 58 outils `hphe-mcp` / `hphe-rest`
 
 Serveur MCP canonique : **`Hephaistos-everything-search`**
 (stdio `hphe-mcp.exe` ; mêmes outils en HTTP sur `hphe-rest` :8792 —
 `GET /tools`, `POST /tools/{name}`, `POST /call`, `GET /health`).
+
+> Les 58 outils sont le total de la **source du projet**. Le binaire runtime installé reste à 57 tant que le déploiement n’a pas été autorisé.
 
 ## Index NTFS (`\\.\pipe\hphe-index`)
 
@@ -78,6 +80,7 @@ Serveur MCP canonique : **`Hephaistos-everything-search`**
 | `memory_list` | Liste les mémoires (filtre type optionnel) |
 | `memory_update` | Met à jour une mémoire |
 | `memory_stats` | Stats de stockage par projet ou global |
+| `beacon_ingest` | Ingest incrémental des résumés Beacon (secrets masqués, scope workspace); `dryRun` vrai par défaut |
 
 ## Filesystem (`fs_*` — politique `.mcp-access`)
 
@@ -113,6 +116,7 @@ Serveur MCP canonique : **`Hephaistos-everything-search`**
 
 ## Invariants d'écriture
 
+- `beacon_ingest` : lecture limitée au journal Beacon et au workspace demandé, secrets masqués, dry-run par défaut; refusé aux profils MCP `external`.
 - **Un seul writer Tantivy** : gate interne `hphe-rest` — `content_ingest` /
   `hephaistos_update[_force]` via REST = file d'attente (`ingest_busy` dans
   `/health`), plus de `LockBusy`.

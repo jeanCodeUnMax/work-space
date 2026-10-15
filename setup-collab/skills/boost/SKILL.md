@@ -16,7 +16,7 @@ Active le mode d'ingénierie avancée : parallélisation, délégation et autono
 
 ## 2. Phase 0 : Cadrage & Indexation Immédiate (Hephaistos)
 - **Interdiction formelle :** jamais de `Get-ChildItem -Recurse`, `find`, `dir /s`.
-- **Recherche instantanée** via MCP `Hephaistos-everything-search` (hphe-mcp, 57 outils) :
+- **Recherche instantanée** via MCP `Hephaistos-everything-search` (hphe-mcp, 58 outils) :
   - `everything_search` : localiser fichiers et dépendances sur le disque.
   - `content_search` / `hybrid_search` : symboles, types, interfaces.
   - `fs_*` : lecture/écriture bornées par `.mcp-access` (profil `external` = subagents muxés).

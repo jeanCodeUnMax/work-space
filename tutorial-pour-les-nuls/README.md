@@ -50,7 +50,7 @@ Puis relance Devin et Antigravity. C'est tout !
 
 - **Ça ne démarre pas ?** → Va voir `05-quand-ca-marche-pas.md`
 - **Tu veux juste vérifier ?** → Lance `.\2-verifie-tout.ps1` dans `scripts/`
-- **Tu veux tester le ping-pong ?** → Lance `.\3-teste-le-ping-pong.ps1` dans `scripts/`
+- **Tu veux vérifier un binôme déjà établi ?** → Lance `3-teste-le-ping-pong.ps1` dans `scripts/` (lecture seule; aucun message envoyé)
 
 ---
 

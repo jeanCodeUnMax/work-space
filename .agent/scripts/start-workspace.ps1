@@ -228,7 +228,7 @@ foreach ($dir in @($globalGraphDir, $globalVectorDir)) {
 
 # --- LES SERVEURS MCP SONT GÉRÉS PAR L'IDE (DEVIN) ---
 # L'ancien pont REST RAG Python (ports 8001/8002 -> zvec/memory MCP) est
-# supprimé : ces serveurs sont absorbés par hphe-mcp (57 outils) et hphe-rest
+# supprimé : ces serveurs sont absorbés par hphe-mcp (58 outils) et hphe-rest
 # (127.0.0.1:8792) gère la boucle d'ingestion. monitor.js (:3055) idem —
 # remplacé par l'extension orchestrator-monitor (ws-bridge :7477).
 # Restes d'anciens runs : on nettoie juste le pidfile s'il traîne.
@@ -277,8 +277,8 @@ if ($bridgeJs) {
 }
 
 # --- SYNC BEACON -> MÉMOIRE UNIFIÉE (non-bloquant, non-fatal) ---
-# Distille les traces d'agents capturées par Beacon (runtime.jsonl) et les
-# injecte dans le pipeline RAG (zvec/qdrant + memory_mcp.db) en mode dual.
+# beacon-sync.ps1 appelle le tool Rust hphe-mcp beacon_ingest pour distiller
+# runtime.jsonl en mémoires projet; ingestion.config.json reste le coupe-circuit.
 $beaconSync = Join-Path $ScriptRoot 'beacon-sync.ps1'
 if (Test-Path $beaconSync) {
     Write-Log "Synchronisation Beacon -> mémoire unifiée..."

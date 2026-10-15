@@ -70,7 +70,7 @@ données runtime (logs, pids, bases) ni de secrets.
 
 La stack MCP multi-serveurs v1 (orchestrator-server, agentmemory, nim-router,
 model-discovery, qdrant, zvec, memory-f…) est **absorbée** dans le serveur unique
-`extension/server/hphe-mcp.exe` (57 outils, Rust). Devin le déclare en direct dans
+`extension/server/hphe-mcp.exe` (58 outils, Rust). Devin le déclare en direct dans
 `%APPDATA%/devin/mcp_config.json` ; les sous-agents CLI y accèdent via `mcp-mux`
 (profil `EVERYTHING_MCP_AGENT=external`, lecture bornée) — sauf `agy`, démuxé en
 direct. Voir `docs/MCP-TOOLS.md` pour la liste des outils.

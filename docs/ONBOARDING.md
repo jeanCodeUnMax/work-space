@@ -7,7 +7,7 @@ Guide pour recevoir, cloner et faire tourner le projet dans l'organisation.
 **Hephaistos2-Kit** = plateforme Windows de recherche filesystem ultra-rapide
 pour agents IA. Un démon Rust lit directement le `$MFT` NTFS (~6,4 M entrées)
 et suit le journal USN en continu → recherches en **< 50 ms** sur tout le PC,
-**sans Everything.exe**. Un serveur MCP unique (`hphe-mcp`, **57 outils**)
+**sans Everything.exe**. Un serveur MCP unique (`hphe-mcp`, **58 outils**)
 couvre recherche, contenu (Tantivy), vecteurs (usearch), orchestration
 multi-agents, routage NIM, mémoire unifiée et ingestion.
 

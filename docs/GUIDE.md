@@ -1,17 +1,19 @@
 # Guide local — Hephaistos2-Kit
 
 Recherche filesystem ultra-rapide pour agents IA — index NTFS natif en Rust
-(`$MFT` + USN), MCP unifié **57 outils**, REST :8792, sans `Everything.exe`.
+(`$MFT` + USN), MCP unifié **58 outils dans la source**, REST :8792, sans `Everything.exe`.
+
+Le runtime installé reste à 57 outils jusqu’à autorisation de déploiement.
 
 ## Composants
 
 | Composant | Rôle | Chemin |
 |---|---|---|
 | `hphe-indexd` | démon SYSTEM : scan $MFT + USN live, pipe `\\.\pipe\hphe-index` | `INSTALL\extension\server\` |
-| `hphe-mcp` | serveur MCP stdio (57 outils) — spawné par l'IDE | idem |
+| `hphe-mcp` | serveur MCP stdio (58 outils) — spawné par l'IDE | idem |
 | `hphe-rest` | passerelle HTTP :8792 + boucle d'ingestion + gate d'écriture | idem |
 | ext search | VSIX `hephaistos-kit-search` 1.0.3 | `extension/` |
-| ext monitor | VSIX `orchestrator-monitor` 0.0.54 (panel + ws-bridge :7477) | `extensions/orchestrator-monitor/` |
+| ext monitor | VSIX `orchestrator-monitor` 0.0.56 (panel + ws-bridge :7477) | `extensions/orchestrator-monitor/` |
 | `.agent/` | kit agents/skills/scripts (intégré au repo) | racine |
 
 ## Prérequis
@@ -25,9 +27,10 @@ Recherche filesystem ultra-rapide pour agents IA — index NTFS natif en Rust
 1. `install.ps1` → build Rust + deploy + config MCP Devin
 2. `hphe-indexd` démarre (SYSTEM), charge/snapshot l'index MFT
 3. `hphe-rest` démarre (Startup folder), boucle d'ingestion 900 s
-4. À l'ouverture IDE : tâche `start-workspace.ps1` → junction mémoire +
-   `content_ingest` via REST (mis en file si la boucle écrit)
-5. Agents → outils `everything_search` / `content_search` / `fs_*` / `memory_*`
+4. À l'ouverture IDE : `start-workspace.ps1` → junction mémoire +
+   `content_ingest` via REST (mis en file si la boucle écrit) ; le sync Beacon
+   appelle `beacon_ingest` Rust seulement si `beacon.enabled` est activé
+5. Agents → outils `everything_search` / `content_search` / `fs_*` / `memory_*` / `beacon_ingest`
 
 ## Vérification rapide
 
@@ -39,7 +42,7 @@ schtasks /query /tn hphe-indexd       # démon actif ?
 ## Documentation
 
 - `INSTALL.md` — installation pas à pas
-- `docs/MCP-TOOLS.md` — référence 57 outils
+- `docs/MCP-TOOLS.md` — référence 58 outils
 - `docs/VSIX.md` — fiches des extensions
 - `docs/ONBOARDING.md` — accueil du projet dans l'org
 - `docs/wiki/` — wiki complet

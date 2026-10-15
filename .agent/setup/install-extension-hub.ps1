@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$ExpectedVersion = '0.0.54',
+    [string]$ExpectedVersion = '0.0.56',
     [switch]$CheckOnly
 )
 
@@ -96,23 +96,12 @@ if (Test-Path $surfScript) {
 # Configuration Devin pour le binome (hooks awareness + IDs)
 $devinBinomeScript = Join-Path $PSScriptRoot 'setup-devin-binome.ps1'
 if (Test-Path $devinBinomeScript) {
-    & pwsh -NoProfile -ExecutionPolicy Bypass -File $devinBinomeScript -Verify 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) { Pass 'config Devin binome conforme (hooks + extension + IDs)' }
+    & pwsh -NoProfile -ExecutionPolicy Bypass -File $devinBinomeScript -Verify
+    if ($LASTEXITCODE -eq 0) { Pass "configuration Devin/hook vérifiée; consulter aussi l’état du pair" }
     else { Warn 'config Devin binome incomplete - lancer setup-devin-binome.ps1' }
 } else { Warn "script binome Devin introuvable : $devinBinomeScript" }
 
-# IDs binome publies
-$commsPath = Join-Path $root '.agent\comms.jsonl'
-if (Test-Path $commsPath) {
-    $cLines = Get-Content $commsPath -Tail 80 -ErrorAction SilentlyContinue
-    $hasDevin = $cLines | Where-Object { $_ -match '"src":"devin"' -and $_ -match '"convId":' }
-    $hasAgy   = $cLines | Where-Object { $_ -match '"src":"agy"' -and $_ -match '"convId":' }
-    if ($hasDevin -and $hasAgy) {
-        Pass 'canal binome : IDs devin et agy publies dans comms.jsonl'
-    } else {
-        Warn 'canal binome : IDs incomplets (lancer node .agent/agent-bridge/binome.js join)'
-    }
-} else { Warn 'comms.jsonl absent - canal binome non initialise' }
+# Le contrôle -Verify ci-dessus utilise binome.js pair; ne pas valider des IDs historiques bruts.
 
 Step '[6/6] Sante des services et bridge WS 7477'
 $t = Test-NetConnection 127.0.0.1 -Port 7477 -WarningAction SilentlyContinue -InformationLevel Quiet

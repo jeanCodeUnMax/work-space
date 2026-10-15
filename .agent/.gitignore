@@ -6,3 +6,4 @@ logs/
 **/.ingestion-state.json
 **/.*-state.json
 **/.*-learn-state.json
+**/.beacon-offset-state.json.lock

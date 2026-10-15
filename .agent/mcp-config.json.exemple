@@ -1,5 +1,5 @@
 {
-  "_comment": "Configuration MCP Hephaistos2-Kit v2 — exemple à adapter. v1 (qdrant/zvec/orchestrator-server/memory node) : absorbée par hphe-mcp.exe (57 outils : recherche NTFS, contenu Tantivy, vecteurs, orchestrateur, mémoire, ingestion).",
+  "_comment": "Configuration MCP Hephaistos2-Kit v2 — exemple à adapter. v1 (qdrant/zvec/orchestrator-server/memory node) : absorbée par hphe-mcp.exe (58 outils : recherche NTFS, contenu Tantivy, vecteurs, orchestrateur, mémoire, ingestion).",
   "_instructions": [
     "1. Fusionnez la section mcpServers dans le fichier de config de votre IDE :",
     "   Devin       : %APPDATA%/devin/mcp_config.json",
@@ -17,7 +17,7 @@
   ],
   "mcpServers": {
     "Hephaistos-everything-search": {
-      "_comment": "Serveur MCP Rust unique — 57 outils : recherche NTFS (pipe \\\\.\\pipe\\hphe-index), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), modèles (available_models), NIM (nim_*), ingestion.",
+      "_comment": "Serveur MCP Rust unique — 58 outils : recherche NTFS (pipe \\\\.\\pipe\\hphe-index), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), modèles (available_models), NIM (nim_*), ingestion.",
       "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
       "args": [],
       "disabled": false,

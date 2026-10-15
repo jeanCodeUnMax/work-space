@@ -17,6 +17,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { execFileSync } = require('child_process');
+const { randomUUID } = require('crypto');
 let WebSocket;
 const wsCandidates = [
     path.join(__dirname, '..', '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
@@ -62,7 +63,7 @@ function getActiveCascade() {
     } catch { return null; }
 }
 
-function sendToDevin(text, cascadeId, port = 7477) {
+function sendToDevin(text, cascadeId, port = 7477, sourceAgent = 'agy') {
     return new Promise((resolve, reject) => {
         // Cible explicite d'abord (un message adressé à X ne doit jamais
         // atterrir dans Y) ; sans cible, la conv actuellement active.
@@ -83,7 +84,7 @@ function sendToDevin(text, cascadeId, port = 7477) {
             ws.send(JSON.stringify(payload));
             if (comms) {
                 comms.log({
-                    src: 'agy',
+                    src: sourceAgent,
                     dst: 'devin',
                     kind: 'prompt',
                     text: text,
@@ -104,6 +105,49 @@ function sendToDevin(text, cascadeId, port = 7477) {
     });
 }
 
+function bridgeRequest(command, payload, resultType, port = 7477, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+        const requestId = randomUUID();
+        const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+        let settled = false;
+        const finish = (fn, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            try { ws.close(); } catch { /* noop */ }
+            fn(value);
+        };
+        const timeout = setTimeout(() => finish(reject, new Error(`Timeout ${command} via Devin bridge`)), timeoutMs);
+        ws.on('open', () => ws.send(JSON.stringify({ command, requestId, ...payload })));
+        ws.on('message', (raw) => {
+            let msg;
+            try { msg = JSON.parse(raw.toString()); } catch { return; }
+            if (msg?.requestId !== requestId || msg?.type !== resultType) return;
+            if (msg.error) finish(reject, new Error(String(msg.error)));
+            else finish(resolve, msg);
+        });
+        ws.on('error', (error) => finish(reject, error));
+        ws.on('close', () => {
+            if (!settled) finish(reject, new Error(`${command} bridge connection closed before response`));
+        });
+    });
+}
+
+async function listAcpSessions(providerId, port = 7477, workspaceRoot = process.env.HEPHAISTOS_WORKSPACE || process.cwd()) {
+    if (typeof workspaceRoot !== 'string' || !workspaceRoot) throw new Error('ACP session listing requires an explicit workspace');
+    const result = await bridgeRequest('list_acp_sessions', { providerId: providerId || '', workspaceRoot }, 'acp_sessions_result', port);
+    return Array.isArray(result.sessions) ? result.sessions : [];
+}
+
+async function sendToAcpAgent(text, sessionId, providerId, port = 7477, workspaceRoot = process.env.HEPHAISTOS_WORKSPACE || process.cwd()) {
+    if (typeof text !== 'string' || !text || typeof sessionId !== 'string' || !sessionId ||
+        typeof providerId !== 'string' || !providerId || typeof workspaceRoot !== 'string' || !workspaceRoot) {
+        throw new Error('ACP send requires explicit text, sessionId, providerId and workspace');
+    }
+    const result = await bridgeRequest('wake_acp_agent', { text, sessionId, providerId, workspaceRoot }, 'acp_wake_result', port, 15000);
+    return { status: result.status, sessionId, providerId };
+}
+
 // CLI
 if (require.main === module) {
     const [cmd, ...args] = process.argv.slice(2);
@@ -111,6 +155,7 @@ if (require.main === module) {
         console.log('Usage:');
         console.log('  node devin-hub.js current');
         console.log('  node devin-hub.js send <texte> [cascadeId]');
+        console.log('  node devin-hub.js acp-list [providerId]  → sessions ACP activées du workspace');
         console.log('  node devin-hub.js status');
         process.exit(0);
     }
@@ -124,6 +169,12 @@ if (require.main === module) {
             console.error('Aucune session Devin active trouvée');
             process.exit(1);
         }
+    }
+
+    if (cmd === 'acp-list') {
+        listAcpSessions(args[0] || undefined)
+            .then((sessions) => console.log(JSON.stringify(sessions, null, 1)))
+            .catch((err) => { console.error(JSON.stringify({ error: err.message }, null, 1)); process.exit(1); });
     }
 
     if (cmd === 'status') {
@@ -156,4 +207,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { getActiveCascade, sendToDevin };
+module.exports = { getActiveCascade, sendToDevin, listAcpSessions, sendToAcpAgent };

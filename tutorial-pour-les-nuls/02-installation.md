@@ -30,7 +30,7 @@ Le script `1-installe-moi.ps1` est un wrapper autour de `install.ps1` qui fait l
 7. **Configure le MCP** dans Devin (`mcp_config.json`)
 8. **Installe l'auto-start** (`hphe-rest` au démarrage)
 9. **Crée la tâche planifiée** (`hphe-indexd`, nécessite admin)
-10. **Vérifie tout** : extension 0.0.54+, bridge 7477, surfaces de règles, canal binôme
+10. **Vérifie tout** : extension 0.0.56+, bridge 7477, surfaces de règles, canal binôme
 
 ---
 
@@ -65,7 +65,7 @@ pwsh -File .agent\setup\install-extension-hub.ps1
 ### Méthode manuelle
 
 1. Dans Devin ou VS Code : `Ctrl+Shift+P` → `Extensions: Install from VSIX...`
-2. Choisis `extensions/orchestrator-monitor/orchestrator-monitor-0.0.54.vsix`
+2. Choisis `extensions/orchestrator-monitor/orchestrator-monitor-0.0.56.vsix`
 3. Pareil pour `extension/hephaistos-kit-search.vsix` si besoin
 4. **Reload Window** (Ctrl+Shift+P → Developer: Reload Window)
 
@@ -99,7 +99,7 @@ pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
 ```
 
 Tu devrais voir :
-- `[OK] orchestrator-monitor v0.0.54 installée`
+- `[OK] orchestrator-monitor v0.0.56 installée`
 - `[OK] hub agy actif`
 - `[OK] surfaces de règles conformes`
 - `[OK] canal binome : IDs devin et agy publiés`

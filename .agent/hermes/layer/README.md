@@ -90,7 +90,7 @@ Ce fichier s'applique au SOUL.md global de Hermès. Il ajoute :
 
 ## 🧠 MCP UNIFIÉS DISPONIBLES
 
-### hphe-mcp (`Hephaistos-everything-search`, ~57 outils)
+### hphe-mcp (`Hephaistos-everything-search`, ~58 outils)
 - `everything_search` — index NTFS $MFT instantané (tout le disque)
 - `content_search` / `semantic_search` / `hybrid_search` — contenu BM25 + vectoriel 2048D du workspace
 - `vec_search` / `vec_stats` / `nim_embed` — vectoriel brut + embeddings NIM
@@ -154,7 +154,7 @@ Les serveurs MCP suivants sont configurés globalement :
 
 | Serveur | Type | Usage principal |
 |---------|------|-----------------|
-| **hphe-mcp** | Unifié (~57 outils) | Recherche, mémoire KV, orchestrateur, modèles |
+| **hphe-mcp** | Unifié (~58 outils) | Recherche, mémoire KV, orchestrateur, modèles |
 | **sqlite-node** | SQLite | KG read-only, cache, orchestrator |
 | **beacon** | Traces | Sessions cross-agents |
 

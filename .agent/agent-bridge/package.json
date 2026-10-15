@@ -4,7 +4,8 @@
   "description": "Hephaistos agent wake-up listener — WebSocket -> console tags (WS-WAKE on terminal task transitions)",
   "main": "listener.js",
   "scripts": {
-    "start": "node listener.js --agent Devin"
+    "start": "node listener.js --agent Devin",
+    "test": "node --test binome-handshake.test.cjs"
   },
   "dependencies": {
     "ws": "^8.16.0"

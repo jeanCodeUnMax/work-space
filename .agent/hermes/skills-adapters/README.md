@@ -2,7 +2,7 @@
 
 Ce répertoire contient des adaptateurs (wrappers documentaires) qui permettent à Hermès d'utiliser la stack unifiée de Hephaistos2-Kit v2.
 
-> ⚠️ **Stack v2 (2026-10)** : Memory/Qdrant/Zvec/orchestrator/model-discovery sont **absorbés** dans `Hephaistos-everything-search` (`hphe-mcp`, ~57 outils). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus.
+> ⚠️ **Stack v2 (2026-10)** : Memory/Qdrant/Zvec/orchestrator/model-discovery sont **absorbés** dans `Hephaistos-everything-search` (`hphe-mcp`, ~58 outils). Les outils `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*` n'existent plus.
 
 ## Structure
 

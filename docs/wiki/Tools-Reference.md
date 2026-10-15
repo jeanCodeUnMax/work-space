@@ -1,6 +1,6 @@
 # Tools-Reference
 
-**La référence complète des 57 outils vit dans [`docs/MCP-TOOLS.md`](../MCP-TOOLS.md).**
+**La référence complète des 58 outils vit dans [`docs/MCP-TOOLS.md`](../MCP-TOOLS.md).**
 
 Résumé des familles exposées par `hphe-mcp` / `hphe-rest` :
 

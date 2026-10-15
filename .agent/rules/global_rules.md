@@ -291,33 +291,17 @@ SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 - **NIM n'est PAS un transport kilo/hermes** : les requêtes NVIDIA ne doivent jamais s'afficher ni s'exécuter sous "kilo-nim". Kilo/hermes = renforts 3e/4e recours sur modèles `:free`, NIM seulement en dernier pour ajouter de la capacité sans saturer les clés.
 - **Habilitation** : seuls `devin` et `agy` utilisent la chaîne, l'orchestrateur et `dispatch_task` — les autres agents sont des workers (reçoivent, ne dispatchent pas).
 
-### CANAL BINÔME DEVIN ⇄ AGY (mot-clé `/binome`)
+### COMMANDE BINÔME DEVIN ⇄ AGENTS (`/jointes <agent>`)
 
-Devin et agy sont les **deux agents directs** — pas des sous-agents. Le canal binôme passe par `agent-bridge/` (WS 7477 + Connect-RPC hub agy) — **hors orchestrateur**. Version courante de l'extension : **0.0.54**.
+`/jointes <agent>` est la commande Devin project-local décrite dans `.devin/skills/jointes/SKILL.md`; le runbook canonique est `docs/protocole-binome/README.md`. Les transports sont explicites : hub AGY, sessions ACP Devin, ou sessions CLI reprises pour Kilo/Hermes.
 
-**Exclusivité** : aucun worker/sous-agent (kilo, hermes CLI, nim1/nim2, goose, scripts) n'utilise ce canal — `binome.js --as` n'accepte que `devin|agy`. « Hermes » en tant que nom interne d'Antigravity n'autorise pas le worker `hermes` CLI.
+Un nom ou `devin.acp.enabledAgents=true` ne prouve pas qu’une conversation existe. ACP exige le couple exact `providerId/sessionId` présent dans l’état ACP du workspace; CLI exige un ID Kilo/Hermes repris et vérifié dans ce workspace. Pour Kilo/Hermes, ACP et CLI sont distincts, jamais un fallback. Les providers `nim`, `nim2`, `openrouter`, `devin-cloud`, `mistral-vibe` et `opencode` ne sont ciblables que si une session ACP active existe. Les workers HES `nim1`/`nim2` restent des appels API one-shot, distincts des sessions ACP Devin `nim`/`nim2`. `Devin Local` ne peut pas être joint à lui-même.
 
-**Activation** : le mot-clé `/binome` (tapé par l'utilisateur ou envoyé par un agent à l'autre) déclenche le **handshake d'adressage** :
+Le succès exige une requête et un ACK frais corrélés par `pairId/session`, IDs exacts et transports/providers inversés, dans une fenêtre de 15 minutes. Les handshakes legacy/historiques et les requêtes plus récentes non acquittées ne peuvent établir une paire. `hint` seul ne suffit jamais. `send` refuse les cibles sans paire fraîche, sauf `--to` explicite qui doit toujours correspondre à une session existante et vérifiée.
 
-1. Chaque agent publie son propre `cascadeId` / `sessionId` dans `.agent/comms.jsonl` : `{src, kind:'handshake', convId, session:'binome'}`.
-   - Devin : `node extensions/orchestrator-monitor/agent-bridge/current-cascade.js` (résout session ACP `devin-cli` ou cascade UUID)
-   - agy : son cascadeId de conversation active (`agy-hub.js list`).
-2. Le pair lit l'id de l'autre dans `comms.jsonl` (`comms.js tail`) -> **les deux fenêtres actives deviennent le canal binôme**. Jamais de devinette sur le `.pb` le plus récent.
+**Routage sûr** : vers Devin, le wake ACP ne cible que `providerId === 'devin-cli'` connu; vers un ACP peer, `wake_acp_agent` exige provider activé, `providerId/sessionId` exacts et workspace concordant. Restaurer l’onglet existant, revérifier le focus puis injecter; session inconnue/non focalisable = `skipped`. Les transports CLI reprennent l’ID explicite sans shell interpolé. **Jamais** de nouvelle conversation, toast, presse-papiers ni fallback vers le chat actif. Une réponse déjà collectée par le hub ne doit pas être réveillée une deuxième fois.
 
-**Échange** (après handshake, IDs explicites) :
-
-- Devin -> agy : `node agent-bridge/agy-hub.js send <agyCascadeId> "<texte>"` (Connect-RPC direct vers le hub agy) ou `ask` pour send+attente+réponse.
-- agy -> Devin : `node agent-bridge/devin-hub.js send "<texte>" <devinCascadeId>` -> WebSocket bridge (`ws://127.0.0.1:7477`) -> `wake_devin`.
-  - **Route cible `acp/*` (Devin Desktop `devin-cli` ACP, ex: `acp/devin-cli/<slug>`)** :
-    1. Si `focusedSessionId !== cible` mais connue (`providerId === 'devin-cli'`) : exécution préalable de `vscode.open` sur `vscode-cascade-editor:///cascade-<sessionId>` pour restaurer le focus in-place.
-    2. Injection native : `devin.sendChatActionMessage` avec `actionType: 'explainAndFixProblem'` et payload = UN `TextOrScopeItem` brut base64 (field1 UTF-8) -> livré à `session/prompt` comme message utilisateur.
-    3. Si focus impossible ou inconnue : skipped (`wake-noroute`), **JAMAIS** de toast, copie presse-papier ni nouvelle conversation.
-  - **Route cible UUID classique (`cascade`)** :
-    `setCascadeId` (switch in-place) puis `sendCascadeInput`.
-- Retour automatisé : `wake_antigravity` avec `replyToCascadeId` -> l'extension attend l'idle agy et relaie sa réponse dans le chat Devin (round-trip sans intervention).
-- Journal : tout passe par `comms.jsonl` (tail dans le monitor) — `comms.js log <src> <dst> <kind> <texte>`.
-
-**Clôture** : `/binome off` ou fin de tâche -> entrée `kind:'handshake', text:'fin binôme'` dans comms.
+Le journal append-only est `.agent/comms.jsonl`; les procédures, alias et limites sont centralisés dans `docs/protocole-binome/README.md`.
 
 ### RÈGLE FONDAMENTALE
 
@@ -599,7 +583,7 @@ Ordre de priorité OBLIGATOIRE pour kilo/hermes :
 Beacon capture passivement les sessions de tous les agents (Devin, Antigravity,
 Claude, Codex, Gemini, opencode, Kiro...) dans `~/.beacon/endpoint/logs/runtime.jsonl`.
 
-⚠️ **L'ingestion Beacon vers la mémoire unifiée est désactivée** (`ingestion.config.json` → `beacon.enabled: false`) : l'ancien pipeline Python (`beacon_ingest.py`/`beacon_learn.py`) est archivé dans `_archive/agent-rag/` en attente du portage Rust. Le MCP `beacon` reste actif pour la fouille des traces brutes — seule la distillation→index est en pause.
+⚠️ **L'ingestion Beacon vers la mémoire unifiée reste désactivée** (`ingestion.config.json` → `beacon.enabled: false`). Le port Rust `hphe-kit::beacon` / tool `hphe-mcp beacon_ingest` et son wrapper `beacon-sync.ps1` sont présents dans la source. Décision utilisateur : « source seulement » — le runtime n'est pas déployé; ne pas déployer ni activer sans une nouvelle autorisation explicite. Ne jamais relancer l'ancien pipeline Python archivé.
 
 #### QUAND L'UTILISER
 
@@ -609,8 +593,9 @@ Claude, Codex, Gemini, opencode, Kiro...) dans `~/.beacon/endpoint/logs/runtime.
 #### OUTILS
 
 - `beacon.search_activity` / `beacon.summarize_activity` — fouille les traces brutes
-- `beacon.search_memory` / `beacon.get_memory_context` — mémoire Beacon approuvée
-- Recherche unifiée habituelle (`memory_search`, `semantic_search`, `hybrid_search`) — inclura les digests quand l'ingest Beacon sera réactivée
+- `beacon.search_memory` / `beacon.get_memory_context` — lecture de la mémoire Beacon approuvée (MCP Beacon sans outil d'écriture)
+- `hphe-mcp beacon_ingest` — distillation Rust limitée au workspace, secrets masqués, `dryRun=true` par défaut; refusé au profil `external`; l'écriture persistante exige l'activation explicite de `beacon.enabled` après déploiement
+- Retrieval unifié (`memory_search`, `semantic_search`, `hybrid_search`) — digests accessibles après ingestion
 
 #### SUPERVISION
 
@@ -619,14 +604,16 @@ Claude, Codex, Gemini, opencode, Kiro...) dans `~/.beacon/endpoint/logs/runtime.
 
 #### LIMITES
 
-- Capture = lecture seule côté agent ; distillation en pause (voir ci-dessus).
+- Capture = lecture seule côté agent; aucune écriture directe dans les logs Beacon.
+- Vérifié le 2026-10-15 : `BeaconCollector` est Running/Automatic, mais `runtime.jsonl` n'a pas été modifié depuis le 2026-10-10 et `beacon.search_activity` ne retourne pas d'événement récent. Ne pas prétendre que la session courante a été capturée; rechercher `beacon.search_activity` après chaque demande de remontée.
+- La mémoire HPHE est une écriture distincte de Beacon. Ne pas réactiver `beacon.enabled` avant tests Rust + déploiement runtime + accord utilisateur.
 
 ### BOUCLE D'APPRENTISSAGE — /reflect (FERMETURE OBLIGATOIRE)
 
 La mémoire unifiée n'est utile que si la boucle est fermée :
 
 ```text
-sessions agents → Beacon (capture, service BeaconCollector) → [ingest Beacon : EN PAUSE, portage Rust]
+sessions agents → Beacon (capture, service BeaconCollector) → [beacon_ingest Rust : source seulement par décision utilisateur; ingestion désactivée]
   → mémoire unifiée + knowledge/ (indexés par auto-ingest Rust)
   → retrieval (memory_search / semantic_search / hybrid_search / content_search) → action de l'agent
   → /reflect → memory_write + ADR knowledge/decisions/ → réindexé → retrieval
@@ -725,7 +712,7 @@ L'agent DOIT utiliser la mémoire unifiée (hphe-mcp + sqlite-node) pour :
 
 - `.agent/memory/UNIFIED_MEMORY_SYSTEM.md` — système mémoire unifié (canonique)
 - `.agent/memory/memory-policy.md` — politiques
-- `docs/MCP-TOOLS.md` — référence des 57 outils hphe-mcp
+- `docs/MCP-TOOLS.md` — référence des 58 outils hphe-mcp
 - `_archive/agent-rag/DEPRECATED-BY-RUST.md` — table de correspondance v1→v2
 
 ## 🎯 PLANIFICATION ET VÉRIFICATION (QUALITÉ DU CODE)

@@ -1,55 +1,49 @@
 ﻿<#
 .SYNOPSIS
-    Teste le canal ping-pong Devin <-> Antigravity.
+    Vérifie en lecture seule un binôme Devin <-> Antigravity déjà établi.
 .DESCRIPTION
-    Fait les join, envoie un message test dans chaque sens,
-    et montre les derniers messages du canal.
+    Vérifie le bridge local et lit le résultat de binome.js pair. Ne publie pas de handshake et n'envoie aucun message.
 .EXAMPLE
     pwsh -File 3-teste-le-ping-pong.ps1
 #>
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$comms = "$root\.agent\comms.jsonl"
+$binome = Join-Path $root '.agent\agent-bridge\binome.js'
 
-Write-Host "=== Test ping-pong binome ===" -ForegroundColor Cyan
+Write-Host "=== Vérification du binôme ===" -ForegroundColor Cyan
 
-# 1) Verifie que le bridge 7477 est vivant
 try {
     $tcp = New-Object System.Net.Sockets.TcpClient
-    $tcp.Connect("127.0.0.1", 7477)
+    $tcp.Connect('127.0.0.1', 7477)
     $tcp.Close()
-    Write-Host "[OK] Bridge WS 7477 vivant" -ForegroundColor Green
+    Write-Host '[OK] Bridge WS 7477 vivant' -ForegroundColor Green
 } catch {
-    Write-Host "[ERREUR] Bridge 7477 muet — lance install-extension-hub.ps1 d'abord" -ForegroundColor Red
+    Write-Host '[WARN] Bridge 7477 muet; le contrôle de paire continue en lecture seule' -ForegroundColor Yellow
+}
+
+if (-not (Test-Path $binome)) {
+    Write-Host "[ERREUR] binome.js introuvable : $binome" -ForegroundColor Red
     exit 1
 }
 
-# 2) Verifie que binome.js existe
-$binome = "$root\.agent\agent-bridge\binome.js"
-if (-not (Test-Path $binome)) { Write-Host "[ERREUR] binome.js introuvable : $binome" -ForegroundColor Red; exit 1 }
-
-# 3) Join devin (on est dans devin)
-Write-Host "`n[1/4] Devin publie son ID..."
-& node $binome --as devin join
-
-# 4) Join agy (si on peut — sinon on simule)
-Write-Host "`n[2/4] Antigravity publie son ID (depuis son cote)..."
-Write-Host "  Si tu es dans Antigravity, fais-le aussi : node $binome --as agy join"
-
-# 5) Envoie un message test de devin vers agy
-Write-Host "`n[3/4] Devin envoie un message test..."
-$msg = "TEST-PING-PONG-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-& node $binome --as devin send "$msg — dis coucou si tu me recois"
-
-# 6) Montre les derniers messages
-Write-Host "`n[4/4] Derniers messages du canal :"
-if (Test-Path $comms) {
-    Get-Content $comms -Tail 5 | ForEach-Object {
-        $j = $_ | ConvertFrom-Json -ErrorAction SilentlyContinue
-        if ($j) { Write-Host "  $($j.ts) [$($j.src)->$($j.dst)] $($j.text.Substring(0,[Math]::Min(60,$j.text.Length)))..." }
+Push-Location $root
+try {
+    $raw = & node $binome --as devin pair 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host '[ERREUR] binome.js pair a échoué' -ForegroundColor Red
+        exit 1
     }
-} else { Write-Host "  (comms.jsonl pas encore cree)" }
+    $pair = ($raw | Out-String) | ConvertFrom-Json
+    if (-not $pair.established) {
+        Write-Host '[WARN] Aucun pair frais vérifié. Lance /jointes AGY dans Devin.' -ForegroundColor Yellow
+        exit 1
+    }
+    Write-Host "[OK] Pair frais : $($pair.me)=$($pair.myCascade) ⇄ $($pair.peer)=$($pair.peerCascade) (pairId=$($pair.pairId))" -ForegroundColor Green
+} catch {
+    Write-Host "[ERREUR] Vérification impossible : $_" -ForegroundColor Red
+    exit 1
+} finally {
+    Pop-Location
+}
 
-Write-Host "`n=== Fin du test ===" -ForegroundColor Cyan
-Write-Host "Si tu vois le message dans la conversation d'Antigravity, c'est bon."
-Write-Host "Sinon, va voir 05-quand-ca-marche-pas.md`n"
+Write-Host 'Contrôle terminé sans publier de handshake ni envoyer de message.' -ForegroundColor Cyan

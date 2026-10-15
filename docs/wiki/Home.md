@@ -5,7 +5,7 @@ ultra-rapide pour agents IA. Un démon Rust (`hphe-indexd`, tâche planifiée
 SYSTEM) lit directement le `$MFT` NTFS et suit le journal USN en continu :
 recherches en **< 50 ms** sur tout le PC, **sans `Everything.exe`**.
 
-Au-dessus de l'index, un serveur MCP unique (`hphe-mcp`, **57 outils**)
+Au-dessus de l'index, un serveur MCP unique (`hphe-mcp`, **58 outils**)
 couvre recherche NTFS, indexation de contenu (Tantivy), recherche vectorielle
 (usearch 2048D), orchestration multi-agents, routage de modèles NIM, mémoire
 unifiée et ingestion. La passerelle `hphe-rest` (`127.0.0.1:8792`) expose les
@@ -33,7 +33,7 @@ sont dans `servers\servers_backup\` (rollback possible).
 
 - [[Architecture]] — composants et flux de données
 - [[IPC-Protocol]] — protocole NDJSON du named pipe hphe
-- [[Tools-Reference]] — pointeur vers `docs/MCP-TOOLS.md` (57 outils)
+- [[Tools-Reference]] — pointeur vers `docs/MCP-TOOLS.md` (58 outils)
 - [[Query-Syntax]] — syntaxe de requête (compatible Everything)
 - [[Security]] — `.mcp-access`, allowlist, gestion des secrets
 - [[Benchmarks]] — protocole de mesure et résultats

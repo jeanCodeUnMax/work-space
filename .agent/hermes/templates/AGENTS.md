@@ -11,7 +11,7 @@ Les serveurs MCP suivants sont configurés globalement et disponibles dans ce pr
 
 | Serveur | Usage dans ce projet |
 |---------|----------------------|
-| **Hephaistos-everything-search** (hphe-mcp, ~57 outils) | Recherche NTFS instantanée (`everything_search`), contenu/vectoriel workspace (`content`/`semantic`/`hybrid_search`), mémoire KV (`memory_*`), fichiers (`fs_*`), orchestrateur (`*_task`, `dispatch_task`), modèles (`available_models`, `nim_*`) |
+| **Hephaistos-everything-search** (hphe-mcp, ~58 outils) | Recherche NTFS instantanée (`everything_search`), contenu/vectoriel workspace (`content`/`semantic`/`hybrid_search`), mémoire KV (`memory_*`), fichiers (`fs_*`), orchestrateur (`*_task`, `dispatch_task`), modèles (`available_models`, `nim_*`) |
 | **sqlite-node** | KG read-only (`memory`/`graph`), cache, orchestrator |
 | **beacon** | Traces de sessions cross-agents (si configuré) |
 

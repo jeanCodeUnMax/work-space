@@ -6,9 +6,9 @@
  * N'importe quel process (extension, CLI, bridge, script) peut append —
  * le ws-bridge tail le fichier et broadcast aux webviews du monitor.
  *
- * Entrée : {ts, src, dst, kind, text, convId?, taskId?}
+ * Entrée : {ts, src, dst, kind, text, convId?, taskId?, phase?, pairId?, replyTo?, session?, peerCascade?, transport?, peerTransport?, providerId?, peerProviderId?}
  *   src/dst : 'devin' | 'agy' | 'kilo' | 'hermes' | ... | 'user'
- *   kind    : 'prompt' | 'reply' | 'wake' | 'result' | 'event' | 'error'
+ *   kind    : 'prompt' | 'reply' | 'wake' | 'result' | 'event' | 'error' | 'handshake'
  *
  * Env : COMMS_LOG (chemin complet) ou HEPHAISTOS_WORKSPACE (racine workspace).
  *
@@ -71,7 +71,16 @@ function log(entry) {
             kind: entry.kind || 'event',
             text: sanitize(entry.text).slice(0, 4000),
             ...(entry.convId ? { convId: entry.convId } : {}),
-            ...(entry.taskId !== undefined ? { taskId: entry.taskId } : {})
+            ...(entry.taskId !== undefined ? { taskId: entry.taskId } : {}),
+            ...(entry.phase ? { phase: sanitize(entry.phase).slice(0, 16) } : {}),
+            ...(entry.pairId ? { pairId: sanitize(entry.pairId).slice(0, 128) } : {}),
+            ...(entry.replyTo ? { replyTo: sanitize(entry.replyTo).slice(0, 128) } : {}),
+            ...(entry.session ? { session: sanitize(entry.session).slice(0, 120) } : {}),
+            ...(entry.peerCascade ? { peerCascade: sanitize(entry.peerCascade).slice(0, 300) } : {}),
+            ...(entry.transport ? { transport: sanitize(entry.transport).slice(0, 32) } : {}),
+            ...(entry.peerTransport ? { peerTransport: sanitize(entry.peerTransport).slice(0, 32) } : {}),
+            ...(entry.providerId ? { providerId: sanitize(entry.providerId).slice(0, 64) } : {}),
+            ...(entry.peerProviderId ? { peerProviderId: sanitize(entry.peerProviderId).slice(0, 64) } : {})
         });
         fs.appendFileSync(p, line + '\n');
         return true;
@@ -85,6 +94,91 @@ function tail(n = 100, file = commsPath()) {
         const lines = raw.split('\n').filter(Boolean);
         return lines.slice(-n).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
     } catch { return []; }
+}
+
+const PAIRING_TTL_MS = 15 * 60 * 1000;
+
+function handshakeTimestamp(entry) {
+    const value = Date.parse(entry?.ts || '');
+    return Number.isFinite(value) ? value : null;
+}
+
+function isFreshHandshake(entry, now) {
+    const ts = handshakeTimestamp(entry);
+    return entry?.kind === 'handshake' && Boolean(entry.pairId && entry.session && entry.convId) &&
+        ts !== null && ts <= now && now - ts <= PAIRING_TTL_MS;
+}
+
+function handshakeAcked(entries, request, now) {
+    return entries.some((entry) => {
+        const ts = handshakeTimestamp(entry);
+        return isFreshHandshake(entry, now) && entry.phase === 'ack' &&
+            entry.src === request.dst && entry.dst === request.src &&
+            entry.session === request.session && entry.pairId === request.pairId &&
+            entry.replyTo === request.pairId && entry.peerCascade === request.convId &&
+            (!request.transport || entry.peerTransport === request.transport) &&
+            (!request.peerTransport || entry.transport === request.peerTransport) &&
+            (!request.providerId || entry.peerProviderId === request.providerId) &&
+            (!request.peerProviderId || entry.providerId === request.peerProviderId) &&
+            ts >= handshakeTimestamp(request);
+    });
+}
+
+function findPendingHandshake(entries, src, dst, session, now = Date.now(), srcTransport, dstTransport) {
+    if (!Array.isArray(entries)) return null;
+    const requests = entries.filter((entry) => isFreshHandshake(entry, now) &&
+        entry.phase === 'request' && entry.src === src && entry.dst === dst && entry.session === session &&
+        (!srcTransport || entry.transport === srcTransport) &&
+        (!dstTransport || entry.peerTransport === dstTransport))
+        .sort((a, b) => handshakeTimestamp(a) - handshakeTimestamp(b));
+    const request = requests[requests.length - 1];
+    return request && !handshakeAcked(entries, request, now) ? request : null;
+}
+
+function findEstablishedPair(entries, me, session, now = Date.now(), peer, myTransport, peerTransport) {
+    if (!Array.isArray(entries) || typeof me !== 'string' || !me) return null;
+    const requests = entries.filter((entry) => isFreshHandshake(entry, now) &&
+        entry.phase === 'request' && entry.session === session &&
+        ((entry.src === me && (!peer || entry.dst === peer)) || (entry.dst === me && (!peer || entry.src === peer))) &&
+        (!myTransport || (entry.src === me ? entry.transport : entry.peerTransport) === myTransport) &&
+        (!peerTransport || (entry.src === me ? entry.peerTransport : entry.transport) === peerTransport))
+        .sort((a, b) => handshakeTimestamp(a) - handshakeTimestamp(b));
+    const request = requests[requests.length - 1];
+    if (!request) return null;
+    const ack = entries.find((entry) => isFreshHandshake(entry, now) && entry.phase === 'ack' &&
+        entry.src === request.dst && entry.dst === request.src &&
+        entry.session === request.session && entry.pairId === request.pairId &&
+        entry.replyTo === request.pairId && entry.peerCascade === request.convId &&
+        (!request.transport || entry.peerTransport === request.transport) &&
+        (!request.peerTransport || entry.transport === request.peerTransport) &&
+        (!request.providerId || entry.peerProviderId === request.providerId) &&
+        (!request.peerProviderId || entry.providerId === request.peerProviderId) &&
+        handshakeTimestamp(entry) >= handshakeTimestamp(request));
+    if (!ack) return null;
+    const ids = request.src === me
+        ? { myCascade: request.convId, peerCascade: ack.convId }
+        : { myCascade: ack.convId, peerCascade: request.convId };
+    if (!ids.myCascade || !ids.peerCascade || ids.myCascade === ids.peerCascade) return null;
+    const mine = request.src === me ? request : ack;
+    const other = request.src === me ? ack : request;
+    return {
+        pairId: request.pairId,
+        session,
+        peer: request.src === me ? request.dst : request.src,
+        myTransport: mine.transport || null,
+        peerTransport: other.transport || null,
+        myProviderId: mine.providerId || null,
+        peerProviderId: other.providerId || null,
+        ...ids,
+        request,
+        ack
+    };
+}
+
+function resolvePairTarget(explicitTarget, myCascade, pair) {
+    if (typeof explicitTarget === 'string' && explicitTarget.trim()) return explicitTarget.trim();
+    if (!pair || pair.myCascade !== myCascade || !pair.peerCascade) return null;
+    return pair.peerCascade;
 }
 
 /**
@@ -122,4 +216,14 @@ if (require.main === module) {
     }
 }
 
-module.exports = { log, tail, readFrom, commsPath, workspaceRoot };
+module.exports = {
+    log,
+    tail,
+    readFrom,
+    commsPath,
+    workspaceRoot,
+    PAIRING_TTL_MS,
+    findPendingHandshake,
+    findEstablishedPair,
+    resolvePairTarget
+};
