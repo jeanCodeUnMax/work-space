@@ -1,4 +1,4 @@
-﻿# install-devin-integration.ps1 — installe la couche Devin globale Hephaistos2-Kit
+# install-devin-integration.ps1 — installe la couche Devin globale Hephaistos2-Kit
 # Usage : pwsh -File .agent\devin\install-devin-integration.ps1 [-HermesSkillsDir <path>]
 [CmdletBinding()]
 param(
@@ -51,11 +51,62 @@ $cfg | ConvertTo-Json -Depth 20 | Set-Content $configFile -Encoding UTF8
 # 3. Skills Hermès -> Devin global
 if (Test-Path $HermesSkillsDir) {
     New-Item -ItemType Directory -Force -Path $DevinSkillsDir | Out-Null
-    Copy-Item "$HermesSkillsDir\*" $DevinSkillsDir -Recurse -Force
+    $excludeHermes = @('jointes', 'chat-id', 'session-id', 'jointes-project', 'chat-id-project')
+    Get-ChildItem -Path $HermesSkillsDir -Directory | Where-Object { $excludeHermes -notcontains $_.Name } | ForEach-Object {
+        $dst = Join-Path $DevinSkillsDir $_.Name
+        if (-not (Test-Path $dst)) {
+            Copy-Item $_.FullName $dst -Recurse -Force
+        }
+    }
     $count = (Get-ChildItem $DevinSkillsDir -Directory).Count
-    Write-Host "[3/4] $count skills copiés -> $DevinSkillsDir" -ForegroundColor Green
+    Write-Host "[3/4] $count skills copiés/présents -> $DevinSkillsDir" -ForegroundColor Green
 } else {
     Write-Host "[3/4] Skills Hermès introuvables : $HermesSkillsDir (skip)" -ForegroundColor Yellow
+}
+
+# 3b. Skills binôme canoniques (jointes, chat-id) -> global (toutes les sessions/workspaces)
+$kitSkills = Join-Path $LayerDir '..\..\.devin\skills'
+if (-not (Test-Path $kitSkills)) { $kitSkills = 'C:\Program Files\Projet-complet\hephaistos2-kit\.devin\skills' }
+if (Test-Path $kitSkills) {
+    $canonicalPairs = @(
+        @{ SourceDir = 'chat-id-project'; CanonicalName = 'chat-id' },
+        @{ SourceDir = 'jointes-project'; CanonicalName = 'jointes' }
+    )
+    foreach ($dstRoot in @($DevinSkillsDir, (Join-Path $DevinConfigDir 'skills'))) {
+        New-Item -ItemType Directory -Force -Path $dstRoot | Out-Null
+        foreach ($pair in $canonicalPairs) {
+            $srcDir = Join-Path $kitSkills $pair.SourceDir
+            $targetDir = Join-Path $dstRoot $pair.CanonicalName
+            $targetFile = Join-Path $targetDir 'SKILL.md'
+            if (-not (Test-Path $targetFile)) {
+                if (Test-Path (Join-Path $srcDir 'SKILL.md')) {
+                    New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+                    $content = Get-Content (Join-Path $srcDir 'SKILL.md') -Raw
+                    $sourceName = [regex]::Escape($pair.SourceDir)
+                    $namePattern = "(?m)^name:\s*$sourceName\s*$"
+                    if ($content -notmatch $namePattern) {
+                        Write-Warning "Frontmatter invalide dans $srcDir\SKILL.md; skill globale $($pair.CanonicalName) ignorée"
+                        continue
+                    }
+                    $content = [regex]::Replace($content, $namePattern, "name: $($pair.CanonicalName)", 1)
+                    Set-Content -Path $targetFile -Value $content -Encoding UTF8
+                }
+            }
+        }
+    }
+    # doc du protocole embarquée à côté de la skill globale
+    $protoDoc = 'C:\Program Files\Projet-complet\hephaistos2-kit\docs\protocole-binome\README.md'
+    if (Test-Path $protoDoc) {
+        foreach ($dstRoot in @($DevinSkillsDir, (Join-Path $DevinConfigDir 'skills'))) {
+            $protoTarget = Join-Path $dstRoot 'jointes\protocole-binome.md'
+            if (-not (Test-Path $protoTarget)) {
+                Copy-Item $protoDoc $protoTarget -Force
+            }
+        }
+    }
+    Write-Host "[3b] Skills binôme canoniques (/chat-id, /jointes) vérifiées/installées -> global" -ForegroundColor Green
+} else {
+    Write-Host "[3b] .devin/skills introuvable (kit absent) - skip" -ForegroundColor Yellow
 }
 
 # 4. Rappel enregistrement orchestrateur

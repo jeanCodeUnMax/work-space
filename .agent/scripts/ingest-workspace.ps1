@@ -68,6 +68,15 @@ $argsJson = (@{
 Write-Log "[ingest] Rust backend — root=$ProjectRoot force=$Force mode=$Mode"
 # hphe-rest détient l'IndexWriter Tantivy pour sa boucle : passer par REST
 # (sérialisé) évite le LockBusy. Fallback exe direct seulement si REST down.
+# Auth (revue sécu) : /tools/* exige Bearer HPHE_REST_TOKEN ou le fichier
+# <install>\data\hphe-rest.token écrit par hphe-rest au boot.
+$restTok = $env:HPHE_REST_TOKEN
+if (-not $restTok) {
+    $tokFile = Join-Path $InstallRoot "data\hphe-rest.token"
+    if (Test-Path $tokFile) { $restTok = (Get-Content $tokFile -Raw -ErrorAction SilentlyContinue).Trim() }
+}
+$restHeaders = @{}
+if ($restTok) { $restHeaders['Authorization'] = "Bearer $restTok" }
 $restUp = $false
 # Timeout large + retry : sous commit Tantivy la reponse /health peut
 # prendre >2s. Un faux negatif basculerait sur l'exe direct -> LockBusy.
@@ -80,13 +89,18 @@ foreach ($try in 1..2) {
     Start-Sleep -Milliseconds 800
 }
 
+if ($restUp -and -not $restTok) {
+    Write-Log "[ingest] aucun token REST (HPHE_REST_TOKEN ni data\hphe-rest.token) — exe direct." "WARN"
+    $restUp = $false
+}
+
 if ($restUp) {
     if ($h.ingest_busy) {
         Write-Log "[ingest] boucle hphe-rest en cours — appel mis en file d'attente, patience..."
     }
     try {
         $resp = Invoke-RestMethod -Uri "http://127.0.0.1:8792/tools/hephaistos_update" `
-            -Method Post -ContentType 'application/json' -Body $argsJson -TimeoutSec 1800
+            -Method Post -ContentType 'application/json' -Headers $restHeaders -Body $argsJson -TimeoutSec 1800
         $json = ($resp | ConvertTo-Json -Compress -Depth 6)
     }
     catch {
@@ -96,21 +110,26 @@ if ($restUp) {
         try { $detail = $_.ErrorDetails.Message } catch {}
         if (-not $detail) { try { $detail = $_.Exception.Message } catch {} }
         if (-not $detail) { $detail = "$_" }
-        if ($detail -match 'LockBusy|index lock') {
+        # 401 = serveur authentifié mais token absent/invalide → on bascule
+        # proprement sur l'exe direct (mêmes droits locaux, pas de REST).
+        if ($detail -match '401|Unauthorized') {
+            Write-Log "[ingest] REST refuse l'appel (401) — bascule sur exe direct." "WARN"
+            $restUp = $false
+        }
+        elseif ($detail -match 'LockBusy|index lock') {
             Write-Log "[ingest] index occupé (boucle hphe-rest en cours) — racine déjà couverte, skip." "WARN"
             return
         }
-        # Connexion coupée = hphe-rest a redémarré pendant l'attente en
-        # file (déploiement/crash). La boucle reprendra la racine au cycle
-        # suivant — non-fatal, on ne plante pas le workspace.
-        if ($detail -match 'transport connection|hôte distant|forcibly closed|closed the connection|connection.*closed|aborted|timed out|timeout|délai|502|503|504|Bad Gateway|Service Unavailable|Gateway') {
-            Write-Log "[ingest] connexion REST interrompée (redémarrage hphe-rest) — racine couverte au prochain cycle, skip." "WARN"
+        elseif ($detail -match 'transport connection|hôte distant|forcibly closed|closed the connection|connection.*closed|aborted|timed out|timeout|délai|502|503|504|Bad Gateway|Service Unavailable|Gateway') {
+            Write-Log "[ingest] connexion REST interrompue (redémarrage hphe-rest) — racine couverte au prochain cycle, skip." "WARN"
             return
         }
-        throw "hephaistos_update via REST a échoué: $detail"
+        else {
+            throw "hephaistos_update via REST a échoué: $detail"
+        }
     }
 }
-else {
+if (-not $restUp) {
     # hphe-mcp logge sur stderr : on capture stderr dans un fichier à part
     # (2>&1 polluerait $out d'ErrorRecords) — LockBusy n'apparait QUE là.
     $prevEap = $ErrorActionPreference

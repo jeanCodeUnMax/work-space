@@ -11,6 +11,9 @@
 //   [WS-EVENT]     événements annexes (clear_result)
 //   [WS-CLOSE]/[WS-ERR]  perte/erreur connexion (retry auto toutes les 3s)
 
+const fs = require('fs');
+const path = require('path');
+
 const args = process.argv.slice(2);
 const opt = { agent: 'agent', url: 'ws://127.0.0.1:7477', tasks: null, quiet: false };
 for (let i = 0; i < args.length; i++) {
@@ -23,12 +26,20 @@ for (let i = 0; i < args.length; i++) {
 let WebSocket;
 try { WebSocket = require('ws'); }
 catch {
-  // fallback : ws du monitor installé ou du repo
-  for (const p of [
-    'F:/Promgramation-teste/Hephaistos-Kit/extensions/orchestrator-monitor/ws-bridge/node_modules/ws',
-    `${process.env.USERPROFILE}/.devin/extensions/hephaistos.orchestrator-monitor-0.0.15/ws-bridge/node_modules/ws`,
-    `${process.env.USERPROFILE}/.devin/extensions/hephaistos.orchestrator-monitor-0.0.14/ws-bridge/node_modules/ws`,
-  ]) { try { WebSocket = require(p); break; } catch {} }
+  // fallback : ws du monitor installé ou du repo v2
+  const fallbackDirs = [
+    path.join(__dirname, '..', 'ws-bridge', 'node_modules', 'ws'),
+    path.join(__dirname, '..', '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
+  ];
+  try {
+    const extRoot = path.join(process.env.USERPROFILE || '', '.devin', 'extensions');
+    for (const name of fs.readdirSync(extRoot)) {
+      if (name.startsWith('hephaistos.orchestrator-monitor-')) {
+        fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+      }
+    }
+  } catch {}
+  for (const p of fallbackDirs) { try { WebSocket = require(p); break; } catch {} }
 }
 if (!WebSocket) { console.error('[WS-ERR] module "ws" introuvable — npm i ws'); process.exit(2); }
 
@@ -50,8 +61,34 @@ function taskLine(t) {
   else tag('[WS-TASK]', line);
 }
 
+// Auth bridge (revue sécu) : ORCH_MONITOR_TOKEN env, sinon ws-bridge.token
+// dans un .agent connu (le bridge l'écrit au boot). Jamais logué.
+function wsToken() {
+  const envTok = (process.env.ORCH_MONITOR_TOKEN || '').trim();
+  if (envTok) return envTok;
+  const dirs = [
+    path.join(__dirname, '..'),                            // .agent/agent-bridge → .agent
+    path.join(__dirname, '..', '..', '..', '.agent'),      // copie bundlée ext → racine
+    path.join(process.cwd(), '.agent'),
+    process.env.HEPHAISTOS_WORKSPACE && path.join(process.env.HEPHAISTOS_WORKSPACE, '.agent'),
+  ].filter(Boolean);
+  for (const d of dirs) {
+    try {
+      const t = fs.readFileSync(path.join(d, 'ws-bridge.token'), 'utf8').trim();
+      if (t) return t;
+    } catch { /* absent */ }
+  }
+  return '';
+}
+
+function connectUrl() {
+  const tok = wsToken();
+  if (!tok || opt.url.includes('token=')) return opt.url;
+  return `${opt.url}${opt.url.includes('?') ? '&' : '?'}token=${encodeURIComponent(tok)}`;
+}
+
 function connect() {
-  ws = new WebSocket(opt.url);
+  ws = new WebSocket(connectUrl());
   ws.on('open', () => {
     tag('[WS-OPEN]', `${opt.url} — en écoute`);
     ws.send(JSON.stringify({ command: 'refresh' }));

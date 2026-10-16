@@ -30,12 +30,12 @@
 - [ ] Création de la tâche planifiée **hphe‑indexd** avec l’option `-Elevated` (exécuter avec les plus hauts privilèges)  
 - [ ] Installation des extensions VSIX :  
   - `hephaistos-kit-search.vsix`  
-  - `orchestrator-monitor.vsix` (v0.0.56+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)
+  - `orchestrator-monitor.vsix` (v0.0.57+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)
 
 ---
 
 ## 3️⃣ Vérification du moteur (engine)
-- [ ] **Health check** : `curl -s http://localhost:8792/health` retourne `{"status":"ok"}` (code HTTP 200)  
+- [ ] **Health check** : `curl -s http://localhost:8792/health` retourne `{"status":"ok"}` ou `{"status":"healthy"}` (code HTTP 200)
 - [ ] **Tâche planifiée** : `schtasks /Query /TN "hphe-indexd"` montre l’état **En cours** et l’option **Exécuter avec les plus hauts privilèges** cochée  
 - [ ] **MCP dans l’IDE** : l’extension *orchestrator‑monitor* affiche un indicateur **vert** (MCP connecté)  
 
@@ -49,7 +49,7 @@
 ---
 
 ## 5. Vérification du binôme Devin ⇄ ACP/CLI
-- [ ] Extension `hephaistos.orchestrator-monitor` en version >= 0.0.56 installée et rechargée pour `acp-list`/`wake_acp_agent`
+- [ ] Extension `hephaistos.orchestrator-monitor` en version >= 0.0.57 installée et rechargée pour `acp-list`/`wake_acp_agent`
 - [ ] Dans Devin, lancer `/jointes <agent>` et choisir un transport explicite si l’agent en propose plusieurs
 - [ ] Vérifier une requête/ACK **frais** dans `.agent/comms.jsonl` : même `pairId/session`, IDs exacts, transports/providers inversés; `established=true`; pas de fallback vers active/latest
 - [ ] ACP : session présente dans `devin-hub.js acp-list <providerId>`, activée et du workspace courant; CLI Kilo/Hermes : ID retourné par `agent-adapters.js sessions <agent>` et workspace vérifié

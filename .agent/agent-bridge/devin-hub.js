@@ -40,6 +40,29 @@ if (!WebSocket) {
 let comms;
 try { comms = require('./comms'); } catch { comms = null; }
 
+// Le bridge exige un token d'auth (revue sécu) : ORCH_MONITOR_TOKEN env,
+// sinon ws-bridge.token dans un .agent connu (écrit par le bridge au boot).
+function bridgeWsUrl(port) {
+    let tok = (process.env.ORCH_MONITOR_TOKEN || '').trim();
+    if (!tok) {
+        const candidates = [
+            comms && comms.workspaceRoot ? path.join(comms.workspaceRoot(), '.agent', 'ws-bridge.token') : null,
+            path.join(__dirname, '..', 'ws-bridge.token'),                    // .agent/agent-bridge → .agent
+            path.join(__dirname, '..', '..', '..', '.agent', 'ws-bridge.token'), // bundled ext → racine repo
+            path.join(process.cwd(), '.agent', 'ws-bridge.token'),
+            process.env.HEPHAISTOS_WORKSPACE
+                ? path.join(process.env.HEPHAISTOS_WORKSPACE, '.agent', 'ws-bridge.token') : null,
+        ].filter(Boolean);
+        for (const f of candidates) {
+            try {
+                const t = fs.readFileSync(f, 'utf8').trim();
+                if (t) { tok = t; break; }
+            } catch { /* absent */ }
+        }
+    }
+    return `ws://127.0.0.1:${port}${tok ? `?token=${encodeURIComponent(tok)}` : ''}`;
+}
+
 function getActiveCascade() {
     // 1) Source fiable : sessioninfo.updatedAt du globalStorage Devin (activité
     //    utilisateur réelle) — délégué à current-cascade.js. Le .pb mtime est
@@ -69,7 +92,7 @@ function sendToDevin(text, cascadeId, port = 7477, sourceAgent = 'agy') {
         // atterrir dans Y) ; sans cible, la conv actuellement active.
         const targetId = cascadeId || getActiveCascade();
         if (!targetId) { reject(new Error('Aucune session Devin cible')); return; }
-        const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+        const ws = new WebSocket(bridgeWsUrl(port));
         const timeout = setTimeout(() => {
             ws.close();
             reject(new Error(`Timeout de connexion au bridge Devin ws://127.0.0.1:${port}`));
@@ -108,7 +131,7 @@ function sendToDevin(text, cascadeId, port = 7477, sourceAgent = 'agy') {
 function bridgeRequest(command, payload, resultType, port = 7477, timeoutMs = 10000) {
     return new Promise((resolve, reject) => {
         const requestId = randomUUID();
-        const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+        const ws = new WebSocket(bridgeWsUrl(port));
         let settled = false;
         const finish = (fn, value) => {
             if (settled) return;
@@ -178,7 +201,7 @@ if (require.main === module) {
     }
 
     if (cmd === 'status') {
-        const ws = new WebSocket('ws://127.0.0.1:7477');
+        const ws = new WebSocket(bridgeWsUrl(7477));
         ws.on('open', () => {
             console.log(JSON.stringify({ status: 'connected', port: 7477, activeCascade: getActiveCascade() }, null, 2));
             ws.close();

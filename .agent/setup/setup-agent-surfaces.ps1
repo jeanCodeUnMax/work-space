@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Installe la configuration agents Hephaistos2-Kit sur TOUTES les surfaces IDE.
 
@@ -15,7 +15,8 @@
     SKILLS — source : %LOCALAPPDATA%/hermes/skills (skills gérées par le kit)
       - %APPDATA%/devin/skills          (Devin global)
       - ~/.config/devin/skills          (Devin CLI)
-      - ~/.antigravity/skills           (Antigravity)
+      - ~/.gemini/config/skills         (Antigravity global)
+      - ~/.antigravity/skills           (Antigravity compat)
       ~/.claude/skills n'est PAS touché : bibliothèque utilisateur de ~860 skills.
 
     Idempotent : ré-exécutable sans casse. Backup .bak-<ts> avant chaque écriture
@@ -84,6 +85,36 @@ if ($Verify) {
     elseif (Test-Path $p2) { Ok "Antigravity identity (~/.gemini/GEMINI.md) active" }
     else { Fail "Antigravity non conforme ou absent ($p / $p2)" }
 
+    # 5. Devin Global Skills (/chat-id et /jointes)
+    $d1 = "$env:APPDATA\devin\skills\chat-id\SKILL.md"
+    $d2 = "$env:APPDATA\devin\skills\jointes\SKILL.md"
+    if ((Test-Path $d1) -and (Test-Path $d2)) {
+        $c1 = Get-Content $d1 -Raw
+        $c2 = Get-Content $d2 -Raw
+        if (($c1 -match '(?m)^name:\s*chat-id\s*$') -and ($c2 -match '(?m)^name:\s*jointes\s*$')) {
+            Ok "Devin global skills (/chat-id, /jointes) conformes"
+        } else {
+            Fail "Devin global skills frontmatter non conforme"
+        }
+    } else {
+        Fail "Devin global skills manquantes ($d1 ou $d2)"
+    }
+
+    # 6. Antigravity Global Skills (~/.gemini/config/skills)
+    $a1 = "$env:USERPROFILE\.gemini\config\skills\chat-id\SKILL.md"
+    $a2 = "$env:USERPROFILE\.gemini\config\skills\jointes\SKILL.md"
+    if ((Test-Path $a1) -and (Test-Path $a2)) {
+        $c1 = Get-Content $a1 -Raw
+        $c2 = Get-Content $a2 -Raw
+        if (($c1 -match '(?m)^name:\s*chat-id\s*$') -and ($c2 -match '(?m)^name:\s*jointes\s*$')) {
+            Ok "Antigravity global skills (~/.gemini/config/skills) conformes"
+        } else {
+            Fail "Antigravity global skills frontmatter non conforme"
+        }
+    } else {
+        Fail "Antigravity global skills manquantes ($a1 ou $a2)"
+    }
+
     Write-Host "`nRESULTAT VERIFICATION : $($script:done) conforme(s), $($script:fail) non conforme(s)" -ForegroundColor Cyan
     if ($script:fail -gt 0) { exit 1 } else { exit 0 }
 }
@@ -143,12 +174,19 @@ if (-not $SkipSkills) {
     if (-not (Test-Path $HermesSkillsDir)) {
         Warn "source skills introuvable : $HermesSkillsDir — étape sautée"
     } else {
+        # jointes/chat-id sont des VARIANTS par surface (perspective --as propre a
+        # chaque agent) : devin -> .devin/skills via install-devin-integration.ps1,
+        # AGY -> ~/.gemini/config/skills, hermes -> natif. Ne pas les propager
+        # ici : la variante hermes ecraserait celles des autres surfaces.
+        $PerAgentSkills = @('jointes', 'chat-id', 'session-id', 'jointes-project', 'chat-id-project')
         $srcDirs = Get-ChildItem $HermesSkillsDir -Directory |
-            Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
+            Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') } |
+            Where-Object { $PerAgentSkills -notcontains $_.Name }
         $targets = @(
-            @{ Path = "$env:APPDATA\devin\skills";        Label = 'Devin global (%APPDATA%)' },
-            @{ Path = "$env:USERPROFILE\.config\devin\skills"; Label = 'Devin CLI (~/.config)' },
-            @{ Path = "$env:USERPROFILE\.antigravity\skills";  Label = 'Antigravity' }
+            @{ Path = "$env:APPDATA\devin\skills";              Label = 'Devin global (%APPDATA%)' },
+            @{ Path = "$env:USERPROFILE\.config\devin\skills";  Label = 'Devin CLI (~/.config)' },
+            @{ Path = "$env:USERPROFILE\.gemini\config\skills"; Label = 'Antigravity (~/.gemini/config/skills)' },
+            @{ Path = "$env:USERPROFILE\.antigravity\skills";   Label = 'Antigravity compat (~/.antigravity/skills)' }
         )
         foreach ($t in $targets) {
             if ($DryRun) { Write-Host "  [DRY]  $($srcDirs.Count) skills -> $($t.Path)" -ForegroundColor DarkYellow; continue }
@@ -165,6 +203,36 @@ if (-not $SkipSkills) {
                 }
             }
             if ($n -gt 0) { Ok "$($t.Label) : $n skill(s) copiée(s)" } else { Skip "$($t.Label) déjà à jour" }
+        }
+
+        # Installation des skills globales canoniques AGY (~/.gemini/config/skills) create-if-missing
+        $agySkillsDir = "$env:USERPROFILE\.gemini\config\skills"
+        $agySources = @(
+            @{ Source = Join-Path $KitRoot '.agent\skills\chat-id-project\SKILL.md'; Canonical = 'chat-id' },
+            @{ Source = Join-Path $KitRoot '.agent\skills\jointes-project\SKILL.md'; Canonical = 'jointes' }
+        )
+        foreach ($item in $agySources) {
+            $destFile = Join-Path $agySkillsDir "$($item.Canonical)\SKILL.md"
+            if (-not (Test-Path $destFile)) {
+                if (Test-Path $item.Source) {
+                    $sourceName = "$($item.Canonical)-project"
+                    $namePattern = "(?m)^name:\s*$([regex]::Escape($sourceName))\s*$"
+                    if ($DryRun) { Write-Host "  [DRY] installerait skill AGY canonique $($item.Canonical) -> $destFile" -ForegroundColor DarkYellow }
+                    else {
+                        $content = Get-Content $item.Source -Raw
+                        if ($content -notmatch $namePattern) {
+                            Fail "Frontmatter invalide dans $($item.Source) (attendu name: $sourceName)"
+                            continue
+                        }
+                        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $destFile) | Out-Null
+                        $content = [regex]::Replace($content, $namePattern, "name: $($item.Canonical)", 1)
+                        Set-Content -Path $destFile -Value $content -Encoding UTF8
+                        Ok "Skill AGY canonique $($item.Canonical) initialisée"
+                    }
+                }
+            } else {
+                Skip "Skill AGY globale $($item.Canonical) déjà présente (préservée)"
+            }
         }
     }
 } else { Step 'Skills — ignorées (-SkipSkills)' }

@@ -1,11 +1,14 @@
 ﻿param(
-    [string]$ExpectedVersion = '0.0.56',
+    [string]$ExpectedVersion = '0.0.57',
+    [ValidateSet('devin', 'vscode', 'windsurf', 'all')]
+    [string]$TargetIde = 'devin',
     [switch]$CheckOnly
 )
 
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $ext  = Join-Path $root 'extensions\orchestrator-monitor'
+$selectedIdes = if ($TargetIde -eq 'all') { @('devin', 'vscode', 'windsurf') } else { @($TargetIde) }
 $script:ok = 0; $script:warn = 0; $script:fail = 0
 function Step($m) { Write-Host "`n=== $m ===" -ForegroundColor Cyan }
 function Pass($m) { $script:ok++;   Write-Host "  [OK]   $m" -ForegroundColor Green }
@@ -26,27 +29,42 @@ if (-not $CheckOnly) {
     } finally { Pop-Location }
 
     Step '[2/6] Installation du VSIX'
-    $installed = $false
-    foreach ($cli in @('code', 'devin', 'windsurf')) {
+    $installed = 0
+    foreach ($ide in $selectedIdes) {
+        $cli = if ($ide -eq 'windsurf') { 'windsurf' } else { 'code' }
+        $extraArgs = @()
+        if ($ide -eq 'devin') {
+            $extraArgs = @('--extensions-dir', (Join-Path $env:USERPROFILE '.devin\extensions'))
+        }
         $cmd = Get-Command $cli -ErrorAction SilentlyContinue
         if ($cmd) {
-            & $cli --install-extension "$($vsix.FullName)" --force 2>&1 | Out-Null
+            $installArgs = @('--install-extension', $vsix.FullName, '--force') + $extraArgs
+            & $cmd.Source @installArgs 2>&1 | Out-Null
             if ($LASTEXITCODE -eq 0) {
-                Pass "installe via '$cli --install-extension' - RELOAD la fenetre (Ctrl+Shift+P -> Developer: Reload Window)"
-                $installed = $true; break
+                Pass "installee pour '$ide' via $cli - RELOAD la fenetre (Ctrl+Shift+P -> Developer: Reload Window)"
+                $installed++
+            } else {
+                Warn "installation echouee pour '$ide' via $cli"
             }
+        } else {
+            Warn "CLI '$cli' absent pour la cible '$ide'"
         }
     }
-    if (-not $installed) { Warn "aucun CLI IDE trouve - installer a la main : palette 'Extensions: Install from VSIX...' -> $($vsix.FullName)" }
+    if (-not $installed) { Warn "aucune cible installee - installer a la main depuis $($vsix.FullName)" }
 } else {
     Step '[1/6] Build & Install - sautes (-CheckOnly)'
 }
 
 Step '[3/6] Version extension installee vs attendue'
 $extDirs = @()
-$extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
-$extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
-$extDirs += Get-ChildItem "$env:USERPROFILE\.codeium\windsurf\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
+foreach ($ide in $selectedIdes) {
+    $extensionRoot = switch ($ide) {
+        'devin' { Join-Path $env:USERPROFILE '.devin\extensions' }
+        'vscode' { Join-Path $env:USERPROFILE '.vscode\extensions' }
+        'windsurf' { Join-Path $env:USERPROFILE '.codeium\windsurf\extensions' }
+    }
+    $extDirs += Get-ChildItem (Join-Path $extensionRoot 'hephaistos.orchestrator-monitor-*') -ErrorAction SilentlyContinue
+}
 
 $foundVersion = $null
 $latestDir = $null

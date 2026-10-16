@@ -55,7 +55,9 @@ Il faut `established: true`, un `pairId` commun et les IDs Devin/AGY exacts. Les
 Ensuite seulement, si tu veux envoyer un test explicite :
 
 ```powershell
-node .agent/agent-bridge/binome.js --as devin --self $devinCascadeId send "coucou AGY, test du binôme"
+$agyCascadeId = 'REMPLACER_PAR_LE_CASCADE_ID_EXACT_CHOISI_DANS_AGY_LIST'
+$geminiModel = 'Gemini 3.8 Flash (Medium)' # modèle sélectionné dans Gemini; ne pas choisir Argon
+node .agent/agent-bridge/binome.js --as devin --via acp --self $devinCascadeId --peer agy --peer-via hub --to $agyCascadeId --session binome --model $geminiModel send "coucou AGY, test du binôme"
 ```
 
 Sans paire fraîche, `send` échoue. Il ne retombe jamais sur le chat actuellement actif et ne crée aucune conversation de remplacement.
@@ -75,7 +77,7 @@ Sans paire fraîche, `send` échoue. Il ne retombe jamais sur le chat actuelleme
 
 KiloCode et Hermes peuvent proposer deux transports distincts : session ACP ouverte dans Devin ou session CLI reprise par ID. Si les deux sont disponibles, choisis le mode; si plusieurs sessions existent, choisis l’ID exact. Les autres noms ACP ne sont joignables que si `devin-hub.js acp-list <providerId>` retourne une session existante. Les workers HES `nim1`/`nim2` restent des appels API one-shot, différents des sessions ACP Devin `nim`/`nim2`. `Devin Local` ne peut pas se joindre lui-même. Aucune option/provider ne sera activée automatiquement.
 
-Le mode ACP multi-agent requiert l’extension `orchestrator-monitor` 0.0.56 ou plus récente et un reload de la fenêtre après installation. Si `acp-list` timeoute, arrête-toi; n’essaie ni une autre fenêtre ni le transport CLI comme fallback.
+L'extension `orchestrator-monitor` 0.0.57+ fournit l'inventaire ACP. Le routage direct vers un ACP tiers reste `skipped` tant qu'un send provider-spécifique n'est pas disponible; ne le remplace pas par le chat Devin ni par le transport CLI. Pour AGY hub, passe le modèle exact sélectionné dans Gemini via `--model`; il est résolu vers le token interne du hub et aucun Argon n'est choisi par défaut.
 
 ---
 

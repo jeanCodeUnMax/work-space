@@ -3,10 +3,14 @@ description: Invariants de sûreté pour la commande Devin `/jointes <agent>`.
 trigger: always_on
 ---
 
-- Pour `/jointes <agent>`, appliquer `.devin/skills/jointes/SKILL.md`; la référence canonique est `docs/protocole-binome/README.md`.
+- Pour `/jointes <agent>`, appliquer la skill `jointes` (workspace `.devin/skills/` ou globale `%APPDATA%\devin\skills\jointes`); la référence canonique est `docs/protocole-binome/README.md` (ou la copie injectée `.agent/docs/protocole-binome/README.md`).
 - `/jointes` est une skill Devin; ne pas prétendre qu’elle apparaît dans le menu d’un ACP tiers. Le menu ACP dépend des commandes annoncées par le provider sélectionné.
+- `/chat-id` est en lecture seule : retourner l’ID exact de la session ACP focalisée ou de la session Devin courante; en cas d’ambiguïté, demander un ID explicite et ne jamais choisir la plus récente.
 - N’annoncer un join réussi qu’après requête/ACK frais corrélés par `pairId`, `session`, transports, providers et IDs exacts; exiger `established: true`. Les handshakes legacy sont ignorés et le `hint` seul ne prouve rien.
 - Séparer strictement les modes `hub`, `acp` et `cli`; Kilo/Hermes peuvent avoir un ID ACP et un ID CLI différents. Aucun fallback d’un mode/session vers l’autre.
+- Pour `--peer-via hub` (AGY), exiger `--model <modelId-ou-label>` explicitement sélectionné dans Gemini/Antigravity; le bridge résout l'identifiant visible vers le token interne du hub. Ne jamais déduire le modèle du hub ni choisir Argon implicitement. Pour ACP/CLI, omettre `--model`.
 - Pour ACP, ne router que vers un couple exact `providerId/sessionId` présent dans l’état ACP, activé et rattaché au workspace courant; restaurer l’onglet existant et revérifier le focus. Session absente, désactivée ou non focalisable = `skipped`.
+- Sur l’extension `orchestrator-monitor` 0.0.57, le send ACP vers les providers tiers reste fail-closed (`skipped`) tant qu’un send provider-spécifique n’est pas disponible; ne pas utiliser une commande générique Devin dont le payload ne cible pas la session.
+- Si une requête ACP/HUB doit apparaître aussi comme tâche, créer/mettre à jour sa carte via MCP `create_task`/`update_task`, puis corréler Comms avec `binome.js --task-id <id> send`. `create_task` ne notifie pas l’agent; ne le remplace pas par `dispatch_task` pour une requête ACP.
 - Les workers API directs NIM1/NIM2 du registre orchestrateur ne sont pas des sessions. Les providers ACP `nim`/`nim2` sont distincts et ne sont joinables que si une session ACP réelle est listée et acquitte le handshake.
 - Ne jamais créer de conversation de remplacement, injecter dans une session non vérifiée, utiliser un toast ou le presse-papiers comme fallback, ni afficher/enregistrer un jeton CSRF ou une clé.

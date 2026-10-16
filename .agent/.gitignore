@@ -1,6 +1,9 @@
 *-dispatch.log
 task-events.log
 comms.jsonl
+ws-bridge.token
+hphe-rest.token
+*.token
 logs/
 **/ingestion.state.json
 **/.ingestion-state.json

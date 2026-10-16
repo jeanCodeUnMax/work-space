@@ -34,7 +34,10 @@ const me = agentAdapters.resolveAgent(opt('--as'));
 const peer = agentAdapters.resolveAgent(opt('--peer') || (me === 'devin' ? 'agy' : 'devin'));
 const via = (opt('--via') || (me === 'agy' ? 'hub' : 'acp')).toLowerCase();
 const peerVia = (opt('--peer-via') || (peer === 'agy' ? 'hub' : 'acp')).toLowerCase();
-const OPT_WITH_VAL = new Set(['--as', '--peer', '--to', '--self', '--session', '--via', '--peer-via']);
+const planModel = opt('--model');
+const rawTaskId = opt('--task-id');
+const taskId = rawTaskId && /^\d+$/.test(rawTaskId) ? Number(rawTaskId) : undefined;
+const OPT_WITH_VAL = new Set(['--as', '--peer', '--to', '--self', '--session', '--via', '--peer-via', '--model', '--task-id']);
 const positional = [];
 for (let i = 0; i < argv.length; i++) {
     if (argv[i].startsWith('--')) {
@@ -46,6 +49,15 @@ for (let i = 0; i < argv.length; i++) {
 const cmd = positional[0];
 const rest = positional.slice(1);
 const session = opt('--session') || ((cmd === 'join' || cmd === 'pair') ? (rest[0] || 'binome') : 'binome');
+
+if (planModel && peerVia !== 'hub') {
+    console.error('[binome] --model est réservé aux envois hub AGY; ACP/CLI gardent leur modèle provider');
+    process.exit(64);
+}
+if (peerVia === 'hub' && ['join', 'send', 'ask'].includes(cmd) && !planModel) {
+    console.error('[binome] envoi AGY hub refusé sans --model explicite; ne pas choisir un défaut Argon');
+    process.exit(64);
+}
 
 function providerId(agent, transport) {
     if (transport === 'hub') return agent === 'agy' ? 'agy-hub' : null;
@@ -67,7 +79,7 @@ function validIdentity(agent) {
 
 if (!validIdentity(me) || !validIdentity(peer) || me === peer || !cmd ||
     !transportSupported(me, via) || !transportSupported(peer, peerVia) || !safeSessionLabel(session)) {
-    console.error('usage: node binome.js --as <agent> [--via acp|cli|hub|cascade] [--peer <agent>] [--peer-via acp|cli|hub|cascade] [--self <sessionId>] [--to <peerSessionId>] [--session <name>] <join|send|ask|pair|tail> ...');
+    console.error('usage: node binome.js --as <agent> [--via acp|cli|hub|cascade] [--peer <agent>] [--peer-via acp|cli|hub|cascade] [--self <sessionId>] [--to <peerSessionId>] [--session <name>] [--model <hub-model-id>] [--task-id <id>] <join|send|ask|pair|tail> ...');
     process.exit(64);
 }
 
@@ -122,7 +134,7 @@ function buildJoinPrompt(targetAgent, targetTransport, targetId, localId) {
     return `Depuis la racine du workspace ${WORKSPACE}, exécute exactement cette commande dans ta session ${targetAgent} : ${command}. Ne crée pas de nouvelle conversation, ne fais aucune autre modification et renvoie le JSON produit.`;
 }
 
-async function sendToPeer(text, target, waitSec = 0) {
+async function sendToPeer(text, target, waitSec = 0, model = null) {
     if (peer === 'devin') {
         const result = await devinHub.sendToDevin(text, target, 7477, me);
         return { sent: true, target, result };
@@ -130,14 +142,17 @@ async function sendToPeer(text, target, waitSec = 0) {
     if (peerVia === 'hub') {
         const hub = agyHub.discoverHub(WORKSPACE);
         if (waitSec) {
-            const result = await agyHub.ask(hub, target, text, waitSec);
+            const result = await agyHub.ask(hub, target, text, waitSec, model);
             return { sent: true, target, replies: result.replies.map((reply) => reply.text), timedOut: result.timedOut };
         }
-        await agyHub.sendMessage(hub, target, text);
+        await agyHub.sendMessage(hub, target, text, model);
         return { sent: true, target };
     }
     if (peerVia === 'acp') {
         const result = await devinHub.sendToAcpAgent(text, target, providerId(peer, peerVia), 7477, WORKSPACE);
+        if (result.status === 'skipped') {
+            return { sent: false, skipped: true, status: 'skipped', target, providerId: result.providerId };
+        }
         if (result.status !== 'sent') throw new Error(`[binome] ACP route ${result.status}: ${peer}/${target}`);
         return { sent: true, target, providerId: result.providerId };
     }
@@ -186,7 +201,10 @@ async function join() {
             providerId: myProviderId, peerProviderId, text: `session ${session} request`
         })) throw new Error('[binome] requête non publiée dans comms.jsonl');
         if (me === 'devin') {
-            const delivery = await sendToPeer(buildJoinPrompt(peer, peerVia, peerId, id), peerId, 180);
+            // AGY keeps its full reply in its own chat; the shared bus carries
+            // only the structured ACK that the pair verifier needs.
+            const waitSec = peerVia === 'hub' ? 0 : 180;
+            const delivery = await sendToPeer(buildJoinPrompt(peer, peerVia, peerId, id), peerId, waitSec, planModel);
             if (!delivery.sent) throw new Error(`[binome] demande de join non livrée à ${peer}/${peerId}`);
             const establishedPair = await waitForPair(pairId, id, peerId);
             if (!establishedPair) {
@@ -227,14 +245,26 @@ async function send(text, waitSec) {
         ? await resolveSession(peer, peerVia, explicitTarget)
         : comms.resolvePairTarget(null, mine, current);
     if (!target) throw new Error(`[binome] session cible ${peer}/${peerVia} absente ou non vérifiée`);
-    const delivery = await sendToPeer(text, target, waitSec);
+    const delivery = await sendToPeer(text, target, waitSec, planModel);
+    if (delivery.skipped) {
+        comms.log({
+            src: me, dst: peer, kind: 'status', text: `[acp] routage skipped: ${peer}/${target}`,
+            convId: mine, peerCascade: target, session,
+            transport: via, peerTransport: peerVia,
+            providerId: providerId(me, via), peerProviderId: providerId(peer, peerVia),
+            ...(taskId !== undefined ? { taskId } : {})
+        });
+        console.log(JSON.stringify({ sent: false, status: 'skipped', to: `${peer}:${target}`, transport: peerVia, ...(taskId !== undefined ? { taskId } : {}) }));
+        return;
+    }
     comms.log({
         src: me, dst: peer, kind: 'prompt', text, convId: mine, peerCascade: target, session,
-        transport: via, peerTransport: peerVia, providerId: providerId(me, via), peerProviderId: providerId(peer, peerVia)
+        transport: via, peerTransport: peerVia, providerId: providerId(me, via), peerProviderId: providerId(peer, peerVia),
+        ...(taskId !== undefined ? { taskId } : {})
     });
     if (delivery.reply) console.log(delivery.reply);
     else if (delivery.replies?.length) delivery.replies.forEach((reply) => console.log(reply));
-    else console.log(JSON.stringify({ sent: true, to: `${peer}:${target}`, transport: peerVia }));
+    else console.log(JSON.stringify({ sent: true, to: `${peer}:${target}`, transport: peerVia, ...(taskId !== undefined ? { taskId } : {}) }));
 }
 
 function tail(n) {

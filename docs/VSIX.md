@@ -28,7 +28,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 | Champ | Valeur |
 |---|---|
 | ID | `orchestrator-monitor` |
-| Version | 0.0.56 |
+| Version | 0.0.57 |
 | Nom affiché | Hephaistos Orchestrator Monitor |
 | Source | `extensions/orchestrator-monitor/` (sous-module git) |
 | Rôle | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
@@ -36,8 +36,8 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 ### Fonctionnement
 
 - **Activation** : `onStartupFinished` — spawne `node ws-bridge/bridge.js` avec `HEPHAISTOS_WORKSPACE`.
-- **Bridge** : poll `orchestrator.db` (snapshot read-only + connexions inscriptibles pour toggles providers/purges), sert `ws://127.0.0.1:7477`, broadcast `snapshot`/`task_update`.
-- **Native SQLite** : le packaging reconstruit `better-sqlite3` avec le Node courant avant de produire le VSIX. Le Node qui lance `ws-bridge/bridge.js` doit partager cet ABI; le test prépublication vérifie que le binding charge et que le bridge écoute.
+- **Bridge** : poll `orchestrator.db` (snapshot read-only + connexions inscriptibles pour toggles providers/purges), sert `ws://127.0.0.1:7477` (bind loopback strict + token `?token=`/`Bearer` — `ORCH_MONITOR_TOKEN` ou `.agent/ws-bridge.token` généré au boot), broadcast `snapshot`/`task_update`.
+- **Native SQLite** : le prépublish vérifie que le binding `better-sqlite3` déjà présent charge et que le bridge écoute. Si le code natif ou l’ABI Node change, arrêter le bridge puis lancer `npm run build:bridge-native` séparément avant le package; ne pas reconstruire un `.node` chargé par le monitor.
 - **Commandes** :
   - `orchestratorMonitor.openPanel` — panneau webview principal
   - `orchestratorMonitor.refresh` — forcer un snapshot
@@ -46,9 +46,9 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
   - `orchestratorMonitor.sendToChat` — injecter un résumé dans le chat Devin
 - **Bridge agents** : `agy-hub.js` (Connect-RPC), `devin-hub.js` (WebSocket, inventaire ACP du workspace et routage ciblé), `agent-adapters.js` (sessions CLI Kilo/Hermes avec reprise par ID) et `comms.js` (bus append-only `.agent/comms.jsonl`).
 - **Protocole binôme** : commande Devin `/jointes <agent>`; chaque handshake corrèle `pairId`, `session`, transport, provider et IDs exacts, avec TTL de 15 minutes. Les modes hub/ACP/CLI ne basculent jamais implicitement.
-- **Garde-fou de routage** : l’extension vérifie le workspace, le provider ACP activé, le `sessionId` connu et le focus avant injection. La route de retour vers Devin reste limitée à `devin-cli`; cible inconnue ou non focalisable = `skipped`, sans nouvelle conversation, toast ou presse-papiers.
+- **Garde-fou de routage** : l’inventaire ACP vérifie workspace, provider activé et `providerId/sessionId`. Pour les providers tiers, aucun send générique n’est exposé par Devin : `wake_acp_agent` échoue fermé (`skipped`) au lieu d’injecter dans Devin. La route native `devin-cli` reste distincte; pas de nouvelle conversation, toast ou presse-papiers.
 - **Filet de secours** : `.agent/task-watch.cjs` (client WS -> `.agent/task-events.log`, auto-reconnect).
-- **Build** : `npm run compile` / `vscode:prepublish` (TypeScript).
+- **Build** : `npm run vscode:prepublish` depuis `extensions/orchestrator-monitor/`; le VSIX `orchestrator-monitor-0.0.57.vsix` reste dans ce répertoire.
 
 ---
 

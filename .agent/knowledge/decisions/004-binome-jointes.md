@@ -23,8 +23,8 @@ Le handshake Devin ⇄ AGY et le routage IDE existaient déjà; l’extension du
 - Les deux copies source `binome.js` / `comms.js` utilisent request/ACK `pairId/session/transport/providerId` frais; `send` refuse tout fallback vers une session active/latest.
 - Le join réel Devin ⇄ AGY du 2026-10-15 a confirmé l’ACK corrélé sans nouvelle fenêtre Devin ni `wake_devin` supplémentaire.
 - Les workers API HES `nim1`/`nim2` restent distincts des providers ACP Devin `nim`/`nim2`; aucune session absente n’est simulée.
-- Le garde-fou anti-fenêtre ACP vérifie provider activé, workspace, session et focus; les tests couvrent les providers mismatch/inconnus. Les ACP multi-agents nécessitent le bundle extension 0.0.56.
-- Validation : tests handshake 12/12, routage 14/14 et smoke test bridge/native SQLite 2/2. Le VSIX 0.0.55 échouait avec ABI SQLite incompatible; après installation/reload du 0.0.56, le port 7477 et `acp-list` répondent. Aucun join ACP n’a été lancé dans ce contrôle. L’essai Kilo CLI antérieur n’a pas reçu d’ACK, donc aucune paire Kilo n’est annoncée.
+- Le garde-fou anti-fenêtre ACP vérifie provider activé, workspace, session et focus; les providers tiers sans send provider-spécifique échouent fermé (`skipped`) au lieu d’injecter dans Devin. Les ACP multi-agents nécessitent le bundle extension 0.0.57.
+- Validation : tests bridge/binôme 21/21, routage 20/20 et smoke test bridge/native SQLite 2/2. Le VSIX 0.0.57 est installé; le port 7477 et `acp-list` répondent, et un pair AGY frais a été vérifié. L’essai Kilo CLI antérieur n’a pas reçu d’ACK, donc aucune paire Kilo n’est annoncée.
 - La configuration ajoutée est project-local et versionnée; aucune préférence globale Devin ni configuration MCP n’est modifiée.
 
 ## Références

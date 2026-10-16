@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Injection complète d'un nouveau projet avec brainstorming
 .DESCRIPTION
@@ -113,6 +113,7 @@ $TargetUsers
 $ProjectRoot/
 $(foreach ($f in $Folders) { "├── $f/" })
 ├── .agent/           ← Configuration et scripts
+├── .devin/           ← Règles et skills Devin locales
 ├── memory-database/  ← Mémoire unifiée
 └── MANIFEST.md       ← Ce fichier
 ``````
@@ -191,11 +192,11 @@ $ManifestContent | Set-Content $ManifestPath -Encoding UTF8
 Write-Host "  ✓ MANIFEST.md créé" -ForegroundColor Green
 
 # === PHASE 4: COUCHE AGENT & BRIDGE ===
-Write-Host "`n[PHASE 4] Injection de la couche Agent et vérification du bridge" -ForegroundColor Yellow
+Write-Host "`n[PHASE 4] Injection de la couche Agent (.agent et .devin) et vérification du bridge" -ForegroundColor Yellow
 
 $SyncScript = Join-Path $PSScriptRoot "sync-agent-layer.ps1"
 if (Test-Path $SyncScript) {
-    Write-Host "  Synchronisation de la couche .agent..." -ForegroundColor Cyan
+    Write-Host "  Synchronisation des couches .agent et .devin..." -ForegroundColor Cyan
     & pwsh -NoProfile -ExecutionPolicy Bypass -File $SyncScript -Target $ProjectRoot
 }
 
@@ -228,8 +229,8 @@ if ($bridgeUp) {
     }
 }
 
-# Verification version orchestrator-monitor (>= 0.0.56)
-$expectedExtVer = '0.0.56'
+# Verification version orchestrator-monitor (>= 0.0.57)
+$expectedExtVer = '0.0.57'
 $extDirs = @()
 $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
 $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
@@ -289,6 +290,7 @@ Write-Host "`nFichiers créés:" -ForegroundColor White
 Write-Host "  - MANIFEST.md" -ForegroundColor Green
 Write-Host "  - Structure dossiers ($($Folders.Count) dossiers)" -ForegroundColor Green
 Write-Host "  - .agent/ (configuration)" -ForegroundColor Green
+Write-Host "  - .devin/ (règles et skills Devin)" -ForegroundColor Green
 
 Write-Host "`nProchaines étapes:" -ForegroundColor Yellow
 Write-Host "  1. Éditer MANIFEST.md pour compléter la définition" -ForegroundColor White

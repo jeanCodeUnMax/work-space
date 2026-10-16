@@ -19,10 +19,12 @@ La commande Devin est :
 
 ### Visibilité du slash et sélecteurs de modèles
 
-- Le contrôle local `devin skills list` confirme `/jointes [user]` dans le registre de skills Devin du workspace. Ce registre ne pousse pas automatiquement la commande dans les menus d’autres agents.
+- Le contrôle local `devin skills list` confirme `/jointes` et `/chat-id` dans les registres Devin local et global. `/chat-id` appelle `.agent/agent-bridge/chat-id.js`, retourne l’ID vérifié pour copie manuelle et n’envoie aucun message.
 - Dans un onglet ACP, le menu slash est annoncé par le serveur ACP de l’agent sélectionné (`available_commands_update`). Devin affiche cette liste; il n’y ajoute pas les skills Devin. Un agent doit donc annoncer `/jointes` lui-même pour que la commande apparaisse dans son onglet ACP. Le join reste possible depuis un chat Devin natif : Devin envoie alors au pair un prompt lui demandant d’exécuter son ACK réel.
-- Vérification des surfaces locales : Antigravity n’a pas de `jointes.md` dans les workflows projet/global habituels; le dossier OpenCode global ne contient que `supermemory-init.md`; la skill Hermes `jointes` est absente. La liste CLI Devin du workspace reste la seule inscription `/jointes` confirmée.
+- Shims natifs ajoutés : workflows local/global Antigravity, commandes globales OpenCode et skills globales Hermes CLI. Leur apparition dans un menu ACP Devin dépend toujours de l’annonce du serveur correspondant; aucune commande n’est injectée de force dans l’ACP.
 - Limite Kilo : l’extension KiloCode 7.8.8 installée documente le système de commandes et de workflows personnalisés comme non implémenté. Aucun fichier de commande ne peut donc garantir `/jointes` dans son menu tant que cette extension ne le prend pas en charge.
+- Hermes ACP annonce une liste de commandes codée en dur et ne charge pas les skills CLI dans son menu ACP; `/jointes` et `/chat-id` Hermes sont donc des commandes CLI, pas des entrées ACP.
+- Les agents internes Devin (profils/subagents) partagent la session Devin parente; ils n’ont pas d’ID chat séparé. `/chat-id` retourne l’ID de la conversation parente, jamais un faux ID par profil.
 - Les modèles et leur ordre sont également fournis par l’agent/provider ACP. `devin.acp.enabledAgents` et `devin.acp.agentPreferences` activent un agent et choisissent éventuellement un modèle par défaut; ils ne définissent ni catalogue, ni groupes Free/Non-Free, Local/Cloud, ni tri global.
 - Snapshot vérifié le 2026-10-15 : `devin.acp.agentPreferences.kilo` et `.nim` pointent vers `nvidia/nvidia/active-speaker-detection`, absent du registre local de modèles de chat. Ne pas remplacer ces préférences sans confirmation; vérifier leur compatibilité avec le provider avant de diagnostiquer un menu absent.
 
@@ -68,7 +70,7 @@ Pour `/jointes <agent>` :
 
 1. Devin relève son ID et son transport exact. Pour ACP, la session doit être `acp/devin-cli/...`; pour une cascade UUID, utiliser `--via cascade`.
 2. Résoudre l’agent demandé avec `agent-adapters.resolveAgent`. ACP : lister les sessions avec `node .agent/agent-bridge/devin-hub.js acp-list <providerId>`; CLI : lister les sessions Kilo/Hermes avec `node .agent/agent-bridge/agent-adapters.js sessions <agent>`. Les listes sont limitées au workspace. En cas de plusieurs sessions ou de deux modes possibles, faire choisir l’utilisateur.
-3. Publier et transmettre la requête avec les deux transports et les deux IDs explicites, par exemple : `node .agent/agent-bridge/binome.js --as devin --via acp --self <devinSessionId> --peer hermes --peer-via acp --to <hermesSessionId> --session binome join`. Pour une session CLI Kilo/Hermes, remplacer `--peer-via acp` par `--peer-via cli`; pour AGY direct, utiliser `--peer agy --peer-via hub`.
+3. Publier et transmettre la requête avec les deux transports et les deux IDs explicites, par exemple : `node .agent/agent-bridge/binome.js --as devin --via acp --self <devinSessionId> --peer hermes --peer-via acp --to <hermesSessionId> --session binome join`. Pour une session CLI Kilo/Hermes, remplacer `--peer-via acp` par `--peer-via cli`; pour AGY direct, utiliser `--peer agy --peer-via hub` et ajouter `--model <modelId-ou-label>` avec la valeur exacte sélectionnée dans Gemini/Antigravity.
 4. Le pair, dans sa propre session, exécute son ACK : `node .agent/agent-bridge/binome.js --as <agent> --via <transport> --self <peerSessionId> --peer devin --peer-via <transportDevin> --to <devinSessionId> --session binome join`.
 5. Vérifier la requête et l’ACK : même `pairId/session`, `replyTo=pairId`, IDs exacts, transports/providers inversés et `peerCascade` exact. Terminer par `binome.js pair` avec les mêmes paramètres; exiger `established=true`.
 
@@ -76,15 +78,21 @@ Pour `/jointes <agent>` :
 
 Un nouvel ACK est obligatoire pour chaque transport/session. Une requête plus récente non acquittée invalide l’ancienne paire. `send`/`ask` ne retombent jamais sur le chat actif, le dernier `.pb` ou un autre transport. `--to` contourne seulement l’exigence d’un handshake préalable; l’ID et le provider/session doivent toujours exister et être validés.
 
-**Règle opératoire :** n’annoncer le join réussi que si `pairId`, timestamps, IDs, providers et transports concordent. Sinon, ne rien envoyer.
+**Règle opératoire :** n'annoncer le join réussi que si `pairId`, timestamps, IDs, providers et transports concordent. Sinon, ne rien envoyer.
+
+### Tâche de référence ACP/HUB et DiffCom
+
+Un handshake `/jointes` n'est pas une tâche et n'en crée pas automatiquement. Si une requête interactive ACP/HUB doit aussi apparaître au Task Board, créer sa carte avec `create_task` via MCP, puis transmettre son ID avec `binome.js --task-id <id> send`. Le journal Comms porte alors le même `taskId` et les transports/providers des deux côtés; mettre à jour son état avec `update_task` via MCP après vérification du résultat. `create_task` seul ne notifie pas l'agent; ne pas le remplacer par `dispatch_task`, qui lance un worker CLI.
 
 ## 4. Acheminement et garantie anti-fenêtre parasite
 
 ### Devin vers AGY et ACP
 
-AGY hub direct utilise `agy-hub.js ask/send` sur son `cascadeId` explicite. Pour une session ACP, `devin-hub.js acp-list <providerId>` découvre les IDs du workspace; `sendToAcpAgent` envoie ensuite `wake_acp_agent` avec le `providerId`, `sessionId` et workspace exacts.
+AGY hub direct utilise `binome.js` avec le `cascadeId` explicite et un `--model` résolu depuis le catalogue courant. Pour une session ACP, `devin-hub.js acp-list <providerId>` découvre les IDs du workspace. L’extension 0.0.57 n’a pas de send générique provider-spécifique pour les ACP tiers; `wake_acp_agent` y retourne `skipped` au lieu d’injecter via le chat Devin.
 
-L’extension vérifie que le provider est activé et que le couple `providerId/sessionId` existe dans `acp.sessions`. Elle restaure l’URI de l’onglet existant, relit l’état ACP, puis injecte via `explainAndFixProblem` seulement si le focus correspond toujours à la cible. `skipped`/`failed` n’ont aucun fallback.
+Pour Devin vers AGY hub, `binome.js join/send/ask` exige un `--model <modelId-ou-label>` explicite; le bridge résout cette valeur vers le token interne `modelOrAlias` du catalogue courant. C'est un choix par appel et ne modifie pas les préférences globales. Utiliser le modèle explicitement choisi dans l'UI Gemini/Antigravity. Ne jamais déduire un modèle du `defaultOverrideModelConfig` du hub ni sélectionner Argon implicitement. ACP/CLI n'acceptent pas `--model`.
+
+Pour les providers tiers, l’inventaire peut confirmer le couple `providerId/sessionId`, mais le focus Redux seul ne garantit pas le destinataire de `devin.sendChatActionMessage`. L’extension fail-closed donc sans injection. N’annoncer ni `sent` ni un pair ACP opérationnel tant qu’un send provider-spécifique n’est pas confirmé. `skipped`/`failed` n’ont aucun fallback.
 
 ### Agents ACP/CLI vers Devin
 
@@ -112,7 +120,7 @@ Le tool Rust `hphe-mcp beacon_ingest` est porté dans la source; il filtre les s
 
 ## 7. Test de référence
 
-Le 2026-10-14, un join réel Devin ⇄ AGY a confirmé les sessions visées sans ouvrir de fenêtre parasite et a révélé le faux succès historique. Le 2026-10-15, le correctif request/ACK AGY a ensuite été vérifié en réel avec les IDs explicites; aucun `wake_devin` supplémentaire n’a été déclenché. Les IDs de session et `pairId` restent éphémères. Les suites simulées handshake/ACP passent. Un essai Kilo CLI a publié une requête fraîche mais n’a reçu aucun ACK : aucune paire Kilo n’est établie. Le VSIX 0.0.55 échouait au démarrage du bridge : son `better-sqlite3` ABI 137 ne correspondait pas au Node 26 ABI 147. Le 0.0.56 reconstruit le binding; après installation et reload, `7477` reste à l’écoute et `acp-list` répond. Cet inventaire ne prouve pas qu’une paire est établie; aucun join ACP n’a été lancé dans cette vérification.
+Le 2026-10-14, un join réel Devin ⇄ AGY a confirmé les sessions visées sans ouvrir de fenêtre parasite et a révélé le faux succès historique. Le 2026-10-15, le correctif request/ACK AGY a ensuite été vérifié en réel avec les IDs explicites; aucun `wake_devin` supplémentaire n’a été déclenché. Les IDs de session et `pairId` restent éphémères. Les suites simulées handshake/ACP passent. Un essai Kilo CLI a publié une requête fraîche mais n’a reçu aucun ACK : aucune paire Kilo n’est établie. Le VSIX 0.0.55 échouait au démarrage du bridge : son `better-sqlite3` ABI 137 ne correspondait pas au Node 26 ABI 147. Le 0.0.56 reconstruit le binding; le 0.0.57 ajoute le routage ACP tiers fail-closed. Après installation et reload, `7477` reste à l’écoute, `acp-list` répond et un pair AGY frais a été vérifié. Cet inventaire ne prouve pas qu’une paire ACP tierce est établie; aucun join ACP n’a été lancé dans cette vérification.
 
 ## Références du workspace
 

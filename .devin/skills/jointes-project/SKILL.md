@@ -1,24 +1,44 @@
 ---
-name: jointes
-description: Établit un binôme vérifié avec une session Devin ACP, AGY ou CLI, sans fallback de transport.
+name: jointes-project
+description: Établit un binôme vérifié avec une session Devin ACP, AGY ou CLI, sans fallback de transport (skill locale projet).
 argument-hint: "<agent>"
 triggers:
   - user
 ---
 
-# `/jointes <agent>` — join vérifié d’une session
+# `/jointes-project <agent>` — join vérifié d’une session (commande globale canonique : `/jointes`)
 
 Appliquer `docs/protocole-binome/README.md`. Un agent/provider activé n’est pas à lui seul une session joinable.
 
-**Portée du slash :** `/jointes` est une skill Devin. Dans un onglet ACP tiers, les commandes du menu viennent du provider ACP sélectionné; ne prétends pas que la skill Devin s’y affiche automatiquement. Lance le join depuis Devin natif ou utilise seulement une commande native du pair qui est réellement annoncée par celui-ci.
+**Portée du slash :** `/jointes` globale est la commande canonique; cette variante locale s’appelle `/jointes-project`. Dans un onglet ACP tiers, les commandes du menu viennent du provider ACP sélectionné; ne prétends pas que la skill Devin s’y affiche automatiquement. Lance le join depuis Devin natif ou utilise seulement une commande native du pair qui est réellement annoncée par celui-ci.
+
+## Résolution des chemins (skill locale du projet)
+
+La skill globale canonique reste disponible sous `%APPDATA%\devin\skills\jointes`; cette variante locale est injectée avec le projet. Avant toute commande, résoudre les préfixes :
+
+```bash
+# agent-bridge : copie injectée du workspace, sinon copie canonique du kit
+BRIDGE=".agent/agent-bridge"
+[ -f "$BRIDGE/binome.js" ] || BRIDGE="C:/Program Files/Projet-complet/hephaistos2-kit/.agent/agent-bridge"
+[ -f "$BRIDGE/binome.js" ] || { echo "REFUS: agent-bridge introuvable"; exit 1; }
+
+# doc canonique : repo, payload injecté, copie embarquée à côté de la skill globale, ou kit
+DOC="docs/protocole-binome/README.md"
+[ -f "$DOC" ] || DOC=".agent/docs/protocole-binome/README.md"
+[ -f "$DOC" ] || DOC="$APPDATA/devin/skills/jointes/protocole-binome.md"
+[ -f "$DOC" ] || DOC="C:/Program Files/Projet-complet/hephaistos2-kit/docs/protocole-binome/README.md"
+[ -f "$DOC" ] || { echo "REFUS: protocole-binome introuvable"; exit 1; }
+```
+
+Lire `$DOC` avant le premier join. Exécuter les `node` depuis la racine du workspace courant : le bus comms y reste relatif (`.agent/comms.jsonl`, via `HEPHAISTOS_WORKSPACE` ou le cwd). Ni le workspace ni le kit ne fournissent le bridge → refuser, ne pas installer de contournement.
 
 ## Résolution du nom et du transport
 
-1. Canonicaliser le nom avec `node .agent/agent-bridge/agent-adapters.js resolve <agent>`; ne pas deviner un alias.
+1. Canonicaliser le nom avec `node "$BRIDGE/agent-adapters.js" resolve <agent>`; ne pas deviner un alias.
 2. Séparer les trois modes :
    - `agy` : hub Connect-RPC Antigravity;
-   - `acp` : session Devin ACP, choisie par le couple exact `providerId/sessionId` dans `node .agent/agent-bridge/devin-hub.js acp-list <providerId>`;
-   - `cli` : session persistante Kilo/Hermes listée dans `node .agent/agent-bridge/agent-adapters.js sessions <kilo|hermes>` et reprise par son ID.
+   - `acp` : session Devin ACP, choisie par le couple exact `providerId/sessionId` dans `node "$BRIDGE/devin-hub.js" acp-list <providerId>`;
+   - `cli` : session persistante Kilo/Hermes listée dans `node "$BRIDGE/agent-adapters.js" sessions <kilo|hermes>` et reprise par son ID.
 3. Si KiloCode/Hermes ont des sessions dans les deux modes, demande à l’utilisateur lequel joindre. Si un mode expose plusieurs sessions, demande de choisir un ID exact; ne sélectionne pas « la plus récente ».
 4. Les alias principaux sont `AGY`/`Antigravity` → `agy`; `KiloCode`/`Kilo Code` → `kilo`; `Hermes` → `hermes`; `NVIDIA NIM`/`NIM1` → provider ACP `nim`; `NVIDIA NIM #2`/`NIM2` → `nim2`; `OpenRouter` → `openrouter`; `Devin Cloud` → `devin-cloud`; `Mistral Vibe` → `mistral-vibe`; `OpenCode` → `opencode`.
 5. `Devin Local` est l’agent Devin courant : refuse le pairage avec lui-même. Un provider ACP autre que Devin Local n’est ciblable que si `acp-list` renvoie une session active dans le workspace. Les providers NIM/OpenRouter/Cloud/Vibe/OpenCode ne sont pas joints par leur seul nom.
@@ -29,14 +49,14 @@ Appliquer `docs/protocole-binome/README.md`. Un agent/provider activé n’est p
 
 ## Join Devin ⇄ agent
 
-1. Relève la session Devin exacte avec `node .agent/agent-bridge/current-cascade.js`. Utilise `--via acp` pour `acp/devin-cli/...`; utilise `--via cascade` uniquement pour un UUID cascade.
+1. Relève la session Devin exacte avec `node "$BRIDGE/current-cascade.js"`. Utilise `--via acp` pour `acp/devin-cli/...`; utilise `--via cascade` uniquement pour un UUID cascade.
 2. Pour AGY direct, identifie `agyCascadeId` avec `agy-hub.js list/current`; n’exécute jamais `agy-hub.js discover` et ne copie jamais son jeton CSRF.
-3. Pour ACP, récupère les sessions avec `node .agent/agent-bridge/devin-hub.js acp-list <providerId>`; cible un `sessionId` retourné, pas un nom de fenêtre.
+3. Pour ACP, récupère les sessions avec `node "$BRIDGE/devin-hub.js" acp-list <providerId>`; cible un `sessionId` retourné, pas un nom de fenêtre.
 4. Pour CLI Kilo/Hermes, utilise la liste filtrée au workspace puis cible exactement l’ID choisi.
 5. Lance une seule requête ciblée :
 
    ```text
-   node .agent/agent-bridge/binome.js --as devin --via <acp|cascade> --self <devinSessionId> --peer <agent> --peer-via <acp|cli|hub> --to <peerSessionId> --session binome join
+   node "$BRIDGE/binome.js" --as devin --via <acp|cascade> --self <devinSessionId> --peer <agent> --peer-via <acp|cli|hub> --to <peerSessionId> --session binome join
    ```
 
    `binome.js` publie le requestId/pairId puis transmet le prompt par le transport choisi. AGY reçoit via son hub; ACP reçoit dans la session provider vérifiée; CLI reçoit via reprise de l’ID enregistré.
@@ -44,6 +64,8 @@ Appliquer `docs/protocole-binome/README.md`. Un agent/provider activé n’est p
 7. Exige `established: true` avec le même `pairId/session`, les deux IDs exacts, les transports/providers inversés et des timestamps de moins de 15 minutes. Si aucune réponse n’arrive, reste en attente/non apparié; pas de message « pair établi ».
 
 Le protocole enregistre les modes `hub`, `acp`, `cli` et les `providerId` des deux côtés dans `.agent/comms.jsonl`. Les handshakes legacy sans ces champs ne satisfont pas un join multi-transport.
+
+Pour un envoi Devin vers AGY (`--peer-via hub`), `binome.js join/send/ask` exige `--model <modelId-ou-label>` : utiliser l’identifiant ou le libellé exact du modèle explicitement sélectionné dans Gemini/Antigravity. Le bridge le résout vers le token interne du hub. Ne jamais inférer le modèle du hub ni choisir Argon implicitement. Pour ACP/CLI, ne pas passer `--model`.
 
 ## Envoi et garde-fous
 

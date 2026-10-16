@@ -276,6 +276,7 @@ Toute dérogation à cette règle constitue une violation de l'architecture et p
 - **AGY / Antigravity** = l'extension IDE `google.google-antigravity` + son CLI `agy.exe` (`%LOCALAPPDATA%\agy\bin`) + son hub local (`--hub-port`). Abonnement. Routage réponse : `[agycascade:<uuid>]`. **Jamais appelé "gemini".**
 - **Gemini CLI** : headless OK via `GEMINI_API_KEY` + `selectedType:"gemini-api-key"` (`gemini -p` → exit 0). `oauth-personal` MORT (IneligibleTierError) — voir CANON.
 - Aucun recouvrement : une demande « gemini » n'est PAS « agy », et réciproquement.
+- **Modèle AGY** : `agy-hub.js` n'ajoute jamais `cascadeConfig.planModel` par défaut. Pour un envoi Devin→AGY hub, passer obligatoirement `binome.js --model <modelId-ou-label>` avec l'identifiant ou le libellé exact du modèle sélectionné dans Gemini/Antigravity; le bridge le résout vers le token interne du hub. C'est un choix par appel, sans modifier la préférence globale. Ne jamais déduire le modèle du hub ni utiliser Argon implicitement; si le modèle sélectionné est inconnu, demander avant envoi.
 
 ### ⛩️ CANON — l'ordre des providers vient du MONITOR
 
@@ -289,17 +290,19 @@ SELECT provider, enabled, position FROM provider_prefs ORDER BY position;
 - Dérogation uniquement sur **demande explicite de l'utilisateur** (test ciblé, debug) — jamais par défaut.
 - Clés : `NVIDIA_API_KEY` (NIM1) et `NVIDIA_API_KEY_2` (NIM2) = **protocoles directs** OpenAI-compat vers `integrate.api.nvidia.com` — workers `nim1`/`nim2` (`.agent/scripts/nim-worker.mjs`, `--account 1|2`) + outils `nim_*`. `GEMINI_API_KEY` = gemini-cli seul.
 - **NIM n'est PAS un transport kilo/hermes** : les requêtes NVIDIA ne doivent jamais s'afficher ni s'exécuter sous "kilo-nim". Kilo/hermes = renforts 3e/4e recours sur modèles `:free`, NIM seulement en dernier pour ajouter de la capacité sans saturer les clés.
-- **Habilitation** : seuls `devin` et `agy` utilisent la chaîne, l'orchestrateur et `dispatch_task` — les autres agents sont des workers (reçoivent, ne dispatchent pas).
+- **Habilitation binôme** : Devin initie le protocole depuis sa session native; tout pair ACP/CLI autorisé peut seulement publier son ACK dans sa propre session vérifiée. Cela ne donne pas aux pairs le droit de dispatcher via l'orchestrateur.
 
 ### COMMANDE BINÔME DEVIN ⇄ AGENTS (`/jointes <agent>`)
 
-`/jointes <agent>` est la commande Devin project-local décrite dans `.devin/skills/jointes/SKILL.md`; le runbook canonique est `docs/protocole-binome/README.md`. Les transports sont explicites : hub AGY, sessions ACP Devin, ou sessions CLI reprises pour Kilo/Hermes.
+`/jointes <agent>` est une skill Devin disponible localement et globalement; le runbook canonique est `docs/protocole-binome/README.md`. `/chat-id` affiche en lecture seule un ID de session exact. Les transports sont explicites : hub AGY, sessions ACP Devin, ou sessions CLI reprises pour Kilo/Hermes.
 
 Un nom ou `devin.acp.enabledAgents=true` ne prouve pas qu’une conversation existe. ACP exige le couple exact `providerId/sessionId` présent dans l’état ACP du workspace; CLI exige un ID Kilo/Hermes repris et vérifié dans ce workspace. Pour Kilo/Hermes, ACP et CLI sont distincts, jamais un fallback. Les providers `nim`, `nim2`, `openrouter`, `devin-cloud`, `mistral-vibe` et `opencode` ne sont ciblables que si une session ACP active existe. Les workers HES `nim1`/`nim2` restent des appels API one-shot, distincts des sessions ACP Devin `nim`/`nim2`. `Devin Local` ne peut pas être joint à lui-même.
 
 Le succès exige une requête et un ACK frais corrélés par `pairId/session`, IDs exacts et transports/providers inversés, dans une fenêtre de 15 minutes. Les handshakes legacy/historiques et les requêtes plus récentes non acquittées ne peuvent établir une paire. `hint` seul ne suffit jamais. `send` refuse les cibles sans paire fraîche, sauf `--to` explicite qui doit toujours correspondre à une session existante et vérifiée.
 
-**Routage sûr** : vers Devin, le wake ACP ne cible que `providerId === 'devin-cli'` connu; vers un ACP peer, `wake_acp_agent` exige provider activé, `providerId/sessionId` exacts et workspace concordant. Restaurer l’onglet existant, revérifier le focus puis injecter; session inconnue/non focalisable = `skipped`. Les transports CLI reprennent l’ID explicite sans shell interpolé. **Jamais** de nouvelle conversation, toast, presse-papiers ni fallback vers le chat actif. Une réponse déjà collectée par le hub ne doit pas être réveillée une deuxième fois.
+**Routage sûr** : vers Devin, le wake ACP ne cible que `providerId === 'devin-cli'` connu. Pour les providers tiers, l’inventaire exige le couple `providerId/sessionId` exact, provider activé et workspace concordant; toutefois, `wake_acp_agent` reste fail-closed (`skipped`) tant qu’un send provider-spécifique et accusé n’est pas disponible. Ne jamais utiliser `devin.sendChatActionMessage` sans cible ACP dans son payload. Les transports CLI reprennent l’ID explicite sans shell interpolé. **Jamais** de nouvelle conversation, toast, presse-papiers ni fallback vers le chat actif. Une réponse déjà collectée par le hub ne doit pas être réveillée une deuxième fois.
+
+**Tâches ACP/HUB de référence** : une communication binôme reste dans `.agent/comms.jsonl`; si l’utilisateur demande aussi une carte de suivi, la créer et la clore avec `create_task`/`update_task` MCP, puis passer son ID à `binome.js --task-id <id> send`. Cela ne notifie pas via `create_task` et ne doit pas être remplacé par `dispatch_task`, qui lance un worker CLI. Les handshakes ordinaires ne créent pas de tâche.
 
 Le journal append-only est `.agent/comms.jsonl`; les procédures, alias et limites sont centralisés dans `docs/protocole-binome/README.md`.
 
@@ -1272,9 +1275,9 @@ ORDER BY CASE WHEN position IS NULL THEN 1 ELSE 0 END, position;
 
 ## Extension `extensions/orchestrator-monitor/`
 
-Monitor VS Code : `out/` compilé (tsc), webview `media/panel.js` (protocole `snapshot`/`task_update`/`ws_status`), bridge `ws-bridge/bridge.js` (poll `tasks_todo`+`agents` read-only, ws://127.0.0.1:7477). Build : `npm i && npx tsc -p ./ && npx @vscode/vsce package`.
+Monitor VS Code : `out/` compilé (tsc), webview `media/panel.js` (protocole `snapshot`/`task_update`/`ws_status`), bridge `ws-bridge/bridge.js` (poll `tasks_todo`+`agents`, bind 127.0.0.1 strict + token `?token=`/`Bearer` depuis `ORCH_MONITOR_TOKEN` ou `.agent/ws-bridge.token`, ws://127.0.0.1:7477). Build : `npm i && npx tsc -p ./ && npx @vscode/vsce package`.
 
-## 🔒 PROTOCOLE HEPHAISTOS-KIT — PROTECTION DU KIT
+## 🔒 PROTOCOLE HEPHAISTOS2-KIT — PROTECTION DU KIT
 
 **Chemin protégé** : `C:/Program Files/Projet-complet/hephaistos2-kit` (ex-`F:/Promgramation-teste/Hephaistos-Kit`, déplacé)
 
@@ -1292,5 +1295,3 @@ Règles :
 - Audits/scripts → toujours un fichier dans `.agent/scripts/`, jamais `node -e`/`powershell -c` avec du code inline contenant `child_process`/`Start-Process`.
 - Script canonique : `node .agent/scripts/audit-exec-hide.mjs [racine]` (pur Node, zéro `child_process` → ne déclenche pas l'heuristique).
 - Tout `spawn`/`execFile`/`execSync` dans le code → `windowsHide: true` obligatoire (fenêtre d'audit : 12 lignes après l'appel).
-
-

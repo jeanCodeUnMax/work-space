@@ -4,9 +4,10 @@
 .DESCRIPTION
     Installe/verifie tout ce qui touche Devin pour le binome :
       - hooks awareness.mjs (session-start, prompt-submit, stop)
-      - settings.json : devin.acp.preferredAgent = antigravity-acp
+      - extension monitor dans .devin/extensions et bridge ACP/WS
       - binome.js pair (validation en lecture seule, sans handshake automatique)
       - verification bridge WS 7477 + requête/ACK corrélés dans comms.jsonl
+    Ne change pas le provider ACP préféré et n'établit pas de pair automatiquement.
 
     Tous les chemins sont RELATIFS au script (via $PSScriptRoot).
     Aucun chemin absolu codé en dur.
@@ -62,8 +63,8 @@ if ($Verify) {
         if ($ext) {
             try {
                 $version = (Get-Content (Join-Path $ext.FullName 'package.json') -Raw | ConvertFrom-Json).version
-                if ([version]$version -ge [version]'0.0.56') { Pass "extension monitor installee : $($ext.Name)" }
-                else { Warn "extension monitor ${version}; le bridge compatible Node 26 requiert 0.0.56+" }
+                if ([version]$version -ge [version]'0.0.57') { Pass "extension monitor installee : $($ext.Name)" }
+                else { Warn "extension monitor ${version}; le routage ACP fail-closed requiert 0.0.57+" }
             } catch { Warn 'version extension monitor illisible' }
         } else { Warn 'extension monitor non detectee dans .devin/extensions' }
     } else { Warn 'dossier .devin/extensions absent' }
@@ -86,7 +87,7 @@ if ($Verify) {
                 $acpSessions = ($acpRaw | Out-String) | ConvertFrom-Json
                 Pass "ACP discovery active ($(@($acpSessions).Count) sessions dans ce workspace)"
             } else { Warn 'ACP discovery non repondante; recharger la fenetre Devin' }
-        } catch { Warn 'ACP discovery impossible; verifier l extension 0.0.56 et recharger Devin' }
+        } catch { Warn 'ACP discovery impossible; verifier l extension 0.0.57 et recharger Devin' }
         finally { Pop-Location }
     } else { Warn 'devin-hub.js absent; discovery ACP indisponible' }
 

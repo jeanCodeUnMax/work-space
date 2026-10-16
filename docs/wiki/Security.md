@@ -37,10 +37,20 @@ tool call
 
 ## Surface réseau
 
-- `hphe-rest` écoute `127.0.0.1:8792` uniquement (loopback).
-- `ws-bridge` (monitor) : `127.0.0.1:7477`.
+- `hphe-rest` écoute `127.0.0.1:8792` uniquement (loopback). Auth Bearer
+  (`HPHE_REST_TOKEN` env ou `data/hphe-rest.token` généré au boot) exigée sur
+  `/tools` et `/call` ; `/health` reste public pour les sondes. Profil
+  `.mcp-access` `[rest]` borné (lecture allowlistée, écriture data-only,
+  secrets/token `*.token` refusés) + `EVERYTHING_MCP_ROOTS` confiné.
+- `ws-bridge` (monitor) : `127.0.0.1:7477` — bind loopback strict (pas de
+  `0.0.0.0`) + token `?token=`/`Authorization: Bearer` à l'upgrade
+  (`ORCH_MONITOR_TOKEN` env ou `.agent/ws-bridge.token`, jamais logué).
+  Les commandes mutantes (`wake_*`, `clear_tasks`, `provider_*`) exigent
+  donc le token — un process local anonyme ne peut plus injecter de prompt.
 - `hphe-indexd` : named pipe local, aucune socket.
 - NIM/embeddings sortants vers `integrate.api.nvidia.com` — clé via env.
+- `agy-hub.js discover` ne journalise plus le `csrfToken` AGY (masqué) ;
+  pas de fallback presse-papiers dans `sendToDevinChat` (canal caché).
 
 ## Agents dispatchés — règles durcies
 

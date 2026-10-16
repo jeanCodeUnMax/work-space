@@ -88,31 +88,35 @@ Si ce n'est pas le cas, on va le faire à la main dans `04-le-ping-pong.md`.
 | Test | Commande | Résultat attendu | Statut |
 |---|---|---|---|
 | Indexation | `schtasks /Query /TN "hphe-indexd"` | En cours / Ready | ☐ |
-| REST | `curl http://127.0.0.1:8792/health` | `{"status":"ok"}` | ☐ |
+| REST | `curl http://127.0.0.1:8792/health` | `{"status":"ok"}` ou `{"status":"healthy"}` | ☐ |
 | MCP | `hphe-mcp.exe --tool hphe_health` | Stats index | ☐ |
 | Bridge WS | `Test-NetConnection 127.0.0.1 -Port 7477` | `TcpTestSucceeded : True` | ☐ |
-| Règles | `setup-agent-surfaces.ps1 -Verify` | 4x `[OK]` | ☐ |
+| Règles et skills globales | `setup-agent-surfaces.ps1 -Verify` | 6x `[OK]` | ? |
 | Binôme | `install-extension-hub.ps1 -CheckOnly` | `canal binome : IDs publiés` | ☐ |
 
 ---
 
-## 🧪 Test réel avec un worker (optionnel mais cool)
+## Test binôme via AGY hub (modèle explicite)
 
-Tu veux voir si un worker NIM répond ? Lance :
+Après un `/jointes AGY` frais, choisis le `cascadeId` exact dans `agy-hub.js list` et vérifie `established: true`. Pour afficher la requête à la fois dans le Task Board et dans Comms, crée d'abord une tâche de référence via MCP `create_task`; ne lance pas `dispatch_task` pour un échange ACP/HUB.
 
 ```powershell
-node .agent/agent-bridge/binome.js --as devin send "Test : dis coucou"
+$devinSessionId = (node .agent/agent-bridge/current-cascade.js).Trim()
+$agyCascadeId = 'REMPLACER_PAR_LE_CASCADE_ID_EXACT_CHOISI_DANS_AGY_LIST'
+$geminiModel = 'Gemini 3.8 Flash (Medium)' # libellé exact sélectionné dans Gemini
+$taskId = [int](Read-Host 'ID numerique retourne par MCP create_task')
+node .agent/agent-bridge/binome.js --as devin --via acp --self $devinSessionId --peer agy --peer-via hub --to $agyCascadeId --session binome --model $geminiModel --task-id $taskId send "Test binôme; tâche #$taskId"
 ```
 
-Puis regarde dans le dashboard `orchestrator-monitor` si la tâche apparaît. Ou lance directement :
+La DiffCom affiche le même `taskId` que la tâche MCP. Mets son état à jour avec `update_task` après vérification du résultat dans la fenêtre AGY; le texte de réponse n'est pas rapatrié automatiquement dans Devin.
+
+## Test d'un worker CLI via l'orchestrateur
+
+Pour une vraie tâche CLI de fond, utilise séparément `dispatch_task` (qui démarre réellement un CLI worker) :
 
 ```powershell
-# Via l'orchestrateur (si tu as le MCP configuré)
 dispatch_task(title="Test worker", task_type="test", context="Réponds coucou", agent_name="nim1")
 ```
-
----
-
 ## ✅ Récapitulatif
 
 - [ ] Tous les tests ci-dessus sont verts

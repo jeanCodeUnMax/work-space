@@ -38,7 +38,7 @@ Restart-Service hphe-rest -Force -ErrorAction SilentlyContinue
 **Remède** :
 ```powershell
 pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
-# Si version < 0.0.56, réinstalle :
+# Si version < 0.0.57, réinstalle :
 pwsh -File .agent\setup\install-extension-hub.ps1
 ```
 Puis `Ctrl+Shift+P` → `Developer: Reload Window`.
@@ -65,7 +65,7 @@ Puis `Ctrl+Shift+P` → `Developer: Reload Window`.
 
 **Diagnostic** : la cible ACP n’est pas connue ou n’a pas pu être focalisée; ou une ancienne extension ne respecte pas encore la route explicite.
 
-**Remède** : garde l’extension `orchestrator-monitor` à jour (>= 0.0.56). Le résultat sûr est `skipped`; ne réessaie pas en envoyant vers le chat actif et ne crée pas de nouvelle conversation. Vérifie l’ID `acp/devin-cli/...` et que l’onglet existant est focalisable.
+**Remède** : garde l'extension `orchestrator-monitor` à jour (>= 0.0.57). Les envois vers ACP tiers restent fail-closed (`skipped`) tant qu'un send provider-spécifique n'est pas disponible; ne réessaie pas en envoyant vers le chat Devin, une autre session ou le transport CLI.
 
 ### Symptôme : "worker NIM ne répond pas"
 

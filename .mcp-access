@@ -44,3 +44,31 @@ deny: C:/Users/Administrator/AppData/**
 deny: C:/Program Files/Everything/**
 # écriture : jamais
 deny-write: **
+
+# hphe-rest (passerelle HTTP locale) : lecture bornée aux zones utiles,
+# écriture uniquement dans les données hphe. Secrets refusés EN DERNIER
+# (dernier match gagne) — prioritaires même sur les grants data ci-dessus.
+[rest]
+read: F:/Promgramation-teste/**
+read: C:/Program Files/Projet-complet/**
+read: C:/Program Files/servers/**
+read: C:/Users/Administrator/Desktop/**
+read: F:/Sqlite-DB/agentmemory/**
+deny-write: **
+allow: C:/Program Files/servers/hephaistos2-kit/data/**
+allow: C:/Program Files/servers/hephaistos2-kit/migrated-vec/**
+deny: **/*.token
+deny: **/token*.json
+deny: **/.ssh/**
+deny: **/.gnupg/**
+deny: **/.aws/**
+deny: **/.azure/**
+deny: **/.env
+deny: **/.env.**
+deny: **/*.pem
+deny: **/*.key
+deny: **/*credential*
+deny: **/id_rsa*
+deny: **/secrets.*
+deny: C:/Users/Administrator/AppData/**
+deny: C:/Program Files/Everything/**

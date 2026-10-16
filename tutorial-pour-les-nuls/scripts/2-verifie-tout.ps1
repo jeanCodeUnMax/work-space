@@ -23,7 +23,7 @@ if ($task -match "En cours|Ready|Running") { Pass "hphe-indexd tourne" } else { 
 Step "Test 2/6 — Repondeur REST (port 8792)"
 try {
     $r = Invoke-RestMethod "http://127.0.0.1:8792/health" -TimeoutSec 5
-    if ($r.status -eq "ok") { Pass "hphe-rest OK" } else { Warn "hphe-rest repond mais pas ok" }
+    if ($r.status -in @('ok', 'healthy')) { Pass "hphe-rest OK" } else { Warn "hphe-rest repond mais pas ok" }
 } catch { Fail "hphe-rest ne repond pas" }
 
 Step "Test 3/6 — Cerveau MCP (hphe-mcp)"

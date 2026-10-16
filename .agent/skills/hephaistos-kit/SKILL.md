@@ -6,7 +6,7 @@ description: "Kit d'infrastructure agent injectable : installe/met à jour le st
 # Hephaistos2-Kit — infrastructure agent injectable
 
 > Le kit est le **template canonique** de l'infrastructure agent. Un projet injecté reçoit
-> `.agent/` complet + `.vscode/`. Source : `github.com/art-qalam-fr/Hephaistos-Kit`.
+> `.agent/` complet + `.vscode/`. Source : `github.com/projet-temporaire/hephaistos2-kit`.
 > Template local : `<KIT_ROOT>`.
 
 ## Ce que le kit injecte
@@ -15,7 +15,8 @@ description: "Kit d'infrastructure agent injectable : installe/met à jour le st
 |---|---|
 | `.agent/rules/global_rules.md` | Règles universelles (délégation CLI, OpenCLI/puppeteer, uv, mémoire unifiée) |
 | `.agent/agents/*.md` | Définitions d'agents + triggers de routage |
-| `.agent/skills/*/` | ~40 skills métier (dont `hephaistos-kit`, `orchestrator`, `boost`) |
+| `.agent/skills/*/` | 45 skills métier (dont `hephaistos-kit`, `orchestrator`, `boost`, `chat-id-project`, `jointes-project`) |
+| `.devin/` | Règles (`.devin/rules/`) et skills (`.devin/skills/`) locales Devin (dont `chat-id-project`, `jointes-project`) |
 | `.agent/workflows/`, `knowledge/`, `memory/` | Workflows slash-commands, docs mémoire |
 | `.agent/scripts/` | Infra : `start-workspace.ps1`, `beacon-sync.ps1`, `ingest-workspace.ps1`, `auto-ingest.ps1`, `memory-maintenance.ps1`, `console-hider.ps1`, `sync-agent-layer.ps1`… |
 | `.agent/devin/`, `.agent/hermes/` | Hooks Devin + couche Hermes |
@@ -25,10 +26,10 @@ description: "Kit d'infrastructure agent injectable : installe/met à jour le st
 ## Commandes réelles (pas de binaire `hephaistos-kit` — scripts PowerShell)
 
 ```powershell
-# Injection/sync de la couche .agent/ vers un projet cible :
-.agent/scripts/sync-agent-layer.ps1 -TargetPath <projet>   # copie hash-compare, préserve local_rules.md + runtime
-.agent/scripts/init-project.ps1 -Path <projet>             # init complète d'un nouveau projet
-.agent/bootstrap.ps1                                        # bootstrap workspace (auto-ingest)
+# Injection/sync des couches .agent/ et .devin/ vers un projet cible :
+.agent/scripts/sync-agent-layer.ps1 -Target <projet>   # copie hash-compare, préserve local_rules.md, .devin existant + runtime
+.agent/scripts/init-project.ps1 -ProjectName <nom>     # init complète d'un nouveau projet
+.agent/bootstrap.ps1                                   # bootstrap workspace (auto-ingest)
 ```
 
 Le kit se propage par ces scripts — il n'existe pas d'exécutable `bin/hephaistos-kit.js`.

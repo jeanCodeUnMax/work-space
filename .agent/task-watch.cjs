@@ -13,6 +13,29 @@ const LOG = path.join(__dirname, 'task-events.log');
 const URL = 'ws://127.0.0.1:7477';
 const seen = new Map(); // task id -> last status
 
+// Auth bridge (revue sécu) : ORCH_MONITOR_TOKEN env, sinon ws-bridge.token
+// écrit par le bridge au boot dans .agent/ (ici __dirname = .agent).
+function wsToken() {
+  const envTok = (process.env.ORCH_MONITOR_TOKEN || '').trim();
+  if (envTok) return envTok;
+  const dirs = [
+    __dirname,                                              // .agent/
+    path.join(process.cwd(), '.agent'),
+    process.env.HEPHAISTOS_WORKSPACE && path.join(process.env.HEPHAISTOS_WORKSPACE, '.agent'),
+  ].filter(Boolean);
+  for (const d of dirs) {
+    try {
+      const t = fs.readFileSync(path.join(d, 'ws-bridge.token'), 'utf8').trim();
+      if (t) return t;
+    } catch { /* absent */ }
+  }
+  return '';
+}
+function connectUrl() {
+  const tok = wsToken();
+  return tok ? `${URL}?token=${encodeURIComponent(tok)}` : URL;
+}
+
 function ts() { return new Date().toISOString().slice(11, 19); }
 function emit(line) {
   const out = `[${ts()}] ${line}`;
@@ -29,7 +52,7 @@ function track(t) {
 
 function connect() {
   let ws;
-  try { ws = new WebSocket(URL); } catch { return setTimeout(connect, 5000); }
+  try { ws = new WebSocket(connectUrl()); } catch { return setTimeout(connect, 5000); }
   ws.on('message', (raw) => {
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.type === 'task_update' && m.task) track(m.task);

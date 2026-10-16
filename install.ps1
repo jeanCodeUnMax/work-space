@@ -58,6 +58,8 @@ Copy-Item "$SRV\hphe-indexd.exe" "$PRJ\extension\server\" -Force -ErrorAction Si
 @"
 @echo off
 rem Hephaistos REST gateway + boucle d'ingestion automatisee
+rem Securise (revue) : profil d'acces [rest] borne + roots + auth token
+rem (HPHE_REST_TOKEN env ou $DATA\hphe-rest.token genere au boot).
 set HPHE_CONTENT_DIR=$DATA\content-index
 set HPHE_VEC_DIR=$INS\migrated-vec
 set HPHE_ORCH_DB=$DATA\orchestrator.db
@@ -65,12 +67,17 @@ set HPHE_MEMORY_ROOT=F:\Sqlite-DB\agentmemory
 set HPHE_INGEST_ROOTS=$PRJ
 set HPHE_INGEST_SCAN=F:\Promgramation-teste
 set HPHE_INGEST_INTERVAL_S=900
+set EVERYTHING_MCP_ACCESS_FILE=%~dp0.mcp-access
+set EVERYTHING_MCP_ROOTS=F:\Promgramation-teste;$INS;$PRJ;C:\Users\Administrator\Desktop;F:\Sqlite-DB\agentmemory
 :loop
-"$SRV\hphe-rest.exe" --addr 127.0.0.1:8792 >> "$DATA\hphe-rest.log" 2>&1
+"$SRV\hphe-rest.exe" --addr 127.0.0.1:8792 --profile rest >> "$DATA\hphe-rest.log" 2>&1
 echo %DATE% %TIME% hphe-rest termine - relance dans 10s >> "$DATA\hphe-rest.log"
 timeout /t 10 /nobreak >nul
 goto loop
 "@ | Set-Content "$SRV\hphe-rest.cmd" -Encoding ASCII
+
+# politique d'accès à côté du .cmd (le wrapper la pointe via EVERYTHING_MCP_ACCESS_FILE)
+Copy-Item "$PRJ\extension\server\.mcp-access" "$SRV\.mcp-access" -Force -ErrorAction SilentlyContinue
 
 @"
 @echo off
@@ -148,8 +155,8 @@ if ($Elevated) {
 if (-not $SkipVerify) {
   Write-Host "`n=== [Vérifications d'intégration] ===" -ForegroundColor Cyan
   
-  # a) Extension orchestrator-monitor (>= 0.0.55)
-  $expectedExtVer = '0.0.55'
+  # a) Extension orchestrator-monitor (>= 0.0.57)
+  $expectedExtVer = '0.0.57'
   $extDirs = @()
   $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
   $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue

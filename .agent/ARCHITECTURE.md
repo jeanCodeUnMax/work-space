@@ -9,8 +9,9 @@
 Hephaistos2-Kit is a modular system consisting of:
 
 - **22 Specialist Agents** - Role-based AI personas
-- **48 Skills** - Domain-specific knowledge modules (ajout intelligent-routing)
-- **12 Workflows** - Slash command procedures
+- **45 Skills** - Domain-specific knowledge modules (incluant `chat-id-project` et `jointes-project`)
+- **11 Workflows** - Slash command procedures
+- **.devin Layer** - Règles locales (`.devin/rules/`) et skills locales (`.devin/skills/`) pour Devin
 
 ---
 
@@ -75,8 +76,8 @@ rag_rest_bridge) → voir `_archive/agent-rag/DEPRECATED-BY-RUST.md` ;
 ├── ARCHITECTURE.md          # This file
 ├── REGISTRY.md              # Agents/capabilities registry + known issues
 ├── agents/                  # 22 Specialist Agents
-├── skills/                  # 48 Skills
-├── workflows/               # 12 Slash Commands (incl. /reflect)
+├── skills/                  # 45 Skills (dont chat-id-project et jointes-project)
+├── workflows/               # 11 Slash Commands (chat-id/jointes migrés vers skills, archivés .bak)
 ├── rules/                   # Global Rules (incl. memory discipline)
 ├── knowledge/               # Durable knowledge: ADR decisions/, architecture/, docs/
 │                            #   → indexed by auto-ingest (searchable by all agents)

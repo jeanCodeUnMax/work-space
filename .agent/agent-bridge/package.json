@@ -5,7 +5,7 @@
   "main": "listener.js",
   "scripts": {
     "start": "node listener.js --agent Devin",
-    "test": "node --test binome-handshake.test.cjs"
+    "test": "node --test binome-handshake.test.cjs chat-id.test.cjs agy-hub-model.test.cjs"
   },
   "dependencies": {
     "ws": "^8.16.0"

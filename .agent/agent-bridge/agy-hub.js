@@ -14,7 +14,7 @@
  *            connect-protocol-version: 1
  *
  * Usage CLI :
- *   node agy-hub.js discover                      → {port, csrfToken, pid, addDir}
+ *   node agy-hub.js discover                      → {port, pid, addDir, csrfToken:'<redacted>'}
  *   node agy-hub.js current                       → cascadeId active (la plus récemment active)
  *   node agy-hub.js list                          → conversations (cascade_id, title)
  *   node agy-hub.js models                        → modeles autorises + defaut
@@ -127,23 +127,52 @@ async function getActiveCascade(hub) {
     return list[0].cascadeId;
 }
 
-async function defaultModel(hub) {
-    const d = await rpc(hub, 'GetCascadeModelConfigData', {});
-    const moa = d.defaultOverrideModelConfig?.modelOrAlias;
-    if (moa?.model) return moa.model;
-    if (moa?.alias) return { alias: moa.alias };
-    const first = (d.clientModelConfigs || []).find((c) => !c.disabled);
-    return first?.modelOrAlias?.model || null;
+function resolvePlanModelFromConfig(modelConfig, modelRef) {
+    if (typeof modelRef !== 'string' || !modelRef.trim()) {
+        throw new Error('AGY send requires an explicit Gemini model ID or label');
+    }
+    const matches = (modelConfig?.clientModelConfigs || []).filter((entry) => {
+        if (entry?.disabled) return false;
+        const alias = entry?.modelOrAlias || {};
+        return [entry?.label, entry?.modelId, alias.model, alias.alias]
+            .some((candidate) => candidate === modelRef);
+    });
+    if (matches.length !== 1) {
+        throw new Error(`AGY model is ${matches.length ? 'ambiguous' : 'not available'}: ${modelRef}`);
+    }
+    const modelOrAlias = matches[0].modelOrAlias || {};
+    if (typeof modelOrAlias.model === 'string' && modelOrAlias.model) return modelOrAlias.model;
+    if (typeof modelOrAlias.alias === 'string' && modelOrAlias.alias) return { alias: modelOrAlias.alias };
+    throw new Error(`AGY model has no usable modelOrAlias: ${modelRef}`);
 }
 
-/** Injecte un message user dans la conversation <cascadeId>. */
-async function sendMessage(hub, cascadeId, text, planModel) {
-    const model = planModel === undefined ? await defaultModel(hub) : planModel;
-    const body = { cascadeId, items: [{ text }] };
-    if (model) {
-        body.cascadeConfig = { plannerConfig: typeof model === 'string'
-            ? { planModel: model } : { requestedModel: model } };
+async function resolvePlanModel(hub, modelRef) {
+    if (modelRef === undefined || modelRef === null) {
+        throw new Error('AGY send requires an explicit Gemini model ID or label');
     }
+    if (typeof modelRef === 'object') return modelRef;
+    const modelConfig = await rpc(hub, 'GetCascadeModelConfigData', {});
+    return resolvePlanModelFromConfig(modelConfig, modelRef);
+}
+
+function buildSendBody(cascadeId, text, planModel) {
+    const body = { cascadeId, items: [{ text }] };
+    // planModel is the exact hub-side model token resolved from an explicit
+    // UI model ID/label; never infer it from the hub default.
+    if (planModel !== undefined && planModel !== null) {
+        body.cascadeConfig = {
+            plannerConfig: typeof planModel === 'string'
+                ? { planModel }
+                : { requestedModel: planModel }
+        };
+    }
+    return body;
+}
+
+/** Injecte un message sans remplacer le modèle choisi dans l'UI. */
+async function sendMessage(hub, cascadeId, text, planModel) {
+    const resolvedModel = await resolvePlanModel(hub, planModel);
+    const body = buildSendBody(cascadeId, text, resolvedModel);
     // Focus côté hub (équiv. openCascadeIdInChatPanel) — best effort
     try {
         await rpc(hub, 'SetBrowserOpenConversation', {
@@ -222,24 +251,36 @@ async function main() {
     const [cmd, ...args] = process.argv.slice(2);
     const hub = discoverHub(process.env.AGY_WORKSPACE || process.cwd());
     const j = (x) => console.log(JSON.stringify(x, null, 1));
+    const takeOption = (values, name) => {
+        const index = values.indexOf(name);
+        if (index < 0) return { value: null, args: values };
+        if (index + 1 >= values.length) throw new Error(`${name} exige une valeur explicite`);
+        return {
+            value: values[index + 1],
+            args: values.filter((_, i) => i !== index && i !== index + 1)
+        };
+    };
 
     switch (cmd) {
-        case 'discover': return j(hub);
+        case 'discover':
+            // Jamais le CSRF token en stdout (revue sécu) — interne au rpc() seulement
+            return j({ ...hub, csrfToken: hub.csrfToken ? '<redacted>' : undefined });
         case 'list': return j(await listConversations(hub));
         case 'models': return j(await rpc(hub, 'GetCascadeModelConfigData', {}));
         case 'current':
             return console.log(await getActiveCascade(hub) || '');
         case 'send': {
-            let cascadeId = args[0];
+            const parsed = takeOption(args, '--model');
+            let cascadeId = parsed.args[0];
             let text;
             if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cascadeId)) {
-                text = args.slice(1).join(' ');
+                text = parsed.args.slice(1).join(' ');
             } else {
                 cascadeId = await getActiveCascade(hub);
-                text = args.join(' ');
+                text = parsed.args.join(' ');
             }
             if (!cascadeId) throw new Error('Aucune conversation Antigravity active');
-            return j(await sendMessage(hub, cascadeId, text));
+            return j(await sendMessage(hub, cascadeId, text, parsed.value));
         }
         case 'read': {
             let cascadeId = args[0];
@@ -266,21 +307,22 @@ async function main() {
             return j(await waitIdle(hub, cascadeId, timeoutSec));
         }
         case 'ask': {
-            let cascadeId = args[0];
-            let rest = args.slice(1);
+            const parsed = takeOption(args, '--model');
+            let cascadeId = parsed.args[0];
+            let rest = parsed.args.slice(1);
             if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cascadeId)) {
                 cascadeId = await getActiveCascade(hub);
-                rest = args;
+                rest = parsed.args;
             }
             if (!cascadeId) throw new Error('Aucune conversation Antigravity active');
             const timeoutSec = /^\d+$/.test(rest[rest.length - 1] || '') ? Number(rest.pop()) : 300;
-            const r = await ask(hub, cascadeId, rest.join(' '), timeoutSec);
+            const r = await ask(hub, cascadeId, rest.join(' '), timeoutSec, parsed.value);
             for (const rep of r.replies) console.log(rep.text);
             if (!r.replies.length) console.log('(pas de réponse — timedOut=' + r.timedOut + ')');
             return;
         }
         default:
-            console.error('cmds: discover|current|list|models|send|read|wait|ask');
+            console.error('cmds: discover|current|list|models|send <cascadeId?> --model <modelId|label> <text>|read|wait|ask <cascadeId?> --model <modelId|label> <text> [timeoutSec]');
             process.exit(2);
     }
 }
@@ -289,4 +331,7 @@ if (require.main === module) {
     main().catch((e) => { console.error('ERR:', e.message); process.exit(1); });
 }
 
-module.exports = { discoverHub, rpc, listConversations, defaultModel, sendMessage, waitIdle, stepCount, readReplies, ask };
+module.exports = {
+    discoverHub, rpc, listConversations, resolvePlanModelFromConfig, resolvePlanModel,
+    buildSendBody, sendMessage, waitIdle, stepCount, readReplies, ask
+};
