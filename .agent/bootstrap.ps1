@@ -28,8 +28,7 @@ try {
 
 if (-not $bridgeUp) {
     $bridgeCandidates = @(
-        (Join-Path $PSScriptRoot "..\extensions\orchestrator-monitor\ws-bridge\bridge.js"),
-        "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
+        (Join-Path $PSScriptRoot "..\extensions\orchestrator-monitor\ws-bridge\bridge.js")
     )
     $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
     $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }

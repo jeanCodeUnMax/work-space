@@ -13,7 +13,7 @@
 
 | Outil | Description |
 |-------|-------------|
-| `memory_search` / `memory_read` / `memory_list` | KV agentmemory : recherche/lecture/inventaire (JSON par projet sous `F:/Sqlite-DB/agentmemory/`) |
+| `memory_search` / `memory_read` / `memory_list` | KV agentmemory : recherche/lecture/inventaire (JSON par projet sous `${HPHE_MEMORY_ROOT}/`) |
 | `memory_write` / `memory_update` / `memory_stats` | Écriture/mise à jour d'entrées mémoire + compteurs |
 | `content_search` | Recherche BM25 exacte dans le contenu indexé du workspace (Tantivy) |
 | `semantic_search` | Recherche vectorielle sémantique (hphe-vec, usearch HNSW 2048D, NIM interne) |
@@ -74,7 +74,7 @@ LOCAL:  memory-database/  (jonction → global)
           └─ graph/        (memory_mcp.db + graph-memory.db)
           └─ cache/        (runtime-cache.db)
 
-GLOBAL: ${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/  (= F:/Sqlite-DB/...)
+GLOBAL: ${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/
 ```
 
 **Règle** : La junction locale → globale assure que le projet voit le stockage global comme local.

@@ -63,8 +63,8 @@ if ($Verify) {
         if ($ext) {
             try {
                 $version = (Get-Content (Join-Path $ext.FullName 'package.json') -Raw | ConvertFrom-Json).version
-                if ([version]$version -ge [version]'0.0.57') { Pass "extension monitor installee : $($ext.Name)" }
-                else { Warn "extension monitor ${version}; le routage ACP fail-closed requiert 0.0.57+" }
+                if ([version]$version -ge [version]'0.0.58') { Pass "extension monitor installee : $($ext.Name)" }
+                else { Warn "extension monitor ${version}; l'injection ACP directe requiert 0.0.58+" }
             } catch { Warn 'version extension monitor illisible' }
         } else { Warn 'extension monitor non detectee dans .devin/extensions' }
     } else { Warn 'dossier .devin/extensions absent' }
@@ -87,7 +87,7 @@ if ($Verify) {
                 $acpSessions = ($acpRaw | Out-String) | ConvertFrom-Json
                 Pass "ACP discovery active ($(@($acpSessions).Count) sessions dans ce workspace)"
             } else { Warn 'ACP discovery non repondante; recharger la fenetre Devin' }
-        } catch { Warn 'ACP discovery impossible; verifier l extension 0.0.57 et recharger Devin' }
+        } catch { Warn 'ACP discovery impossible; verifier l extension 0.0.58 et recharger Devin' }
         finally { Pop-Location }
     } else { Warn 'devin-hub.js absent; discovery ACP indisponible' }
 

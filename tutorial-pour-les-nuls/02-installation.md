@@ -9,11 +9,13 @@
 Ouvre **PowerShell 7 en administrateur** (clic droit → "Exécuter en tant qu'administrateur") et tape :
 
 ```powershell
-cd "C:\Program Files\Projet-complet\hephaistos2-kit\tutorial-pour-les-nuls\scripts"
+cd "<chemin-vers-le-repo>\tutorial-pour-les-nuls\scripts"
 .\1-installe-moi.ps1
 ```
 
-C'est tout. Le script fait tout le reste.
+`<chemin-vers-le-repo>` = le dossier où tu as cloné le projet (voir `01-avant-de-commencer.md`). Le script détecte sa position tout seul — **aucun chemin n'est imposé**.
+
+C'est tout. Le script fait tout le reste, y compris `git submodule update --init --recursive` et `npm install` du bridge si nécessaire.
 
 ---
 
@@ -22,15 +24,16 @@ C'est tout. Le script fait tout le reste.
 Le script `1-installe-moi.ps1` est un wrapper autour de `install.ps1` qui fait les choses dans l'ordre :
 
 1. **Vérifie que tu es admin** (sinon il s'arrête et te le dit)
-2. **Vérifie les prérequis** (PowerShell 7, Rust, Node, clés NVIDIA)
-3. **Compile le moteur Rust** (`cargo build --release` dans `hphe/`)
-4. **Déploie les binaires** dans `C:\Program Files\servers\hephaistos2-kit\extension\server\`
-5. **Crée les dossiers de données** (`data/`, `migrated-vec/`, `memory-database/`)
-6. **Seed la base orchestrateur** (agents + provider_prefs)
-7. **Configure le MCP** dans Devin (`mcp_config.json`)
-8. **Installe l'auto-start** (`hphe-rest` au démarrage)
-9. **Crée la tâche planifiée** (`hphe-indexd`, nécessite admin)
-10. **Vérifie tout** : extension 0.0.57+, bridge 7477, surfaces de règles, canal binôme
+2. **Vérifie les prérequis** (PowerShell 7, Git, Rust, Node — les clés NVIDIA sont un avertissement, pas un bloqueur)
+3. **Initialise les sous-modules** (`git submodule update --init --recursive`) et **installe les dépendances npm** du bridge (`.agent/agent-bridge`, paquet `ws`)
+4. **Compile le moteur Rust** (`cargo build --release` dans `hphe/`)
+5. **Déploie les binaires** dans `<install>\extension\server\` (par défaut `%ProgramFiles%\servers\hephaistos2-kit`)
+6. **Crée les dossiers de données** (`data/`, `migrated-vec/`, `memory-database/`) — les chemins mémoire/scan d'une install existante sont **réutilisés**, sinon paramétrables via `-MemoryRoot`, `-IngestScan`, `-EverythingRoots`
+7. **Seed la base orchestrateur** (agents + provider_prefs)
+8. **Configure le MCP** dans Devin (`mcp_config.json`)
+9. **Installe l'auto-start** (`hphe-rest` au démarrage)
+10. **Crée la tâche planifiée** (`hphe-indexd`, nécessite admin)
+11. **Vérifie tout** : extension 0.0.58+, bridge 7477, surfaces de règles, canal binôme
 
 ---
 
@@ -39,14 +42,17 @@ Le script `1-installe-moi.ps1` est un wrapper autour de `install.ps1` qui fait l
 Tu peux lancer les étapes une par une :
 
 ```powershell
-# 1) Installation complète (depuis la racine du projet)
-cd "C:\Program Files\Projet-complet\hephaistos2-kit"
+# 1) Installation complète (depuis la racine du projet, chemin auto-détecté)
+cd "<chemin-vers-le-repo>"
 pwsh -File install.ps1 -Elevated
 
-# 2) Si tu veux sauter le build (déjà compilé)
+# 2) Projet ou runtime ailleurs ? Tout est paramétrable :
+pwsh -File install.ps1 -Elevated -ProjectRoot "D:\mes-projets\hephaistos2-kit" -InstallRoot "D:\runtime\hephaistos2-kit"
+
+# 3) Si tu veux sauter le build (déjà compilé)
 pwsh -File install.ps1 -Elevated -SkipBuild
 
-# 3) Si tu veux sauter les vérifs finales
+# 4) Si tu veux sauter les vérifs finales
 pwsh -File install.ps1 -Elevated -SkipVerify
 ```
 
@@ -67,7 +73,7 @@ Le script cible Devin par défaut (`%USERPROFILE%\.devin\extensions`). Pour une 
 ### Méthode manuelle
 
 1. Dans Devin ou VS Code : `Ctrl+Shift+P` → `Extensions: Install from VSIX...`
-2. Choisis `extensions/orchestrator-monitor/orchestrator-monitor-0.0.57.vsix`
+2. Choisis le `orchestrator-monitor-*.vsix` **le plus récent** dans `extensions/orchestrator-monitor/` (0.0.58 minimum — c'est elle qui apporte l'injection ACP)
 3. Pareil pour `extension/hephaistos-kit-search.vsix` si besoin
 4. **Reload Window** (Ctrl+Shift+P → Developer: Reload Window)
 
@@ -101,7 +107,7 @@ pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
 ```
 
 Tu devrais voir :
-- `[OK] orchestrator-monitor v0.0.57 installée`
+- `[OK] orchestrator-monitor v0.0.58 installée`
 - `[OK] hub agy actif`
 - `[OK] surfaces de règles conformes`
 - `[OK] canal binome : IDs devin et agy publiés`

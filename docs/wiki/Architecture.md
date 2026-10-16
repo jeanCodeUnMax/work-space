@@ -17,7 +17,7 @@ hphe-indexd (SYSTEM)            stores d'état
   $MFT scan + USN live           Tantivy  data\content-index
   snapshot mmap                  usearch   migrated-vec (2048D)
   \\.\pipe\hphe-index            sqlite    data\orchestrator.db
-                                 KG        F:\Sqlite-DB\agentmemory
+                                 KG        HPHE_MEMORY_ROOT (agentmemory)
 ```
 
 ## `hphe-indexd` — le moteur de vélocité
@@ -52,9 +52,9 @@ hphe-indexd (SYSTEM)            stores d'état
 
 | | PROJET | INSTALL |
 |---|---|---|
-| Chemin | `C:\Program Files\Projet-complet\hephaistos2-kit` | `C:\Program Files\servers\hephaistos2-kit` |
+| Chemin | `<repo>` (dossier du clone, libre) | `%ProgramFiles%\servers\hephaistos2-kit` (défaut, `HPHE_INSTALL`) |
 | Contenu | sources, `.agent`, git, sous-modules, docs, tests | binaires, `data/`, `migrated-vec/`, junctions |
 | Règle | seul endroit où l'on édite | régénéré par `install.ps1`, jamais édité à la main |
 
-Shim de compatibilité : `C:\Program Files\servers\everything-mcp\` = jonctions
+Shim de compatibilité historique : `<install>\..\everything-mcp\` = jonctions
 vers les deux arbres ci-dessus.

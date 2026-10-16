@@ -8,14 +8,14 @@ triggers:
 
 # `/jointes-project <agent>` (skill workspace; commande globale canonique : `/jointes`)
 
-Appliquer `docs/protocole-binome/README.md` (copie injectée : `.agent/docs/protocole-binome/README.md`, sinon `C:/Program Files/Projet-complet/hephaistos2-kit/docs/protocole-binome/README.md`). Dans Antigravity, utiliser impérativement l'identité AGY réelle (`--as agy --via hub`) ; ne jamais simuler Devin ni un autre pair.
+Appliquer `docs/protocole-binome/README.md` (copie injectée : `.agent/docs/protocole-binome/README.md`, sinon `$HEPHAISTOS_KIT/docs/protocole-binome/README.md`). Dans Antigravity, utiliser impérativement l'identité AGY réelle (`--as agy --via hub`) ; ne jamais simuler Devin ni un autre pair.
 
 Résoudre le helper avant usage :
 
 ```bash
 BRIDGE=".agent/agent-bridge"
-[ -f "$BRIDGE/binome.js" ] || BRIDGE="C:/Program Files/Projet-complet/hephaistos2-kit/.agent/agent-bridge"
-[ -f "$BRIDGE/binome.js" ] || { echo "REFUS: agent-bridge introuvable"; exit 1; }
+if [ ! -f "$BRIDGE/binome.js" ] && [ -n "$HEPHAISTOS_KIT" ]; then BRIDGE="$HEPHAISTOS_KIT/.agent/agent-bridge"; fi
+[ -f "$BRIDGE/binome.js" ] || { echo "REFUS: agent-bridge introuvable (definir HEPHAISTOS_KIT)"; exit 1; }
 ```
 
 1. Identifier l'identifiant exact de la session AGY avec :

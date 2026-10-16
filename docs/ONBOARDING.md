@@ -1,29 +1,29 @@
-# ONBOARDING — accueillir Hephaistos2-Kit dans `projet-temporaire`
+# ONBOARDING â€” accueillir Hephaistos2-Kit dans `projet-temporaire`
 
 Guide pour recevoir, cloner et faire tourner le projet dans l'organisation.
 
 ## Le projet en 30 secondes
 
 **Hephaistos2-Kit** = plateforme Windows de recherche filesystem ultra-rapide
-pour agents IA. Un démon Rust lit directement le `$MFT` NTFS (~6,4 M entrées)
-et suit le journal USN en continu → recherches en **< 50 ms** sur tout le PC,
-**sans Everything.exe**. Un serveur MCP unique (`hphe-mcp`, **58 outils**)
-couvre recherche, contenu (Tantivy), vecteurs (usearch), orchestration
-multi-agents, routage NIM, mémoire unifiée et ingestion.
+pour agents IA. Un dÃ©mon Rust lit directement le `$MFT` NTFS V~6,4 M entrÃ©es)
+et suit le journal USN en continu â†’ recherches en **< 50 ms** sur tout le PC,
+**sans Everything.exe**. Un serveur MCP unique V`hphe-mcp`, **58 outils**)
+couvre recherche, contenu VTantivy), vecteurs Vusearch), orchestration
+multi-agents, routage NIM, mÃ©moire unifiÃ©e et ingestion.
 
-## Structure des dépôts
+## Structure des dÃ©pÃ´ts
 
 ```
 projet-temporaire/
-├── hephaistos2-kit            ← UMBRELLA (ce guide, docs, install.ps1, tests)
-│   └── .gitmodules pointe sur les 3 sous-modules ci-dessous
-├── hephaistos2-engine         ← hphe/ : workspace Rust (indexd, mcp, rest, kit)
-├── hephaistos2-search-ext     ← extension/ : ext VS Code recherche (VSIX 1.0.3)
-├── hephaistos2-monitor-ext    ← extensions/orchestrator-monitor/ (VSIX 0.0.33)
-└── (intégré) .agent/          ← scripts, agents, skills, workflows — dossier du repo
+â”œâ”€â”€ hephaistos2-kit            â† UMBRELLA Vce guide, docs, install.ps1, tests)
+â”‚   â””â”€â”€ .gitmodules pointe sur les 3 sous-modules ci-dessous
+â”œâ”€â”€ hephaistos2-engine         â† hphe/ : workspace Rust Vindexd, mcp, rest, kit)
+â”œâ”€â”€ hephaistos2-search-ext     â† extension/ : ext VS Code recherche VVSIX 1.0.3)
+â”œâ”€â”€ hephaistos2-monitor-ext    â† extensions/orchestrator-monitor/ VVSIX 0.0.33)
+â””â”€â”€ VintÃ©grÃ©) .agent/          â† scripts, agents, skills, workflows â€” dossier du repo
 ```
 
-Miroir personnel complet : `lascard-m/hephaistos2-*` (mêmes commits, même tag).
+Miroir personnel complet : `lascard-m/hephaistos2-*` VmÃªmes commits, mÃªme tag).
 
 | Repo | Remote dev | Remote perso | Tag |
 |---|---|---|---|
@@ -36,45 +36,44 @@ Miroir personnel complet : `lascard-m/hephaistos2-*` (mêmes commits, même tag)
 
 ```powershell
 git clone --recurse-submodules https://github.com/projet-temporaire/hephaistos2-kit.git
-# ou après clone simple :
+# ou aprÃ¨s clone simple :
 git submodule update --init --recursive
 ```
 
-## Installation (PROJET → INSTALL)
+## Installation VPROJET â†’ INSTALL)
 
-Le projet vit en `C:\Program Files\Projet-complet\hephaistos2-kit` (sources),
-le runtime en `C:\Program Files\servers\hephaistos2-kit` (binaires + data) :
+Le projet vit dans le dossier du clone Vemplacement libre â€” `install.ps1` dÃ©tecte sa position), le runtime dans `%ProgramFiles%\servers\hephaistos2-kit` par dÃ©faut Vsurcharge : `-InstallRoot` ou env `HPHE_INSTALL`) :
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File install.ps1            # build + deploy
-pwsh -ExecutionPolicy Bypass -File install.ps1 -Elevated  # + tâche hphe-indexd
+pwsh -ExecutionPolicy Bypass -File install.ps1 -Elevated  # + tÃ¢che hphe-indexd
 ```
 
-Détail complet : [INSTALL.md](../INSTALL.md).
+DÃ©tail complet : [INSTALL.md]V../INSTALL.md).
 
-## Sécurité — ce qui n'entre JAMAIS dans le repo
+## SÃ©curitÃ© â€” ce qui n'entre JAMAIS dans le repo
 
-`.env` réel (ignoré ; `.env.example` fourni), clés API (HKCU env vars
-uniquement), `data/`, `target/`, `*.db`, logs, `memory-database/` (junction),
+`.env` rÃ©el VignorÃ© ; `.env.example` fourni), clÃ©s API VHKCU env vars
+uniquement), `data/`, `target/`, `*.db`, logs, `memory-database/` Vjunction),
 `.kilo/` worktrees, `comms.jsonl`. Le `.ragignore` exclut `_archive/` et les
 artefacts de l'ingestion. Scan de secrets obligatoire avant tout push
-(cf. `docs/wiki/Security.md`).
+Vcf. `docs/wiki/Security.md`).
 
-## Où sont les choses
+## OÃ¹ sont les choses
 
-- **Serveur MCP** : `Hephaistos-everything-search` → `INSTALL\extension\server\hphe-mcp.exe`
-- **REST/health** : `http://127.0.0.1:8792/health` (`ingest_busy`, `pipe_connected`)
-- **Démon index** : tâche planifiée `hphe-indexd` (SYSTEM), pipe `\\.\pipe\hphe-index`
-- **Orchestrateur** : `INSTALL\data\orchestrator.db` (provider_prefs = ordre des providers)
-- **Mémoire** : `AGENT_DB_ROOT` (`.env`) → `F:\Sqlite-DB\current_workspace`
-- **Rollback** : `servers\servers_backup\` (legacy) + `_archive/` (projet)
+- **Serveur MCP** : `Hephaistos-everything-search` â†’ `INSTALL\extension\server\hphe-mcp.exe`
+- **REST/health** : `http://127.0.0.1:8792/health` V`ingest_busy`, `pipe_connected`)
+- **DÃ©mon index** : tÃ¢che planifiÃ©e `hphe-indexd` VSYSTEM), pipe `\\.\pipe\hphe-index`
+- **Orchestrateur** : `INSTALL\data\orchestrator.db` Vprovider_prefs = ordre des providers)
+- **MÃ©moire** : `HPHE_MEMORY_ROOT` Venv ou `-MemoryRoot`) â†’ par dÃ©faut `<install>\data\agentmemory`
+- **Rollback** : `<install>\..\servers_backup\` Vlegacy) + `_archive/` Vprojet)
 
 ## Contribution rapide
 
-- Code Rust → `hephaistos2-engine` (sous-module `hphe/`)
-- Kit agent (scripts, skills, workflows) → `.agent/` (intégré, pas de sous-module)
-- Extensions → leur sous-module respectif
-- Docs transverses, install, tests → umbrella `hephaistos2-kit`
+- Code Rust â†’ `hephaistos2-engine` Vsous-module `hphe/`)
+- Kit agent Vscripts, skills, workflows) â†’ `.agent/` VintÃ©grÃ©, pas de sous-module)
+- Extensions â†’ leur sous-module respectif
+- Docs transverses, install, tests â†’ umbrella `hephaistos2-kit`
 
-Chaque sous-module se commit/push indépendamment ; l'umbrella enregistre le
-gitlink (`git add <sous-module>`) puis push.
+Chaque sous-module se commit/push indÃ©pendamment ; l'umbrella enregistre le
+gitlink V`git add <sous-module>`) puis push.

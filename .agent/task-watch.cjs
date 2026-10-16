@@ -6,8 +6,23 @@ const path = require('path');
 let WebSocket;
 try { WebSocket = require('ws'); }
 catch {
-  WebSocket = require('C:/Users/Administrator/.devin/extensions/hephaistos.orchestrator-monitor-0.0.33/ws-bridge/node_modules/ws');
+  // fallback : ws du repo ou du monitor installé (toute version) — aucun
+  // chemin machine/version en dur.
+  const fallbackDirs = [
+    path.join(__dirname, 'agent-bridge', 'node_modules', 'ws'),
+    path.join(__dirname, '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
+  ];
+  try {
+    const extRoot = path.join(process.env.USERPROFILE || '', '.devin', 'extensions');
+    for (const name of fs.readdirSync(extRoot)) {
+      if (name.startsWith('hephaistos.orchestrator-monitor-')) {
+        fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+      }
+    }
+  } catch {}
+  for (const p of fallbackDirs) { try { WebSocket = require(p); break; } catch {} }
 }
+if (!WebSocket) { console.error('[task-watch] module "ws" introuvable — npm i ws'); process.exit(2); }
 
 const LOG = path.join(__dirname, 'task-events.log');
 const URL = 'ws://127.0.0.1:7477';

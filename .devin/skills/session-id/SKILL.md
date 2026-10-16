@@ -14,8 +14,8 @@ Résoudre le helper avant usage (copie injectée du workspace, sinon canonique d
 
 ```bash
 BRIDGE=".agent/agent-bridge"
-[ -f "$BRIDGE/chat-id.js" ] || BRIDGE="C:/Program Files/Projet-complet/hephaistos2-kit/.agent/agent-bridge"
-[ -f "$BRIDGE/chat-id.js" ] || { echo "REFUS: chat-id.js introuvable"; exit 1; }
+if [ ! -f "$BRIDGE/chat-id.js" ] && [ -n "$HEPHAISTOS_KIT" ]; then BRIDGE="$HEPHAISTOS_KIT/.agent/agent-bridge"; fi
+[ -f "$BRIDGE/chat-id.js" ] || { echo "REFUS: chat-id.js introuvable (definir HEPHAISTOS_KIT)"; exit 1; }
 ```
 
 Exécuter :

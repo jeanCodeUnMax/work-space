@@ -23,7 +23,7 @@ L’ancien `beacon_ingest.py` dépendait du pipeline Python/Qdrant/Zvec archivé
 - Un log Beacon absent, périmé ou sans événements du workspace produit un rapport sans écriture.
 - `beacon_ingest` est ajouté au registre MCP; le total documenté devient 58 outils.
 - La capture de la session courante dépend toujours du collecteur Beacon. Le port Rust ne peut pas ingérer des événements qui n’ont pas été capturés.
-- Le binaire installé dans `C:\Program Files\servers\hephaistos2-kit\extension\server\` n’est pas modifié par les tests source; il faut le déployer avant toute activation.
+- Le binaire installé dans `<INSTALL_ROOT>\extension\server\` n’est pas modifié par les tests source; il faut le déployer avant toute activation.
 
 ## Vérification
 

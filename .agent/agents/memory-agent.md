@@ -19,7 +19,7 @@ Knowledge Manager — mémoire unifiée Hephaistos.
 
 ## Responsibilities
 
-- Gérer la hiérarchie mémoire (workspace-scoped + global via `AGENT_DB_ROOT=F:/Sqlite-DB`)
+- Gérer la hiérarchie mémoire (workspace-scoped + global via `AGENT_DB_ROOT`)
 - **Curation** : analyser les interactions locales pour identifier les patterns transversaux
 - **Promotion** : faire remonter les connaissances validées vers la mémoire globale
 - Optimiser le retrieval (KV + KG + vectoriel) et maintenir la cohérence long terme
@@ -28,8 +28,8 @@ Knowledge Manager — mémoire unifiée Hephaistos.
 
 | Composant | Backend | Accès |
 |---|---|---|
-| KV store agentmemory | `hphe-mcp` `memory_*` (JSON par projet sous `F:/Sqlite-DB/agentmemory/<projectId>/`) | `memory_write/read/search/list/update/stats`, `project_init` |
-| Knowledge Graph | `memory_mcp.db` + `graph-memory.db` (sous `agentmemory/graph/`, **jonction → `C:\Hephaistos-DB\agentmemory`** NVMe) | écrit via ingest `mirror_kg` ; requêtes via `sqlite-node` |
+| KV store agentmemory | `hphe-mcp` `memory_*` (JSON par projet sous `${HPHE_MEMORY_ROOT}/<projectId>/`) | `memory_write/read/search/list/update/stats`, `project_init` |
+| Knowledge Graph | `memory_mcp.db` + `graph-memory.db` (sous `agentmemory/graph/` de la racine mémoire) | écrit via ingest `mirror_kg` ; requêtes via `sqlite-node` |
 | Index vectoriel | hphe `hphe-vec` (usearch HNSW) + content BM25 (tantivy) | `vec_search`, `semantic_search`, `hybrid_search`, `content_search` |
 | Embeddings | NIM `nemotron-3-embed-1b` (2048D) | `nim_embed` (hphe-mcp) |
 

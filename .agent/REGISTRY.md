@@ -48,10 +48,10 @@ L'ordre réel = `provider_prefs` dans `orchestrator.db` (position + enabled), mo
 
 **Clôture obligatoire** : toute tâche dispatchée doit se terminer par `update_task(task_id, status, result)` — l'orchestrateur auto-marque `completed` à la sortie du process, quitter sans `result` = tâche perdue (cf. #308). Devin vérifie le livrable sur disque.
 
-**Routage ACP/cascade (extension 0.0.57)** :
+**Routage ACP/cascade (extension 0.0.58)** :
 - Retour vers Devin Local ACP : `wake_devin` exige `providerId === 'devin-cli'` et l’ID `acp/*` exact; restauration du même onglet puis `explainAndFixProblem`.
 - Inventaire ACP tiers : `acp-list` exige le `providerId/sessionId` exact, provider activé et workspace concordant.
-- Devin vers un ACP tiers : `wake_acp_agent` échoue fermé (`skipped`) tant qu’un send provider-spécifique et accusé n’est pas disponible. Ne pas utiliser `devin.sendChatActionMessage`, qui ne porte pas la cible ACP et peut injecter dans Devin.
+- Devin vers un ACP tiers : `wake_acp_agent` injecte via `agent-bridge/acp-inject.js` — client ACP stdio vers le processus provider (`initialize` → `session/load`/`session/resume` → `session/prompt`) sur l’ID exact, sans `session/new` ni focus. Providers mappés : `opencode`, `antigravity-acp`, `mistral-vibe`, `hermes`, `kilo`. Non mappé/indisponible = `skipped`; échec = `failed`. Jamais `devin.sendChatActionMessage` pour un tiers (payload sans cible → risque d’injection dans Devin).
 - Session classique Cascade `uuid` : `setCascadeId` + `sendCascadeInput` uniquement avec l’UUID vérifié.
 - Sans session connue, provider désactivé ou focus non confirmé : `skipped`/`wake-noroute`; aucun toast, presse-papiers, nouvel onglet ni fallback vers un chat actif.
 

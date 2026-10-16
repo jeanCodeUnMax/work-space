@@ -1,6 +1,6 @@
 # Adaptateur Mémoire — Hephaistos2-Kit Unified Memory System
 
-> Mémoire unifiée via `Hephaistos-everything-search` (hphe-mcp) : KV agentmemory (JSON par projet sous `F:/Sqlite-DB/agentmemory/<projectId>/`) + Knowledge Graph (`memory_mcp.db` / `graph-memory.db`, lecture via `sqlite-node`).
+> Mémoire unifiée via `Hephaistos-everything-search` (hphe-mcp) : KV agentmemory (JSON par projet sous `${HPHE_MEMORY_ROOT}/<projectId>/`) + Knowledge Graph (`memory_mcp.db` / `graph-memory.db`, lecture via `sqlite-node`).
 >
 > ⚠️ v1 (`mcp_Memory_*` : `create_entities`, `add_observations`, `create_relations`, `read_graph`…) est **absorbée** — ces outils n'existent plus. Utiliser `memory_*` (KV) et `sqlite-node` (KG).
 

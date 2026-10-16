@@ -214,8 +214,7 @@ if ($bridgeUp) {
 } else {
     Write-Host "  [INFO] WS Bridge inactif sur le port 7477 - tentative de demarrage..." -ForegroundColor Yellow
     $bridgeCandidates = @(
-        (Join-Path $PSScriptRoot "..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js"),
-        "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
+        (Join-Path $PSScriptRoot "..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js")
     )
     $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
     $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
@@ -229,8 +228,8 @@ if ($bridgeUp) {
     }
 }
 
-# Verification version orchestrator-monitor (>= 0.0.57)
-$expectedExtVer = '0.0.57'
+# Verification version orchestrator-monitor (>= 0.0.58, injection ACP stdio)
+$expectedExtVer = '0.0.58'
 $extDirs = @()
 $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
 $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
@@ -263,8 +262,7 @@ if (Test-Path $surfScript) {
 
 # Verification canal binome (comms.jsonl)
 $commsCandidates = @(
-    (Join-Path $ProjectRoot ".agent\comms.jsonl"),
-    "$env:ProgramFiles\Projet-complet\hephaistos2-kit\.agent\comms.jsonl"
+    (Join-Path $ProjectRoot ".agent\comms.jsonl")
 )
 $commsTarget = $commsCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 if ($commsTarget) {

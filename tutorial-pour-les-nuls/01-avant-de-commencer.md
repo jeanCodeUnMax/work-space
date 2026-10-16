@@ -11,12 +11,13 @@ Tu as besoin de 5 choses :
 | Ingrédient | Comment vérifier ? | Si tu ne l'as pas |
 |---|---|---|
 | Windows + NTFS | Tu es sous Windows, normal | Installe Windows (lol) |
-| PowerShell 7 | Ouvre PowerShell, tape `pwsh -v` | Télécharge-le sur github.com/powershell/powershell |
+| PowerShell 7 | Ouvre PowerShell, tape `pwsh --version` | Télécharge-le sur github.com/powershell/powershell |
+| Git | Tape `git --version` | Installe depuis git-scm.com |
 | Rust (cargo) | Tape `cargo --version` | Installe depuis rustup.rs |
 | Node.js 18+ | Tape `node --version` | Installe depuis nodejs.org |
-| Les clés magiques NVIDIA | Regarde si `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` sont dans tes variables d'environnement | Demande à ton admin ou crée un compte NVIDIA NIM |
+| Les clés NVIDIA *(optionnel)* | `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` dans les variables d'environnement | Crée un compte NVIDIA NIM |
 
-> **Important** : les deux clés NVIDIA sont indispensables pour les workers `nim1` et `nim2`. Sans elles, les agents ne pourront pas bosser gratuitement.
+> **À savoir** : les clés NVIDIA ne servent qu'aux workers gratuits `nim1`/`nim2`. **Sans elles l'installation fonctionne** — le moteur, le MCP, l'extension et le binôme sont OK ; seules les tâches déléguées aux workers NIM échoueront.
 
 ---
 
@@ -27,10 +28,11 @@ Ouvre PowerShell et colle ça :
 ```powershell
 Write-Host "=== Test des prerequis ==="
 if (Get-Command pwsh -ErrorAction SilentlyContinue) { Write-Host "[OK] PowerShell 7" } else { Write-Host "[MANQUE] PowerShell 7" }
+if (Get-Command git -ErrorAction SilentlyContinue) { Write-Host "[OK] Git" } else { Write-Host "[MANQUE] Git" }
 if (Get-Command cargo -ErrorAction SilentlyContinue) { Write-Host "[OK] Rust" } else { Write-Host "[MANQUE] Rust" }
 if (Get-Command node -ErrorAction SilentlyContinue) { Write-Host "[OK] Node.js" } else { Write-Host "[MANQUE] Node.js" }
-if ($env:NVIDIA_API_KEY) { Write-Host "[OK] NVIDIA_API_KEY" } else { Write-Host "[MANQUE] NVIDIA_API_KEY" }
-if ($env:NVIDIA_API_KEY_2) { Write-Host "[OK] NVIDIA_API_KEY_2" } else { Write-Host "[MANQUE] NVIDIA_API_KEY_2" }
+if ($env:NVIDIA_API_KEY) { Write-Host "[OK] NVIDIA_API_KEY" } else { Write-Host "[INFO] NVIDIA_API_KEY absente (workers NIM uniquement)" }
+if ($env:NVIDIA_API_KEY_2) { Write-Host "[OK] NVIDIA_API_KEY_2" } else { Write-Host "[INFO] NVIDIA_API_KEY_2 absente (workers NIM uniquement)" }
 ```
 
 Si tout est `[OK]`, tu peux passer à l'étape suivante. Sinon, installe ce qui manque et relance le test.
@@ -39,13 +41,21 @@ Si tout est `[OK]`, tu peux passer à l'étape suivante. Sinon, installe ce qui 
 
 ## 📁 Où sont les fichiers ?
 
+Le projet peut être cloné **n'importe où** — les scripts détectent leur propre position. Choisis un dossier, clone, et n'oublie pas les sous-modules :
+
+```powershell
+git clone --recurse-submodules <url-du-repo> hephaistos2-kit
+# ou si le dépôt est déjà cloné sans les sous-modules :
+cd <chemin-vers-le-repo>
+git submodule update --init --recursive
+```
+
 | Endroit | C'est quoi ? | Tu y touches ? |
 |---|---|---|
-| `C:\Program Files\Projet-complet\hephaistos2-kit\` | Le projet (on code ici) | Oui, c'est là qu'on installe |
-| `C:\Program Files\servers\hephaistos2-kit\` | Le runtime (ça tourne ici) | Non, install.ps1 s'en charge |
-| `C:\Program Files\servers\everything-mcp\` | Un pont vers l'ancien système | Non, c'est juste un lien |
+| `<repo>` = le dossier du clone | Le projet (on code ici) | Oui, c'est là qu'on installe |
+| `%ProgramFiles%\servers\hephaistos2-kit\` | Le runtime (ça tourne ici) | Non, `install.ps1` s'en charge (surcharge : `-InstallRoot` ou `HPHE_INSTALL`) |
 
-> **Règle d'or** : on code dans `Projet-complet`, ça tourne dans `servers`. Ne mélange pas.
+> **Règle d'or** : on code dans le dossier du repo, ça tourne dans le runtime installé. Ne mélange pas. Tous les chemins se règlent par paramètres (`-ProjectRoot`, `-InstallRoot`, `-MemoryRoot`…) ou variables d'environnement — rien n'est imposé.
 
 ---
 
@@ -66,9 +76,11 @@ Si tu n'as pas les clés dans tes variables d'environnement :
 
 Avant de passer à l'installation, tu dois avoir :
 - [ ] Windows avec NTFS
-- [ ] PowerShell 7 (`pwsh -v` fonctionne)
+- [ ] PowerShell 7 (`pwsh --version` fonctionne)
+- [ ] Git (`git --version` fonctionne)
 - [ ] Rust (`cargo --version` fonctionne)
 - [ ] Node.js 18+ (`node --version` fonctionne)
-- [ ] `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` dans les variables d'environnement
+- [ ] Le repo cloné avec `--recurse-submodules` (ou `git submodule update --init --recursive` fait)
+- [ ] *(optionnel)* `NVIDIA_API_KEY` et `NVIDIA_API_KEY_2` pour les workers NIM
 
 → **Passer à** `02-installation.md`

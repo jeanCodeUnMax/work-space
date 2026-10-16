@@ -56,7 +56,7 @@ Les serveurs MCP suivants sont configurés globalement et disponibles dans ce pr
 - Processus en 4 étapes (détaillé dans SOUL.md global)
 
 ### Protection Hephaistos2-Kit
-- `C:/Program Files/Projet-complet/hephaistos2-kit` est en **lecture seule** depuis tout autre workspace — aucune modification, aucun commit vers le kit.
+- La racine du kit (`<KIT_ROOT>`, workspace où vit ce dépôt) est en **lecture seule** depuis tout autre workspace — aucune modification, aucun commit vers le kit.
 - **Dysfonctionnement lié au kit** (install, config, MCP, beacon…) : réparer localement puis déposer un rapport dans `rapport-dysfonctionnement/` selon `TEMPLATE.md` (`YYYY-MM-DD-<lascard|webman>-<sujet>.md`, auteur obligatoire). Seule écriture autorisée vers le kit. Toute correction du kit = agent résident + approbation utilisateur.
 
 ---

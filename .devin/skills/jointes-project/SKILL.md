@@ -17,16 +17,16 @@ Appliquer `docs/protocole-binome/README.md`. Un agent/provider activé n’est p
 La skill globale canonique reste disponible sous `%APPDATA%\devin\skills\jointes`; cette variante locale est injectée avec le projet. Avant toute commande, résoudre les préfixes :
 
 ```bash
-# agent-bridge : copie injectée du workspace, sinon copie canonique du kit
+# agent-bridge : copie injectée du workspace, sinon kit via HEPHAISTOS_KIT
 BRIDGE=".agent/agent-bridge"
-[ -f "$BRIDGE/binome.js" ] || BRIDGE="C:/Program Files/Projet-complet/hephaistos2-kit/.agent/agent-bridge"
-[ -f "$BRIDGE/binome.js" ] || { echo "REFUS: agent-bridge introuvable"; exit 1; }
+if [ ! -f "$BRIDGE/binome.js" ] && [ -n "$HEPHAISTOS_KIT" ]; then BRIDGE="$HEPHAISTOS_KIT/.agent/agent-bridge"; fi
+[ -f "$BRIDGE/binome.js" ] || { echo "REFUS: agent-bridge introuvable (definir HEPHAISTOS_KIT)"; exit 1; }
 
 # doc canonique : repo, payload injecté, copie embarquée à côté de la skill globale, ou kit
 DOC="docs/protocole-binome/README.md"
 [ -f "$DOC" ] || DOC=".agent/docs/protocole-binome/README.md"
 [ -f "$DOC" ] || DOC="$APPDATA/devin/skills/jointes/protocole-binome.md"
-[ -f "$DOC" ] || DOC="C:/Program Files/Projet-complet/hephaistos2-kit/docs/protocole-binome/README.md"
+if [ ! -f "$DOC" ] && [ -n "$HEPHAISTOS_KIT" ]; then DOC="$HEPHAISTOS_KIT/docs/protocole-binome/README.md"; fi
 [ -f "$DOC" ] || { echo "REFUS: protocole-binome introuvable"; exit 1; }
 ```
 

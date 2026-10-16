@@ -641,7 +641,7 @@ sessions agents → Beacon (capture, service BeaconCollector) → [beacon_ingest
 
 ### OBSIDIAN — SECOND CERVEAU PARTAGÉ (Devin ↔ agy)
 
-Le MCP `antigravity-obsidian` connecte la voûte `F:\doc_Obsidian\Doc` — canal de continuité **entre les agents**, distinct de la mémoire unifiée (qui est machine) : la voûte est lisible par l'utilisateur dans Obsidian.
+Le MCP `antigravity-obsidian` connecte la voûte Obsidian configurée côté utilisateur (`OBSIDIAN_VAULT`) — canal de continuité **entre les agents**, distinct de la mémoire unifiée (qui est machine) : la voûte est lisible par l'utilisateur dans Obsidian.
 
 - **Début de tâche complexe** : `obsidian_triage` (<100 tokens) ou `obsidian_session_last` pour récupérer les milestones des sessions précédentes — y compris celles écrites par agy.
 - **Fin de tâche/phase** : `obsidian_session_save` (projet, résumé, détails techniques, fichiers) — le checkpoint devient lisible par agy ET par l'utilisateur.
@@ -1279,7 +1279,7 @@ Monitor VS Code : `out/` compilé (tsc), webview `media/panel.js` (protocole `sn
 
 ## 🔒 PROTOCOLE HEPHAISTOS2-KIT — PROTECTION DU KIT
 
-**Chemin protégé** : `C:/Program Files/Projet-complet/hephaistos2-kit` (ex-`F:/Promgramation-teste/Hephaistos-Kit`, déplacé)
+**Chemin protégé** : la racine du dépôt Hephaistos2-Kit (`<KIT_ROOT>` = le workspace où ce dépôt est cloné)
 
 - **Lecture seule pour tout agent externe** : un agent travaillant hors du workspace du kit n'a AUCUN droit d'écriture dessus — aucune modification, aucun commit, aucun patch. Aucune modification d'un autre projet vers le kit n'est autorisée.
 - **Seule écriture autorisée** : déposer un rapport dans `rapport-dysfonctionnement/`.

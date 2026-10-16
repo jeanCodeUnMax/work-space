@@ -12,15 +12,15 @@ Reconcilier et aligner l'environnement de developpement distant avec le standard
    - `Hephaistos-everything-search` pour eliminer les scans disques lents (`Get-ChildItem`, `dir /s`, `find`).
    - `antigravity-obsidian` pour la memoire persistante, triage de contexte et checkpoints de sessions.
 4. **Harmonisation des regles globales et des canaux de delegation** : `run_subagent` (IDE), `dispatch_task` (CLI Hephaistos), et `agy` (Antigravity CLI).
-5. **Outil d'audit multi-disques en lecture seule (`tools/audit-projects.py`)** pour cartographier sans risque les projets presents sur `F:` et `E:`.
+5. **Outil d'audit multi-disques en lecture seule (`tools/audit-projects.py`)** pour cartographier sans risque les projets presents sur plusieurs disques (racines configurables).
 
 ---
 
 ## 2. PREREQUIS MACHINE DISTANTE
 - **OS :** Windows 10/11 (PowerShell disponible).
 - **Runtimes :** Node.js actif (`node -v`), Python 3.10+ actif (`python --version`).
-- **Serveur MCP Hephaistos :** L'executable `hphe-mcp.exe` de Hephaistos2-Kit accessible en local (par exemple dans `C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-mcp.exe` ou dans le clone du depot).
-- **Serveur MCP Obsidian :** Script `C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js` relie a la voute Obsidian `F:/doc_Obsidian/Doc`.
+- **Serveur MCP Hephaistos :** L'executable `hphe-mcp.exe` de Hephaistos2-Kit accessible en local — produit par `install.ps1` sous `<INSTALL>\extension\server\hphe-mcp.exe` (par defaut `<INSTALL>` = `%ProgramFiles%\servers\hephaistos2-kit`, surcharge via `-InstallRoot`/`HPHE_INSTALL`).
+- **Serveur MCP Obsidian :** Script `%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\mcp-server.js` relie a votre voute Obsidian (chemin libre, variable `OBSIDIAN_VAULT_PATH`).
 - **Dossiers Utilisateur standard :**
   - Skills Devin : `%APPDATA%\devin\skills\` ou `%USERPROFILE%\.agents\skills\`
   - MCP Devin : `%APPDATA%\devin\mcp_config.json`
@@ -38,23 +38,23 @@ Ajouter dans l'objet `"mcpServers"` les serveurs `Hephaistos-everything-search` 
 {
   "mcpServers": {
     "Hephaistos-everything-search": {
-      "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
+      "command": "<INSTALL>/extension/server/hphe-mcp.exe",
       "args": [],
       "env": {
-        "HPHE_VEC_DIR": "C:/Program Files/servers/hephaistos2-kit/migrated-vec",
+        "HPHE_VEC_DIR": "<INSTALL>/migrated-vec",
         "HPHE_PIPE": "\\\\.\\pipe\\hphe-index",
-        "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
-        "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
-        "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
+        "HPHE_CONTENT_DIR": "<INSTALL>/data/content-index",
+        "HPHE_ORCH_DB": "<INSTALL>/data/orchestrator.db",
+        "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>"
       }
     },
     "antigravity-obsidian": {
       "command": "node",
       "args": [
-        "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
+        "<USERPROFILE>/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
       ],
       "env": {
-        "OBSIDIAN_VAULT_PATH": "F:/doc_Obsidian/Doc"
+        "OBSIDIAN_VAULT_PATH": "<OBSIDIAN_VAULT>"
       }
     }
   }
@@ -69,7 +69,7 @@ Creer le dossier `%APPDATA%\devin\skills\boost\` et y copier le fichier `setup-c
 ### 1.3 Creation de la Skill `/obsidian` pour Devin (Format SKILL.md moderne)
 Creer le dossier `%APPDATA%\devin\skills\obsidian\` et y copier le fichier `setup-collab\skills\obsidian\SKILL.md` (avec `triggers: ["user"]` pour que `/obsidian` apparaisse immediatement dans la palette slash).
 
-La skill expose les outils MCP (`obsidian_triage`, `obsidian_peek`, `obsidian_session_save`, `obsidian_learn`, etc.) ainsi que le fallback CLI `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js"`.
+La skill expose les outils MCP (`obsidian_triage`, `obsidian_peek`, `obsidian_session_save`, `obsidian_learn`, etc.) ainsi que le fallback CLI `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js"`.
 
 ### 1.4 Injection des Regles dans Devin (`global_rules.md`)
 Ouvrir `%USERPROFILE%\.config\devin\global_rules.md` et ajouter a la fin la directive :
@@ -108,7 +108,7 @@ Ajouter la section obligatoire :
 ---
 
 ## 5. ETAPE 3 : OUTIL D'AUDIT MULTI-DISQUES (READ-ONLY)
-Pour cartographier et comparer les depots entre disques (par exemple `F:\Promgramation-teste` et `E:\Promgramation-teste`) sans risque d'ecrasement ni de perte de donnees :
+Pour cartographier et comparer les depots entre disques ou repertoires (racines passées en arguments au script) sans risque d'ecrasement ni de perte de donnees :
 
 ```bash
 # Rapport synthetique en console

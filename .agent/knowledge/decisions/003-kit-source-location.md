@@ -6,11 +6,11 @@ ACCEPTED — 2026-10-14
 
 ## Décision
 
-La source de vérité active du starter kit est **`C:\Program Files\Projet-complet\hephaistos2-kit`** (Hephaistos2-Kit, v2).
+La source de vérité active du starter kit est **la racine du clone `hephaistos2-kit`** (v2) — `<KIT_ROOT>`, auto-détectée par `install.ps1`/`$PSScriptRoot`, emplacement libre sur la machine de l'utilisateur.
 
 - Toute correction des scripts `.agent/` (ingest-workspace.ps1, start-workspace.ps1, auto-ingest.ps1, etc.) se fait **dans ce répertoire**, puis se propage aux projets injectés via `.agent/scripts/sync-agent-layer.ps1`.
-- `F:/Promgramation-teste/Hephaistos-Kit` = **version 1, obsolète**, en cours de remplacement par la v2. Ne plus y écrire.
-- `C:\Program Files\servers\hephaistos2-kit` = **runtime/install** (binaires hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe, `data/content-index`, `ingest-roots.txt`) — pas la source des scripts `.agent/`.
+- Le kit v1 (`Hephaistos-Kit`, arbre sans sous-modules) est **obsolète** — ne plus y écrire.
+- `<INSTALL_ROOT>` = **runtime/install** (binaires hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe, `data/content-index`, `ingest-roots.txt`) — pas la source des scripts `.agent/`. Défaut : `%ProgramFiles%\servers\hephaistos2-kit`, surcharge `-InstallRoot`/`HPHE_INSTALL`.
 
 ## Contexte
 
@@ -18,8 +18,8 @@ Trois emplacements portant des noms proches coexistent et se confondent facileme
 
 | Emplacement | Rôle |
 |---|---|
-| `C:\Program Files\Projet-complet\hephaistos2-kit` | Source de vérité `.agent/` (v2) |
-| `C:\Program Files\servers\hephaistos2-kit` | Install runtime (binaires + index Tantivy + état) |
-| `F:/Promgramation-teste/Hephaistos-Kit` | Kit v1 — DEPRECATED |
+| `<KIT_ROOT>` (clone) | Source de vérité `.agent/` (v2) |
+| `<INSTALL_ROOT>` | Install runtime (binaires + index Tantivy + état) |
+| kit v1 (chemin libre) | DEPRECATED |
 
 Un patch appliqué au mauvais endroit est soit ignoré (v1 morte), soit non propagé (runtime ≠ source).

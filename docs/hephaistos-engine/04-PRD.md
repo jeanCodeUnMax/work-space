@@ -309,7 +309,7 @@ orchestrator.dispatch_task(
   files=["docs/hephaistos-engine/01-SPEC-MOTEUR.md",
          "docs/hephaistos-engine/04-PRD.md",
          "_obsolete/ntfs_index.py"],
-  workspace="C:/Program Files/servers/everything-mcp",
+  workspace="<workspace-du-projet>",
   session="devin-hphe-engine-2026-10-12")
 ```
 

@@ -51,7 +51,7 @@ if (-not (Test-Path $beaconLogPath)) {
 }
 
 $ProjectRootDir = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
-$InstallRoot = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "C:\Program Files\servers\hephaistos2-kit" }
+$InstallRoot = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { Join-Path $env:ProgramFiles 'servers\hephaistos2-kit' }
 $HpheMcp = Join-Path $InstallRoot "extension\server\hphe-mcp.exe"
 if (-not (Test-Path $HpheMcp)) {
     foreach ($candidate in @(

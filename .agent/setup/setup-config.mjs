@@ -14,9 +14,12 @@ const HOME = homedir();
 const argv = process.argv.slice(2);
 const dbArg = argv.indexOf('--db');
 // DB canonique = hphe-mcp (ex-orchestrator-server Node absorbé). Env prioritaire : HPHE_ORCH_DB.
+const INSTALL = process.env.HPHE_INSTALL
+  || (process.env.ProgramFiles ? join(process.env.ProgramFiles, 'servers', 'hephaistos2-kit') : null);
 const DB = dbArg > -1 ? argv[dbArg + 1]
   : process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
-    || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db';
+    || (INSTALL ? join(INSTALL, 'data', 'orchestrator.db') : null);
+if (!DB) { console.error('[setup-config] orchestrator.db introuvable : --db <path> ou HPHE_ORCH_DB requis'); process.exit(2); }
 
 let ok = 0, warn = 0, fail = 0;
 const pass = (m) => { ok++; console.log('  [OK]   ' + m); };
@@ -74,13 +77,15 @@ try {
   const db = new DatabaseSync(DB);
   // Roster actif (REGISTRY.md, 2026-10-14) : agy (défaut), kilo-nim1, ollama-cloud, devin.
   // Les entrées legacy kilo/kilo-free/hermes restent en DB mais désactivées — ne pas les réinjecter.
+  // Chemins CLI résolus par variables d'environnement cmd.exe au spawn —
+  // aucun C:\Users\<moi> en dur, s'adapte au profil de chaque utilisateur.
   const AGENTS = {
     'kilo-nim1': { providers: ['nvidia-nim2'],
-      command: 'cd /d "{workspace}" && "C:/Users/Administrator/AppData/Roaming/npm/kilo.cmd" run -m "nvidia2/{model}" --auto "{message}" > .agent\\kilo-nim1-dispatch.log 2>&1 < NUL' },
+      command: 'cd /d "{workspace}" && "%APPDATA%/npm/kilo.cmd" run -m "nvidia2/{model}" --auto "{message}" > .agent\\kilo-nim1-dispatch.log 2>&1 < NUL' },
     'ollama-cloud': { providers: ['ollama-cloud'],
-      command: 'cd /d "{workspace}" && "C:/Users/Administrator/.local/bin/hermes.exe" -z "{message}" -m "{model}" --provider ollama-cloud --yolo --no-restore-cwd > .agent\\ollama-cloud-dispatch.log 2>&1 < NUL' },
+      command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/hermes.exe" -z "{message}" -m "{model}" --provider ollama-cloud --yolo --no-restore-cwd > .agent\\ollama-cloud-dispatch.log 2>&1 < NUL' },
     agy:         { providers: ['antigravity-subscription'],
-      command: '"C:/Users/Administrator/AppData/Local/agy/bin/agy.exe" --dangerously-skip-permissions --print="{message}" --print-timeout 600s' },
+      command: '"%LOCALAPPDATA%/agy/bin/agy.exe" --dangerously-skip-permissions --print="{message}" --print-timeout 600s' },
     devin:       { providers: ['devin-subscription'],
       command: 'devin -p "{message}" --respect-workspace-trust false' },
   };

@@ -77,7 +77,7 @@ Sans paire fraîche, `send` échoue. Il ne retombe jamais sur le chat actuelleme
 
 KiloCode et Hermes peuvent proposer deux transports distincts : session ACP ouverte dans Devin ou session CLI reprise par ID. Si les deux sont disponibles, choisis le mode; si plusieurs sessions existent, choisis l’ID exact. Les autres noms ACP ne sont joignables que si `devin-hub.js acp-list <providerId>` retourne une session existante. Les workers HES `nim1`/`nim2` restent des appels API one-shot, différents des sessions ACP Devin `nim`/`nim2`. `Devin Local` ne peut pas se joindre lui-même. Aucune option/provider ne sera activée automatiquement.
 
-L'extension `orchestrator-monitor` 0.0.57+ fournit l'inventaire ACP. Le routage direct vers un ACP tiers reste `skipped` tant qu'un send provider-spécifique n'est pas disponible; ne le remplace pas par le chat Devin ni par le transport CLI. Pour AGY hub, passe le modèle exact sélectionné dans Gemini via `--model`; il est résolu vers le token interne du hub et aucun Argon n'est choisi par défaut.
+L'extension `orchestrator-monitor` 0.0.58+ fournit l'inventaire ACP **et** l'injection réelle : pour les providers mappés (opencode, antigravity-acp, mistral-vibe, hermes, kilo), le message part en ACP stdio direct vers le processus provider (`session/load` + `session/prompt` sur l'ID exact). Un provider non mappé retourne `skipped`; ne le remplace pas par le chat Devin ni par le transport CLI. Pour AGY hub, passe le modèle exact sélectionné dans Gemini via `--model`; il est résolu vers le token interne du hub et aucun Argon n'est choisi par défaut.
 
 ---
 

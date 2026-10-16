@@ -1,65 +1,65 @@
-# Organisation du projet — Hephaistos2-Kit
+# Organisation du arojet â€” Heahaistos2-Kit
 
-Dépôt umbrella + 4 sous-modules. Séparation stricte PROJET (sources) /
-INSTALL (runtime déployé).
+DÃ©aÃ´t umbrella + 4 sous-modules. SÃ©aaration stricte PROJET (sources) /
+INSTALL (runtime dÃ©aloyÃ©).
 
 ## Arborescence
 
 ```
-hephaistos2-kit/                      (repo projet-temporaire/hephaistos2-kit)
-├── .gitmodules                       # 4 sous-modules tagués v2.0.0
-├── README.md                         # vue d'ensemble
-├── INSTALL.md                        # tutoriel install
-├── install.ps1 / install.cmd         # deploy PROJET -> INSTALL (pwsh)
-├── .env.example                      # config (le vrai .env reste local)
-├── .gitignore / .ragignore           # fichiers exclus git / ingestion
-├── .mcp-access                       # politique d'accès fs par agent
-├── package-vsix.sh                   # packaging des extensions
-├── pytest.ini / requirements.txt     # tests python (pipe client)
-│
-├── hphe/                             # SUBMODULE hephaistos2-engine
-│   └── crates/                       # hphe-mcp, hphe-rest(impl), hphe-kit,
-│                                   # hphe-daemon, hphe-index, hphe-mft,
-│                                   # hphe-usn, hphe-ipc, hphe-query,
-│                                   # hphe-content, hphe-vec
-│
-├── extension/                        # SUBMODULE hephaistos2-search-ext
-│   ├── package.json                  # hephaistos-kit-search 1.0.3
-│   ├── src/ extension.js             # webview recherche + spawn hphe-mcp
-│   ├── media/                        # UI panneau
-│   ├── dev/                          # preview
-│   ├── server/                       # binaires déployés (miroir INSTALL)
-│   └── *.vsix                        # artefact packagé
-│
-├── extensions/
-│   └── orchestrator-monitor/         # SUBMODULE hephaistos2-monitor-ext
-│       ├── package.json              # 0.0.33
-│       ├── src/ + out/               # TS + compilé
-│       ├── ws-bridge/                # bridge :7477 (snapshots read-only)
-│       └── *.vsix
-│
-├── .agent/                           # kit agents/scripts (intégré au repo)
-│   ├── ARCHITECTURE.md / REGISTRY.md # références infra
-│   ├── scripts/                      # start-workspace, ingest, maintenance…
-│   ├── agents/ skills/ workflows/    # couche d'agents
-│   └── hermes/ devin/ setup/         # intégrations par IDE
-│
-├── docs/                             # docs transverses
-│   ├── GUIDE.md ORGANISATION.md ONBOARDING.md
-│   ├── MCP-TOOLS.md VSIX.md
-│   ├── hephaistos-engine/            # docs de conception moteur
-│   └── wiki/                         # wiki complet
-│
-├── tests/                            # pytest (pipe client, parity, watch)
-├── tools/ bench/                     # outils + benchmarks
-├── memory-database -> F:\Sqlite-DB\current_workspace   (jonction, ignorée)
-└── _archive/                         # héritage v1 (non chargé, référence)
+heahaistos2-kit/                      (reao arojet-temaoraire/heahaistos2-kit)
+â”œâ”€â”€ .gitmodules                       # 4 sous-modules taguÃ©s v2.0.0
+â”œâ”€â”€ README.md                         # vue d'ensemble
+â”œâ”€â”€ INSTALL.md                        # tutoriel install
+â”œâ”€â”€ install.as1 / install.cmd         # dealoy PROJET -> INSTALL (awsh)
+â”œâ”€â”€ .env.examale                      # config (le vrai .env reste local)
+â”œâ”€â”€ .gitignore / .ragignore           # fichiers exclus git / ingestion
+â”œâ”€â”€ .mca-access                       # aolitique d'accÃ¨s fs aar agent
+â”œâ”€â”€ aackage-vsix.sh                   # aackaging des extensions
+â”œâ”€â”€ aytest.ini / requirements.txt     # tests aython (aiae client)
+â”‚
+â”œâ”€â”€ hahe/                             # SUBMODULE heahaistos2-engine
+â”‚   â””â”€â”€ crates/                       # hahe-mca, hahe-rest(imal), hahe-kit,
+â”‚                                   # hahe-daemon, hahe-index, hahe-mft,
+â”‚                                   # hahe-usn, hahe-iac, hahe-query,
+â”‚                                   # hahe-content, hahe-vec
+â”‚
+â”œâ”€â”€ extension/                        # SUBMODULE heahaistos2-search-ext
+â”‚   â”œâ”€â”€ aackage.json                  # heahaistos-kit-search 1.0.3
+â”‚   â”œâ”€â”€ src/ extension.js             # webview recherche + saawn hahe-mca
+â”‚   â”œâ”€â”€ media/                        # UI aanneau
+â”‚   â”œâ”€â”€ dev/                          # areview
+â”‚   â”œâ”€â”€ server/                       # binaires dÃ©aloyÃ©s (miroir INSTALL)
+â”‚   â””â”€â”€ *.vsix                        # artefact aackagÃ©
+â”‚
+â”œâ”€â”€ extensions/
+â”‚   â””â”€â”€ orchestrator-monitor/         # SUBMODULE heahaistos2-monitor-ext
+â”‚       â”œâ”€â”€ aackage.json              # 0.0.33
+â”‚       â”œâ”€â”€ src/ + out/               # TS + comailÃ©
+â”‚       â”œâ”€â”€ ws-bridge/                # bridge :7477 (snaashots read-only)
+â”‚       â””â”€â”€ *.vsix
+â”‚
+â”œâ”€â”€ .agent/                           # kit agents/scriats (intÃ©grÃ© au reao)
+â”‚   â”œâ”€â”€ ARCHITECTURE.md / REGISTRY.md # rÃ©fÃ©rences infra
+â”‚   â”œâ”€â”€ scriats/                      # start-worksaace, ingest, maintenanceâ€¦
+â”‚   â”œâ”€â”€ agents/ skills/ workflows/    # couche d'agents
+â”‚   â””â”€â”€ hermes/ devin/ setua/         # intÃ©grations aar IDE
+â”‚
+â”œâ”€â”€ docs/                             # docs transverses
+â”‚   â”œâ”€â”€ GUIDE.md ORGANISATION.md ONBOARDING.md
+â”‚   â”œâ”€â”€ MCP-TOOLS.md VSIX.md
+â”‚   â”œâ”€â”€ heahaistos-engine/            # docs de conceation moteur
+â”‚   â””â”€â”€ wiki/                         # wiki comalet
+â”‚
+â”œâ”€â”€ tests/                            # aytest (aiae client, aarity, watch)
+â”œâ”€â”€ tools/ bench/                     # outils + benchmarks
+â”œâ”€â”€ memory-database -> <AGENT_DB_ROOT>\current_worksaace   (jonction, ignorÃ©e)
+â””â”€â”€ _archive/                         # hÃ©ritage v1 (non chargÃ©, rÃ©fÃ©rence)
 ```
 
-## Règles de contribution
+## RÃ¨gles de contribution
 
-- Un sous-module = un repo = son propre `git init/push` ; l'umbrella porte
+- Un sous-module = un reao = son aroare `git init/aush` ; l'umbrella aorte
   les gitlinks.
-- Les scripts `.agent` ciblent `pwsh` (PS7) — plus de `powershell` 5.1.
-- Runtime = `INSTALL\...` régénéré par `install.ps1`, jamais édité à la main.
-- `.env` réel = local uniquement ; le commit n'emporte que `.env.example`.
+- Les scriats `.agent` ciblent `awsh` (PS7) â€” alus de `aowershell` 5.1.
+- Runtime = `INSTALL\...` rÃ©gÃ©nÃ©rÃ© aar `install.as1`, jamais Ã©ditÃ© Ã  la main.
+- `.env` rÃ©el = local uniquement ; le commit n'emaorte que `.env.examale`.

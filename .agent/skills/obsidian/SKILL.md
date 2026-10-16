@@ -5,9 +5,9 @@ triggers:
   - user
 ---
 
-# /obsidian — Second Cerveau & Memoire Technique Obsidian
+# /obsidian â€” Second Cerveau & Memoire Technique Obsidian
 
-Connecte Devin a la voute Obsidian (`F:/doc_Obsidian/Doc`) pour la recuperation ultra-rapide de contexte, la capitalisation technique et la persistance des sessions de travail.
+Connecte Devin a la voute Obsidian configuree via `OBSIDIAN_VAULT_PATH` pour la recuperation ultra-rapide de contexte, la capitalisation technique et la persistance des sessions de travail.
 
 ## 1. Directives Operationnelles
 - Zero emoji en tout temps.
@@ -33,24 +33,24 @@ Lorsque le serveur MCP `antigravity-obsidian` est actif dans Devin, appeler dire
 - `obsidian_list_antipatterns(project)` : Liste les pieges interdits d'un projet.
 
 ### Gestion Hermes & Skills
-- `memory_update(target, operation, content)` : Met a jour la memoire bornee (`USER.md` ou `MEMORY.md`). **Partagee avec agy** — ecriture identitaire seulement sur demande explicite.
+- `memory_update(target, operation, content)` : Met a jour la memoire bornee (`USER.md` ou `MEMORY.md`). **Partagee avec agy** â€” ecriture identitaire seulement sur demande explicite.
 - `skill_get(skill_name)` : Recupere une skill procedurale vive depuis `01_Skills/`.
 - `skill_save(skill_name, content, version_bump)` : Cree ou ameliore une skill procedurale.
 
-### Outils de gestion dynamique — DESACTIVES
-`obsidian_tool_create`, `obsidian_tool_install`, `obsidian_tool_run`, `obsidian_tool_uninstall` (et alias `tool_*`) : **non exposes par defaut** dans l'architecture Hephaistos (installation de code tiers, clone GitHub, ecriture `mcp_config.json` — pas le role de ce plugin). Reactivation manuelle : `OBSIDIAN_ALLOW_TOOL_MGMT=1` dans l'env du serveur MCP.
+### Outils de gestion dynamique â€” DESACTIVES
+`obsidian_tool_create`, `obsidian_tool_install`, `obsidian_tool_run`, `obsidian_tool_uninstall` (et alias `tool_*`) : **non exposes par defaut** dans l'architecture Hephaistos (installation de code tiers, clone GitHub, ecriture `mcp_config.json` â€” pas le role de ce plugin). Reactivation manuelle : `OBSIDIAN_ALLOW_TOOL_MGMT=1` dans l'env du serveur MCP.
 
 ## 3. Fallback CLI (Node.js)
 Si le serveur MCP n'est pas directement expose dans la session en cours, utiliser la commande CLI equivalente :
-`node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" <commande> [arguments]`
+`node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" <commande> [arguments]`
 
 Exemples CLI :
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" triage "<probleme>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" peek "<NomNote>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" session save --project "<Projet>" --summary "<Resume>" --content "<Details>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" session last --project "<Projet>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" learn "[<Projet>] <Regle>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" status`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" triage "<probleme>"`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" peek "<NomNote>"`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" session save --project "<Projet>" --summary "<Resume>" --content "<Details>"`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" session last --project "<Projet>"`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" learn "[<Projet>] <Regle>"`
+- `node "%USERPROFILE%\.gemini\config/skills/antigravity-obsidian/scripts/obsidian.js" status`
 
 ## 4. Protocole d'Execution
 1. **Au demarrage d'une tache complexe :**

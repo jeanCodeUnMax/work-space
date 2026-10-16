@@ -25,9 +25,11 @@
 Si tu es pressé, ouvre PowerShell 7 en administrateur et tape :
 
 ```powershell
-cd "C:\Program Files\Projet-complet\hephaistos2-kit\tutorial-pour-les-nuls\scripts"
+cd "<chemin-vers-le-repo>\tutorial-pour-les-nuls\scripts"
 .\1-installe-moi.ps1
 ```
+
+(`<chemin-vers-le-repo>` = le dossier où tu as cloné le projet — il peut être n'importe où.)
 
 Puis relance Devin et Antigravity. C'est tout !
 
@@ -37,7 +39,7 @@ Puis relance Devin et Antigravity. C'est tout !
 
 | Morceau | C'est quoi ? | Où ça va ? |
 |---|---|---|
-| **hphe-indexd** | Un petit robot qui lit tous les fichiers de ton disque dur NTFS en une seconde | `C:\Program Files\servers\hephaistos2-kit\` |
+| **hphe-indexd** | Un petit robot qui lit tous les fichiers de ton disque dur NTFS en une seconde | `<install>` (`%ProgramFiles%\servers\hephaistos2-kit` par défaut) |
 | **hphe-mcp** | Le cerveau qui répond aux questions des agents IA | Idem |
 | **hphe-rest** | Un répondeur automatique pour les tests rapides | Idem + démarrage auto |
 | **Extensions VSIX** | Les deux téléphones : `orchestrator-monitor` et `hephaistos-kit-search` | `~/.devin/extensions/` ou `~/.vscode/extensions/` |

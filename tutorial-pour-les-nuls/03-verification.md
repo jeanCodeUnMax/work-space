@@ -9,7 +9,7 @@
 Dans PowerShell 7 (pas besoin d'admin) :
 
 ```powershell
-cd "C:\Program Files\Projet-complet\hephaistos2-kit\tutorial-pour-les-nuls\scripts"
+cd "<chemin-vers-le-repo>\tutorial-pour-les-nuls\scripts"
 .\2-verifie-tout.ps1
 ```
 
@@ -36,16 +36,21 @@ curl http://127.0.0.1:8792/health
 Tu dois voir `{"status":"ok"}` ou `{"status":"healthy"}`. Si ça ne répond pas :
 
 ```powershell
-# Relance hphe-rest manuellement
-Start-Process -FilePath "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-rest.cmd" -WindowStyle Minimized
+# Relance hphe-rest manuellement (<install> = %ProgramFiles%\servers\hephaistos2-kit
+# par défaut, ou ta valeur -InstallRoot / HPHE_INSTALL)
+$install = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "$env:ProgramFiles\servers\hephaistos2-kit" }
+Start-Process -FilePath "$install\extension\server\hphe-rest.cmd" -WindowStyle Minimized
 # Attends 3 secondes et re-teste
 sleep 3; curl http://127.0.0.1:8792/health
 ```
 
 ### Test 3 — Le cerveau (hphe-mcp)
 
+Le binaire n'est pas dans le `PATH` — il vit dans le runtime installé :
+
 ```powershell
-hphe-mcp.exe --tool hphe_health
+$install = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "$env:ProgramFiles\servers\hephaistos2-kit" }
+& "$install\extension\server\hphe-mcp.exe" --tool hphe_health
 ```
 
 Tu dois voir des stats sur l'index (nombre de fichiers, mémoire).
@@ -64,11 +69,13 @@ Test-NetConnection 127.0.0.1 -Port 7477
 pwsh -File .agent\setup\setup-agent-surfaces.ps1 -Verify
 ```
 
-Tu dois voir 4 lignes `[OK]` :
+Tu dois voir **6 lignes `[OK]`** :
 - Devin CLI
 - Devin IDE
 - Windsurf
 - Antigravity
+- skills Devin
+- skills Antigravity
 
 ### Test 6 — Le canal binôme
 
@@ -89,7 +96,7 @@ Si ce n'est pas le cas, on va le faire à la main dans `04-le-ping-pong.md`.
 |---|---|---|---|
 | Indexation | `schtasks /Query /TN "hphe-indexd"` | En cours / Ready | ☐ |
 | REST | `curl http://127.0.0.1:8792/health` | `{"status":"ok"}` ou `{"status":"healthy"}` | ☐ |
-| MCP | `hphe-mcp.exe --tool hphe_health` | Stats index | ☐ |
+| MCP | `<install>\extension\server\hphe-mcp.exe --tool hphe_health` | Stats index | ☐ |
 | Bridge WS | `Test-NetConnection 127.0.0.1 -Port 7477` | `TcpTestSucceeded : True` | ☐ |
 | Règles et skills globales | `setup-agent-surfaces.ps1 -Verify` | 6x `[OK]` | ? |
 | Binôme | `install-extension-hub.ps1 -CheckOnly` | `canal binome : IDs publiés` | ☐ |
@@ -112,9 +119,9 @@ La DiffCom affiche le même `taskId` que la tâche MCP. Mets son état à jour a
 
 ## Test d'un worker CLI via l'orchestrateur
 
-Pour une vraie tâche CLI de fond, utilise séparément `dispatch_task` (qui démarre réellement un CLI worker) :
+Pour une vraie tâche CLI de fond, utilise séparément `dispatch_task` (qui démarre réellement un CLI worker). ⚠️ Ce n'est **pas** du PowerShell : c'est un appel d'outil MCP de l'orchestrateur, à passer depuis l'agent — ne le colle pas dans ton terminal.
 
-```powershell
+```text
 dispatch_task(title="Test worker", task_type="test", context="Réponds coucou", agent_name="nim1")
 ```
 ## ✅ Récapitulatif

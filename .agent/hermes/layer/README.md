@@ -120,7 +120,7 @@ Ce fichier s'applique au SOUL.md global de Hermès. Il ajoute :
 ### Stockage dual
 
 - **Local** : `memory-database/` dans le projet (jonction → global)
-- **Global** : `${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/` (= `F:/Sqlite-DB/...`)
+- **Global** : `${AGENT_DB_ROOT}/current_workspace/<PROJECT_ID>/`
 
 ## ⚠️ RÈGLES SPÉCIFIQUES
 

@@ -21,7 +21,7 @@ Active le mode d'ingénierie avancée : parallélisation, délégation et autono
   - `content_search` / `hybrid_search` : symboles, types, interfaces.
   - `fs_*` : lecture/écriture bornées par `.mcp-access` (profil `external` = subagents muxés).
 - **Fallback CLI si MCP non exposé :**
-  `node "C:\Users\Administrator\.config\devin\scripts\mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<terme>"}'`
+  `node "%USERPROFILE%\.config\devin\scripts\mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<terme>"}'`
 
 ## 3. Phase 1 : Exécution & Délégation
 

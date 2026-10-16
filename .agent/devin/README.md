@@ -76,5 +76,5 @@ notification de tâche, lit le détail via le MCP `orchestrator` et la traite.
 
 - **orchestrateur** (outils `*_task`/`*_agent` de `hphe-mcp`, `orchestrator.db`) : file de tâches
 - **beacon** (`<HEPHAISTOS_ROOT>/Beacon/bin/beacon.exe mcp serve`) : journal d'activité cross-harness
-- **agentmemory** (outils `memory_*` de `hphe-mcp`, `F:/Sqlite-DB/agentmemory`) : mémoire durable par projet
+- **agentmemory** (outils `memory_*` de `hphe-mcp`, racine `HPHE_MEMORY_ROOT`) : mémoire durable par projet
 - État du hook : `~/.config/devin/state/awareness.json` (timestamp du dernier check)

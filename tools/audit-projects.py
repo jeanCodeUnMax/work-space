@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Audit Projects Tool - Hephaistos2-Kit
-Read-only audit script scanning project directories across F: and E: drives.
+Read-only audit script comparing two project directory trees.
 
 Compares projects, detects duplicates, checks Git repositories and modification timestamps.
 Strictly read-only: does not modify, move, or delete any files.
@@ -332,17 +332,17 @@ def generate_text_summary(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Audit read-only pour les dossiers projets de F: et E:"
+        description="Audit read-only pour comparer deux arborescences de projets"
     )
     parser.add_argument(
         "--f-dir",
-        default=r"F:\Promgramation-teste",
-        help="Chemin du repertoire F: (defaut: F:\\Promgramation-teste)",
+        default=os.environ.get("AUDIT_LEFT_DIR"),
+        help="Premier repertoire a comparer (ou env AUDIT_LEFT_DIR)",
     )
     parser.add_argument(
         "--e-dir",
-        default=r"E:\Promgramation-teste",
-        help="Chemin du repertoire E: (defaut: E:\\Promgramation-teste)",
+        default=os.environ.get("AUDIT_RIGHT_DIR"),
+        help="Second repertoire a comparer (ou env AUDIT_RIGHT_DIR)",
     )
     parser.add_argument(
         "--output",
@@ -362,6 +362,12 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if not args.f_dir or not args.e_dir:
+        parser.error(
+            "les deux repertoires sont requis : --f-dir et --e-dir "
+            "(ou variables AUDIT_LEFT_DIR / AUDIT_RIGHT_DIR)"
+        )
 
     f_path = Path(args.f_dir)
     e_path = Path(args.e_dir)

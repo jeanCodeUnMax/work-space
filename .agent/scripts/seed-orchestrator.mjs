@@ -12,15 +12,24 @@
  *
  * Usage :
  *   node seed-orchestrator.mjs [--db <path>]   (défaut: HPHE_ORCH_DB ou
- *      C:\Program Files\servers\hephaistos2-kit\data\orchestrator.db)
+ *      <install>\data\orchestrator.db)
  */
 import { DatabaseSync } from 'node:sqlite';
 
 const argv = process.argv.slice(2);
 const dbIdx = argv.indexOf('--db');
+// Résolution : --db > HPHE_ORCH_DB > ORCHESTRATOR_DB > <install>\data\orchestrator.db
+// (<install> = HPHE_INSTALL ou %ProgramFiles%\servers\hephaistos2-kit).
+const INSTALL = process.env.HPHE_INSTALL
+    || (process.env.ProgramFiles ? process.env.ProgramFiles + '/servers/hephaistos2-kit' : null);
 const DB_PATH = dbIdx >= 0
     ? argv[dbIdx + 1]
-    : (process.env.HPHE_ORCH_DB || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db');
+    : (process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
+        || (INSTALL && INSTALL + '/data/orchestrator.db'));
+if (!DB_PATH) {
+    console.error('[seed] orchestrator.db introuvable : passez --db <path> ou définissez HPHE_ORCH_DB');
+    process.exit(2);
+}
 
 const AGENTS = [
     {

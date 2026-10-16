@@ -106,7 +106,7 @@ Serveur MCP canonique : **`Hephaistos-everything-search`**
 | `HPHE_CONTENT_DIR` | `INSTALL\data\content-index` | index Tantivy |
 | `HPHE_VEC_DIR` | `INSTALL\migrated-vec` | collections usearch |
 | `HPHE_ORCH_DB` | `INSTALL\data\orchestrator.db` | orchestrateur (tasks, provider_prefs) |
-| `HPHE_MEMORY_ROOT` | `F:\Sqlite-DB\agentmemory` | racine mémoire |
+| `HPHE_MEMORY_ROOT` | `INSTALL\data\agentmemory` | racine mémoire |
 | `HPHE_PIPE` | `\\.\pipe\hphe-index` | pipe démon index |
 | `HPHE_INGEST_ROOTS` | — | racines boucle ingest (`;`) |
 | `HPHE_INGEST_SCAN` | — | parents scannés pour marqueur `.agent/` |

@@ -124,8 +124,8 @@ Deux pipelines mémoire distincts — **ne pas fusionner** :
 | `orchestrator.db` | Registry des tâches orchestrateur |
 
 Les banques par projet du serveur `agentmemory` vivent **hors de cette vue** :
-`${AGENTMEMORY_DATA_ROOT}/<projectId>/agentmemory/` (défaut attendu :
-`F:\Sqlite-DB\agentmemory`). Aucun dossier `<nom-de-projet>/` ne doit apparaître
+`${AGENTMEMORY_DATA_ROOT}/<projectId>/agentmemory/` (défaut :
+`<install>/data/agentmemory`, cf. `HPHE_MEMORY_ROOT`). Aucun dossier `<nom-de-projet>/` ne doit apparaître
 à la racine de `current_workspace` — si c'est le cas, un client a lancé le MCP
 sans `AGENTMEMORY_DATA_ROOT`. Voir `_README.md` dans le store.
 

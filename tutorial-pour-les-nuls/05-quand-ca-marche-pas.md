@@ -20,15 +20,16 @@ pwsh -File install.ps1 -Elevated -SkipBuild
 
 **Diagnostic** : `hphe-rest` n'est pas lancé.
 
-**Remède** :
-```powershell
-# Vérifie le log
-Get-Content "C:\Program Files\servers\hephaistos2-kit\data\hphe-rest.log" -Tail 20
+**Remède** : `hphe-rest` n'est **pas** un service Windows — c'est un `.cmd` en boucle lancé au démarrage (dossier Startup). Pas de `Restart-Service` :
 
-# Relance le service
-Restart-Service hphe-rest -Force -ErrorAction SilentlyContinue
-# Ou lance le .cmd manuellement
-& "C:\Program Files\servers\hephaistos2-kit\extension\server\hphe-rest.cmd"
+```powershell
+$install = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "$env:ProgramFiles\servers\hephaistos2-kit" }
+
+# Vérifie le log
+Get-Content "$install\data\hphe-rest.log" -Tail 20
+
+# Relance la boucle
+Start-Process -FilePath "$install\extension\server\hphe-rest.cmd" -WindowStyle Minimized
 ```
 
 ### Symptôme : "MCP rouge dans l'IDE"
@@ -38,7 +39,7 @@ Restart-Service hphe-rest -Force -ErrorAction SilentlyContinue
 **Remède** :
 ```powershell
 pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
-# Si version < 0.0.57, réinstalle :
+# Si version < 0.0.58, réinstalle :
 pwsh -File .agent\setup\install-extension-hub.ps1
 ```
 Puis `Ctrl+Shift+P` → `Developer: Reload Window`.
@@ -65,7 +66,7 @@ Puis `Ctrl+Shift+P` → `Developer: Reload Window`.
 
 **Diagnostic** : la cible ACP n’est pas connue ou n’a pas pu être focalisée; ou une ancienne extension ne respecte pas encore la route explicite.
 
-**Remède** : garde l'extension `orchestrator-monitor` à jour (>= 0.0.57). Les envois vers ACP tiers restent fail-closed (`skipped`) tant qu'un send provider-spécifique n'est pas disponible; ne réessaie pas en envoyant vers le chat Devin, une autre session ou le transport CLI.
+**Remède** : garde l'extension `orchestrator-monitor` à jour (>= 0.0.58). Depuis cette version les providers ACP mappés reçoivent le message en injection stdio directe; un provider non mappé retourne `skipped`. Ne réessaie pas en envoyant vers le chat Devin, une autre session ou le transport CLI.
 
 ### Symptôme : "worker NIM ne répond pas"
 
@@ -109,7 +110,7 @@ $content = Get-Content "script.ps1" -Raw
 | `binome.js --as devin --self <id> pair` | Vérifie en lecture seule un pair frais |
 | `binome.js --as devin --self <id> send "..."` | Envoie seulement via le pair frais vérifié |
 | `binome.js tail` | Lit les derniers messages et handshakes |
-| `hphe-mcp.exe --tool hphe_health` | Santé du moteur |
+| `<install>\extension\server\hphe-mcp.exe --tool hphe_health` | Santé du moteur |
 | `Test-NetConnection 127.0.0.1 -Port 7477` | Teste le bridge |
 
 ---

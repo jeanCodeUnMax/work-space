@@ -1,4 +1,4 @@
-Fichier écrit : `C:\Program Files\Projet-complet\hephaistos2-kit\.agent\test-wake-devin.md` contient désormais uniquement `PONG`.
+Fichier écrit : `<KIT_ROOT>\.agent\test-wake-devin.md` contient désormais uniquement `PONG`.
 
 Appel orchestrateur :
 `mcp-mux_orchestrator__get_next_task`

@@ -19,8 +19,8 @@ Hephaistos2-Kit is a modular system consisting of:
 
 | Rôle | Chemin | Contenu |
 |---|---|---|
-| **PROJET (dev)** | `C:\Program Files\Projet-complet\hephaistos2-kit\` | sources complètes : `hphe/` (workspace Rust), `extension/`, `extensions/orchestrator-monitor/`, `.agent/`, `docs/`, `tests/`, `tools/`, `.git`, `install.ps1` |
-| **INSTALL (runtime)** | `C:\Program Files\servers\hephaistos2-kit\` | runtime seul : `extension/server/` (hphe-mcp, hphe-rest, hphe-indexd + `.cmd`), `data/` (content-index, orchestrator.db, logs), `migrated-vec/`, `memory-database` (jonction F:) |
+| **PROJET (dev)** | `<repo>` = dossier du clone (emplacement libre, auto-détecté par `install.ps1`) | sources complètes : `hphe/` (workspace Rust), `extension/`, `extensions/orchestrator-monitor/`, `.agent/`, `docs/`, `tests/`, `tools/`, `.git`, `install.ps1` |
+| **INSTALL (runtime)** | `%ProgramFiles%\servers\hephaistos2-kit\` par défaut (`-InstallRoot` / `HPHE_INSTALL`) | runtime seul : `extension/server/` (hphe-mcp, hphe-rest, hphe-indexd + `.cmd`), `data/` (content-index, orchestrator.db, logs), `migrated-vec/`, `memory-database` (jonction ou dossier réel) |
 
 > **Ne jamais mélanger les deux.** Le projet se développe, l'install s'exécute.
 > `install.ps1` (à la racine projet) fait le deploy : build dans le projet →
@@ -52,7 +52,7 @@ Hephaistos2-Kit is a modular system consisting of:
 | **Vecteurs** | `vec_search`, `vec_stats`, `semantic_search`, `hybrid_search` | usearch `install/migrated-vec/*.usearch` (2048D) |
 | **Orchestration** | `list_agents`, `create_task`, `update_task`, `delete_task`, `list_tasks`, `get_next_task`, `dispatch_task`, `suggest_agent`, `register_agent`, `update_agent`, `list_prompt_templates`, `set_prompt_template`, `list_worktrees`, `worktree_cleanup` | `orchestrator.db` (env `HPHE_ORCH_DB`) — pickAgent/pickModel portés du JS |
 | **NIM/modèles** | `nim_domains` (17), `nim_models`, `nim_chat`, `nim_chat_model`, `nim_embed` (2048D), `available_models` | NVIDIA NIM x2 + OpenRouter free + Ollama — absorbe nim-router + model-discovery |
-| **Mémoire** | `memory_write`, `memory_read`, `memory_search`, `memory_list`, `memory_update`, `memory_stats`, `project_init` | agentmemory JSON **même fichier** `F:/Sqlite-DB/agentmemory` (`HPHE_MEMORY_ROOT`) |
+| **Mémoire** | `memory_write`, `memory_read`, `memory_search`, `memory_list`, `memory_update`, `memory_stats`, `project_init` | agentmemory JSON sous `HPHE_MEMORY_ROOT` (configuré par `install.ps1 -MemoryRoot`, défaut `<install>/data/agentmemory`) |
 | **Ingestion** | `beacon_ingest`, `hephaistos_update` (= "Hephaistos update force") | Tantivy + KG mirror (`memory-database/agentmemory/graph/*.db`) + vecteurs optionnels + état incrémental + `.ragignore` |
 | **FS** | `fs_*` (18 outils) | allowed_roots inchangés |
 

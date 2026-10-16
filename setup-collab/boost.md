@@ -17,7 +17,7 @@ Ce workflow est déclenché par la commande /boost. Il active le mode d'ingénie
   - `everything_search` : localiser instantanément les fichiers cibles et leurs dépendances sur le disque.
   - `content_search` / `hybrid_search` : localiser les symboles, types et interfaces.
 - **Fallback CLI si MCP non exposé :**
-  `node "C:\Users\Administrator\.config\devin\scripts\mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<terme>"}'`
+  `node "%USERPROFILE%\.config\devin\scripts\mcp-call.mjs" Hephaistos-everything-search everything_search '{"query":"<terme>"}'`
 
 ## 3. Phase 1 : Exécution & Délégation
 - Verrouiller la session en **Mode Plan Strict** pour structurer l'intervention.

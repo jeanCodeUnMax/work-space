@@ -65,8 +65,8 @@ if (Test-Path $HermesSkillsDir) {
 }
 
 # 3b. Skills binôme canoniques (jointes, chat-id) -> global (toutes les sessions/workspaces)
-$kitSkills = Join-Path $LayerDir '..\..\.devin\skills'
-if (-not (Test-Path $kitSkills)) { $kitSkills = 'C:\Program Files\Projet-complet\hephaistos2-kit\.devin\skills' }
+$KitRoot = Split-Path -Parent (Split-Path -Parent $LayerDir)
+$kitSkills = Join-Path $KitRoot '.devin\skills'
 if (Test-Path $kitSkills) {
     $canonicalPairs = @(
         @{ SourceDir = 'chat-id-project'; CanonicalName = 'chat-id' },
@@ -95,7 +95,7 @@ if (Test-Path $kitSkills) {
         }
     }
     # doc du protocole embarquée à côté de la skill globale
-    $protoDoc = 'C:\Program Files\Projet-complet\hephaistos2-kit\docs\protocole-binome\README.md'
+    $protoDoc = Join-Path $KitRoot 'docs\protocole-binome\README.md'
     if (Test-Path $protoDoc) {
         foreach ($dstRoot in @($DevinSkillsDir, (Join-Path $DevinConfigDir 'skills'))) {
             $protoTarget = Join-Path $dstRoot 'jointes\protocole-binome.md'

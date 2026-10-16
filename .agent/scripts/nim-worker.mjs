@@ -17,16 +17,20 @@ import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join, isAbsolute } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-// Résolution DB : env explicite > install standard (%ProgramFiles%\servers) >
-// profil user > dernier recours (chemin historique).
+// Résolution DB : env explicite > HPHE_INSTALL > install standard (%ProgramFiles%\servers) >
+// profil user. Aucun chemin machine en dur : sans candidat existant, on abort.
 const DB_CANDIDATES = [
   process.env.HPHE_ORCH_DB,
   process.env.ORCHESTRATOR_DB,
+  process.env.HPHE_INSTALL && join(process.env.HPHE_INSTALL, 'data', 'orchestrator.db'),
   process.env.ProgramFiles && join(process.env.ProgramFiles, 'servers', 'hephaistos2-kit', 'data', 'orchestrator.db'),
   process.env.USERPROFILE && join(process.env.USERPROFILE, 'hephaistos2-kit', 'data', 'orchestrator.db'),
-  'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db',
 ].filter(Boolean);
-const DB = DB_CANDIDATES.find((p) => existsSync(p)) || DB_CANDIDATES[DB_CANDIDATES.length - 1];
+const DB = DB_CANDIDATES.find((p) => existsSync(p));
+if (!DB) {
+  console.error('[nim-worker] orchestrator.db introuvable : définissez HPHE_ORCH_DB ou HPHE_INSTALL');
+  process.exit(2);
+}
 
 function closeTask(taskId, status, result) {
   if (!taskId) return;

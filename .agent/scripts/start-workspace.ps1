@@ -261,8 +261,7 @@ if (Test-Path $hider) {
 # Multi-candidats : le script peut tourner depuis le kit OU depuis un projet
 # cible dont le .agent est synchronisé (extensions\... n'existe pas là-bas).
 $bridgeCandidates = @(
-    (Join-Path $ScriptRoot '..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js'),
-    "$env:ProgramFiles\Projet-complet\hephaistos2-kit\extensions\orchestrator-monitor\ws-bridge\bridge.js"
+    (Join-Path $ScriptRoot '..\..\extensions\orchestrator-monitor\ws-bridge\bridge.js')
 )
 $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
 $bridgeCandidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }

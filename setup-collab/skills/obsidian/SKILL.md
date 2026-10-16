@@ -7,7 +7,7 @@ triggers:
 
 # /obsidian — Second Cerveau & Memoire Technique Obsidian
 
-Connecte Devin a la voute Obsidian (`F:/doc_Obsidian/Doc`) pour la recuperation ultra-rapide de contexte, la capitalisation technique et la persistance des sessions de travail.
+Connecte Devin a la voute Obsidian configuree via `OBSIDIAN_VAULT_PATH` pour la recuperation ultra-rapide de contexte, la capitalisation technique et la persistance des sessions de travail.
 
 ## 1. Directives Operationnelles
 - Zero emoji en tout temps.
@@ -39,15 +39,15 @@ Lorsque le serveur MCP `antigravity-obsidian` est actif dans Devin, appeler dire
 
 ## 3. Fallback CLI (Node.js)
 Si le serveur MCP n'est pas directement expose dans la session en cours, utiliser la commande CLI equivalente :
-`node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" <commande> [arguments]`
+`node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" <commande> [arguments]`
 
 Exemples CLI :
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" triage "<probleme>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" peek "<NomNote>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" session save --project "<Projet>" --summary "<Resume>" --content "<Details>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" session last --project "<Projet>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" learn "[<Projet>] <Regle>"`
-- `node "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js" status`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" triage "<probleme>"`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" peek "<NomNote>"`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" session save --project "<Projet>" --summary "<Resume>" --content "<Details>"`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" session last --project "<Projet>"`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" learn "[<Projet>] <Regle>"`
+- `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js" status`
 
 ## 4. Protocole d'Execution
 1. **Au demarrage d'une tache complexe :**

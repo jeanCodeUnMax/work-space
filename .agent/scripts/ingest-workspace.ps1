@@ -32,7 +32,7 @@ $ErrorActionPreference = 'Stop'
 
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 # Runtime/data vivent dans l'INSTALL, pas dans le projet (séparation dev/runtime).
-$InstallRoot = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { "C:\Program Files\servers\hephaistos2-kit" }
+$InstallRoot = if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { Join-Path $env:ProgramFiles 'servers\hephaistos2-kit' }
 $HpheMcp = Join-Path $InstallRoot "extension\server\hphe-mcp.exe"
 $LogDir  = Join-Path $PSScriptRoot "..\logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }

@@ -21,11 +21,19 @@ const { randomUUID } = require('crypto');
 let WebSocket;
 const wsCandidates = [
     path.join(__dirname, '..', '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
-    path.join(__dirname, '..', 'ws-bridge', 'node_modules', 'ws'),
-    path.join(os.homedir(), '.devin', 'extensions', 'hephaistos.orchestrator-monitor-0.0.34', 'ws-bridge', 'node_modules', 'ws'),
-    'C:/Program Files/Projet-complet/hephaistos2-kit/extensions/orchestrator-monitor/ws-bridge/node_modules/ws',
-    'ws'
+    path.join(__dirname, '..', 'ws-bridge', 'node_modules', 'ws')
 ];
+// Extensions IDE installées (toute version) : ~/.devin/extensions/hephaistos.orchestrator-monitor-*
+for (const base of [path.join(os.homedir(), '.devin', 'extensions'), path.join(os.homedir(), '.vscode', 'extensions')]) {
+    try {
+        for (const d of fs.readdirSync(base)) {
+            if (d.startsWith('hephaistos.orchestrator-monitor-')) {
+                wsCandidates.push(path.join(base, d, 'ws-bridge', 'node_modules', 'ws'));
+            }
+        }
+    } catch { /* dossier absent */ }
+}
+wsCandidates.push('ws');
 for (const cand of wsCandidates) {
     try {
         WebSocket = require(cand);

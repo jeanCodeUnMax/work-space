@@ -1,18 +1,18 @@
-# Bench Report — P2 Démon `hphe-indexd` (T-060 / task #336)
+# Bench Report â€” P2 DÃ©mon `hphe-indexd` (T-060 / task #336)
 
 ## 1. Scope & Architecture d'Assemblage
 
-Le démon **`hphe-indexd`** (crate `hphe-daemon`) constitue la brique centrale de runtime du moteur Hephaistos. Il assemble et orchestre en continu l'ensemble des composants bas niveau développés sur les phases antérieures :
+Le dÃ©mon **`hphe-indexd`** (crate `hphe-daemon`) constitue la brique centrale de runtime du moteur Hephaistos. Il assemble et orchestre en continu l'ensemble des composants bas niveau dÃ©veloppÃ©s sur les phases antÃ©rieures :
 
-- **`hphe-mft`** : Lecture directe de la table `$MFT` sur volume NTFS brut (`\\.\C:`) sans passer par l'API Win32 d'énumération de fichiers.
-- **`hphe-index`** : Index en mémoire Struct-of-Arrays (SoA), recherche par sous-chaîne accélérée SIMD (`memchr::memmem`), overlay de mutations live (`delete`, `add_entry`), et persistance atomique / chargement zero-copy via snapshot mmap (`memmap2`).
-- **`hphe-query`** : Moteur d'évaluation de syntaxe Everything (`ext:`, `size:`, `dm:`, `path:`, opérateurs AND/OR/NOT, quotes).
-- **`hphe-usn`** : Surveillance continue du journal USN NTFS (`FSCTL_READ_USN_JOURNAL`), application des deltas live en mémoire, persistance des checkpoints (`last_usn`), et détection de wrap/overflow avec réalignement automatique.
-- **`hphe-ipc`** : Serveur de communication inter-processus via tube nommé Windows (`\\.\pipe\hphe-index`) en protocole NDJSON, protégé par une DACL restrictive (SYSTEM + Administrateurs locaux + Propriétaire).
+- **`hphe-mft`** : Lecture directe de la table `$MFT` sur volume NTFS brut (`\\.\C:`) sans passer par l'API Win32 d'Ã©numÃ©ration de fichiers.
+- **`hphe-index`** : Index en mÃ©moire Struct-of-Arrays (SoA), recherche par sous-chaÃ®ne accÃ©lÃ©rÃ©e SIMD (`memchr::memmem`), overlay de mutations live (`delete`, `add_entry`), et persistance atomique / chargement zero-copy via snapshot mmap (`memmap2`).
+- **`hphe-query`** : Moteur d'Ã©valuation de syntaxe Everything (`ext:`, `size:`, `dm:`, `path:`, opÃ©rateurs AND/OR/NOT, quotes).
+- **`hphe-usn`** : Surveillance continue du journal USN NTFS (`FSCTL_READ_USN_JOURNAL`), application des deltas live en mÃ©moire, persistance des checkpoints (`last_usn`), et dÃ©tection de wrap/overflow avec rÃ©alignement automatique.
+- **`hphe-ipc`** : Serveur de communication inter-processus via tube nommÃ© Windows (`\\.\pipe\hphe-index`) en protocole NDJSON, protÃ©gÃ© par une DACL restrictive (SYSTEM + Administrateurs locaux + PropriÃ©taire).
 
 ---
 
-## 2. Séquence de Boot & Cycle de Vie du Démon
+## 2. SÃ©quence de Boot & Cycle de Vie du DÃ©mon
 
 ```
                           +------------------------+
@@ -45,73 +45,73 @@ Le démon **`hphe-indexd`** (crate `hphe-daemon`) constitue la brique centrale d
                                             [4] Service Ready (Loop)
 ```
 
-1. **Vérification d'élévation au boot** : Contrôle du jeton de sécurité (`GetTokenInformation(TokenElevation)`). En cas d'exécution standard non élevée, sortie immédiate en code 2 avec diagnostic explicite et instructions d'élévation.
+1. **VÃ©rification d'Ã©lÃ©vation au boot** : ContrÃ´le du jeton de sÃ©curitÃ© (`GetTokenInformation(TokenElevation)`). En cas d'exÃ©cution standard non Ã©levÃ©e, sortie immÃ©diate en code 2 avec diagnostic explicite et instructions d'Ã©lÃ©vation.
 2. **Chargement de l'index (Warm vs Cold)** :
-   - Si un snapshot valide existe dans `%ProgramData%\hphe\index.snap` (et sauf `--force-rescan`), chargement instantané par mappage mémoire zero-copy (`load_mmap`).
-   - Sinon, lecture intégrale directe de la `$MFT` via `MftReader::open_volume`, construction de l'index SoA, et déclenchement asynchrone de la sauvegarde du snapshot en tâche d'arrière-plan (sans bloquer la mise à disposition du service).
-3. **Surveillance USN en boucle** : Exécution cyclique de `UsnWatcher::poll()` (intervalle par défaut : 250 ms), application des suppressions/créations/renommages sur l'overlay dynamique de `FileIndex`, et diffusion des événements `UsnEvent` aux souscripteurs connectés.
-4. **Service IPC concurrent** : Écoute sur `\\.\pipe\hphe-index` traitant les verbes `ping`, `stats`, `search`, `resolve` et `watch`.
+   - Si un snapshot valide existe dans `%ProgramData%\hphe\index.snap` (et sauf `--force-rescan`), chargement instantanÃ© par mappage mÃ©moire zero-copy (`load_mmap`).
+   - Sinon, lecture intÃ©grale directe de la `$MFT` via `MftReader::open_volume`, construction de l'index SoA, et dÃ©clenchement asynchrone de la sauvegarde du snapshot en tÃ¢che d'arriÃ¨re-plan (sans bloquer la mise Ã  disposition du service).
+3. **Surveillance USN en boucle** : ExÃ©cution cyclique de `UsnWatcher::poll()` (intervalle par dÃ©faut : 250 ms), application des suppressions/crÃ©ations/renommages sur l'overlay dynamique de `FileIndex`, et diffusion des Ã©vÃ©nements `UsnEvent` aux souscripteurs connectÃ©s.
+4. **Service IPC concurrent** : Ã‰coute sur `\\.\pipe\hphe-index` traitant les verbes `ping`, `stats`, `search`, `resolve` et `watch`.
 
 ---
 
-## 3. Résultats Mesurés — Séquence de Boot & Latence
+## 3. RÃ©sultats MesurÃ©s â€” SÃ©quence de Boot & Latence
 
 ### Environnement de test
 
-| Paramètre   | Valeur                                 |
+| ParamÃ¨tre   | Valeur                                 |
 |-------------|----------------------------------------|
 | OS          | Windows 11 Pro, x86_64                 |
 | Toolchain   | Rust stable 1.94.1, `--release`        |
-| Processeur  | x86_64 multi-cœurs                     |
+| Processeur  | x86_64 multi-cÅ“urs                     |
 | Stockage    | NVMe SSD                               |
-| Dataset     | MFT synthétique déterministe (1M entrées) + C: NTFS live |
+| Dataset     | MFT synthÃ©tique dÃ©terministe (1M entrÃ©es) + C: NTFS live |
 
-### Métriques mesurées
+### MÃ©triques mesurÃ©es
 
-| Étape de Boot / Requête           | Valeur mesurée          | Objectif Spécification | Statut |
+| Ã‰tape de Boot / RequÃªte           | Valeur mesurÃ©e          | Objectif SpÃ©cification | Statut |
 |-----------------------------------|-------------------------|------------------------|--------|
-| **Vérification élévation admin**  | < 0.1 ms                | Immédiat               | PASS   |
-| **Cold build brut (1M entrées)**  | 1.307 s                 | < 60 s                 | PASS   |
-| **Sauvegarde snapshot (1M)**      | 133 ms (thread détaché) | Non-bloquant           | PASS   |
-| **Warm start mmap (1M entrées)**  | **95 ms (0.095 s)**     | **< 3 s**              | **PASS** |
+| **VÃ©rification Ã©lÃ©vation admin**  | < 0.1 ms                | ImmÃ©diat               | PASS   |
+| **Cold build brut (1M entrÃ©es)**  | 1.307 s                 | < 60 s                 | PASS   |
+| **Sauvegarde snapshot (1M)**      | 133 ms (thread dÃ©tachÃ©) | Non-bloquant           | PASS   |
+| **Warm start mmap (1M entrÃ©es)**  | **95 ms (0.095 s)**     | **< 3 s**              | **PASS** |
 | **Projection Warm start @16M**    | **1.52 s**              | **< 2.0 s**            | **PASS** |
-| **Démarrage serveur pipe IPC**    | 1.2 ms                  | < 10 ms                | PASS   |
-| **Latence ping roundtrip**        | 36.9 µs                 | < 5.0 ms               | PASS   |
-| **Latence search roundtrip**      | 43.9 µs                 | < 5.0 ms               | PASS   |
-| **Latence resolve path**          | 48.1 µs                 | < 5.0 ms               | PASS   |
+| **DÃ©marrage serveur pipe IPC**    | 1.2 ms                  | < 10 ms                | PASS   |
+| **Latence ping roundtrip**        | 36.9 Âµs                 | < 5.0 ms               | PASS   |
+| **Latence search roundtrip**      | 43.9 Âµs                 | < 5.0 ms               | PASS   |
+| **Latence resolve path**          | 48.1 Âµs                 | < 5.0 ms               | PASS   |
 | **Recherche substring SoA**       | 1 187 M lignes/s        | > 500 M lignes/s       | PASS   |
 
 ---
 
-## 4. Tests et Validation Automatisée
+## 4. Tests et Validation AutomatisÃ©e
 
-La suite de tests unitaires et d'intégration dédiée (`cargo test -p hphe-daemon`) valide :
+La suite de tests unitaires et d'intÃ©gration dÃ©diÃ©e (`cargo test -p hphe-daemon`) valide :
 
 1. `tests/boot_elevation.rs` :
-   - `test_elevation_check_behavior` : Détection du statut d'élévation du jeton Windows.
-   - `test_boot_without_elevation_fails_cleanly` : Échec propre avec message d'aide et type d'erreur `ElevationRequired` en l'absence de droits administrateur.
-   - `test_boot_synthetic_mode_succeeds_without_elevation` : Démarrage complet en mode synthétique en mémoire sans nécessiter d'élévation.
+   - `test_elevation_check_behavior` : DÃ©tection du statut d'Ã©lÃ©vation du jeton Windows.
+   - `test_boot_without_elevation_fails_cleanly` : Ã‰chec propre avec message d'aide et type d'erreur `ElevationRequired` en l'absence de droits administrateur.
+   - `test_boot_synthetic_mode_succeeds_without_elevation` : DÃ©marrage complet en mode synthÃ©tique en mÃ©moire sans nÃ©cessiter d'Ã©lÃ©vation.
 2. `tests/wiring.rs` :
-   - `test_daemon_handler_direct_wiring` : Câblage direct de `DaemonHandler` avec `FileIndex` (ping, stats, search Everything/substring, resolve de chemin `C:\...`, watch).
-   - `test_daemon_live_overlay_mutations` : Application dynamique des deltas de suppression (`apply_delete`) sur l'overlay et filtrage en temps réel dans les résultats de recherche (`include_deleted`).
-   - `test_named_pipe_ipc_end_to_end_roundtrip` : Test d'intégration client-serveur complet via `IpcClient` sur tube nommé local (connect, ping, stats, search, resolve, disconnect, arrêt propre).
+   - `test_daemon_handler_direct_wiring` : CÃ¢blage direct de `DaemonHandler` avec `FileIndex` (ping, stats, search Everything/substring, resolve de chemin `C:\...`, watch).
+   - `test_daemon_live_overlay_mutations` : Application dynamique des deltas de suppression (`apply_delete`) sur l'overlay et filtrage en temps rÃ©el dans les rÃ©sultats de recherche (`include_deleted`).
+   - `test_named_pipe_ipc_end_to_end_roundtrip` : Test d'intÃ©gration client-serveur complet via `IpcClient` sur tube nommÃ© local (connect, ping, stats, search, resolve, disconnect, arrÃªt propre).
 
-Résultat : **6/6 tests hphe-daemon valides** (138+ tests verts sur tout le workspace `hphe`).
+RÃ©sultat : **6/6 tests hphe-daemon valides** (138+ tests verts sur tout le workspace `hphe`).
 
 ---
 
-## 5. Commandes d'Exécution Réelle E2E (Élévation Administrateur)
+## 5. Commandes d'ExÃ©cution RÃ©elle E2E (Ã‰lÃ©vation Administrateur)
 
-Pour exécuter et tester le démon en conditions réelles avec élévation administrative :
+Pour exÃ©cuter et tester le dÃ©mon en conditions rÃ©elles avec Ã©lÃ©vation administrative :
 
-### 5.1 Exécution interactive directe (PowerShell Administrateur)
+### 5.1 ExÃ©cution interactive directe (PowerShell Administrateur)
 
 ```powershell
 # 1. Ouvrir PowerShell en tant qu'Administrateur
-# 2. Se positionner dans le répertoire release
-cd "c:\Program Files\servers\everything-mcp\.kilo\worktrees\task-336\hphe"
+# 2. Se positionner dans le rÃ©pertoire release
+cd "<worktree>/hphe"
 
-# 3. Lancer le démon sur le volume C:
+# 3. Lancer le dÃ©mon sur le volume C:
 .\target\release\hphe-indexd.exe --drive C: --poll-interval 250
 ```
 
@@ -124,38 +124,38 @@ Options utiles :
 .\target\release\hphe-indexd.exe --drive C: --snapshot "C:\ProgramData\hphe\custom.snap" --log-dir "C:\ProgramData\hphe\logs"
 ```
 
-### 5.2 Déploiement en Tâche Planifiée Windows (RunLevel HIGHEST / SYSTEM)
+### 5.2 DÃ©ploiement en TÃ¢che PlanifiÃ©e Windows (RunLevel HIGHEST / SYSTEM)
 
 ```powershell
-# Installation et démarrage automatique au boot
+# Installation et dÃ©marrage automatique au boot
 powershell -ExecutionPolicy Bypass -File .\hphe\scripts\install.ps1
 
-# Vérification du statut de la tâche
+# VÃ©rification du statut de la tÃ¢che
 Get-ScheduledTask -TaskName "HpheIndexDaemon"
 
 # Consultation des journaux en direct
 Get-Content -Path "$env:ProgramData\hphe\logs\hphe-indexd.log" -Tail 50 -Wait
 
-# Désinstallation du service
+# DÃ©sinstallation du service
 powershell -ExecutionPolicy Bypass -File .\hphe\scripts\uninstall.ps1
 ```
 
-### 5.3 Test du client IPC non-élevé
+### 5.3 Test du client IPC non-Ã©levÃ©
 
-Dans un terminal utilisateur standard (non-élevé) :
+Dans un terminal utilisateur standard (non-Ã©levÃ©) :
 ```powershell
-# Exécuter l'exemple client IPC fourni avec hphe-ipc
-cd "c:\Program Files\servers\everything-mcp\.kilo\worktrees\task-336\hphe"
+# ExÃ©cuter l'exemple client IPC fourni avec hphe-ipc
+cd "<worktree>/hphe"
 cargo run --release -p hphe-ipc --example client
 ```
 
 ---
 
-## 6. Synthèse d'Évolution (Transition P6 windows-service)
+## 6. SynthÃ¨se d'Ã‰volution (Transition P6 windows-service)
 
-| Élément | Phase Actuelle (P2) | Phase Cible (P6) |
+| Ã‰lÃ©ment | Phase Actuelle (P2) | Phase Cible (P6) |
 |---|---|---|
-| **Gestionnaire de Service** | Tâche planifiée Windows `HIGHEST` (`install.ps1`) | Service Windows natif via `windows-service` crate (0.8+) |
-| **Contrôle SCM** | `Start-ScheduledTask` / `Stop-ScheduledTask` | `sc.exe start hphe-indexd` / `sc.exe stop` / `services.msc` |
+| **Gestionnaire de Service** | TÃ¢che planifiÃ©e Windows `HIGHEST` (`install.ps1`) | Service Windows natif via `windows-service` crate (0.8+) |
+| **ContrÃ´le SCM** | `Start-ScheduledTask` / `Stop-ScheduledTask` | `sc.exe start hphe-indexd` / `sc.exe stop` / `services.msc` |
 | **Journalisation** | Fichier `%ProgramData%\hphe\logs\hphe-indexd.log` | Double sortie fichier + Windows Event Viewer (`EventLog`) |
-| **Reprise sur erreur** | RestartCount=3 dans le scheduler | Recovery actions configurées dans le SCM |
+| **Reprise sur erreur** | RestartCount=3 dans le scheduler | Recovery actions configurÃ©es dans le SCM |

@@ -37,7 +37,7 @@
     .gitmodules, .env, .env.example) si le projet en a deja.
 
 .EXAMPLE
-    pwsh -File .agent\scripts\sync-agent-layer.ps1 -Target F:\Promgramation-teste\Thot-Agents
+    pwsh -File .agent\scripts\sync-agent-layer.ps1 -Target <chemin\vers\projet>
     pwsh -File .agent\scripts\sync-agent-layer.ps1 -Target <projet> -DryRun
 #>
 param(

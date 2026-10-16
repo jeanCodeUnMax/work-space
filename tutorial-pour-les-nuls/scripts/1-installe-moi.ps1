@@ -29,14 +29,15 @@ $prereqOk = $true
 if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] PowerShell 7" -ForegroundColor Red; $prereqOk = $false }
 if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] Rust (cargo)" -ForegroundColor Red; $prereqOk = $false }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { Write-Host "[MANQUE] Node.js" -ForegroundColor Red; $prereqOk = $false }
-if (-not $env:NVIDIA_API_KEY) { Write-Host "[MANQUE] NVIDIA_API_KEY" -ForegroundColor Red; $prereqOk = $false }
-if (-not $env:NVIDIA_API_KEY_2) { Write-Host "[MANQUE] NVIDIA_API_KEY_2" -ForegroundColor Red; $prereqOk = $false }
 if (-not $prereqOk) { Write-Host "`nInstalle ce qui manque et relance.`n" -ForegroundColor Yellow; exit 1 }
-Write-Host "[OK] Tous les prerequis sont la" -ForegroundColor Green
+# Cles NVIDIA : optionnelles — sans elles le moteur tourne, seuls les workers NIM sont KO
+if (-not $env:NVIDIA_API_KEY)   { Write-Host "[WARN] NVIDIA_API_KEY absente — workers nim1 KO (moteur OK)" -ForegroundColor Yellow }
+if (-not $env:NVIDIA_API_KEY_2) { Write-Host "[WARN] NVIDIA_API_KEY_2 absente — workers nim2 KO (moteur OK)" -ForegroundColor Yellow }
+Write-Host "[OK] Prerequis obligatoires presents" -ForegroundColor Green
 
 # 2) Install principal
 Write-Host "`n[2/5] Installation du runtime (install.ps1 -Elevated)..."
-& pwsh -File "$root\install.ps1" -Elevated
+& pwsh -File "$root\install.ps1" -Elevated -ProjectRoot $root
 if ($LASTEXITCODE -ne 0) { Write-Host "[ERREUR] install.ps1 a plante (code $LASTEXITCODE)" -ForegroundColor Red; exit 1 }
 Write-Host "[OK] Runtime installe" -ForegroundColor Green
 

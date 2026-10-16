@@ -23,8 +23,14 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REGISTRY_DIR = join(HERE, '..', 'model-registry');
 
 // DB canonique = hphe-mcp (ex-orchestrator-server Node absorbé). Env prioritaire : HPHE_ORCH_DB.
+const INSTALL = process.env.HPHE_INSTALL
+  || (process.env.ProgramFiles ? join(process.env.ProgramFiles, 'servers', 'hephaistos2-kit') : null);
 const DB = process.env.HPHE_ORCH_DB || process.env.ORCHESTRATOR_DB
-  || 'C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db';
+  || (INSTALL ? join(INSTALL, 'data', 'orchestrator.db') : null);
+if (!DB) {
+  console.error('[ping-models] orchestrator.db introuvable : définissez HPHE_ORCH_DB');
+  process.exit(2);
+}
 
 const args = process.argv.slice(2);
 const ALL = args.includes('--all');

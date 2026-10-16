@@ -58,8 +58,8 @@ curl -X POST http://127.0.0.1:8792/tools/everything_search -d '{"query":"install
 
 ## Règles propres au projet
 
-- JAMAIS d'édition directe de `C:\Program Files\servers\hephaistos2-kit` —
-  c'est du runtime régénéré par `install.ps1`.
+- JAMAIS d'édition directe du runtime installé (`%ProgramFiles%\servers\hephaistos2-kit`
+  par défaut, ou `HPHE_INSTALL`) — c'est du runtime régénéré par `install.ps1`.
 - JAMAIS d'ingestion lancée à la main pendant le dev — la boucle
   `hphe-rest` + la tâche IDE s'en chargent ; le gate sérialise.
 - `memory-maintenance` reste un writer SQLite externe — point d'attention

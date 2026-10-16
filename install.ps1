@@ -4,36 +4,137 @@
 
 .DESCRIPTION
   Séparation stricte PROJET / INSTALL :
-    - PROJET  : C:\Program Files\Projet-complet\hephaistos2-kit  (sources, .agent, git)
-    - INSTALL : C:\Program Files\servers\hephaistos2-kit         (runtime : binaires + data)
+    - PROJET  : dossier contenant ce script (auto-détecté, ou -ProjectRoot)
+    - INSTALL : %ProgramFiles%\servers\hephaistos2-kit par défaut
+                (ou -InstallRoot, ou env HPHE_INSTALL)
+
+  Aucun chemin n'est obligatoire : tout se déduit du script ou se surcharge
+  par paramètre / variable d'environnement. Si une install précédente existe,
+  ses chemins mémoire/ingestion sont réutilisés (rien n'est cassé).
 
   Étapes :
-    1. Build Rust (cargo build --release) dans PROJET   [-SkipBuild]
+    0. Sous-modules git + npm install .agent/agent-bridge   [-SkipDeps]
+    1. Build Rust (cargo build --release) dans PROJET        [-SkipBuild]
     2. Déploiement binaires -> INSTALL\extension\server\ (hphe-mcp, hphe-rest, hphe-indexd)
     3. Données runtime -> INSTALL\data, migrated-vec, memory-database
     4. Config MCP Devin -> chemins INSTALL
     5. Auto-start REST + boucle d'ingestion (Startup folder)
-    6. Tâche planifiée démon hphe-indexd                 [-Elevated]
+    6. Tâche planifiée démon hphe-indexd                      [-Elevated]
+
+.PARAMETER ProjectRoot
+  Racine du dépôt. Défaut : le dossier du script (portable, aucun chemin codé).
+
+.PARAMETER InstallRoot
+  Dossier runtime (binaires + data). Défaut : env HPHE_INSTALL, sinon
+  %ProgramFiles%\servers\hephaistos2-kit.
+
+.PARAMETER MemoryRoot
+  Racine des bases mémoire (agentmemory). Défaut : env HPHE_MEMORY_ROOT,
+  sinon la valeur d'une install existante, sinon <InstallRoot>\data\agentmemory.
+
+.PARAMETER IngestScan
+  Racines scannées par la boucle d'ingestion. Défaut : env HPHE_INGEST_SCAN,
+  sinon la valeur d'une install existante, sinon le projet.
+
+.PARAMETER EverythingRoots
+  Racines autorisées du profil MCP (séparées par ;). Défaut : env
+  EVERYTHING_MCP_ROOTS, sinon install existante, sinon projet + install + bureau.
+
+.PARAMETER CheckOnly
+  Mode sec : résout les chemins, vérifie sous-modules/dépendances/binaires,
+  n'écrit rien. Idéal pour valider une machine avant l'installation réelle.
+
+.PARAMETER SkipDeps
+  Saute l'étape 0 (git submodule update --init --recursive + npm install).
 
 .PARAMETER SkipBuild
   Ne rebuild pas les crates Rust — réutilise les binaires existants du projet.
+
 .PARAMETER Elevated
   Requis pour (re)créer la tâche planifiée hphe-indexd en SYSTEM.
+
 .PARAMETER SkipVerify
   Saute les vérifications d'intégration finales.
 #>
-param([switch]$SkipBuild, [switch]$Elevated, [switch]$SkipVerify)
+param(
+    [string]$ProjectRoot = $PSScriptRoot,
+    [string]$InstallRoot = $(if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { Join-Path $env:ProgramFiles 'servers\hephaistos2-kit' }),
+    [string]$MemoryRoot = '',
+    [string]$IngestScan = '',
+    [string]$EverythingRoots = '',
+    [switch]$CheckOnly,
+    [switch]$SkipDeps,
+    [switch]$SkipBuild,
+    [switch]$Elevated,
+    [switch]$SkipVerify
+)
 
 $ErrorActionPreference = 'Stop'
-$PRJ  = 'C:\Program Files\Projet-complet\hephaistos2-kit'
-$INS  = 'C:\Program Files\servers\hephaistos2-kit'
+$PRJ  = (Resolve-Path $ProjectRoot).Path
+$INS  = $InstallRoot
 $SRV  = "$INS\extension\server"
 $DATA = "$INS\data"
 
 Write-Host "=== Hephaistos2-Kit install (PROJET -> INSTALL) ===" -ForegroundColor Cyan
 Write-Host "  projet : $PRJ`n  install: $INS"
 
-if (-not (Test-Path "$PRJ\hphe\Cargo.toml")) { throw "PROJET introuvable : $PRJ" }
+if (-not (Test-Path $PRJ)) { throw "PROJET introuvable : $PRJ (lancer depuis la racine du depot ou passer -ProjectRoot)" }
+
+# --- Mode sec : rapport sans rien écrire -------------------------------------
+if ($CheckOnly) {
+  Write-Host "[check] sous-modules git :"
+  if (Test-Path "$PRJ\.gitmodules") {
+    Push-Location $PRJ
+    git submodule status 2>&1 | ForEach-Object { Write-Host "  $_" }
+    Pop-Location
+    $empty = git -C $PRJ submodule status 2>$null | Where-Object { $_ -match '^[-+]' }
+    if ($empty) { Write-Warning "sous-modules non initialisés/divergents — git submodule update --init --recursive" }
+  } else { Write-Host "  (pas de .gitmodules)" }
+  Write-Host ("[check] hphe workspace : " + ($(if (Test-Path "$PRJ\hphe\Cargo.toml") { 'OK' } else { 'MANQUANT' })))
+  Write-Host ("[check] agent-bridge ws : " + ($(if (Test-Path "$PRJ\.agent\agent-bridge\node_modules\ws") { 'OK' } else { 'absent — npm install requis' })))
+  Write-Host ("[check] binaires release : " + (('hphe-mcp.exe','hphe-rest.exe','hphe-indexd.exe','hphe-content.exe' | ForEach-Object { if (Test-Path "$PRJ\hphe\target\release\$_") { $_ } }) -join ', '))
+  Write-Host "[check] INSTALL cible : $INS (existant: $(Test-Path $INS))"
+  Write-Host "[check] mcp_config : $env:APPDATA\devin\mcp_config.json (existant: $(Test-Path "$env:APPDATA\devin\mcp_config.json"))"
+  Write-Host "[check] rien d'écrit — relancer sans -CheckOnly pour installer"
+  exit 0
+}
+
+# 0) Dépendances du dépôt : sous-modules + npm --------------------------------
+# IMPORTANT : tourne AVANT la validation hphe/ — sur un clone frais les
+# sous-modules (hphe, extension, orchestrator-monitor) sont vides.
+if (-not $SkipDeps) {
+  Write-Host "[0/6] sous-modules git + dependances npm"
+  if (Test-Path "$PRJ\.gitmodules") {
+    Push-Location $PRJ
+    git submodule update --init --recursive 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { Write-Warning "git submodule update a echoue (code $LASTEXITCODE) - verifier 'git submodule status'" }
+    Pop-Location
+  }
+  $bridgePkg = "$PRJ\.agent\agent-bridge\package.json"
+  if ((Test-Path $bridgePkg) -and -not (Test-Path "$PRJ\.agent\agent-bridge\node_modules\ws")) {
+    Push-Location "$PRJ\.agent\agent-bridge"
+    npm install --omit=dev 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) { Write-Warning "npm install agent-bridge a echoue - le canal binome (ws) sera indisponible" }
+    Pop-Location
+  } else { Write-Host "  + agent-bridge dependances deja presentes" }
+} else { Write-Host "[0/6] dependances sautees" }
+
+# Validation post-init : le workspace Rust doit être présent (sous-module hphe)
+if (-not (Test-Path "$PRJ\hphe\Cargo.toml")) {
+  throw "workspace Rust hphe/ introuvable : sous-module non initialisé. Corriger avec : git submodule update --init --recursive"
+}
+
+# Réutilise les chemins d'une install existante (aucun template cassé) ---------
+$prevCmd = "$SRV\hphe-rest.cmd"
+$prev = @{}
+if (Test-Path $prevCmd) {
+  foreach ($line in (Get-Content $prevCmd -ErrorAction SilentlyContinue)) {
+    if ($line -match '^set\s+([A-Z_]+)=(.+)$') { $prev[$Matches[1]] = $Matches[2].Trim() }
+  }
+}
+if (-not $MemoryRoot)      { $MemoryRoot      = if ($env:HPHE_MEMORY_ROOT)      { $env:HPHE_MEMORY_ROOT }      elseif ($prev['HPHE_MEMORY_ROOT'])      { $prev['HPHE_MEMORY_ROOT'] }      else { "$DATA\agentmemory" } }
+if (-not $IngestScan)      { $IngestScan      = if ($env:HPHE_INGEST_SCAN)      { $env:HPHE_INGEST_SCAN }      elseif ($prev['HPHE_INGEST_SCAN'])      { $prev['HPHE_INGEST_SCAN'] }      else { $PRJ } }
+if (-not $EverythingRoots) { $EverythingRoots = if ($env:EVERYTHING_MCP_ROOTS)  { $env:EVERYTHING_MCP_ROOTS }  elseif ($prev['EVERYTHING_MCP_ROOTS'])  { $prev['EVERYTHING_MCP_ROOTS'] }  else { (@($PRJ, $INS, $MemoryRoot, [Environment]::GetFolderPath('Desktop')) | Where-Object { $_ -and (Test-Path $_) }) -join ';' } }
 
 # 1) Build dans le PROJET ----------------------------------------------------
 if (-not $SkipBuild) {
@@ -50,9 +151,9 @@ foreach ($bin in 'hphe-mcp.exe','hphe-rest.exe','hphe-indexd.exe','hphe-content.
 }
 # miroir dans le projet (pour tests dev depuis la racine projet)
 New-Item -ItemType Directory -Force "$PRJ\extension\server" | Out-Null
-Copy-Item "$SRV\hphe-mcp.exe"   "$PRJ\extension\server\" -Force -ErrorAction SilentlyContinue
-Copy-Item "$SRV\hphe-rest.exe"  "$PRJ\extension\server\" -Force -ErrorAction SilentlyContinue
-Copy-Item "$SRV\hphe-indexd.exe" "$PRJ\extension\server\" -Force -ErrorAction SilentlyContinue
+foreach ($bin in 'hphe-mcp.exe','hphe-rest.exe','hphe-indexd.exe','hphe-content.exe') {
+  Copy-Item "$SRV\$bin" "$PRJ\extension\server\" -Force -ErrorAction SilentlyContinue
+}
 
 # wrappers .cmd dans INSTALL
 @"
@@ -63,12 +164,12 @@ rem (HPHE_REST_TOKEN env ou $DATA\hphe-rest.token genere au boot).
 set HPHE_CONTENT_DIR=$DATA\content-index
 set HPHE_VEC_DIR=$INS\migrated-vec
 set HPHE_ORCH_DB=$DATA\orchestrator.db
-set HPHE_MEMORY_ROOT=F:\Sqlite-DB\agentmemory
+set HPHE_MEMORY_ROOT=$MemoryRoot
 set HPHE_INGEST_ROOTS=$PRJ
-set HPHE_INGEST_SCAN=F:\Promgramation-teste
+set HPHE_INGEST_SCAN=$IngestScan
 set HPHE_INGEST_INTERVAL_S=900
 set EVERYTHING_MCP_ACCESS_FILE=%~dp0.mcp-access
-set EVERYTHING_MCP_ROOTS=F:\Promgramation-teste;$INS;$PRJ;C:\Users\Administrator\Desktop;F:\Sqlite-DB\agentmemory
+set EVERYTHING_MCP_ROOTS=$EverythingRoots
 :loop
 "$SRV\hphe-rest.exe" --addr 127.0.0.1:8792 --profile rest >> "$DATA\hphe-rest.log" 2>&1
 echo %DATE% %TIME% hphe-rest termine - relance dans 10s >> "$DATA\hphe-rest.log"
@@ -77,25 +178,50 @@ goto loop
 "@ | Set-Content "$SRV\hphe-rest.cmd" -Encoding ASCII
 
 # politique d'accès à côté du .cmd (le wrapper la pointe via EVERYTHING_MCP_ACCESS_FILE)
-Copy-Item "$PRJ\extension\server\.mcp-access" "$SRV\.mcp-access" -Force -ErrorAction SilentlyContinue
+# Le fichier du repo est un template à tokens <...> ; on le rend ici avec les
+# chemins résolus. Une politique déjà déployée n'est JAMAIS écrasée.
+$accTmpl = "$PRJ\extension\server\.mcp-access"
+$accOut  = "$SRV\.mcp-access"
+if ((Test-Path $accTmpl) -and -not (Test-Path $accOut)) {
+  $acc = Get-Content $accTmpl -Raw
+  $acc = $acc.Replace('<INGEST_SCAN_ROOT>', ($IngestScan -replace '\\','/')).
+              Replace('<PROJECT_ROOT>', ($PRJ -replace '\\','/')).
+              Replace('<INSTALL_ROOT>', ($INS -replace '\\','/')).
+              Replace('<MEMORY_ROOT>', ($MemoryRoot -replace '\\','/')).
+              Replace('<USER_PROFILE>', ($env:USERPROFILE -replace '\\','/'))
+  Set-Content $accOut -Value $acc -Encoding ASCII
+  Write-Host "  + .mcp-access rendu -> $accOut"
+} elseif (Test-Path $accOut) { Write-Host "  + .mcp-access existant conservé" }
 
 @"
 @echo off
 rem Ingestion incrementale automatisee
 set HPHE_CONTENT_DIR=$DATA\content-index
 set HPHE_VEC_DIR=$INS\migrated-vec
-"$SRV\hphe-mcp.exe" --tool content_ingest --args "{\`"root\`":\`"$PRJ\`",\`"project_tag\`":\`"hephaistos2-kit\`"}"
+"$SRV\hphe-mcp.exe" --tool content_ingest --args "{\`"root\`":\`"$PRJ\`",\`"project_tag\`":\`"$(Split-Path -Leaf $PRJ)\`"}"
 "@ | Set-Content "$SRV\hphe-ingest.cmd" -Encoding ASCII
 Write-Host "  + hphe-rest.cmd / hphe-ingest.cmd"
 
 # 3) Données runtime -> INSTALL ------------------------------------------------
 Write-Host "[3/6] données runtime"
 New-Item -ItemType Directory -Force "$DATA\content-index" | Out-Null
-if (-not (Test-Path "$DATA\orchestrator.db") -and (Test-Path 'C:\Program Files\servers\servers_backup\orchestrator-server\data\orchestrator.db')) {
-  Copy-Item 'C:\Program Files\servers\servers_backup\orchestrator-server\data\orchestrator.db' "$DATA\"
+$orchBackup = Join-Path (Split-Path $INS -Parent) 'servers_backup\orchestrator-server\data\orchestrator.db'
+if (-not (Test-Path "$DATA\orchestrator.db") -and (Test-Path $orchBackup)) {
+  Copy-Item $orchBackup "$DATA\"
 }
 if (-not (Test-Path "$INS\memory-database")) {
-  cmd /c mklink /J "$INS\memory-database" "F:\Sqlite-DB\current_workspace" | Out-Null
+  # Jonction vers une base mémoire externe seulement si la cible existe ;
+  # sinon dossier réel local — jamais de lien mort silencieux.
+  $memDbTarget = if ($env:HPHE_MEMORY_DB) { $env:HPHE_MEMORY_DB } elseif ($MemoryRoot -and (Test-Path $MemoryRoot) -and $MemoryRoot -notlike "$INS*") { $MemoryRoot } else { '' }
+  if ($memDbTarget) {
+    cmd /c mklink /J "$INS\memory-database" "$memDbTarget" | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$INS\memory-database")) {
+      Write-Warning "jonction memory-database -> $memDbTarget a echoue ; dossier local cree a la place"
+      New-Item -ItemType Directory -Force "$INS\memory-database" | Out-Null
+    }
+  } else {
+    New-Item -ItemType Directory -Force "$INS\memory-database" | Out-Null
+  }
 }
 if (-not (Test-Path "$INS\migrated-vec")) { New-Item -ItemType Directory -Force "$INS\migrated-vec" | Out-Null }
 Write-Host "  + content-index, orchestrator.db, memory-database, migrated-vec"
@@ -122,10 +248,11 @@ if (Test-Path $cfgPath) {
       HPHE_CONTENT_DIR = "$DATA/content-index"
       HPHE_VEC_DIR     = "$INS/migrated-vec"
       HPHE_ORCH_DB     = "$DATA/orchestrator.db"
-      HPHE_MEMORY_ROOT = 'F:/Sqlite-DB/agentmemory'
+      HPHE_MEMORY_ROOT = ($MemoryRoot -replace '\\','/')
       HPHE_PIPE        = '\.\pipe\hphe-index'
     }
   }
+  if (-not $cfg.mcpServers) { $cfg | Add-Member -NotePropertyName mcpServers -NotePropertyValue ([pscustomobject]@{}) }
   $cfg.mcpServers | Add-Member -NotePropertyName 'Hephaistos-everything-search' -NotePropertyValue $es -Force
   if ($cfg.mcpServers.PSObject.Properties['everything-search']) {
     $cfg.mcpServers.PSObject.Properties.Remove('everything-search')
@@ -154,7 +281,7 @@ if ($Elevated) {
 # 7) Vérifications post-installation (extension, bridge, surfaces, binôme) --------
 if (-not $SkipVerify) {
   Write-Host "`n=== [Vérifications d'intégration] ===" -ForegroundColor Cyan
-  
+
   # a) Extension orchestrator-monitor (>= 0.0.58, injection ACP stdio)
   $expectedExtVer = '0.0.58'
   $extDirs = @()

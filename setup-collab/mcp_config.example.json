@@ -1,23 +1,23 @@
 {
   "mcpServers": {
     "Hephaistos-everything-search": {
-      "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
+      "command": "<INSTALL>/extension/server/hphe-mcp.exe",
       "args": [],
       "env": {
-        "HPHE_VEC_DIR": "C:/Program Files/servers/hephaistos2-kit/migrated-vec",
+        "HPHE_VEC_DIR": "<INSTALL>/migrated-vec",
         "HPHE_PIPE": "\\\\.\\pipe\\hphe-index",
-        "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
-        "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
-        "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
+        "HPHE_CONTENT_DIR": "<INSTALL>/data/content-index",
+        "HPHE_ORCH_DB": "<INSTALL>/data/orchestrator.db",
+        "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>"
       }
     },
     "antigravity-obsidian": {
       "command": "node",
       "args": [
-        "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
+        "<USERPROFILE>/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
       ],
       "env": {
-        "OBSIDIAN_VAULT_PATH": "F:/doc_Obsidian/Doc"
+        "OBSIDIAN_VAULT_PATH": "<OBSIDIAN_VAULT>"
       }
     }
   }
