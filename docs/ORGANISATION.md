@@ -33,7 +33,7 @@ hephaistos2-kit/                      (repo projet-temporaire/hephaistos2-kit)
 │
 ├── extensions/
 │   └── orchestrator-monitor/         # SUBMODULE hephaistos2-monitor-ext
-│       ├── package.json              # 0.0.58
+│       ├── package.json              # 0.0.59
 │       ├── src/ + out/               # TS + compilé
 │       ├── ws-bridge/                # bridge :7477 (snapshots read-only)
 │       └── *.vsix

@@ -19,7 +19,7 @@ projet-temporaire/
 │   └── .gitmodules pointe sur les 3 sous-modules ci-dessous
 ├── hephaistos2-engine         ← hphe/ : workspace Rust (indexd, mcp, rest, kit)
 ├── hephaistos2-search-ext     ← extension/ : ext VS Code recherche (VSIX 1.0.3)
-├── hephaistos2-monitor-ext    ← extensions/orchestrator-monitor/ (VSIX 0.0.58)
+├── hephaistos2-monitor-ext    ← extensions/orchestrator-monitor/ (VSIX 0.0.59)
 └── (intégré) .agent/          ← scripts, agents, skills, workflows — dossier du repo
 ```
 

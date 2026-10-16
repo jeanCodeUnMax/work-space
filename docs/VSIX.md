@@ -28,7 +28,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 | Champ        | Valeur                                                                                         |
 | ------------ | ---------------------------------------------------------------------------------------------- |
 | ID           | `orchestrator-monitor`                                                                       |
-| Version      | 0.0.58                                                                                         |
+| Version      | 0.0.59                                                                                         |
 | Nom affiché | Hephaistos Orchestrator Monitor                                                                |
 | Source       | `extensions/orchestrator-monitor/` (sous-module git)                                         |
 | Rôle        | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
@@ -48,7 +48,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 - **Protocole binôme** : commande Devin `/jointes <agent>`; chaque handshake corrèle `pairId`, `session`, transport, provider et IDs exacts, avec TTL de 15 minutes. Les modes hub/ACP/CLI ne basculent jamais implicitement.
 - **Injection ACP** : l’inventaire vérifie workspace, provider activé et `providerId/sessionId`. Pour les providers tiers, `wake_acp_agent` passe par `agent-bridge/acp-inject.js` : connexion ACP stdio dédiée, `session/load`/`session/resume` sur l’ID exact puis `session/prompt` (`opencode`, `antigravity-acp`, `mistral-vibe`, `hermes`, `kilo`; binaire surchargeable via `HEPHAISTOS_ACP_CMD_<PROVIDER>`). Provider non mappé ou session non attachable = `skipped`/`failed`; la route native `devin-cli` reste distincte; pas de nouvelle conversation, toast ou presse-papiers.
 - **Filet de secours** : `.agent/task-watch.cjs` (client WS -> `.agent/task-events.log`, auto-reconnect).
-- **Build** : `npm run vscode:prepublish` depuis `extensions/orchestrator-monitor/`; le VSIX `orchestrator-monitor-0.0.58.vsix` reste dans ce répertoire.
+- **Build** : `npm run vscode:prepublish` depuis `extensions/orchestrator-monitor/`; le VSIX `orchestrator-monitor-0.0.59.vsix` reste dans ce répertoire.
 
 ---
 

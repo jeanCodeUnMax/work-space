@@ -13,7 +13,7 @@ Le runtime installé reste à 57 outils jusqu’à autorisation de déploiement.
 | `hphe-mcp`    | serveur MCP stdio (58 outils) — spawné par l'IDE                 | idem                                 |
 | `hphe-rest`   | passerelle HTTP :8792 + boucle d'ingestion + gate d'écriture      | idem                                 |
 | ext search      | VSIX `hephaistos-kit-search` 1.0.3                               | `extension/`                       |
-| ext monitor     | VSIX `orchestrator-monitor` 0.0.58 (panel + ws-bridge :7477)     | `extensions/orchestrator-monitor/` |
+| ext monitor     | VSIX `orchestrator-monitor` 0.0.59 (panel + ws-bridge :7477)     | `extensions/orchestrator-monitor/` |
 | `.agent/`     | kit agents/skills/scripts (intégré au repo)                      | racine                               |
 
 ## Prérequis

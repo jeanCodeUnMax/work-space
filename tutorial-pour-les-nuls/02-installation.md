@@ -107,7 +107,7 @@ pwsh -File .agent\setup\install-extension-hub.ps1 -CheckOnly
 ```
 
 Tu devrais voir :
-- `[OK] orchestrator-monitor v0.0.58 installée`
+- `[OK] orchestrator-monitor v0.0.59 installée`
 - `[OK] hub agy actif`
 - `[OK] surfaces de règles conformes`
 - `[OK] canal binome : IDs devin et agy publiés`

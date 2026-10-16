@@ -81,7 +81,7 @@ PROJET (dev)  : <repo>/  (dossier du clone — emplacement libre)
 ├── extension/               # ext VS Code "Hephaistos-Kit Search" (VSIX 1.0.3)
 │   └── server/              # binaires déployés (miroir de l'install)
 ├── extensions/
-│   └── orchestrator-monitor/# ext monitor (VSIX 0.0.58)
+│   └── orchestrator-monitor/# ext monitor (VSIX 0.0.59)
 ├── .agent/                  # agents, skills, workflows, scripts — LE KIT
 ├── memory-database ->       # jonction/dossier vers la mémoire ($AGENT_DB_ROOT)
 ├── install.ps1              # deploy PROJET -> INSTALL (chemins auto-détectés)
@@ -162,7 +162,7 @@ Jamais deux writers Tantivy en parallèle : tout passe par `hphe-rest`.
 | Extension                                   | VSIX                                                                 | Rôle                                                                |
 | ------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `projet-temporaire.hephaistos-kit-search` | `extension/hephaistos-kit-search-1.0.3.vsix`                       | Recherche NTFS dans l'IDE, embarque le MCP                           |
-| `hephaistos.orchestrator-monitor`         | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.58.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
+| `hephaistos.orchestrator-monitor`         | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.59.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
 
 Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
 
