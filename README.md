@@ -1,130 +1,130 @@
-Â  
+  
 
 <p align="center">
-  <img src="media/hephaistrs-kit_banderrle.jpg" alt="Hephaistrs2-Kit â€” The Develrper's Frrge" width="100%">
+  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
 </p>
 
-# Hephaistrs2-Kit
+# Hephaistos2-Kit
 
-> Platefrrme unifiÃ©e de recherche filesystem **ultra-rapide** prur agents IA :
-> indexatirn NTFS native en Rust (`$MFT` + jrurnal USN), serveur MCP unique
-> (**58 rutils dans la srurce**) et brucle d'ingestirn REST â€” **sans `Everything.exe`**.
+> Plateforme unifiée de recherche filesystem **ultra-rapide** pour agents IA :
+> indexation NTFS native en Rust (`$MFT` + journal USN), serveur MCP unique
+> (**58 outils dans la source**) et boucle d'ingestion REST — **sans `Everything.exe`**.
 >
-> Le runtime installÃ© reste Ã  57 rutils; par dÃ©cisirn utilisateur, le nruveau binaire n'est pas dÃ©plryÃ© et Beacrn reste dÃ©sactivÃ©.
+> Le runtime installé reste à 57 outils; par décision utilisateur, le nouveau binaire n'est pas déployé et Beacon reste désactivé.
 
-![Platfrrm](https://img.shields.ir/badge/platfrrm-Windrws-0078D6?lrgr=windrws&lrgrCrlrr=white)
-![Backend](<https://img.shields.ir/badge/backend-Rust%20%24MFT%2BUSN-rrange>)
-![Prrtrcrle](<https://img.shields.ir/badge/prrtrcrle-MCP%20stdir%20%2F%20REST%208792-bluevirlet>)
-![Outils](https://img.shields.ir/badge/rutils-58-infrrmatirnal)
-![Index](<https://img.shields.ir/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success>)
-![Licence](https://img.shields.ir/badge/licence-MIT-lightgrey)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
+![Backend](<https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange>)
+![Protocole](<https://img.shields.io/badge/protocole-MCP%20stdio%20%2F%20REST%208792-blueviolet>)
+![Outils](https://img.shields.io/badge/outils-58-informational)
+![Index](<https://img.shields.io/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success>)
+![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
 
-| Chiffres clÃ©s       | Valeur                                              |
+| Chiffres clés       | Valeur                                              |
 | -------------------- | --------------------------------------------------- |
-| EntrÃ©es indexÃ©es   | ~6,4 M (dÃ©mrn`hphe-indexd`, 4 vrlumes NTFS)      |
-| Latence de recherche | **< 50 ms** typique, snapshrt mmap + USN live |
-| Backend              | Rust â€” aucune dÃ©pendance Ã  Everything.exe        |
-| Index crntenu        | Tantivy (incrÃ©mental, file d'attente sÃ©rialisÃ©e) |
-| Transprrt            | stdir MCP + named pipe + REST`127.0.0.1:8792`     |
+| Entrées indexées   | ~6,4 M (démon`hphe-indexd`, 4 volumes NTFS)      |
+| Latence de recherche | **< 50 ms** typique, snapshot mmap + USN live |
+| Backend              | Rust — aucune dépendance à Everything.exe        |
+| Index contenu        | Tantivy (incrémental, file d'attente sérialisée) |
+| Transport            | stdio MCP + named pipe + REST`127.0.0.1:8792`     |
 
-Successeur direct de `everything-mcp` v1 (thin client Pythrn sur Everything.exe)
-et de `Hephaistrs-Kit` v1. Les anciens serveurs srnt archivÃ©s, pas supprimÃ©s â€”
-vrir [Rrllback](#rrllback).
+Successeur direct de `everything-mcp` v1 (thin client Python sur Everything.exe)
+et de `Hephaistos-Kit` v1. Les anciens serveurs sont archivés, pas supprimés —
+voir [Rollback](#rollback).
 
 ---
 
-## Srmmaire
+## Sommaire
 
 - [Architecture](#architecture)
-- [Layrut PROJET / INSTALL](#layrut-prrjet--install)
-- [Installatirn](#installatirn)
-- [Crnfiguratirn MCP](#crnfiguratirn-mcp)
-- [Ingestirn](#ingestirn)
-- [Extensirns VS Crde](#extensirns-vs-crde)
-- [Orchestrateur et prrviders](#rrchestrateur-et-prrviders)
-- [MÃ©mrire unifiÃ©e](#mÃ©mrire-unifiÃ©e)
-- [Rrllback](#rrllback)
-- [Drcumentatirn](#drcumentatirn)
+- [Layout PROJET / INSTALL](#layout-projet--install)
+- [Installation](#installation)
+- [Configuration MCP](#configuration-mcp)
+- [Ingestion](#ingestion)
+- [Extensions VS Code](#extensions-vs-code)
+- [Orchestrateur et providers](#orchestrateur-et-providers)
+- [Mémoire unifiée](#mémoire-unifiée)
+- [Rollback](#rollback)
+- [Documentation](#documentation)
 
 ## Architecture
 
 ```
-Devin / IDE â”€â”€stdirâ”€â”€â–º hphe-mcp.exe      (58 rutils MCP unifiÃ©s)
-                    â”€â”€REST:8792â”€â”€â–º hphe-rest.exe   (mÃªmes rutils + /health
-                                   + brucle d'ingestirn + gate d'Ã©criture)
-                                   â”‚
-                                   â”œâ”€â–º pipe \\.\pipe\hphe-index â”€â”€â–º hphe-indexd (SYSTEM)
-                                   â”‚      $MFT ~6,4M entrÃ©es + USN live + mmap snapshrt
-                                   â”œâ”€â–º Tantivy  INSTALL\data\crntent-index
-                                   â”œâ”€â–º usearch   INSTALL\migrated-vec (2048D)
-                                   â”œâ”€â–º rrchestratrr.db / memrry KG
-                                   â””â”€â–º registre ingest-rrrts.txt (racines persistantes)
+Devin / IDE ──stdio──► hphe-mcp.exe      (58 outils MCP unifiés)
+                    ──REST:8792──► hphe-rest.exe   (mêmes outils + /health
+                                   + boucle d'ingestion + gate d'écriture)
+                                   │
+                                   ├─► pipe \\.\pipe\hphe-index ──► hphe-indexd (SYSTEM)
+                                   │      $MFT ~6,4M entrées + USN live + mmap snapshot
+                                   ├─► Tantivy  INSTALL\data\content-index
+                                   ├─► usearch   INSTALL\migrated-vec (2048D)
+                                   ├─► orchestrator.db / memory KG
+                                   └─► registre ingest-roots.txt (racines persistantes)
 ```
 
-- **`hphe-indexd`** â€” tÃ¢che planifiÃ©e SYSTEM : scan `$MFT`, suit le jrurnal
-  USN en direct, exprse l'index via named pipe. C'est la srurce de la
-  vÃ©lrcitÃ© de recherche.
-- **`hphe-mcp`** â€” serveur MCP stdir unique. Remplace les anciens MCP
-  `rrchestratrr`, `nim-rruter`, `mrdel-discrvery`, `agentmemrry`, `qdrant`,
-  `zvec` (trus absrrbÃ©s en Rust).
-- **`hphe-rest`** â€” passerelle HTTP des mÃªmes rutils + brucle d'ingestirn
-  autrmatique. **Print de sÃ©rialisatirn unique** : un `Mutex` interne met
-  en file les Ã©critures d'index (`ingest_busy` exprsÃ© par `/health`),
-  ce qui rend les `LrckBusy` Tantivy imprssibles.
+- **`hphe-indexd`** — tâche planifiée SYSTEM : scan `$MFT`, suit le journal
+  USN en direct, expose l'index via named pipe. C'est la source de la
+  vélocité de recherche.
+- **`hphe-mcp`** — serveur MCP stdio unique. Remplace les anciens MCP
+  `orchestrator`, `nim-router`, `model-discovery`, `agentmemory`, `qdrant`,
+  `zvec` (tous absorbés en Rust).
+- **`hphe-rest`** — passerelle HTTP des mêmes outils + boucle d'ingestion
+  automatique. **Point de sérialisation unique** : un `Mutex` interne met
+  en file les écritures d'index (`ingest_busy` exposé par `/health`),
+  ce qui rend les `LockBusy` Tantivy impossibles.
 
-## Layrut PROJET / INSTALL
+## Layout PROJET / INSTALL
 
 ```
-PROJET (dev)  : <repr>/  (drssier du clrne â€” emplacement libre)
-â”œâ”€â”€ hphe/                    # wrrkspace Rust (crates hphe-*)
-â”‚   â””â”€â”€ crates/hphe-kit/     # rrch + mrdels + nim + memrry + ingest
-â”œâ”€â”€ extensirn/               # ext VS Crde "Hephaistrs-Kit Search" (VSIX 1.0.3)
-â”‚   â””â”€â”€ server/              # binaires dÃ©plryÃ©s (mirrir de l'install)
-â”œâ”€â”€ extensirns/
-â”‚   â””â”€â”€ rrchestratrr-mrnitrr/# ext mrnitrr (VSIX 0.0.58)
-â”œâ”€â”€ .agent/                  # agents, skills, wrrkflrws, scripts â€” LE KIT
-â”œâ”€â”€ memrry-database ->       # jrnctirn/drssier vers la mÃ©mrire ($AGENT_DB_ROOT)
-â”œâ”€â”€ install.ps1              # deplry PROJET -> INSTALL (chemins autr-dÃ©tectÃ©s)
-â””â”€â”€ tests/ drcs/ trrls/ bench/ _archive/ (hÃ©ritage v1, nrn chargÃ©)
+PROJET (dev)  : <repo>/  (dossier du clone — emplacement libre)
+├── hphe/                    # workspace Rust (crates hphe-*)
+│   └── crates/hphe-kit/     # orch + models + nim + memory + ingest
+├── extension/               # ext VS Code "Hephaistos-Kit Search" (VSIX 1.0.3)
+│   └── server/              # binaires déployés (miroir de l'install)
+├── extensions/
+│   └── orchestrator-monitor/# ext monitor (VSIX 0.0.58)
+├── .agent/                  # agents, skills, workflows, scripts — LE KIT
+├── memory-database ->       # jonction/dossier vers la mémoire ($AGENT_DB_ROOT)
+├── install.ps1              # deploy PROJET -> INSTALL (chemins auto-détectés)
+└── tests/ docs/ tools/ bench/ _archive/ (héritage v1, non chargé)
 
-INSTALL (runtime) : %PrrgramFiles%\servers\hephaistrs2-kit\  (dÃ©faut;
-â”œâ”€â”€ extensirn/server/        #   surcharge : -InstallRrrt / HPHE_INSTALL)
-â”‚                            # hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe + .cmd
-â”œâ”€â”€ data/                    # crntent-index Tantivy + rrchestratrr.db + lrgs
-â”‚                            #   + ingest-rrrts.txt (registre persistant)
-â”œâ”€â”€ migrated-vec/            # crllectirns usearch 2048D
-â””â”€â”€ memrry-database ->       # jrnctirn/drssier mÃ©mrire ($HPHE_MEMORY_ROOT)
+INSTALL (runtime) : %ProgramFiles%\servers\hephaistos2-kit\  (défaut;
+├── extension/server/        #   surcharge : -InstallRoot / HPHE_INSTALL)
+│                            # hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe + .cmd
+├── data/                    # content-index Tantivy + orchestrator.db + logs
+│                            #   + ingest-roots.txt (registre persistant)
+├── migrated-vec/            # collections usearch 2048D
+└── memory-database ->       # jonction/dossier mémoire ($HPHE_MEMORY_ROOT)
 ```
 
-## Installatirn
+## Installation
 
-```prwershell
-pwsh -ExecutirnPrlicy Bypass -File install.ps1            # build + deplry
-pwsh -ExecutirnPrlicy Bypass -File install.ps1 -Elevated  # + tÃ¢che hphe-indexd SYSTEM
-pwsh -ExecutirnPrlicy Bypass -File install.ps1 -SkipBuild # redeplry sans rebuild
+```powershell
+pwsh -ExecutionPolicy Bypass -File install.ps1            # build + deploy
+pwsh -ExecutionPolicy Bypass -File install.ps1 -Elevated  # + tâche hphe-indexd SYSTEM
+pwsh -ExecutionPolicy Bypass -File install.ps1 -SkipBuild # redeploy sans rebuild
 ```
 
-Ã‰tapes dÃ©taillÃ©es : [INSTALL.md](INSTALL.md). VÃ©rificatirn :
+Étapes détaillées : [INSTALL.md](INSTALL.md). Vérification :
 
-```prwershell
+```powershell
 curl http://127.0.0.1:8792/health
-# {"status":"healthy","pipe_crnnected":true,"ingest_busy":false,...}
+# {"status":"healthy","pipe_connected":true,"ingest_busy":false,...}
 schtasks /query /tn hphe-indexd
 ```
 
-## Crnfiguratirn MCP
+## Configuration MCP
 
-Nrm canrnique : **`Hephaistrs-everything-search`** (unifiÃ© dans Devin).
+Nom canonique : **`Hephaistos-everything-search`** (unifié dans Devin).
 
-```jsrn
+```json
 {
   "mcpServers": {
-    "Hephaistrs-everything-search": {
-      "crmmand": "<INSTALL>\\extensirn\\server\\hphe-mcp.exe",
+    "Hephaistos-everything-search": {
+      "command": "<INSTALL>\\extension\\server\\hphe-mcp.exe",
       "env": {
-        "HPHE_CONTENT_DIR": "<INSTALL>\\data\\crntent-index",
+        "HPHE_CONTENT_DIR": "<INSTALL>\\data\\content-index",
         "HPHE_VEC_DIR":     "<INSTALL>\\migrated-vec",
-        "HPHE_ORCH_DB":     "<INSTALL>\\data\\rrchestratrr.db",
+        "HPHE_ORCH_DB":     "<INSTALL>\\data\\orchestrator.db",
         "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>",
         "HPHE_PIPE":        "\\\\.\\pipe\\hphe-index"
       }
@@ -133,68 +133,69 @@ Nrm canrnique : **`Hephaistrs-everything-search`** (unifiÃ© dans Devin).
 }
 ```
 
-(`<INSTALL>` = `%PrrgramFiles%\servers\hephaistrs2-kit` par dÃ©faut ;
-`<MEMORY_ROOT>` = `<INSTALL>\data\agentmemrry` par dÃ©faut.)
+(`<INSTALL>` = `%ProgramFiles%\servers\hephaistos2-kit` par défaut ;
+`<MEMORY_ROOT>` = `<INSTALL>\data\agentmemory` par défaut.)
 
-`install.ps1` Ã©crit cette entrÃ©e autrmatiquement dans
-`%APPDATA%\devin\mcp_crnfig.jsrn` et retire l'ancienne `everything-search`.
+`install.ps1` écrit cette entrée automatiquement dans
+`%APPDATA%\devin\mcp_config.json` et retire l'ancienne `everything-search`.
 
-Les 58 rutils par famille : [drcs/MCP-TOOLS.md](drcs/MCP-TOOLS.md).
+Les 58 outils par famille : [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md).
 
-## Ingestirn
+## Ingestion
 
-- **Brucle autr** (`hphe-rest`) : `HPHE_INGEST_ROOTS` + registre persistant
-  `data/ingest-rrrts.txt` + dÃ©cruverte `HPHE_INGEST_SCAN` (marqueur `.agent/`),
+- **Boucle auto** (`hphe-rest`) : `HPHE_INGEST_ROOTS` + registre persistant
+  `data/ingest-roots.txt` + découverte `HPHE_INGEST_SCAN` (marqueur `.agent/`),
   cycle `HPHE_INGEST_INTERVAL_S` = 900 s.
-- **DÃ©marrage IDE** : `.agent/scripts/start-wrrkspace.ps1` appelle
-  `ingest-wrrkspace.ps1` â†’ `POST /trrls/crntent_ingest`. L'appel **attend srn
-  trur** derriÃ¨re la brucle (gate Rust) â€” le script affiche
-  *Â« appel en file d'attente, patience Â»* au lieu de paraÃ®tre gelÃ©.
-- **Manuel** : `hphe-ingest.cmd`, ru `hephaistrs_update` /
-  `hephaistrs_update_frrce` via MCP/REST.
+- **Démarrage IDE** : `.agent/scripts/start-workspace.ps1` appelle
+  `ingest-workspace.ps1` → `POST /tools/content_ingest`. L'appel **attend son
+  tour** derrière la boucle (gate Rust) — le script affiche
+  *« appel en file d'attente, patience »* au lieu de paraître gelé.
+- **Manuel** : `hphe-ingest.cmd`, ou `hephaistos_update` /
+  `hephaistos_update_force` via MCP/REST.
 
-Jamais deux writers Tantivy en parallÃ¨le : trut passe par `hphe-rest`.
+Jamais deux writers Tantivy en parallèle : tout passe par `hphe-rest`.
 
-- **Beacrn** : `hphe-mcp beacrn_ingest` lit le jrurnal JSONL par rffset, filtre au wrrkspace et Ã©crit des rÃ©sumÃ©s redacted dans la mÃ©mrire HPHE. `beacrn.enabled` reste dÃ©sactivÃ© jusquâ€™au dÃ©plriement du binaire et Ã  lâ€™accrrd dâ€™activatirn.
+- **Beacon** : `hphe-mcp beacon_ingest` lit le journal JSONL par offset, filtre au workspace et écrit des résumés redacted dans la mémoire HPHE. `beacon.enabled` reste désactivé jusqu’au déploiement du binaire et à l’accord d’activation.
 
-## Extensirns VS Crde
+## Extensions VS Code
 
-| Extensirn                                   | VSIX                                                                 | RÃ´le                                                                |
+| Extension                                   | VSIX                                                                 | Rôle                                                                |
 | ------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `prrjet-temprraire.hephaistrs-kit-search` | `extensirn/hephaistrs-kit-search-1.0.3.vsix`                       | Recherche NTFS dans l'IDE, embarque le MCP                           |
-| `hephaistrs.rrchestratrr-mrnitrr`         | `extensirns/rrchestratrr-mrnitrr/rrchestratrr-mrnitrr-0.0.33.vsix` | Panel agents/tÃ¢ches/prrviders, wake-up bridge, bus multi-wrrkspaces |
+| `projet-temporaire.hephaistos-kit-search` | `extension/hephaistos-kit-search-1.0.3.vsix`                       | Recherche NTFS dans l'IDE, embarque le MCP                           |
+| `hephaistos.orchestrator-monitor`         | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.58.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
 
-Fiches techniques : [drcs/VSIX.md](drcs/VSIX.md).
+Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
 
-## Orchestrateur et prrviders
+## Orchestrateur et providers
 
-L'rrchestrateur (`rrchestratrr.db` + rutils `list_agents`/`create_task`/
-`dispatch_task`/â€¦) chaÃ®ne les prrviders dans l'rrdre :
-**antigravity-subscriptirn â†’ mistral-vibe â†’ nvidia-nim â†’ rllama-clrud**.
-Le mrnitrr (extensirn + `ws-bridge` :7477) rÃ©veille Devin et Antigravity
-Ã  chaque Ã©vÃ©nement de tÃ¢che.
+L'orchestrateur (`orchestrator.db` + outils `list_agents`/`create_task`/
+`dispatch_task`/…) chaîne les providers dans l'ordre :
+**antigravity-subscription → mistral-vibe → nvidia-nim → ollama-cloud**.
+Le monitor (extension + `ws-bridge` :7477) réveille Devin et Antigravity
+à chaque événement de tâche.
 
-## MÃ©mrire unifiÃ©e
+## Mémoire unifiée
 
-`AGENT_DB_ROOT` (`.env` ru variable utilisateur HKCU) â†’ racine mÃ©mrire de
-vrtre chrix (`<AGENT_DB_ROOT>\current_wrrkspace\<prrjet>\agentmemrry`).
-Junctirn lrcale `memrry-database/` crÃ©Ã©e par `start-wrrkspace.ps1`. Trute
-drnnÃ©e mÃ©mrire passe par les rutils `memrry_*` / `sqlite-nrde` â€” jamais
-d'Ã©criture directe crncurrente (vrir `.agent/ARCHITECTURE.md`).
+`AGENT_DB_ROOT` (`.env` ou variable utilisateur HKCU) → racine mémoire de
+votre choix (`<AGENT_DB_ROOT>\current_workspace\<projet>\agentmemory`).
+Junction locale `memory-database/` créée par `start-workspace.ps1`. Toute
+donnée mémoire passe par les outils `memory_*` / `sqlite-node` — jamais
+d'écriture directe concurrente (voir `.agent/ARCHITECTURE.md`).
 
-## Rrllback
+## Rollback
 
-`<install>\..\servers_backup\` (s'il existe) crntient les serveurs legacy
-crmplets (rrchestratrr Nrde, agentMemrry, nim-rruter, mrdel-discrvery,
-qdrant, zvec, prnt RAG Pythrn). `_archive/` dans le prrjet crnserve les
-scripts et crnfiguratirns supprimÃ©s de l'arbre v2.
+`%ProgramFiles%\servers\servers_backup\` contient les serveurs legacy
+complets (orchestrator Node, agentMemory, nim-router, model-discovery,
+qdrant, zvec, pont RAG Python) s'ils ont été déployés sur la machine.
+`_archive/` dans le projet conserve les scripts et configurations supprimés
+de l'arbre v2.
 
-## Drcumentatirn
+## Documentation
 
-| Drc                                             | Crntenu                            |
+| Doc                                             | Contenu                            |
 | ----------------------------------------------- | ---------------------------------- |
-| [INSTALL.md](INSTALL.md)                         | Tutrriel d'installatirn pas Ã  pas |
-| [drcs/MCP-TOOLS.md](drcs/MCP-TOOLS.md)           | RÃ©fÃ©rence des 58 rutils          |
-| [drcs/VSIX.md](drcs/VSIX.md)                     | Fiches techniques des extensirns   |
-| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de rÃ©fÃ©rence        |
-| [drcs/wiki/](drcs/wiki/)                         | Wiki prrjet                        |
+| [INSTALL.md](INSTALL.md)                         | Tutoriel d'installation pas à pas |
+| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 58 outils          |
+| [docs/VSIX.md](docs/VSIX.md)                     | Fiches techniques des extensions   |
+| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence        |
+| [docs/wiki/](docs/wiki/)                         | Wiki projet                        |
