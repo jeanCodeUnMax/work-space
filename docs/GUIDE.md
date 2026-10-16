@@ -7,14 +7,14 @@ Le runtime installé reste à 57 outils jusqu’à autorisation de déploiement.
 
 ## Composants
 
-| Composant | Rôle | Chemin |
-|---|---|---|
-| `hphe-indexd` | démon SYSTEM : scan $MFT + USN live, pipe `\\.\pipe\hphe-index` | `INSTALL\extension\server\` |
-| `hphe-mcp` | serveur MCP stdio (58 outils) — spawné par l'IDE | idem |
-| `hphe-rest` | passerelle HTTP :8792 + boucle d'ingestion + gate d'écriture | idem |
-| ext search | VSIX `hephaistos-kit-search` 1.0.3 | `extension/` |
-| ext monitor | VSIX `orchestrator-monitor` 0.0.58 (panel + ws-bridge :7477) | `extensions/orchestrator-monitor/` |
-| `.agent/` | kit agents/skills/scripts (intégré au repo) | racine |
+| Composant       | Rôle                                                              | Chemin                               |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------ |
+| `hphe-indexd` | démon SYSTEM : scan $MFT + USN live, pipe `\\.\pipe\hphe-index` | `INSTALL\extension\server\`        |
+| `hphe-mcp`    | serveur MCP stdio (58 outils) — spawné par l'IDE                 | idem                                 |
+| `hphe-rest`   | passerelle HTTP :8792 + boucle d'ingestion + gate d'écriture      | idem                                 |
+| ext search      | VSIX `hephaistos-kit-search` 1.0.3                               | `extension/`                       |
+| ext monitor     | VSIX `orchestrator-monitor` 0.0.58 (panel + ws-bridge :7477)     | `extensions/orchestrator-monitor/` |
+| `.agent/`     | kit agents/skills/scripts (intégré au repo)                      | racine                               |
 
 ## Prérequis
 
@@ -52,4 +52,5 @@ schtasks /query /tn hphe-indexd       # démon actif ?
 
 Python `server.py`/`fs_tools.py`, pont RAG, MCPs externes (qdrant, zvec,
 orchestrator Node, agentMemory, nim-router, model-discovery) → `_archive/`
+
 + `servers\servers_backup\`. Ne plus lancer.

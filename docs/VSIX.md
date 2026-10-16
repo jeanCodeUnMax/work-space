@@ -6,13 +6,13 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 
 ## 1. `hephaistos-kit-search` — extension principale
 
-| Champ | Valeur |
-|---|---|
-| ID | `hephaistos-kit-search` |
-| Version | 1.0.4 |
-| Nom affiché | Hephaistos-Kit Search |
-| Source | `extension/` (sous-module git) |
-| Rôle | Recherche NTFS ultra-rapide dans l'IDE — moteur Hephaistos ($MFT + journal USN, daemon Rust, **sans Everything.exe**) |
+| Champ        | Valeur                                                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| ID           | `hephaistos-kit-search`                                                                                                    |
+| Version      | 1.0.4                                                                                                                        |
+| Nom affiché | Hephaistos-Kit Search                                                                                                        |
+| Source       | `extension/` (sous-module git)                                                                                             |
+| Rôle        | Recherche NTFS ultra-rapide dans l'IDE — moteur Hephaistos ($MFT + journal USN, daemon Rust, **sans Everything.exe**) |
 
 ### Fonctionnement
 
@@ -25,13 +25,13 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 
 ## 2. `orchestrator-monitor` — supervision orchestrateur
 
-| Champ | Valeur |
-|---|---|
-| ID | `orchestrator-monitor` |
-| Version | 0.0.58 |
-| Nom affiché | Hephaistos Orchestrator Monitor |
-| Source | `extensions/orchestrator-monitor/` (sous-module git) |
-| Rôle | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
+| Champ        | Valeur                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------- |
+| ID           | `orchestrator-monitor`                                                                       |
+| Version      | 0.0.58                                                                                         |
+| Nom affiché | Hephaistos Orchestrator Monitor                                                                |
+| Source       | `extensions/orchestrator-monitor/` (sous-module git)                                         |
+| Rôle        | Supervision temps réel de l'orchestrateur multi-agents (tâches, agents, providers, dispatch) |
 
 ### Fonctionnement
 
