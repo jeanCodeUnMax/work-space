@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$ExpectedVersion = '0.0.57',
+    [string]$ExpectedVersion = '0.0.58',
     [ValidateSet('devin', 'vscode', 'windsurf', 'all')]
     [string]$TargetIde = 'devin',
     [switch]$CheckOnly

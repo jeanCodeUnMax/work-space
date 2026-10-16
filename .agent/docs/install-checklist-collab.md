@@ -30,7 +30,7 @@
 - [ ] Création de la tâche planifiée **hphe‑indexd** avec l’option `-Elevated` (exécuter avec les plus hauts privilèges)  
 - [ ] Installation des extensions VSIX :  
   - `hephaistos-kit-search.vsix`  
-  - `orchestrator-monitor.vsix` (v0.0.57+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js`)
+  - `orchestrator-monitor.vsix` (v0.0.58+, inclut `agent-bridge` -> `binome.js` / `devin-hub.js` / `acp-inject.js`)
 
 ---
 
@@ -49,7 +49,7 @@
 ---
 
 ## 5. Vérification du binôme Devin ⇄ ACP/CLI
-- [ ] Extension `hephaistos.orchestrator-monitor` en version >= 0.0.57 installée et rechargée pour `acp-list`/`wake_acp_agent`
+- [ ] Extension `hephaistos.orchestrator-monitor` en version >= 0.0.58 installée et rechargée pour `acp-list`/`wake_acp_agent` (injection ACP stdio)
 - [ ] Dans Devin, lancer `/jointes <agent>` et choisir un transport explicite si l’agent en propose plusieurs
 - [ ] Vérifier une requête/ACK **frais** dans `.agent/comms.jsonl` : même `pairId/session`, IDs exacts, transports/providers inversés; `established=true`; pas de fallback vers active/latest
 - [ ] ACP : session présente dans `devin-hub.js acp-list <providerId>`, activée et du workspace courant; CLI Kilo/Hermes : ID retourné par `agent-adapters.js sessions <agent>` et workspace vérifié

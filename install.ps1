@@ -155,8 +155,8 @@ if ($Elevated) {
 if (-not $SkipVerify) {
   Write-Host "`n=== [Vérifications d'intégration] ===" -ForegroundColor Cyan
   
-  # a) Extension orchestrator-monitor (>= 0.0.57)
-  $expectedExtVer = '0.0.57'
+  # a) Extension orchestrator-monitor (>= 0.0.58, injection ACP stdio)
+  $expectedExtVer = '0.0.58'
   $extDirs = @()
   $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
   $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue

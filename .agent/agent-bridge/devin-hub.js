@@ -167,7 +167,7 @@ async function sendToAcpAgent(text, sessionId, providerId, port = 7477, workspac
         typeof providerId !== 'string' || !providerId || typeof workspaceRoot !== 'string' || !workspaceRoot) {
         throw new Error('ACP send requires explicit text, sessionId, providerId and workspace');
     }
-    const result = await bridgeRequest('wake_acp_agent', { text, sessionId, providerId, workspaceRoot }, 'acp_wake_result', port, 15000);
+    const result = await bridgeRequest('wake_acp_agent', { text, sessionId, providerId, workspaceRoot }, 'acp_wake_result', port, 120000);
     return { status: result.status, sessionId, providerId };
 }
 
