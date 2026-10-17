@@ -1294,3 +1294,16 @@ Règles :
 - Tout `spawn`/`execFile`/`execSync` dans le code → `windowsHide: true` obligatoire (fenêtre d'audit : 12 lignes après l'appel).
 
 
+
+## 🔒 ORCHESTRATEUR HEPHAISTOS — PASSAGE OBLIGATOIRE (ordre utilisateur du 17/10/2026)
+
+**INTERDICTION ABSOLUE de contourner l'orchestrateur Hephaistos et son MCP.**
+
+- Toute délégation à un agent ou worker passe UNIQUEMENT par les outils MCP de l'orchestrateur : `dispatch_task` (avec `agent_name`, `provider`, `model` explicites), `create_task`, `update_task`, `list_tasks`, `get_next_task`.
+- JAMAIS de worker/agent lancé en processus détaché hors orchestrateur (`nohup`, `spawn` direct, `Start-Process`, `&` bash) — un process invisible du dashboard est un worker sauvage : interdit.
+- Supervision UNIQUEMENT par les canaux réactifs de l'architecture : `list_tasks`, `task_events`, WebSocket `127.0.0.1:7477`, `comms.jsonl`, named pipe `\.\pipe\hphe-index`. La vérité = l'état de l'orchestrateur.
+- **INTERDIT de se référer aux processus Windows** (Get-Process, tasklist, PID) pour justifier l'état des workers — si le dashboard dit zéro, la réponse est zéro.
+- JAMAIS de `sleep`/attente passive (PowerShell ou Bash).
+- Toute panne de worker → tâche requalifiée via `update_task`, remontée Beacon, consignée dans le Second Cerveau Obsidian.
+
+**SEULE EXCEPTION** : le hub de communication directe agent↔agent via les procédures **`/jointes`** et **`/chat-id`** (protocole binôme / agent-bridge), et uniquement quand l'utilisateur demande explicitement une connexion directe.

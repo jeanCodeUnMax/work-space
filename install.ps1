@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Hephaistos2-Kit — installation runtime (indexation NTFS + MCP unifié Rust).
 

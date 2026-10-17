@@ -107,7 +107,10 @@ async function resolveSession(agent, transport, requested) {
         throw new Error(`[binome] plusieurs sessions ${agent}/cli; choisissez --self ou --to parmi: ${sessions.map((item) => item.sessionId).join(', ')}`);
     }
     const sessions = await sessionsFor(agent, transport);
-    if (requested) return sessions.some((item) => item.sessionId === requested) ? requested : null;
+    if (requested) {
+        const found = sessions.find((item) => item.sessionId === requested || item.sessionId.endsWith('/' + requested) || item.sessionId.endsWith(requested));
+        return found ? found.sessionId : null;
+    }
     if (sessions.length === 1) return sessions[0].sessionId;
     if (sessions.length > 1) {
         throw new Error(`[binome] plusieurs sessions ${agent}/${transport}; choisissez --self ou --to parmi: ${sessions.map((item) => item.sessionId).join(', ')}`);
@@ -226,7 +229,9 @@ async function join() {
 async function pair() {
     const mine = await myCascade();
     const current = comms.findEstablishedPair(comms.tail(1000), me, session, Date.now(), peer, via, peerVia);
-    const established = Boolean(mine && current && current.myCascade === mine && (!opt('--to') || current.peerCascade === opt('--to')));
+    const toMatch = opt('--to');
+    const matchesTo = !toMatch || current?.peerCascade === toMatch || current?.peerCascade?.endsWith('/' + toMatch) || toMatch?.endsWith(current?.peerCascade || '');
+    const established = Boolean(mine && current && current.myCascade === mine && matchesTo);
     console.log(JSON.stringify({
         me, myCascade: mine, peer, peerCascade: established ? current.peerCascade : null,
         session, pairId: established ? current.pairId : null, transport: via,

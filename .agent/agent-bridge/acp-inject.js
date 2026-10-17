@@ -68,7 +68,9 @@ const ACTIVITY_UPDATES = new Set([
  * Rejette tôt si provider non mappé, session non attachable ou spawn impossible.
  */
 function inject(opts) {
-    const { providerId, sessionId, text, cwd, wait = 'delivered', timeoutMs = 120000, turnTimeoutMs = 600000 } = opts || {};
+    const { providerId, text, cwd, wait = 'delivered', timeoutMs = 120000, turnTimeoutMs = 600000 } = opts || {};
+    const rawSessionId = opts?.sessionId;
+    const sessionId = (rawSessionId || '').replace(/^acp\/[^\/]+\//, '');
     if (!providerId || !sessionId || !text) return Promise.reject(new Error('providerId/sessionId/text requis'));
     const spec = providerCommand(providerId);
     if (!spec) return Promise.reject(Object.assign(new Error(`provider ACP non injectable: ${providerId}`), { code: 'unsupported' }));

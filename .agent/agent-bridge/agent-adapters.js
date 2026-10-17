@@ -280,6 +280,45 @@ function sendToSession(agent, sessionId, prompt, options = {}) {
     return String(result.stdout || '').replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '').trim();
 }
 
+/**
+ * MUTEX SINGLE-FLIGHT ACP & GOUVERNANCE MACHINE MODESTE
+ * Empêche d'instancier plusieurs cascades ou sessions ACP simultanées pour le même agent.
+ */
+const _acpLocks = new Map();
+
+function acquireAcpLock(agent, ttlMs = 120000) {
+    const key = String(resolveAgent(agent) || agent).toLowerCase();
+    const now = Date.now();
+    const existing = _acpLocks.get(key);
+    if (existing && (now - existing.timestamp < ttlMs)) {
+        return {
+            acquired: false,
+            agent: key,
+            remainingMs: ttlMs - (now - existing.timestamp),
+            reason: 'Session ACP deja active pour cet agent (protection anti-doublon)'
+        };
+    }
+    _acpLocks.set(key, { timestamp: now, agent: key });
+    return { acquired: true, agent: key };
+}
+
+function releaseAcpLock(agent) {
+    const key = String(resolveAgent(agent) || agent).toLowerCase();
+    _acpLocks.delete(key);
+    return true;
+}
+
+function isAcpLocked(agent, ttlMs = 120000) {
+    const key = String(resolveAgent(agent) || agent).toLowerCase();
+    const existing = _acpLocks.get(key);
+    if (!existing) return false;
+    if (Date.now() - existing.timestamp >= ttlMs) {
+        _acpLocks.delete(key);
+        return false;
+    }
+    return true;
+}
+
 /** Tag de routage à embedder dans le titre de tâche : [sess:kilo=abc123]. */
 const SESSION_TAG = /(?:sess|session)[:=]\s*([a-z0-9_-]+)\s*[:=]\s*([A-Za-z0-9_-]+)/i;
 
@@ -312,5 +351,8 @@ module.exports = {
     parseHermesSessionList,
     isWithinWorkspace,
     buildSessionInvocation,
-    sendToSession
+    sendToSession,
+    acquireAcpLock,
+    releaseAcpLock,
+    isAcpLocked
 };
