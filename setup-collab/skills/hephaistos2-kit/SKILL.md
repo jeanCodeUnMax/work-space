@@ -1,173 +1,170 @@
 ---
 name: hephaistos2-kit
-description: "Guide opérationnel et maître d'orchestration pour Hephaistos2-Kit : serveur MCP unifié Rust hphe-mcp (58 outils), recherche NTFS instantanée ($MFT+USN sans Everything.exe), passerelle REST :8792 et boucle Tantivy, orchestrateur multi-agents, panel monitor (:7477), protocole binôme ACP/CLI, Mutex Single-Flight, throttle 2 workers et maintenance réactive."
+description: "Playbook opérationnel maître pour Hephaistos2-Kit : serveur unifié Rust Hephaistos-everything-search (58 outils), recherche NTFS instantanée ($MFT+USN sans Everything.exe), passerelle REST :8792 et Tantivy, orchestrateur multi-agents et monitor WebSocket (:7477), protocole binôme avec distinction stricte ACP vs CLI, intégration Beacon, Second Cerveau Obsidian et gouvernance machine modeste."
 triggers:
   - hephaistos2-kit
-  - hephaistos
-  - hphe
+  - hephaistos2
   - hphe-mcp
   - everything-search
   - orchestrator-monitor
-  - /hephaistos
+  - /hephaistos2-kit
 ---
 
 # Hephaistos2-Kit — Guide Opérationnel & Architecture Unifiée
 
-> Ce playbook est la référence opérationnelle définitive pour tout agent IA (Devin, Antigravity, Cursor, Windsurf, Hermes, Kilo) opérant sur ou avec l'écosystème Hephaistos2-Kit. Il élimine toute conjecture, centralise les commandes et définit les invariants architecturaux stricts.
+> Ce playbook est la référence opérationnelle définitive pour tout agent IA (Devin, Antigravity, Cursor, Windsurf, Hermes, Kilo) opérant sur ou avec l'écosystème **Hephaistos2-Kit**.
+> Naming strict : le projet historique « Hephaistos » est désuet ; seule l'appellation **Hephaistos2-Kit** (et son serveur MCP canonique **Hephaistos-everything-search**) est valide.
+> Tout agent démarrant une tâche technique DOIT absorber ce guide pour maîtriser les 58 outils MCP, le protocole binôme, la télémétrie Beacon et la mémoire Obsidian.
 
 ---
 
 ## 0. Principes Fondamentaux de l'Architecture (100% Rust)
 
 1. **Serveur MCP Unique et Unifié (`hphe-mcp.exe`)** :
-   - Exposé sous le nom canonique **`Hephaistos-everything-search`** (stdio MCP).
-   - Intègre 58 outils dans la source couvrant recherche, contenu, vecteurs, orchestration, modèles et mémoire.
-   - **Remplacement complet** : Les 7 serveurs historiques (orchestrator Node, agentMemory, nim-router, model-discovery, qdrant, zvec, pont RAG Python) sont définitivement supprimés et absorbés dans le binaire Rust.
+   - Nom canonique MCP : **`Hephaistos-everything-search`** (stdio).
+   - Intègre **58 outils natifs** compilés en Rust.
+   - **Remplacement définitif** : Les 7 serveurs historiques (orchestrator Node, agentMemory, nim-router, model-discovery, qdrant, zvec, pont RAG Python) sont éradiqués et absorbés dans le binaire Rust unique.
 2. **Recherche NTFS Instantanée sans Dépendance Externe** :
-   - Démon `hphe-indexd.exe` (tâche planifiée SYSTEM) : lit directement le `$MFT` et le journal USN en direct.
-   - Sert les requêtes via named pipe `\\.\pipe\hphe-index` en **< 50 ms** sur l'ensemble du PC.
-   - **Aucune dépendance à `Everything.exe`**.
-3. **Passerelle HTTP & Ingestion Unique (`hphe-rest.exe` :8792)** :
+   - Démon `hphe-indexd.exe` (tâche planifiée SYSTEM) : lecture directe du `$MFT` et journal USN en temps réel.
+   - Named pipe `\\.\pipe\hphe-index` : recherches en **< 50 ms** sur tout le système (~6,4M d'entrées).
+   - **Zéro dépendance à `Everything.exe`**.
+3. **Passerelle HTTP & Ingestion Sérialisée (`hphe-rest.exe` :8792)** :
    - Expose les mêmes outils en HTTP (`POST /call`, `POST /tools/{name}`).
-   - Gate mutex interne : sérialise les écritures d'index Tantivy (`ingest_busy` dans `/health`) pour éliminer définitivement les erreurs `LockBusy`.
-4. **Machine Modeste & Concurrence Maîtrisée** :
+   - Gate mutex interne : sérialise les écritures d'index Tantivy (`ingest_busy` dans `/health`) éliminant 100% des erreurs `LockBusy`.
+4. **Gouvernance Machine Modeste & Concurrence Bornée** :
    - Empreinte au repos : ~12,5 Mo de RAM pour `hphe-mcp` et 0% de CPU.
-   - Throttle strict à **2 workers CLI simultanés maximum**.
-   - Priorité Windows obligatoirement assignée sous `BELOW_NORMAL_PRIORITY_CLASS`.
-   - **Mutex Single-Flight ACP** : verrouillage des cascades dans l'IDE pour interdire les doublons.
+   - Plafond strict : **maximum 2 workers CLI simultanés**.
+   - Priorité Windows imposée : `BELOW_NORMAL_PRIORITY_CLASS`.
+   - **Mutex Single-Flight ACP** : verrouillage absolu des cascades dans l'IDE (TTL 120s).
 
 ---
 
-## 1. Répertoire des 58 Outils MCP (`Hephaistos-everything-search`)
+## 1. Distinction Stricte ACP vs CLI (Protocole Binôme)
+
+La confusion entre les transports ACP et CLI est formellement proscrite :
+
+| Critère | Mode CLI (Workers d'Arrière-Plan) | Mode ACP (Protocole Binôme & Sessions Interactives) |
+|---|---|---|
+| **Rôle** | Exécution de tâches de fond par l'orchestrateur Hephaistos2-Kit | Collaboration directe, chat interactif et passage de relais |
+| **Invocation** | Outil MCP `dispatch_task` uniquement | Commande `/jointes <agent>` ou script `binome.js` |
+| **Interface** | Processus headless détaché de l'IDE | Cascade visible avec onglet dédié dans l'IDE |
+| **Concurrence** | Max 2 workers simultanés, file d'attente `pending` | Verrou Mutex Single-Flight par couple `providerId/sessionId` |
+| **Priorité OS** | `BELOW_NORMAL_PRIORITY_CLASS` (protège la fluidité) | Priorité normale du thread interactif IDE |
+| **Règle d'or** | **CLI n'est JAMAIS un fallback d'ACP** | **ACP n'est JAMAIS un fallback de CLI** |
+
+### Mutex Single-Flight ACP (`agent-adapters.js`)
+Toute tentative d'injection dans l'IDE doit vérifier `acquireAcpLock(providerId, timeoutMs)`. Si une session est active depuis moins de 120 secondes, l'appel est rejeté immédiatement avec raison explicite. La libération se fait obligatoirement en bloc `finally` via `releaseAcpLock(providerId)`.
+
+---
+
+## 2. Répertoire des 58 Outils MCP (`Hephaistos-everything-search`)
 
 ### A. Recherche Système de Fichiers NTFS (`\\.\pipe\hphe-index`)
-- `everything_search` / `search_files` : recherche instantanée sur tous les volumes NTFS par nom, extension ou filtres.
+- `everything_search` / `search_files` : recherche instantanée sur tous les disques NTFS par nom, extension ou filtres.
 - `everything_count` : compte les résultats sans transférer les lignes (très rapide).
-- `everything_categories` : catégories prédéfinies (`audio:`, `document:`, `exe:`, etc.).
-- `everything_index_stats` / `everything_stats` : statistiques de l'index (nombre d'entrées, mémoire, statut).
-- `everything_refresh` : demande un rafraîchissement forcé du snapshot.
-- `everything_open_gui` : ouvre l'interface graphique de visualisation si présente.
+- `everything_categories` : filtres Everything (`audio:`, `document:`, `exe:`, etc.).
+- `everything_index_stats` / `everything_stats` : état de l'index NTFS (entrées, mémoire, statut).
+- `everything_refresh` : rafraîchissement forcé de l'index.
+- `everything_open_gui` : ouverture du GUI Everything si installé.
 - `resolve_path` : résout un ID de ligne interne vers son chemin complet.
-- `hphe_health` : vérifie la santé du serveur et la connexion au named pipe du démon.
+- `hphe_health` : test de santé du serveur et de connectivité au named pipe.
 
 ### B. Indexation & Recherche Plein-Texte (Tantivy)
-- `content_search` : recherche plein-texte BM25 (renvoie chemin, score et extraits de code).
-- `content_ingest` : ingère un dossier dans Tantivy (respecte `.ragignore` et les filtres de sécurité).
-- `hephaistos_update` / `hephaistos_update_force` : cycle complet d'ingestion + vectorisation optionnelle.
+- `content_search` : recherche BM25 plein-texte (hits : chemin, score, extrait).
+- `content_ingest` : ingère un dossier dans Tantivy (respecte `.ragignore` et filtres de sécurité).
+- `hephaistos_update` / `hephaistos_update_force` : cycle complet ingest + embeddings optionnels.
 
 ### C. Recherche Vectorielle (USearch HNSW 2048D)
-- `vec_search` : recherche k-NN vectorielle brute sur les collections locales.
+- `vec_search` : recherche k-NN vectorielle brute sur collections usearch locales.
 - `semantic_search` : recherche sémantique avec vectorisation automatique.
 - `vec_stats` : statistiques des collections vectorielles locales.
 - `hybrid_search` : fusion multimodale (nom de fichier + BM25 Tantivy + vecteurs USearch).
 
 ### D. Orchestration Multi-Agents & Gouvernance Processus
-- `list_agents` : liste les agents enregistrés (config, skills, providers).
-- `register_agent` / `update_agent` : enregistre ou modifie un agent.
-- `suggest_agent` : recommande le meilleur agent selon le type de tâche et les compétences requises.
+- `list_agents` : liste les agents enregistrés (configuration, skills, providers).
+- `register_agent` / `update_agent` : enregistre ou modifie un profil d'agent.
+- `suggest_agent` : suggère le meilleur agent selon le type de tâche et les compétences requises.
 - `create_task` : crée une tâche dans `orchestrator.db` (en attente).
 - `dispatch_task` : **crée, assigne et spawne réellement le worker CLI** de l'agent retenu.
 - `update_task` : met à jour l'état, la description ou le résultat d'une tâche.
 - `get_next_task` : récupère la prochaine tâche éligible selon les dépendances.
 - `list_tasks` : liste les tâches avec filtres de statut (`pending`, `running`, `completed`, `failed`).
 - `delete_task` : supprime une tâche.
-- `list_prompt_templates` / `set_prompt_template` : gestion des templates de rôles d'agents.
-- `list_worktrees` / `worktree_cleanup` : isolation git des tâches et nettoyage des branches de travail.
-- `reconcile_tasks` : réconcilie le statut des tâches avec les PID Windows actifs et libère les verrous orphelins.
+- `list_prompt_templates` / `set_prompt_template` : templates de rôles d'agents.
+- `list_worktrees` / `worktree_cleanup` : isolation git des tâches et nettoyage des branches.
+- `reconcile_tasks` : réconcilie l'état des tâches avec les PID Windows actifs et libère les verrous orphelins.
 - `reap_ghosts` : purge les processus zombies orphelins et requalifie les tâches mortes en échec.
 
 ### E. Modèles IA & Routage NVIDIA NIM
-- `available_models` : sonde dynamique en direct des modèles gratuits/locaux (Ollama, OpenRouter `:free`, NIM ×2).
+- `available_models` : sonde live des modèles gratuits/locaux (Ollama, OpenRouter `:free`, NIM ×2).
 - `nim_domains` : domaines routés (modèle primaire + fallbacks automatiques).
-- `nim_models` : modèles servis par l'API NVIDIA NIM.
-- `nim_chat` / `nim_chat_model` : chat direct routé ou ciblé par identifiant de modèle.
-- `nim_embed` : génération d'embeddings 2048D via `nemotron-3-embed-1b`.
+- `nim_models` : modèles servis par NVIDIA NIM (`GET /models`).
+- `nim_chat` / `nim_chat_model` : chat direct routé par domaine ou par ID explicite.
+- `nim_embed` : embeddings 2048D via `nemotron-3-embed-1b`.
 
-### F. Mémoire Technique Unifiée (Knowledge Graph)
+### F. Mémoire Technique Unifiée & Télémétrie Beacon
 - `project_init` : initialise l'espace mémoire d'un projet.
 - `memory_write` / `memory_read` : écriture et lecture par clé dans le KV store persistant.
 - `memory_search` / `memory_list` : recherche par mot-clé, tags ou type d'entité.
 - `memory_update` : modification d'une mémoire existante.
 - `memory_stats` : statistiques d'occupation de la mémoire.
-- `beacon_ingest` : ingestion incrémentale sécurisée des télémétries et résumés Beacon.
+- `beacon_ingest` : ingestion incrémentale des résumés Beacon (scope workspace, secrets masqués, dry-run par défaut).
 
 ### G. Système de Fichiers Borné (`fs_*`)
 - 18 outils filesystem natifs (`fs_read_file`, `fs_read_multiple_files`, `fs_write_file`, `fs_edit_file`, `fs_list_directory`, `fs_directory_tree`, `fs_delete`, `fs_move`, `fs_get_info`, `fs_create_directory`, etc.) régis par la politique stricte `.mcp-access` et l'allowlist `EVERYTHING_MCP_ROOTS`.
 
 ---
 
-## 2. Règles de Routage pour l'Agent (Économie de Tokens & Vélocité)
+## 3. Intégration Télémétrie Beacon & Second Cerveau Obsidian
 
-- **Localiser un fichier sur la machine** :
-  - **OBLIGATOIRE** : `everything_search` (instantané <50ms sur ~6.4M d'entrées).
-  - **INTERDIT** : scans disques récursifs lents (`Get-ChildItem -Recurse`, `dir /s`, `find`).
-- **Chercher du code ou un symbole dans le projet** :
-  - `content_search` (recherche plein-texte BM25) ou `hybrid_search`.
-- **Récupérer du contexte, une décision ou une convention passée** :
-  - `memory_search` (mémoire Hephaistos) ou consultation Obsidian (`obsidian_triage`, `obsidian_peek`).
-- **Déléguer une sous-tâche technique** :
-  - Utiliser `dispatch_task` via l'orchestrateur Hephaistos.
-  - **INTERDIT** : spawner des processus détachés en sous-main (`Start-Process`, `nohup`, `&` sans trace dans l'orchestrateur).
+### A. Surveillance & Télémétrie Beacon
+- Beacon capture en continu les événements opérationnels des agents (commandes exécutées, anomalies, blocages d'outils).
+- Ingestion dans Hephaistos2-Kit : `beacon_ingest` lit le journal d'activité par offset sans charger de fichiers complets, masque automatiquement les secrets (`sk-`, `nvapi-`, tokens) et consigne les synthèses dans la mémoire du projet.
+- Profil d'accès : `beacon_ingest` est strictement refusé aux profils MCP `external` et restreint au scope du workspace actif.
 
----
-
-## 3. Orchestrateur & Monitor WebSocket (:7477)
-
-- **Panel Orchestrator-Monitor** : extension VS Code (`hephaistos.orchestrator-monitor`) fournissant la supervision visuelle, la gestion des priorités de providers et le pont WebSocket réactif (`127.0.0.1:7477`).
-- **Ordre de Priorité des Fournisseurs (table `provider_prefs`)** :
-  1. `antigravity-subscription` (priorité 1)
-  2. `mistral-vibe` (priorité 2)
-  3. `nvidia-nim` (priorité 3, clés directes `NVIDIA_API_KEY` / `NVIDIA_API_KEY_2`)
-  4. `ollama-cloud` (priorité 4, modèles `:cloud` uniquement : `gpt-oss:120b-cloud`, `nemotron-3-ultra:cloud`)
-- **Supervision Réactive** :
-  - Toujours surveiller l'avancement via `list_tasks` ou les notifications du bus WS :7477.
-  - **INTERDIT** : boucles d'attente passives (`Start-Sleep`, `sleep`).
+### B. Second Cerveau Obsidian (`Promgramation-teste`)
+- **Soul & Profil** : `00_Agent/USER.md` (quota strict 1 500 chars) et `00_Agent/MEMORY.md` (quota strict 2 500 chars). Si le quota est dépassé, élaguer et synthétiser impérativement.
+- **Skills Vivantes & Auto-Correction** : playbooks procéduraux dans `01_Skills/[nom].md` incluant la section `## Errores Conocidos y Corrección (Aprendidos en Ejecución)`. L'agent a l'obligation de les auto-améliorer lors de bugs résolus.
+- **Consultation Rapide (< 80 tokens)** : utiliser `obsidian_triage` ou `obsidian_peek` face à des doutes techniques au lieu de relire des bases entières.
+- **Sauvegarde Autonome Obligatoire** : à la fin de chaque tâche technique non triviale, appeler systématiquement l'outil MCP `obsidian_session_save` pour acter le jalon dans `03_Sessions/`.
 
 ---
 
-## 4. Protocole Binôme ACP / CLI & Mutex Anti-Doublons
+## 4. Règles d'Or de Vélocité et Économie de Tokens
 
-- **Commande `/jointes <agent>`** : établit un canal direct sécurisé entre Antigravity et une session ACP/CLI homologuée.
-- **Mutex Single-Flight ACP (`agent-adapters.js`)** :
-  - Toute injection dans l'IDE passe par `acquireAcpLock(providerId, timeoutMs)`.
-  - Rejette immédiatement toute tentative concurrente sur la même session (TTL 120 s).
-  - Libération systématique dans le bloc `finally` via `releaseAcpLock(providerId)`.
-  - Élimine 100% des cascades orphelines et onglets fantômes.
-- **Plafond Concurrence CLI** : 2 workers maximum simultanés. Les tâches excédentaires sont mises en attente (`pending`).
+1. **Recherche de Fichiers** :
+   - **OBLIGATOIRE** : `everything_search` (instantané <50 ms sur ~6,4M d'entrées).
+   - **INTERDICTION FORMELLE** : scans récursifs lents (`Get-ChildItem -Recurse`, `dir /s`, `find`).
+2. **Recherche de Contenu** :
+   - `content_search` (BM25 Tantivy) ou `hybrid_search`.
+3. **Délégation d'Agents** :
+   - Toujours passer par l'orchestrateur Hephaistos2-Kit via `dispatch_task`.
+   - **INTERDICTION FORMELLE** : spawner des workers sauvages en arrière-plan hors orchestrateur.
+4. **Pas d'Attente Passive** :
+   - Surveillance réactive via `list_tasks` et notifications WebSocket (:7477).
+   - **INTERDICTION FORMELLE** : `Start-Sleep` ou `sleep` passif.
 
 ---
 
-## 5. Maintenance Réactive & Commandes d'Exploitation
+## 5. Maintenance Réactive & Commandes Rapides
 
-### Diagnostic de Santé
 ```powershell
-# Vérifier la passerelle HTTP et l'état du gate d'ingestion
+# 1. Vérifier la santé du serveur REST et du gate d'ingestion
 curl http://127.0.0.1:8792/health
 
-# Vérifier la tâche planifiée du démon NTFS SYSTEM
+# 2. Vérifier le démon NTFS SYSTEM
 schtasks /query /tn hphe-indexd
-```
 
-### Nettoyage des Tâches et Processus Fantômes
-```powershell
-# Exécution du script de réconciliation automatique
+# 3. Purger les tâches et workers fantômes (reconcile_tasks + reap_ghosts)
 pwsh -File tools/reap-and-reconcile.ps1
-```
-Ce script invoque successivement `reconcile_tasks` et `reap_ghosts` sur le MCP pour libérer les verrous orphelins et marquer en échec les processus prématurément terminés.
 
-### Configuration Collaborateur Rapide (`setup-collab/`)
-```cmd
-# Lanceur en un clic pour déployer les 9 agents et le pont binôme
+# 4. Configuration portable collaborateur (setup-collab)
 setup-collab\configurer-devin-agents.cmd
-```
-Ou en PowerShell portable :
-```powershell
-pwsh -ExecutionPolicy Bypass -File .\setup-collab\configurer-devin-agents.ps1
 ```
 
 ---
 
-## 6. Politique de Sécurité Git (Double Remote Private)
+## 6. Politique Git Stricte (Double Remote Private)
 
 - **Remotes Autorisés Exclusivement** :
   1. `origin` : Organisation projet provisoire (`https://github.com/projet-temporaire/...`)

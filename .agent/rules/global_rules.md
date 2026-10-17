@@ -2,6 +2,12 @@
 
 ## 🚀 DÉMARRAGE DE SESSION (PRIORITÉ ABSOLUE)
 
+### 0. ABSORPTION OBLIGATOIRE DU SKILL HEPHAISTOS2-KIT (PRIORITÉ ZÉRO)
+
+Au début de CHAQUE session, AVANT d'aborder la moindre tâche technique, analyse de code ou réponse, l'agent DOIT impérativement charger et appliquer le skill **`hephaistos2-kit`** (disponible en global ou dans `.agent/skills/hephaistos2-kit/SKILL.md`).
+- **Convention d'appellation stricte** : le projet historique « Hephaistos » est désuet. Seule l'appellation **Hephaistos2-Kit** (et son serveur MCP canonique **Hephaistos-everything-search**) est autorisée.
+- **Socle opérationnel immédiat** : maîtrise des 58 outils Rust compilés, de la recherche NTFS instantanée `$MFT` (<50 ms via `everything_search`), de la distinction stricte ACP vs CLI via le protocole binôme, de la télémétrie Beacon, du Second Cerveau Obsidian et du throttle machine modeste (max 2 workers CLI sous `BELOW_NORMAL_PRIORITY_CLASS`).
+
 ## FALLBACK AUTO-LOAD
 
 Au démarrage :
