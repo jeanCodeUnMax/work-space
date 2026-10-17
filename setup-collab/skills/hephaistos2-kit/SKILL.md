@@ -1,4 +1,4 @@
----
+﻿---
 name: hephaistos2-kit
 description: "Playbook opérationnel maître pour Hephaistos2-Kit : serveur unifié Rust Hephaistos-everything-search (58 outils), recherche NTFS instantanée ($MFT+USN sans Everything.exe), passerelle REST :8792 et Tantivy, orchestrateur multi-agents et monitor WebSocket (:7477), protocole binôme avec distinction stricte ACP vs CLI, intégration Beacon, Second Cerveau Obsidian et gouvernance machine modeste."
 triggers:
