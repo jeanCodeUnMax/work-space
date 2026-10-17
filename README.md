@@ -42,6 +42,7 @@ voir [Rollback](#rollback).
 - [Ingestion](#ingestion)
 - [Extensions VS Code](#extensions-vs-code)
 - [Orchestrateur et providers](#orchestrateur-et-providers)
+- [Gouvernance et sécurité machine modeste](#gouvernance-et-sécurité-machine-modeste)
 - [Mémoire unifiée](#mémoire-unifiée)
 - [Rollback](#rollback)
 - [Documentation](#documentation)
@@ -174,6 +175,16 @@ L'orchestrateur (`orchestrator.db` + outils `list_agents`/`create_task`/
 Le monitor (extension + `ws-bridge` :7477) réveille Devin et Antigravity
 à chaque événement de tâche.
 
+## Gouvernance et sécurité machine modeste
+
+Pour préserver les performances sur machine modeste (CPU/RAM/GPU) et éliminer les dérives de workers et cascades orphelines :
+
+- **Mutex Single-Flight ACP** : verrou mémoire par couple `providerId/sessionId` dans `agent-adapters.js` avec TTL absolu de 120 s. Empêche strictement l'instanciation de cascades dupliquées dans l'IDE.
+- **Throttle CLI** : limitation stricte à 2 workers CLI simultanés maximum au niveau de l'orchestrateur.
+- **Priorité Système** : exécution de tous les sous-processus CLI sous la classe de priorité `BELOW_NORMAL_PRIORITY_CLASS`.
+- **Maintenance Réactive Anti-Zombies** : script d'exploitation `tools/reap-and-reconcile.ps1` combinant les outils natifs `reconcile_tasks` et `reap_ghosts` pour purger les fantômes et requalifier les tâches orphelines.
+- **Étude de référence** : [docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md](docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md).
+
 ## Mémoire unifiée
 
 `AGENT_DB_ROOT` (`.env` ou variable utilisateur HKCU) → racine mémoire de
@@ -198,4 +209,5 @@ de l'arbre v2.
 | [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 58 outils          |
 | [docs/VSIX.md](docs/VSIX.md)                     | Fiches techniques des extensions   |
 | [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence        |
+| [docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md](docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md) | Gouvernance anti-zombies et processus légers |
 | [docs/wiki/](docs/wiki/)                         | Wiki projet                        |

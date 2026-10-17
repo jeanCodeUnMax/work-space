@@ -48,6 +48,16 @@ hphe-indexd (SYSTEM)            stores d'état
   lieu d'échouer en `LockBusy`. Le gate est pris par racine → attente
   bornée à l'ingest d'une racine.
 
+## Gouvernance des Processus & Sécurité Machine Modeste
+
+Pour préserver la réactivité sur les machines à ressources contraintes (RAM, CPU, GPU) et éradiquer la dérive d'instances orphelines :
+
+- **Mutex Single-Flight ACP (`agent-adapters.js`)** : verrouillage anti-doublon d'injection ACP indexé par `providerId/sessionId`. Expiration par TTL absolu (120 s) et libération systématique dans les blocs `finally`. Interdit l'accumulation de cascades fantômes dans l'IDE.
+- **Throttle CLI** : limitation stricte à 2 workers CLI simultanés au niveau de l'orchestrateur. Toute tâche supplémentaire est conservée en statut `pending`.
+- **Priorité Système Légère** : tous les sous-processus CLI s'exécutent obligatoirement sous la classe de priorité `BELOW_NORMAL_PRIORITY_CLASS`.
+- **Supervision & Nettoyage Réactif** : outils `reap_ghosts` et `reconcile_tasks` exposés nativement par `hphe-mcp`, orchestrés à la demande via le script `tools/reap-and-reconcile.ps1`.
+- **Règles d'Architecture** : référence complète et analyse de faisabilité consignées dans `docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md`.
+
 ## PROJET vs INSTALL
 
 | | PROJET | INSTALL |

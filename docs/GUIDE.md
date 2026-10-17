@@ -32,11 +32,12 @@ Le runtime installé reste à 57 outils jusqu’à autorisation de déploiement.
    appelle `beacon_ingest` Rust seulement si `beacon.enabled` est activé
 5. Agents → outils `everything_search` / `content_search` / `fs_*` / `memory_*` / `beacon_ingest`
 
-## Vérification rapide
-
+## Vérification rapide & maintenance
+ 
 ```powershell
-curl http://127.0.0.1:8792/health     # status, pipe_connected, ingest_busy
-schtasks /query /tn hphe-indexd       # démon actif ?
+curl http://127.0.0.1:8792/health                # status, pipe_connected, ingest_busy
+schtasks /query /tn hphe-indexd                  # démon actif ?
+pwsh -File tools/reap-and-reconcile.ps1          # réconciliation des tâches & purge fantômes
 ```
 
 ## Documentation
@@ -47,6 +48,7 @@ schtasks /query /tn hphe-indexd       # démon actif ?
 - `docs/ONBOARDING.md` — accueil du projet dans l'org
 - `docs/wiki/` — wiki complet
 - `.agent/ARCHITECTURE.md` — architecture de référence
+- `docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md` — gouvernance processus et sécurité machine modeste
 
 ## Retraité (v1)
 

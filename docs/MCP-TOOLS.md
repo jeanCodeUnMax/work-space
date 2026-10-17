@@ -57,6 +57,8 @@ Serveur MCP canonique : **`Hephaistos-everything-search`**
 | `dispatch_task` | Dispatch complet : agent par skill + modèle live + notify CLI |
 | `list_worktrees` | Worktrees d'agents (task_id, path, branche, statut) |
 | `worktree_cleanup` | Supprime un worktree (`git worktree remove --force` + `branch -D`) |
+| `reconcile_tasks` | Réconcilie le statut des tâches avec les processus actifs, libère les verrous orphelins |
+| `reap_ghosts` | Nettoie les workers zombies et marque les tâches orphelines en échec |
 
 ## NIM / modèles
 
@@ -117,6 +119,7 @@ Serveur MCP canonique : **`Hephaistos-everything-search`**
 ## Invariants d'écriture
 
 - `beacon_ingest` : lecture limitée au journal Beacon et au workspace demandé, secrets masqués, dry-run par défaut; refusé aux profils MCP `external`.
+- **Gouvernance des processus & anti-zombies** : `reconcile_tasks` et `reap_ghosts` purgent les processus orphelins et requalifient les tâches sans lock. Le script d'exploitation automatisé `tools/reap-and-reconcile.ps1` orchestre ces deux appels.
 - **Un seul writer Tantivy** : gate interne `hphe-rest` — `content_ingest` /
   `hephaistos_update[_force]` via REST = file d'attente (`ingest_busy` dans
   `/health`), plus de `LockBusy`.

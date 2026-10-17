@@ -52,9 +52,12 @@ tool call
 - `agy-hub.js discover` ne journalise plus le `csrfToken` AGY (masqué) ;
   pas de fallback presse-papiers dans `sendToDevinChat` (canal caché).
 
-## Agents dispatchés — règles durcies
+## Agents dispatchés & pont binome — règles durcies
 
 - Commandes en argv (`spawn`), jamais `exec`/concaténation shell
   (cf. `orch.rs` `templateToSpawnPlan` / `resolveCmdShim`).
 - Pas de script dispatch-capable dans un workspace agent (anti-récursion).
 - Livrable = fichier sur disque ; vérification post-run obligatoire.
+- **Mutex Single-Flight ACP** : injection dans l'IDE soumise à `acquireAcpLock` avec expiration TTL absolue (120 s). Rejet immédiat de toute tentative concurrente sur une cascade déjà active.
+- **Throttle CLI & CPU Shield** : max 2 workers CLI simultanés, priorité assignée sous `BELOW_NORMAL_PRIORITY_CLASS` pour protéger l'interactivité de la machine hôte.
+- **Assainissement réactif** : exécution périodique de `reconcile_tasks` et `reap_ghosts` (`tools/reap-and-reconcile.ps1`) pour éliminer les zombies et libérer les worktrees orphelins.

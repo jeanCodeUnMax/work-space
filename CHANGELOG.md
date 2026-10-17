@@ -1,5 +1,18 @@
 # Changelog — everything-mcp
 
+## 1.1.0 — 2026-10-17
+
+Gouvernance des processus, sécurité machine modeste et fiabilisation du pont binome.
+
+| Changement | Détail |
+|---|---|
+| Mutex Single-Flight ACP (`agent-adapters.js`) | Verrouillage anti-doublon d'injection ACP par couple `providerId/sessionId` avec TTL absolu de 120 s et libération systématique en `finally`. |
+| Concurrence CLI bornée | Throttle limitant à 2 le nombre de workers CLI concurrents et priorisation système sous `BELOW_NORMAL_PRIORITY_CLASS`. |
+| Maintenance réactive (`tools/reap-and-reconcile.ps1`) | Script unifié d'orchestration exploitant les outils MCP `reconcile_tasks` et `reap_ghosts` pour purger les fantômes et requalifier les tâches orphelines. |
+| Fiabilisation `binome.js` | Correction du match de cascade cible quand `peerCascade` est null (évite le handshake frauduleux sur target vide). |
+| Portabilité `setup-collab/configurer-devin-agents.ps1` | Déclaration explicite du paramètre `$TargetWorkspace` et interpolation robuste des noms d'agents `$($ag.Name)`. |
+| Documentation d'architecture | Publication de l'étude de faisabilité anti-zombies alignée 100% Rust dans `docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md`. |
+
 ## 1.0.2 — 2026-10-12
 
 VSIX 100% autonome côté Python : le binaire Rust `hphe-mcp.exe` est embarqué et
