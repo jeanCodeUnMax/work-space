@@ -24,4 +24,4 @@ Estas reglas han sido registradas en Obsidian Second Brain y son de OBLIGATORIO 
 ## 🚫 POLITIQUE DE PUSH GIT (ordre utilisateur du 17/10/2026 — jusqu'à nouvel ordre)
 
 - Pousser hephaistos2-kit UNIQUEMENT vers les remotes `origin` (projet-temporaire) et `personal` (lascard-m).
-- **JAMAIS** pousser vers le remote/dépôt « Hard Calam », jusqu'à nouvel ordre explicite de l'utilisateur.
+- **JAMAIS** pousser vers le remote/dépôt « art-qalam », jusqu'à nouvel ordre explicite de l'utilisateur.
