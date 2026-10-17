@@ -230,7 +230,8 @@ async function pair() {
     const mine = await myCascade();
     const current = comms.findEstablishedPair(comms.tail(1000), me, session, Date.now(), peer, via, peerVia);
     const toMatch = opt('--to');
-    const matchesTo = !toMatch || current?.peerCascade === toMatch || current?.peerCascade?.endsWith('/' + toMatch) || toMatch?.endsWith(current?.peerCascade || '');
+    const peerCasc = current?.peerCascade;
+    const matchesTo = !toMatch || (Boolean(peerCasc) && (peerCasc === toMatch || peerCasc.endsWith('/' + toMatch) || toMatch.endsWith('/' + peerCasc)));
     const established = Boolean(mine && current && current.myCascade === mine && matchesTo);
     console.log(JSON.stringify({
         me, myCascade: mine, peer, peerCascade: established ? current.peerCascade : null,

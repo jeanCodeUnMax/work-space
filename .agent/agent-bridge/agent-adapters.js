@@ -283,36 +283,42 @@ function sendToSession(agent, sessionId, prompt, options = {}) {
 /**
  * MUTEX SINGLE-FLIGHT ACP & GOUVERNANCE MACHINE MODESTE
  * Empêche d'instancier plusieurs cascades ou sessions ACP simultanées pour le même agent.
+ * Supporte le TTL exact via expiresAt et la validation d'agent.
  */
 const _acpLocks = new Map();
 
 function acquireAcpLock(agent, ttlMs = 120000) {
-    const key = String(resolveAgent(agent) || agent).toLowerCase();
+    if (!agent || typeof agent !== 'string' || !agent.trim()) {
+        return { acquired: false, agent: null, reason: 'Identifiant d agent invalide ou manquant' };
+    }
+    const key = String(resolveAgent(agent) || agent).toLowerCase().trim();
     const now = Date.now();
     const existing = _acpLocks.get(key);
-    if (existing && (now - existing.timestamp < ttlMs)) {
+    if (existing && (now < existing.expiresAt)) {
         return {
             acquired: false,
             agent: key,
-            remainingMs: ttlMs - (now - existing.timestamp),
+            remainingMs: existing.expiresAt - now,
             reason: 'Session ACP deja active pour cet agent (protection anti-doublon)'
         };
     }
-    _acpLocks.set(key, { timestamp: now, agent: key });
-    return { acquired: true, agent: key };
+    const expiresAt = now + (Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : 120000);
+    _acpLocks.set(key, { timestamp: now, expiresAt, agent: key });
+    return { acquired: true, agent: key, expiresAt };
 }
 
 function releaseAcpLock(agent) {
-    const key = String(resolveAgent(agent) || agent).toLowerCase();
-    _acpLocks.delete(key);
-    return true;
+    if (!agent) return false;
+    const key = String(resolveAgent(agent) || agent).toLowerCase().trim();
+    return _acpLocks.delete(key);
 }
 
-function isAcpLocked(agent, ttlMs = 120000) {
-    const key = String(resolveAgent(agent) || agent).toLowerCase();
+function isAcpLocked(agent) {
+    if (!agent) return false;
+    const key = String(resolveAgent(agent) || agent).toLowerCase().trim();
     const existing = _acpLocks.get(key);
     if (!existing) return false;
-    if (Date.now() - existing.timestamp >= ttlMs) {
+    if (Date.now() >= existing.expiresAt) {
         _acpLocks.delete(key);
         return false;
     }

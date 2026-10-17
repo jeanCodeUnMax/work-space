@@ -16,7 +16,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position=0)]
-    [string] = ""
+    [string]$TargetWorkspace = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,7 +95,7 @@ $AgentsConfig = @(
 
 foreach ($ag in $AgentsConfig) {
     $modeStr = "Dual (ACP: " + $ag.Acp + " | CLI: " + $ag.Cli + ")"
-    Write-Host "  -> Agent: () - Provider: $($ag.Provider) - $modeStr" -ForegroundColor White
+    Write-Host "  -> Agent: $($ag.Name) - Provider: $($ag.Provider) - $modeStr" -ForegroundColor White
 }
 
 # --- 4. DEPLOIEMENT DU PONT AGENT-BRIDGE ET DES REGLES ---

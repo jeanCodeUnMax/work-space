@@ -24,6 +24,7 @@
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const adapters = require('./agent-adapters');
 
 const EXE = process.platform === 'win32' ? '.exe' : '';
 
@@ -75,6 +76,11 @@ function inject(opts) {
     const spec = providerCommand(providerId);
     if (!spec) return Promise.reject(Object.assign(new Error(`provider ACP non injectable: ${providerId}`), { code: 'unsupported' }));
 
+    const lock = adapters.acquireAcpLock(providerId, timeoutMs);
+    if (!lock.acquired) {
+        return Promise.reject(Object.assign(new Error(`[acp-inject] ${lock.reason}`), { code: 'locked', remainingMs: lock.remainingMs }));
+    }
+
     return new Promise((resolve, reject) => {
         const child = spawn(spec.cmd, spec.args, {
             cwd: cwd || process.cwd(),
@@ -100,6 +106,7 @@ function inject(opts) {
         function fail(err) {
             if (settled) return;
             settled = true;
+            adapters.releaseAcpLock(providerId);
             clearTimeout(timer);
             clearTimeout(turnTimer);
             try { child.kill(); } catch { /* noop */ }
@@ -183,6 +190,7 @@ function inject(opts) {
         });
         child.on('error', (e) => fail(Object.assign(e, { code: e.code || 'spawn' })));
         child.on('exit', (code) => {
+            adapters.releaseAcpLock(providerId);
             if (!settled) {
                 if (activitySeen || promptDone) succeed({ exited: true });
                 else fail(new Error(`provider ${providerId} terminé (code ${code}) avant livraison`));

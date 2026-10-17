@@ -20,16 +20,3 @@ Estas reglas han sido registradas en Obsidian Second Brain y son de OBLIGATORIO 
 - Toute panne de worker → tâche requalifiée via `update_task`, remontée Beacon, consignée dans le Second Cerveau Obsidian.
 
 **SEULE EXCEPTION** : le hub de communication directe agent↔agent via les procédures **`/jointes`** et **`/chat-id`** (protocole binôme / agent-bridge), et uniquement quand l'utilisateur demande explicitement une connexion directe.
-
-## ⚡ GOUVERNANCE MACHINE MODESTE & SÉCURITÉ RESSOURCES (17/10/2026)
-- **Throttle CLI** : Maximum 2 workers CLI simultanés autorisés. Toute tâche au-delà est mise en file d'attente (pending).
-- **Priorité Système** : Tous les workers CLI doivent s'exécuter sous la priorité `BELOW_NORMAL_PRIORITY_CLASS`.
-- **Mutex ACP** : Interdiction absolue d'instancier des doublons de cascades dans l'IDE. Vérification obligatoire via `acquireAcpLock()` dans `agent-adapters.js`.
-
-## 📦 POLITIQUE STRICTE DE DÉPLOIEMENT GIT (DOUBLE REMOTE PRIVATE)
-- **Remotes Autorisés Exclusivement** :
-  1. `origin` : Organisation projet provisoire (`https://github.com/projet-temporaire/...`)
-  2. `personal` : Dépôt personnel de Boss (`https://github.com/lascard-m/...`)
-- **Interdiction formelle** de pousser sur toute autre organisation ou tiers.
-- **Confidentialité** : Tous les dépôts doivent obligatoirement rester en statut **PRIVATE**.
-- **Audit de Sécurité** : Vérification systématique de l'absence de clés ou secrets dans le stage avant tout commit.
