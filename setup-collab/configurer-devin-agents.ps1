@@ -3,7 +3,7 @@
     Configuration automatique et portable des agents Devin (Dual-Mode ACP + CLI) pour collaborateur.
 .DESCRIPTION
     Script autonome concu pour repliquer l'architecture Hephaistos sur n'importe quel poste collaborateur.
-    Garantit 100% de portabilite avec des chemins relatifs (, C:\Users\Administrator, C:\Users\Administrator\AppData\Roaming).
+    Garantit 100% de portabilite avec des chemins relatifs ($env:USERPROFILE, $env:APPDATA, $PSScriptRoot).
     Configure simultanement :
       1. Les profils IDE (.devin prioritaire, .codeium/windsurf en compatibilite)
       2. Le mode Dual (CLI pour orchestrateur-monitor + ACP pour protocole binome et comms)
@@ -11,7 +11,7 @@
       4. Le pont agent-bridge (.agent/agent-bridge/) sans aucun chemin absolu en dur
       5. La verification du port WebSocket 7477 de l'orchestrateur
 .PARAMETER TargetWorkspace
-    Chemin du projet cible a configurer. Par defaut, tente de detecter le workspace actif ou le dossier parent du kit.
+    Chemin du projet cible a configurer. Par defaut, tente de detecter le workspace actif ou le dossier de travail courant.
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +27,8 @@ Write-Host "====================================================================
 Write-Host ""
 
 # --- 1. RESOLUTION STRICTEMENT RELATIVE DES CHEMINS ---
-$ScriptDir = $PSScriptRoot
+$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $ScriptDir) { $ScriptDir = (Get-Location).Path }
 $KitRoot = (Resolve-Path (Join-Path $ScriptDir "..")).Path
 $UserProfile = $env:USERPROFILE
 $AppData = $env:APPDATA
@@ -39,11 +40,13 @@ Write-Host "  - Kit Hephaistos   : $KitRoot"
 Write-Host "  - Profil User      : $UserProfile"
 
 if (-not $TargetWorkspace -or -not (Test-Path $TargetWorkspace)) {
-    # Recherche automatique : dossier de travail courant ou dossier parent
-    if (Test-Path (Join-Path $PWD ".agent")) {
+    # Recherche automatique : dossier de travail courant
+    if (Test-Path (Join-Path $PWD.Path ".agent")) {
+        $TargetWorkspace = $PWD.Path
+    } elseif (Test-Path (Join-Path $PWD.Path ".git")) {
         $TargetWorkspace = $PWD.Path
     } else {
-        $TargetWorkspace = (Resolve-Path (Join-Path $KitRoot "..")).Path
+        $TargetWorkspace = $PWD.Path
     }
 }
 Write-Host "  - Workspace Cible  : $TargetWorkspace" -ForegroundColor Green
@@ -98,6 +101,18 @@ foreach ($ag in $AgentsConfig) {
     Write-Host "  -> Agent: $($ag.Name) - Provider: $($ag.Provider) - $modeStr" -ForegroundColor White
 }
 
+# Provisioning effectif dans settings.json via setup-devin-acp.mjs
+$acpProvisionScript = Join-Path $KitRoot ".agent\setup\setup-devin-acp.mjs"
+if (Test-Path $acpProvisionScript) {
+    Write-Host "  [OK] Application du provisionnement ACP dans les reglages Devin..." -ForegroundColor Cyan
+    & node $acpProvisionScript
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  [OK] Preferences ACP appliquees dans settings.json avec succes." -ForegroundColor Green
+    } else {
+        Write-Host "  [AVERTISSEMENT] Erreur lors du provisionnement ACP (code $LASTEXITCODE)." -ForegroundColor Yellow
+    }
+}
+
 # --- 4. DEPLOIEMENT DU PONT AGENT-BRIDGE ET DES REGLES ---
 Write-Host ""
 Write-Host "[4/5] Deploiement de l'agent-bridge et des regles d'architecture..." -ForegroundColor Yellow
@@ -136,7 +151,7 @@ $wsConnected = $false
 try {
     $tcp = New-Object System.Net.Sockets.TcpClient
     $asyncResult = $tcp.BeginConnect("127.0.0.1", 7477, $null, $null)
-    $waitSuccess = $asyncResult.AsyncWaitHandle.WaitOne(1500, $false)
+    $waitSuccess = $asyncResult.AsyncWaitHandle.WaitOne(1000, $false)
     if ($waitSuccess -and $tcp.Connected) {
         $tcp.EndConnect($asyncResult)
         $wsConnected = $true
@@ -150,7 +165,7 @@ if ($wsConnected) {
     Write-Host "  [OK] Service Orchestrateur actif et repond sur 127.0.0.1:7477." -ForegroundColor Green
 } else {
     Write-Host "  [INFO] Service Orchestrateur 127.0.0.1:7477 non detecte actuellement." -ForegroundColor Yellow
-    Write-Host "         Lancez l'orchestrateur Hephaistos (node hphe-mcp ou service orchestrator) avant d'activer le monitoring." -ForegroundColor Gray
+    Write-Host "         Lancez l'orchestrateur Hephaistos (hphe-mcp.exe ou service orchestrator) avant d'activer le monitoring." -ForegroundColor Gray
 }
 
 Write-Host ""
