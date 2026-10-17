@@ -20,3 +20,8 @@ Estas reglas han sido registradas en Obsidian Second Brain y son de OBLIGATORIO 
 - Toute panne de worker → tâche requalifiée via `update_task`, remontée Beacon, consignée dans le Second Cerveau Obsidian.
 
 **SEULE EXCEPTION** : le hub de communication directe agent↔agent via les procédures **`/jointes`** et **`/chat-id`** (protocole binôme / agent-bridge), et uniquement quand l'utilisateur demande explicitement une connexion directe.
+
+## 🚫 POLITIQUE DE PUSH GIT (ordre utilisateur du 17/10/2026 — jusqu'à nouvel ordre)
+
+- Pousser hephaistos2-kit UNIQUEMENT vers les remotes `origin` (projet-temporaire) et `personal` (lascard-m).
+- **JAMAIS** pousser vers le remote/dépôt « Hard Calam », jusqu'à nouvel ordre explicite de l'utilisateur.
