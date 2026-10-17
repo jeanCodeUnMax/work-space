@@ -95,6 +95,11 @@ if ($CheckOnly) {
   Write-Host ("[check] binaires release : " + (('hphe-mcp.exe','hphe-rest.exe','hphe-indexd.exe','hphe-content.exe' | ForEach-Object { if (Test-Path "$PRJ\hphe\target\release\$_") { $_ } }) -join ', '))
   Write-Host "[check] INSTALL cible : $INS (existant: $(Test-Path $INS))"
   Write-Host "[check] mcp_config : $env:APPDATA\devin\mcp_config.json (existant: $(Test-Path "$env:APPDATA\devin\mcp_config.json"))"
+  $acpScript = "$PRJ\.agent\setup\setup-devin-acp.mjs"
+  if (Test-Path $acpScript) {
+    Write-Host "[check] agents ACP Devin (devin.acp.* dans settings.json) :"
+    & node $acpScript --verify
+  } else { Write-Warning "setup-devin-acp.mjs introuvable : $acpScript" }
   Write-Host "[check] rien d'écrit — relancer sans -CheckOnly pour installer"
   exit 0
 }
@@ -278,6 +283,14 @@ if ($Elevated) {
   Write-Host "[6/6] tâche planifiée : relancer en admin avec -Elevated"
 }
 
+# 6b) Agents ACP dans Devin (enabledAgents / agentEnv / agentPreferences) ----------
+$acpScript = "$PRJ\.agent\setup\setup-devin-acp.mjs"
+if (Test-Path $acpScript) {
+  Write-Host "[ACP] provision devin.acp.* dans %APPDATA%\devin\User\settings.json"
+  & node $acpScript
+  if ($LASTEXITCODE -ne 0) { Write-Warning "provisioning ACP en échec — voir ci-dessus" }
+} else { Write-Warning "setup-devin-acp.mjs introuvable : $acpScript" }
+
 # 7) Vérifications post-installation (extension, bridge, surfaces, binôme) --------
 if (-not $SkipVerify) {
   Write-Host "`n=== [Vérifications d'intégration] ===" -ForegroundColor Cyan
@@ -301,6 +314,17 @@ if (-not $SkipVerify) {
     Write-Host "  [OK]   orchestrator-monitor v$foundExt installée (attendue >= $expectedExtVer)" -ForegroundColor Green
   } else {
     Write-Warning "orchestrator-monitor >= $expectedExtVer non détectée dans les extensions IDE (exécuter .agent\setup\install-extension-hub.ps1)"
+  }
+
+  # a2) Agents ACP Devin
+  $acpScript = "$PRJ\.agent\setup\setup-devin-acp.mjs"
+  if (Test-Path $acpScript) {
+    & node $acpScript --verify 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "  [OK]   agents ACP Devin conformes (enabledAgents/env/prefs)" -ForegroundColor Green
+    } else {
+      Write-Warning "agents ACP Devin non conformes - exécuter: node .agent\setup\setup-devin-acp.mjs"
+    }
   }
 
   # b) WS Bridge 7477

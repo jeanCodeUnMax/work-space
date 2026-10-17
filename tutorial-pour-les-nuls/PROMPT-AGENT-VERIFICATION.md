@@ -37,6 +37,22 @@ détecté par les scripts du repo.
 - Ne touche à AUCUN fichier de config existant qui n'est pas prévu par
   install.ps1. Ne supprime jamais une politique .mcp-access déployée.
 
+ÉTAPE 3b — Agents ACP dans Devin (LE POINT QUE TON INSTALL MANQUAIT)
+  cd <REPO>
+  node .agent\setup\setup-devin-acp.mjs --verify
+- Si [VERIFY] conforme → passe à l'étape 4. Sinon :
+  node .agent\setup\setup-devin-acp.mjs
+- Ce script provisionne `devin.acp.enabledAgents`, `devin.acp.agentEnv`
+  (PATH augmenté des binaires détectés), `devin.acp.agentPreferences` et
+  `devin.acp.preferredAgent` dans %APPDATA%\devin\User\settings.json —
+  avec backup automatique et merge non-destructif.
+- SANS ces clés, aucun provider ACP ne peut recevoir session/load → aucun
+  ACK → aucun binôme. C'est LE point de défaillance classique.
+- Après écriture : recharge la fenêtre Devin.
+- Vérifie ensuite : les providers listés ont un binaire détecté
+  (colonne `binaire=`). `—` pour opencode/hermes/etc. = CLI absent de la
+  machine, à installer avant de pouvoir le joindre.
+
 ÉTAPE 4 — Extension monitor 0.0.59
   pwsh -ExecutionPolicy Bypass -File .agent\setup\install-extension-hub.ps1 -CheckOnly
 - Attendu : orchestrator-monitor 0.0.59 détectée. Sinon installe
@@ -100,15 +116,16 @@ marcher" — uniquement des faits vérifiés.
 
 ## Résumé des cibles à vérifier (aide-mémoire)
 
-| Élément | Chemin attendu |
-|---|---|
-| VSIX source | `<REPO>\extensions\orchestrator-monitor\orchestrator-monitor-0.0.59.vsix` |
-| Extension installée | `%USERPROFILE%\.devin\extensions\hephaistos.orchestrator-monitor-0.0.59\` (+ `node_modules\ws`) |
-| Règles Devin CLI | `%USERPROFILE%\.config\devin\global_rules.md` |
-| Règles Devin IDE | `%USERPROFILE%\.claude\CLAUDE.md` (bloc marqué `HEPHAISTOS`) |
-| Règles Windsurf | `%USERPROFILE%\.codeium\windsurf\memories\global_rules.md` |
-| Règles AGY | `%USERPROFILE%\.gemini\config\rules\global_rules.md` ou `GEMINI.md` |
-| Skills Devin | `%APPDATA%\devin\skills\{chat-id,jointes}\SKILL.md` |
-| Skills AGY | `%USERPROFILE%\.gemini\config\skills\{chat-id,jointes}\SKILL.md` |
-| ws bridge | `node_modules\ws` dans `<REPO>\.agent\agent-bridge\` |
-| Scripts vérif | `install.ps1 -CheckOnly`, `setup-agent-surfaces.ps1 -Verify`, `setup-devin-binome.ps1 -Verify`, `install-extension-hub.ps1 -CheckOnly` |
+| Élément            | Chemin attendu                                                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| VSIX source          | `<REPO>\extensions\orchestrator-monitor\orchestrator-monitor-0.0.59.vsix`                                                                    |
+| Extension installée | `%USERPROFILE%\.devin\extensions\hephaistos.orchestrator-monitor-0.0.59\` (+ `node_modules\ws`)                                            |
+| Règles Devin CLI    | `%USERPROFILE%\.config\devin\global_rules.md`                                                                                                |
+| Règles Devin IDE    | `%USERPROFILE%\.claude\CLAUDE.md` (bloc marqué `HEPHAISTOS`)                                                                              |
+| Règles Windsurf     | `%USERPROFILE%\.codeium\windsurf\memories\global_rules.md`                                                                                   |
+| Règles AGY          | `%USERPROFILE%\.gemini\config\rules\global_rules.md` ou `GEMINI.md`                                                                        |
+| Skills Devin         | `%APPDATA%\devin\skills\{chat-id,jointes}\SKILL.md`                                                                                          |
+| Skills AGY           | `%USERPROFILE%\.gemini\config\skills\{chat-id,jointes}\SKILL.md`                                                                             |
+| ws bridge            | `node_modules\ws` dans `<REPO>\.agent\agent-bridge\`                                                                                       |
+| Scripts vérif       | `install.ps1 -CheckOnly`, `setup-agent-surfaces.ps1 -Verify`, `setup-devin-binome.ps1 -Verify`, `install-extension-hub.ps1 -CheckOnly`, `node .agent/setup/setup-devin-acp.mjs --verify` |
+| Agents ACP Devin    | `devin.acp.*` dans `%APPDATA%\devin\User\settings.json` — provisionné par `setup-devin-acp.mjs` (appelé aussi par `install.ps1`) |

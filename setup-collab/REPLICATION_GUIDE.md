@@ -5,7 +5,9 @@
 ---
 
 ## 1. OBJECTIF ET PERIMETRE
+
 Reconcilier et aligner l'environnement de developpement distant avec le standard d'orchestration :
+
 1. **Activation de la commande `/boost` dans Devin** via le format Skill moderne (`%APPDATA%\devin\skills\boost\SKILL.md`).
 2. **Activation de la commande `/obsidian` dans Devin** via le format Skill moderne (`%APPDATA%\devin\skills\obsidian\SKILL.md`).
 3. **Automatisation des serveurs MCP dans Devin** :
@@ -17,6 +19,7 @@ Reconcilier et aligner l'environnement de developpement distant avec le standard
 ---
 
 ## 2. PREREQUIS MACHINE DISTANTE
+
 - **OS :** Windows 10/11 (PowerShell disponible).
 - **Runtimes :** Node.js actif (`node -v`), Python 3.10+ actif (`python --version`).
 - **Serveur MCP Hephaistos :** L'executable `hphe-mcp.exe` de Hephaistos2-Kit accessible en local — produit par `install.ps1` sous `<INSTALL>\extension\server\hphe-mcp.exe` (par defaut `<INSTALL>` = `%ProgramFiles%\servers\hephaistos2-kit`, surcharge via `-InstallRoot`/`HPHE_INSTALL`).
@@ -31,6 +34,7 @@ Reconcilier et aligner l'environnement de developpement distant avec le standard
 ## 3. ETAPE 1 : CONFIGURATION DE DEVIN
 
 ### 1.1 Declaration MCP dans Devin
+
 Verifier ou creer le fichier `%APPDATA%\devin\mcp_config.json` (un modele clef en main est fourni dans `setup-collab\mcp_config.example.json`).
 Ajouter dans l'objet `"mcpServers"` les serveurs `Hephaistos-everything-search` et `antigravity-obsidian` :
 
@@ -62,16 +66,19 @@ Ajouter dans l'objet `"mcpServers"` les serveurs `Hephaistos-everything-search` 
 ```
 
 ### 1.2 Creation de la Skill `/boost` pour Devin (Format SKILL.md moderne)
+
 > **NOTE CRITIQUE :** Dans les versions recentes de Devin, les slash commands utilisent le format Skill dans `%APPDATA%\devin\skills\<nom>\SKILL.md` (les fichiers `workflows/*.md` sont legacy).
 
 Creer le dossier `%APPDATA%\devin\skills\boost\` et y copier le fichier `setup-collab\skills\boost\SKILL.md` (avec `triggers: ["user"]` pour que `/boost` apparaisse immediatement dans la palette slash).
 
 ### 1.3 Creation de la Skill `/obsidian` pour Devin (Format SKILL.md moderne)
+
 Creer le dossier `%APPDATA%\devin\skills\obsidian\` et y copier le fichier `setup-collab\skills\obsidian\SKILL.md` (avec `triggers: ["user"]` pour que `/obsidian` apparaisse immediatement dans la palette slash).
 
 La skill expose les outils MCP (`obsidian_triage`, `obsidian_peek`, `obsidian_session_save`, `obsidian_learn`, etc.) ainsi que le fallback CLI `node "%USERPROFILE%\.gemini\config\skills\antigravity-obsidian\scripts\obsidian.js"`.
 
 ### 1.4 Injection des Regles dans Devin (`global_rules.md`)
+
 Ouvrir `%USERPROFILE%\.config\devin\global_rules.md` et ajouter a la fin la directive :
 
 ```markdown
@@ -89,6 +96,7 @@ Ouvrir `%USERPROFILE%\.config\devin\global_rules.md` et ajouter a la fin la dire
 ## 4. ETAPE 2 : CONFIGURATION D'ANTIGRAVITY
 
 ### 2.1 Regles d'Automatisation `/boost` dans Antigravity
+
 Ouvrir le fichier de regles actives d'Antigravity (`%USERPROFILE%\.gemini\config\rules\obsidian-brain.md` ou `global_rules.md`).
 Ajouter la section obligatoire :
 
@@ -101,6 +109,7 @@ Ajouter la section obligatoire :
 ```
 
 ### 2.2 Fixation de l'Identite
+
 - Nom de l'agent : `Antigravity`
 - Profil : Ingenieur senior d'elite, autonome, pragmatique et de precision chirurgicale.
 - Politique : Zero emoji absolu.
@@ -108,6 +117,7 @@ Ajouter la section obligatoire :
 ---
 
 ## 5. ETAPE 3 : OUTIL D'AUDIT MULTI-DISQUES (READ-ONLY)
+
 Pour cartographier et comparer les depots entre disques ou repertoires (racines passées en arguments au script) sans risque d'ecrasement ni de perte de donnees :
 
 ```bash
@@ -124,6 +134,7 @@ python "tools/audit-projects.py" --output "rapport-audit.md"
 ---
 
 ## 6. ETAPE 4 : VERIFICATION
+
 1. Executer `devin skills list` dans le terminal et verifier que `/boost [user]` et `/obsidian [user]` sont listes actifs.
 2. Taper `/boost` dans Devin : la palette slash et l'orchestration Hephaistos sont immediatement actives.
 3. Taper `/obsidian` dans Devin : les outils de memoire technique et de checkpoint sont disponibles.
