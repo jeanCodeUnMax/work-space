@@ -14,6 +14,7 @@
     Chemin du projet cible a configurer. Par defaut, tente de detecter le workspace actif ou le dossier de travail courant.
 #>
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingWriteHost", "")]
 param(
     [Parameter(Position=0)]
     [string]$TargetWorkspace = ""
