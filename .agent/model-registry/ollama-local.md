@@ -1,4 +1,4 @@
-# Registre ollama-local — 2026-10-13T19:19:52.138Z
+# Registre ollama-local — 2026-10-19T01:45:12.295Z
 
 État = dernier ping réel (model_health). `OK`=répond, `KO`=mort/indispo, `—`=pas de latence mesurée.
 Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/agent en bas, section préservée.
@@ -9,6 +9,8 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 | KO | `qwen3:1.7b` | ollama | 90015ms | 2026-10-08 06:50:09 |
 | KO | `gemma3:1b` | ollama | 90015ms | 2026-10-08 06:50:09 |
 ## Notes
+
+
 
 
 

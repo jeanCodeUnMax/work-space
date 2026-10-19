@@ -54,11 +54,13 @@ $Dest = Join-Path $Target '.agent'
 if (-not (Test-Path $Source)) { Write-Error "Source introuvable: $Source"; exit 1 }
 if (-not (Test-Path $Target)) { Write-Error "Cible introuvable: $Target"; exit 1 }
 
-$SkipDirs = @('__pycache__', 'node_modules', 'logs')
+$SkipDirs = @('__pycache__', 'node_modules', 'logs', 'queue', 'deliverables')
 $SkipFiles = @(
     '.beacon-learn-state.json', '.beacon-offset.json',
     'ingestion.log', 'ingestion.state.json', '.ingestion-state.json',
-    'rag_bridge.pid', 'rag_bridge_stdout.log', 'rag_bridge_stderr.log', 'rag_bridge.log'
+    'rag_bridge.pid', 'rag_bridge_stdout.log', 'rag_bridge_stderr.log', 'rag_bridge.log',
+    'comms.jsonl', 'ws-bridge.token', 'watch-state.json', 'binome-manifest.json',
+    'reactive-orchestrator-watchdog.jsonl'
 )
 
 $copied = 0; $skipped = 0

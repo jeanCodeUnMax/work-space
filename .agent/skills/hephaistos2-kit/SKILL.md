@@ -1,4 +1,4 @@
-﻿---
+---
 name: hephaistos2-kit
 description: "Playbook opérationnel maître pour Hephaistos2-Kit : serveur unifié Rust Hephaistos-everything-search (58 outils), recherche NTFS instantanée ($MFT+USN sans Everything.exe), passerelle REST :8792 et Tantivy, orchestrateur multi-agents et monitor WebSocket (:7477), protocole binôme avec distinction stricte ACP vs CLI, intégration Beacon, Second Cerveau Obsidian et gouvernance machine modeste."
 triggers:
@@ -171,3 +171,106 @@ setup-collab\configurer-devin-agents.cmd
   2. `personal` : Dépôt personnel de Boss (`https://github.com/lascard-m/...`)
 - **Statut Obligatoire** : Tous les dépôts doivent impérativement demeurer en statut **PRIVATE**.
 - **Audit de Sécurité** : Vérification systématique de l'absence de tokens (`nvapi-`, `sk-`, `ghp_`, etc.) avant tout commit.
+
+---
+
+## 7. Matrice des Commandes Slash & Templates Canoniques (`/chat-id` et `/jointes`)
+
+Chaque agent (Antigravity, Devin, OpenCode, Kilo, Hermes) DOIT reproduire ces templates exacts en réponse aux commandes slash.
+
+### A. Commande `/chat-id` (Lecture Seule)
+
+**Commandes d'exécution par agent** :
+- **Antigravity (AGY)** : `node .agent/agent-bridge/chat-id.js --agent agy --via hub`
+- **Devin (`devin-cli` / `devin-cascade`)** : `node .agent/agent-bridge/chat-id.js --agent devin --via acp`
+- **OpenCode (`opencode`)** : `node .agent/agent-bridge/chat-id.js --agent opencode --via acp`
+- **Kilo / Hermes** : `node .agent/agent-bridge/chat-id.js --agent <kilo|hermes> --via <acp|cli>`
+
+**Template de réponse obligatoire** :
+```text
+sessionId  : <sessionId>
+providerId : <providerId>
+transport  : <transport>
+title      : <titreSession>
+messages   : <count> — créée le <dateISO>
+workspace  : <cheminWorkspace>
+```
+```json
+{
+  "agent": "<nomAgent>",
+  "providerId": "<providerId>",
+  "transport": "<transport>",
+  "sessionId": "<sessionId>",
+  "title": "<titreSession>",
+  "userMessageCount": <count>,
+  "createdAt": "<dateISO>",
+  "workspace": "<cheminWorkspace>"
+}
+```
+
+### B. Commande `/jointes <sessionId>` (Protocole Binôme)
+
+**Exécution** :
+`node .agent/agent-bridge/binome.js --as <monAgent> --via <monTransport> --self <monSessionId> --peer <peerAgent> --peer-via <peerTransport> --to <peerSessionId> --session binome join`
+
+**Template si pairage établi (`established: true`)** :
+```text
+Binôme : <monAgent> ⇄ <peerAgent>
+Status : Pairage établi (established: true)
+PairId : <pairId>
+Local  : <monAgent> (<monSessionId>) via <monTransport>
+Pair   : <peerAgent> (<peerSessionId>) via <peerTransport>
+```
+```json
+{
+  "established": true,
+  "pairId": "<pairId>",
+  "session": "binome",
+  "me": { "agent": "<monAgent>", "providerId": "<monProviderId>", "transport": "<monTransport>", "sessionId": "<monSessionId>" },
+  "peer": { "agent": "<peerAgent>", "providerId": "<peerProviderId>", "transport": "<peerTransport>", "sessionId": "<peerSessionId>" }
+}
+```
+
+**Template si en attente d'ACK réciproque** :
+```text
+Binôme : <monAgent> ➔ <peerAgent>
+Status : Requête join envoyée — en attente d'ACK réciproque
+PairId : <pairId>
+Local  : <monAgent> (<monSessionId>) via <monTransport>
+Pair   : <peerAgent> (<peerSessionId>) via <peerTransport>
+
+Commande de retour à exécuter côté pair :
+node .agent/agent-bridge/binome.js --as <peerAgent> --via <peerTransport> --self <peerSessionId> --peer <monAgent> --peer-via <monTransport> --to <monSessionId> --session binome join
+```
+
+---
+
+## 8. Gouvernance Multi-Agents : Rôles Stricts et Passage par l'Orchestrateur
+
+1. **Hiérarchie et Séparation des Rôles** :
+   - **Architecte / Orchestrateur Principal** : Antigravity ou Devin. Seul l'agent principal a la responsabilité d'architecturer, de découper le travail, de créer et de distribuer les tâches via `dispatch_task` ou `binome.js`.
+   - **Sous-Agents Exécutants** : OpenCode, Kilo, Hermes, Mistral-Vibe. Ce sont des **workers exécutants spécialisés** (codage unitaire, exploration lecture seule, tests, revue). Ce n'est **PAS leur rôle d'orchestrer** ni d'assigner des tâches à d'autres agents.
+2. **Déclaration Obligatoire via l'Orchestrateur MCP** :
+   - Si un sous-agent doit exceptionnellement déclarer une sous-tâche, signaler un livrable ou clore une tâche assignée, il doit **STRICTEMENT** passer par les outils officiels de l'orchestrateur MCP (`create_task`, `update_task` avec statut `completed`/`failed` et description du livrable) ou par le canal de communication binôme / `comms.jsonl`.
+   - **INTERDICTION FORMELLE** :
+     - Accès SQL direct ou requêtes manuelles sur les bases SQLite (`orchestrator.db`, etc.).
+     - Lancement de processus sauvages en arrière-plan sans passer par l'orchestrateur.
+     - Écrasement des tours de parole (respect impératif de la file d'attente FIFO `message-queue.js`).
+
+---
+
+## 9. Répertoire Obligatoire « Rapport de dysfonctionnement et correction » & Priorité Cloud
+
+1. **Traçabilité Systématique des Dysfonctionnements et Corrections** :
+   - Tout dysfonctionnement de l'orchestrateur, livrable factice, panne de worker, contournement de gate ou correctif appliqué aux rules, skills, scripts ou crates Rust DOIT être systématiquement documenté en Markdown (`.md`, strictement sans emoji) dans le répertoire dédié :
+     `c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
+   - Un agent dédié (Bleubite recruté par l'orchestrateur, assisté des workers Cloud) est chargé de transcrire chaque incident et sa résolution dans ce répertoire et de tenir à jour `INDEX-RAPPORTS.md`.
+   - Tous les collaborateurs (Cash, Luna, Bleubites, workers Cloud) doivent être avisés et appliquer cette règle.
+2. **Rôle Strict de l'Orchestrateur et Priorité aux Modèles Cloud** :
+   - L'orchestrateur principal (Tango) ne code jamais lui-même les tâches des workers : il vérifie les livrables et dispatche.
+   - Afin de ne pas saturer les collaborateurs ACP, l'orchestrateur dispatche au maximum vers les workers Cloud en CLI via `dispatch_task` :
+     - Position 0 : `nim1` (`nvidia-nim`)
+     - Position 1 : `nim2` (`nvidia-nim2`)
+     - Position 2 : `ollama-cloud` (`ollama-cloud`)
+
+

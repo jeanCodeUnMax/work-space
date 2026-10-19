@@ -145,9 +145,33 @@ db.exec("PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL;");
 // Schéma minimal si DB fraîche (hphe-mcp recrée aussi, mais le seed doit être autonome)
 db.exec(`CREATE TABLE IF NOT EXISTS agents (
   id INTEGER PRIMARY KEY, agent_name TEXT NOT NULL, agent_type TEXT NOT NULL,
-  config TEXT, active INTEGER DEFAULT 1)`);
+  config TEXT, active INTEGER DEFAULT 1, capabilities TEXT)`);
 db.exec(`CREATE TABLE IF NOT EXISTS provider_prefs (
   provider TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1, position INTEGER)`);
+// Colonnes additives post-unification (miroir ensure_schema Rust, idempotent)
+const colExists = (t, c) => db.prepare(`PRAGMA table_info(${t})`).all().some(r => r.name === c);
+if (!colExists('agents', 'capabilities')) {
+    db.exec('ALTER TABLE agents ADD COLUMN capabilities TEXT');
+}
+if (!colExists('tasks_todo', 'expected_artifact')) {
+    db.exec('ALTER TABLE tasks_todo ADD COLUMN expected_artifact TEXT');
+}
+if (!colExists('tasks_todo', 'verified_by')) {
+    db.exec('ALTER TABLE tasks_todo ADD COLUMN verified_by TEXT');
+}
+if (!colExists('tasks_todo', 'last_heartbeat')) {
+    db.exec('ALTER TABLE tasks_todo ADD COLUMN last_heartbeat TEXT');
+}
+if (!colExists('provider_prefs', 'disabled_at')) {
+    db.exec('ALTER TABLE provider_prefs ADD COLUMN disabled_at TEXT');
+}
+db.exec(`CREATE TABLE IF NOT EXISTS pairs (
+  pair_id TEXT PRIMARY KEY, agent_a TEXT NOT NULL, agent_b TEXT NOT NULL,
+  session TEXT, transport_a TEXT, transport_b TEXT, cascade_a TEXT, cascade_b TEXT,
+  model TEXT, established_at TEXT, last_seen TEXT, meta TEXT)`);
+// Seed capabilities : workers NIM = pont texte sans outils FS
+db.exec(`UPDATE agents SET capabilities='["text_only"]' WHERE agent_name IN ('nim1','nim2') AND capabilities IS NULL`);
+db.exec(`UPDATE agents SET capabilities='["fs_read","fs_write","cmd"]' WHERE capabilities IS NULL`);
 
 let insAgents = 0;
 const exists = db.prepare('SELECT 1 FROM agents WHERE agent_name=?');

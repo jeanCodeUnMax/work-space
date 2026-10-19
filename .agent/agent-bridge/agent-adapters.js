@@ -167,7 +167,7 @@ function resumeArgs(agent, sessionId) {
 const MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 
 function sessionIdValid(sessionId) {
-    return typeof sessionId === 'string' && /^[A-Za-z0-9_-]{7,200}$/.test(sessionId);
+    return typeof sessionId === 'string' && /^[A-Za-z0-9._/-]{7,200}$/.test(sessionId);
 }
 
 function commandFor(agent, args) {

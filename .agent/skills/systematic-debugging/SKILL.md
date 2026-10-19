@@ -107,8 +107,22 @@ pm2 logs app-name --err --lines 100
 
 ## Anti-Patterns
 
-❌ **Random changes** - "Maybe if I change this..."
-❌ **Ignoring evidence** - "That can't be the cause"
-❌ **Assuming** - "It must be X" without proof
-❌ **Not reproducing first** - Fixing blindly
-❌ **Stopping at symptoms** - Not finding root cause
+- **Random changes** - "Maybe if I change this..."
+- **Ignoring evidence** - "That can't be the cause"
+- **Assuming** - "It must be X" without proof
+- **Not reproducing first** - Fixing blindly
+- **Stopping at symptoms** - Not finding root cause
+
+## Mandatory Reporting: Rapport de dysfonctionnement et correction
+
+Every orchestration dysfunction, worker failure, gate bypass, or structural fix applied in `hephaistos2-kit` MUST be systematically documented in Markdown (zero emojis) inside the dedicated directory:
+
+`c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
+
+Each report must include:
+1. **Incident ID, Tasks (`#id`), and Date**
+2. **Observed Symptom & Impact**
+3. **Root Cause Analysis**
+4. **Applied Fix (Code/SQL/Config/Skill)**
+5. **Verification & Regression Guard**
+

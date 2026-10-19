@@ -228,8 +228,8 @@ if ($bridgeUp) {
     }
 }
 
-# Verification version orchestrator-monitor (>= 0.0.58, injection ACP stdio)
-$expectedExtVer = '0.0.58'
+# Verification version orchestrator-monitor (>= 0.0.61, injection ACP stdio)
+$expectedExtVer = '0.0.61'
 $extDirs = @()
 $extDirs += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
 $extDirs += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*" -ErrorAction SilentlyContinue
@@ -274,6 +274,30 @@ if ($commsTarget) {
     } else {
         Write-Host "  [INFO] canal binome : lancer 'node .agent/agent-bridge/binome.js join' pour apparier" -ForegroundColor DarkGray
     }
+}
+
+# Verification couche 2.1 (veille reactive + obligation documentaire)
+$wdScript = Join-Path $ProjectRoot ".agent\skills\reactive-orchestrator\watchdog.ps1"
+$rdRule   = Join-Path $ProjectRoot ".agent\rules\rapport-dysfonctionnement.md"
+$rdDir    = Join-Path $ProjectRoot "Rapport de dysfonctionnement et correction"
+if (Test-Path $wdScript) {
+    Write-Host "  [OK] watchdog reactif present (.agent/skills/reactive-orchestrator)" -ForegroundColor Green
+} else {
+    Write-Host "  [WARN] watchdog.ps1 absent — scaffold via: hphe-mcp --tool project_init" -ForegroundColor Yellow
+}
+if (Test-Path $rdRule) {
+    Write-Host "  [OK] regle rapport-dysfonctionnement presente" -ForegroundColor Green
+} else {
+    Write-Host "  [WARN] regle rapport absente — scaffold via: hphe-mcp --tool project_init" -ForegroundColor Yellow
+}
+if (-not (Test-Path $rdDir)) { New-Item -ItemType Directory -Path $rdDir -Force | Out-Null }
+Write-Host "  [OK] repertoire Rapport de dysfonctionnement et correction present" -ForegroundColor Green
+$tasksJson = Join-Path $ProjectRoot ".vscode\tasks.json"
+$hasWdTask = (Test-Path $tasksJson) -and ((Get-Content $tasksJson -Raw) -match 'Watchdog Hephaistos')
+if ($hasWdTask) {
+    Write-Host "  [OK] tache VS Code 'Watchdog Hephaistos' (runOn=folderOpen) presente" -ForegroundColor Green
+} else {
+    Write-Host "  [INFO] tache watchdog absente de tasks.json — l'extension orchestrator-monitor supervise quand meme le watchdog" -ForegroundColor DarkGray
 }
 
 # === RÉSUMÉ ===

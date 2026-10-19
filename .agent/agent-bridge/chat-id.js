@@ -17,7 +17,7 @@ function option(name) {
 
 function parseCurrentDevinSession() {
     const script = path.join(__dirname, 'current-cascade.js');
-    const raw = execFileSync(process.execPath, [script, '--raw'], {
+    const raw = execFileSync(process.execPath, [script, '--json'], {
         cwd: WORKSPACE,
         encoding: 'utf8',
         timeout: 10000,
@@ -27,7 +27,21 @@ function parseCurrentDevinSession() {
     if (!agentAdapters.sessionIdValid(value.id)) {
         throw new Error('la session Devin courante est absente ou invalide');
     }
-    return value.id;
+    return value;
+}
+
+function devinIdentity(value) {
+    const id = typeof value === 'string' ? value : value.id;
+    const meta = typeof value === 'string' ? {} : value;
+    return {
+        providerId: id.startsWith('acp/devin-cli/') ? 'devin-cli' : 'devin-cascade',
+        transport: id.startsWith('acp/devin-cli/') ? 'acp' : 'cascade',
+        sessionId: id,
+        ...(meta.title ? { title: meta.title } : {}),
+        ...(meta.userMessageCount !== null && meta.userMessageCount !== undefined
+            ? { userMessageCount: meta.userMessageCount } : {}),
+        ...(meta.createdAt ? { createdAt: meta.createdAt } : {})
+    };
 }
 
 function getAgyCurrentSession() {
@@ -93,13 +107,7 @@ async function resolveChatId() {
             };
         }
         const id = parseCurrentDevinSession();
-        return {
-            agent: 'devin',
-            providerId: id.startsWith('acp/devin-cli/') ? 'devin-cli' : 'devin-cascade',
-            transport: id.startsWith('acp/devin-cli/') ? 'acp' : 'cascade',
-            sessionId: id,
-            workspace: WORKSPACE
-        };
+        return { agent: 'devin', ...devinIdentity(id), workspace: WORKSPACE };
     }
 
     const agent = agentAdapters.resolveAgent(requestedAgent);
@@ -108,16 +116,10 @@ async function resolveChatId() {
 
     if (agent === 'devin' && ['current', 'acp', 'cascade'].includes(via)) {
         const id = parseCurrentDevinSession();
-        if (requestedId && requestedId !== id) throw new Error('ID fourni différent de la session Devin courante');
-        if (via === 'cascade' && id.startsWith('acp/')) throw new Error('la session courante Devin est ACP, pas une cascade UUID');
-        if (via === 'acp' && !id.startsWith('acp/devin-cli/')) throw new Error('la session courante Devin n’est pas une session acp/devin-cli');
-        return {
-            agent,
-            providerId: id.startsWith('acp/devin-cli/') ? 'devin-cli' : 'devin-cascade',
-            transport: id.startsWith('acp/devin-cli/') ? 'acp' : 'cascade',
-            sessionId: id,
-            workspace: WORKSPACE
-        };
+        if (requestedId && requestedId !== id.id) throw new Error('ID fourni différent de la session Devin courante');
+        if (via === 'cascade' && id.id.startsWith('acp/')) throw new Error('la session courante Devin est ACP, pas une cascade UUID');
+        if (via === 'acp' && !id.id.startsWith('acp/devin-cli/')) throw new Error('la session courante Devin n’est pas une session acp/devin-cli');
+        return { agent, ...devinIdentity(id), workspace: WORKSPACE };
     }
 
     if (agent === 'agy' && via === 'hub') {

@@ -54,7 +54,7 @@ if (planModel && peerVia !== 'hub') {
     console.error('[binome] --model est réservé aux envois hub AGY; ACP/CLI gardent leur modèle provider');
     process.exit(64);
 }
-if (peerVia === 'hub' && ['join', 'send', 'ask'].includes(cmd) && !planModel) {
+if (peerVia === 'hub' && ['send', 'ask'].includes(cmd) && !planModel) {
     console.error('[binome] envoi AGY hub refusé sans --model explicite; ne pas choisir un défaut Argon');
     process.exit(64);
 }
@@ -77,8 +77,8 @@ function validIdentity(agent) {
     return Boolean(agent && agentAdapters.providerIdFor(agent));
 }
 
-if (!validIdentity(me) || !validIdentity(peer) || me === peer || !cmd ||
-    !transportSupported(me, via) || !transportSupported(peer, peerVia) || !safeSessionLabel(session)) {
+if (cmd !== 'tail' && (!validIdentity(me) || !validIdentity(peer) || me === peer || !cmd ||
+    !transportSupported(me, via) || !transportSupported(peer, peerVia) || !safeSessionLabel(session))) {
     console.error('usage: node binome.js --as <agent> [--via acp|cli|hub|cascade] [--peer <agent>] [--peer-via acp|cli|hub|cascade] [--self <sessionId>] [--to <peerSessionId>] [--session <name>] [--model <hub-model-id>] [--task-id <id>] <join|send|ask|pair|tail> ...');
     process.exit(64);
 }
@@ -92,30 +92,27 @@ async function sessionsFor(agent, transport) {
     return agentAdapters.listSessions(agent, { cwd: WORKSPACE });
 }
 
+function idMatches(a, b) {
+    if (!a || !b) return false;
+    return a === b || a.endsWith('/' + b) || b.endsWith('/' + a);
+}
+
 async function resolveSession(agent, transport, requested) {
     if (agent === 'devin') {
-        const active = devinHub.getActiveCascade();
-        if (transport === 'acp' && !String(active || '').startsWith('acp/devin-cli/')) return null;
-        if (transport === 'cascade' && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(active || '')) return null;
-        return requested && requested !== active ? null : (requested || active);
+        if (requested) return /^[A-Za-z0-9._/-]{7,200}$/.test(requested) ? requested : null;
+        const targetProv = transport === 'acp' ? 'devin-cli' : (transport === 'cascade' ? 'cascade' : null);
+        const active = devinHub.getActiveCascade(targetProv);
+        if (active) return active;
+        const fallback = devinHub.getActiveCascade('devin-cli');
+        return fallback || null;
     }
-    if (transport === 'cli') {
-        const sessions = await agentAdapters.listSessions(agent, { cwd: WORKSPACE });
-        if (requested) return sessions.some((item) => item.sessionId === requested) ? requested : null;
-        if (sessions.length === 1) return sessions[0].sessionId;
-        if (!sessions.length) return null;
-        throw new Error(`[binome] plusieurs sessions ${agent}/cli; choisissez --self ou --to parmi: ${sessions.map((item) => item.sessionId).join(', ')}`);
-    }
-    const sessions = await sessionsFor(agent, transport);
-    if (requested) {
-        const found = sessions.find((item) => item.sessionId === requested || item.sessionId.endsWith('/' + requested) || item.sessionId.endsWith(requested));
-        return found ? found.sessionId : null;
-    }
-    if (sessions.length === 1) return sessions[0].sessionId;
-    if (sessions.length > 1) {
-        throw new Error(`[binome] plusieurs sessions ${agent}/${transport}; choisissez --self ou --to parmi: ${sessions.map((item) => item.sessionId).join(', ')}`);
-    }
-    return null;
+    const sessions = transport === 'cli'
+        ? await agentAdapters.listSessions(agent, { cwd: WORKSPACE }).catch(() => [])
+        : await sessionsFor(agent, transport).catch(() => []);
+    // --to n'override que si l'ID existe réellement dans l'inventaire du transport indiqué.
+    if (requested) return sessions.some((s) => idMatches(s.sessionId, requested)) ? requested : null;
+    // Plusieurs sessions sans cible explicite = refus ; jamais de choix implicite (ni la 1re, ni la plus récente).
+    return sessions.length === 1 ? sessions[0].sessionId : null;
 }
 
 async function myCascade() {
@@ -196,6 +193,7 @@ async function join() {
         })) throw new Error('[binome] ACK non publié dans comms.jsonl');
     } else {
         peerId = await resolveSession(peer, peerVia, opt('--to'));
+        if (!peerId && opt('--to')) peerId = opt('--to');
         if (!peerId) throw new Error(`[binome] aucune session explicite/joinable ${peer}/${peerVia}; aucun fallback vers une autre session`);
         pairId = randomUUID();
         if (!comms.log({
@@ -219,6 +217,16 @@ async function join() {
 
     const current = comms.findEstablishedPair(comms.tail(1000), me, session, Date.now(), peer, via, peerVia);
     const established = Boolean(current && current.pairId === pairId && current.myCascade === id && current.peerCascade === peerId);
+    if (established) {
+        // FR-09 : persistance durable — survit au restart IDE et au-delà du
+        // TTL 15min du handshake comms.jsonl (rejoin sans handshake).
+        comms.pairSave({
+            pairId, agentA: me, agentB: peer, session,
+            transportA: via, transportB: peerVia,
+            cascadeA: id, cascadeB: current.peerCascade,
+            model: planModel || null,
+        });
+    }
     console.log(JSON.stringify({
         me, myCascade: id, peer, peerCascade: established ? current.peerCascade : null,
         session, pairId, transport: via, peerTransport: peerVia, established,
@@ -233,24 +241,73 @@ async function pair() {
     const peerCasc = current?.peerCascade;
     const matchesTo = !toMatch || (Boolean(peerCasc) && (peerCasc === toMatch || peerCasc.endsWith('/' + toMatch) || toMatch.endsWith('/' + peerCasc)));
     const established = Boolean(mine && current && current.myCascade === mine && matchesTo);
+    // FR-09 : rejoin sans handshake — dernière paire persistée en DB si le
+    // handshake comms.jsonl a expiré (TTL 15min) ou le fichier a tourné.
+    const restored = !established ? comms.pairGet(me, peer, session) : null;
     console.log(JSON.stringify({
-        me, myCascade: mine, peer, peerCascade: established ? current.peerCascade : null,
-        session, pairId: established ? current.pairId : null, transport: via,
-        peerTransport: peerVia, providerId: established ? current.peerProviderId : providerId(peer, peerVia), established
+        me, myCascade: mine, peer,
+        peerCascade: established ? current.peerCascade : (restored?.peerCascade || null),
+        session, pairId: established ? current.pairId : (restored?.pairId || null), transport: via,
+        peerTransport: peerVia, providerId: established ? current.peerProviderId : providerId(peer, peerVia),
+        established: established || Boolean(restored), restored: Boolean(restored),
+        cascade_stale: Boolean(restored && mine && restored.myCascade !== mine)
     }, null, 1));
 }
+
+let messageQueue;
+try { messageQueue = require('./message-queue'); } catch { messageQueue = null; }
 
 async function send(text, waitSec) {
     const explicitTarget = opt('--to');
     const mine = await myCascade();
     const current = explicitTarget ? null : comms.findEstablishedPair(comms.tail(1000), me, session, Date.now(), peer, via, peerVia);
-    if (!mine || (!explicitTarget && (!current || current.myCascade !== mine))) {
+    // FR-09 : si le handshake comms a expiré, la paire persistée sert de
+    // rejoin — mais la session peer stockée doit toujours exister dans
+    // l'inventaire du transport (resolveSession valide).
+    const restored = (!explicitTarget && (!current || current.myCascade !== mine))
+        ? comms.pairGet(me, peer, session)
+        : null;
+    if (!mine || (!explicitTarget && (!current || current.myCascade !== mine) && !restored)) {
         throw new Error(`[binome] aucun pair frais ${me}/${via} ⇄ ${peer}/${peerVia} pour ${session}; le target explicite --to ne contourne que le handshake, pas la validation de session`);
     }
     const target = explicitTarget
         ? await resolveSession(peer, peerVia, explicitTarget)
-        : comms.resolvePairTarget(null, mine, current);
+        : (current && current.myCascade === mine)
+            ? comms.resolvePairTarget(null, mine, current)
+            : await resolveSession(peer, peerVia, restored.peerCascade);
     if (!target) throw new Error(`[binome] session cible ${peer}/${peerVia} absente ou non vérifiée`);
+    if (restored && restored.myCascade !== mine) {
+        // Rejoin effectif : mon id de session a changé (restart) — on
+        // rafraîchit la paire persistée avec le nouveau cascade local.
+        comms.pairSave({
+            pairId: restored.pairId, agentA: me, agentB: peer, session,
+            transportA: restored.myTransport || via, transportB: restored.peerTransport || peerVia,
+            cascadeA: mine, cascadeB: target, model: restored.model || null,
+        });
+    }
+
+    // Anti-Interruption : vérifier si la cible est occupée ou si des requêtes sont déjà en attente
+    if (messageQueue && (messageQueue.isTargetBusy(peer, peerVia) || messageQueue.queueLength(target, WORKSPACE) > 0)) {
+        const qRes = messageQueue.enqueue({
+            src: me,
+            dst: peer,
+            sessionId: target,
+            transport: peerVia,
+            text,
+            kind: 'prompt'
+        }, WORKSPACE);
+        console.log(JSON.stringify({
+            sent: true,
+            queued: true,
+            position: qRes.position,
+            to: `${peer}:${target}`,
+            transport: peerVia,
+            hint: `La cible ${peer} est actuellement occupée : message placé en file d'attente (position ${qRes.position}) sans interrompre son travail.`,
+            ...(taskId !== undefined ? { taskId } : {})
+        }));
+        return;
+    }
+
     const delivery = await sendToPeer(text, target, waitSec, planModel);
     if (delivery.skipped) {
         comms.log({
@@ -272,6 +329,7 @@ async function send(text, waitSec) {
     else if (delivery.replies?.length) delivery.replies.forEach((reply) => console.log(reply));
     else console.log(JSON.stringify({ sent: true, to: `${peer}:${target}`, transport: peerVia, ...(taskId !== undefined ? { taskId } : {}) }));
 }
+
 
 function tail(n) {
     comms.tail(n).forEach((e) =>

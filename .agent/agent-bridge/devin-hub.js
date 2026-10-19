@@ -82,16 +82,23 @@ function getActiveCascade() {
             { encoding: 'utf8', timeout: 10000, windowsHide: true }).trim();
         if (id) return id;
     } catch { /* fallback .pb */ }
-    // 2) Fallback : .pb le plus récemment écrit
-    try {
-        const dir = path.join(os.homedir(), '.codeium', 'windsurf', 'cascade');
-        const files = fs.readdirSync(dir)
-            .filter(f => f.endsWith('.pb') && !f.endsWith('.archived'))
-            .map(f => ({ f, m: fs.statSync(path.join(dir, f)).mtimeMs }))
-            .sort((a, b) => b.m - a.m);
-        if (!files.length) return null;
-        return files[0].f.replace(/\.pb$/, '');
-    } catch { return null; }
+    // 2) Fallback : .pb le plus récemment écrit sous .devin
+    const cascadeDirs = [
+        path.join(os.homedir(), '.devin', 'cascade'),
+        path.join(os.homedir(), '.devin', 'codeium', 'cascade'),
+        path.join(os.homedir(), '.codeium', 'cascade')
+    ];
+    for (const dir of cascadeDirs) {
+        try {
+            if (!fs.existsSync(dir)) continue;
+            const files = fs.readdirSync(dir)
+                .filter(f => f.endsWith('.pb') && !f.endsWith('.archived'))
+                .map(f => ({ f, m: fs.statSync(path.join(dir, f)).mtimeMs }))
+                .sort((a, b) => b.m - a.m);
+            if (files.length) return files[0].f.replace(/\.pb$/, '');
+        } catch { /* continuer */ }
+    }
+    return null;
 }
 
 function sendToDevin(text, cascadeId, port = 7477, sourceAgent = 'agy') {
@@ -164,10 +171,54 @@ function bridgeRequest(command, payload, resultType, port = 7477, timeoutMs = 10
     });
 }
 
+// FR-10 : inventaire direct quand le WS :7477 ne répond pas. Les sessions ACP
+// de TOUS les providers sont persistées par l'IDE dans le globalStorage :
+// state.vscdb, clés `windsurf.acp.sessioninfo.session.<id>` (même source que
+// current-cascade.js, mais sans le filtre USER_PROVIDERS).
+function listAcpSessionsDirect(providerId) {
+    let DatabaseSync;
+    try { DatabaseSync = require('node:sqlite').DatabaseSync; } catch { return []; }
+    const appdata = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+    const dbPath = path.join(appdata, 'Devin', 'User', 'globalStorage', 'state.vscdb');
+    if (!fs.existsSync(dbPath)) return [];
+    let db;
+    try { db = new DatabaseSync(dbPath, { readOnly: true }); } catch { return []; }
+    try {
+        const rows = db.prepare(
+            "SELECT value FROM ItemTable WHERE key LIKE 'windsurf.acp.sessioninfo.session.%'"
+        ).all();
+        const out = [];
+        for (const r of rows) {
+            try {
+                const p = JSON.parse(r.value);
+                if (providerId && p.providerId !== providerId) continue;
+                const info = p.info || {};
+                if (!info.sessionId) continue;
+                out.push({
+                    sessionId: info.sessionId,
+                    providerId: p.providerId || '',
+                    title: info.title || '',
+                    focused: Boolean(info.focused ?? p.focused),
+                    updatedAt: info.updatedAt || '',
+                    userMessageCount: info._meta?.['cognition.ai/userMessageCount'] ?? null,
+                    source: 'state.vscdb',
+                });
+            } catch { /* entrée non-JSON */ }
+        }
+        return out;
+    } catch { return []; }
+    finally { try { db.close(); } catch { /* noop */ } }
+}
+
 async function listAcpSessions(providerId, port = 7477, workspaceRoot = process.env.HEPHAISTOS_WORKSPACE || process.cwd()) {
     if (typeof workspaceRoot !== 'string' || !workspaceRoot) throw new Error('ACP session listing requires an explicit workspace');
-    const result = await bridgeRequest('list_acp_sessions', { providerId: providerId || '', workspaceRoot }, 'acp_sessions_result', port);
-    return Array.isArray(result.sessions) ? result.sessions : [];
+    // Bridge WS d'abord (inventaire temps réel de l'extension) — 1.5s puis
+    // fallback disque : une extension morte ne doit plus vider l'inventaire.
+    try {
+        const result = await bridgeRequest('list_acp_sessions', { providerId: providerId || '', workspaceRoot }, 'acp_sessions_result', port, 1500);
+        if (Array.isArray(result.sessions) && result.sessions.length) return result.sessions;
+    } catch { /* WS mort/lent → fallback disque */ }
+    return listAcpSessionsDirect(providerId);
 }
 
 async function sendToAcpAgent(text, sessionId, providerId, port = 7477, workspaceRoot = process.env.HEPHAISTOS_WORKSPACE || process.cwd()) {
@@ -238,4 +289,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { getActiveCascade, sendToDevin, listAcpSessions, sendToAcpAgent };
+module.exports = { getActiveCascade, sendToDevin, listAcpSessions, listAcpSessionsDirect, sendToAcpAgent };

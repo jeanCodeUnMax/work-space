@@ -39,6 +39,21 @@ const PROVIDERS = {
     'kilo': { cmd: `kilo${EXE}`, args: ['acp'] },
 };
 
+/* Profils OpenCode : providers Devin spawnés via `opencode acp`, différenciés
+ * uniquement par OPENCODE_CONFIG (settings.json → devin.acp.agentEnv.*). */
+for (const [id, cfg] of Object.entries({
+    'ollama': 'opencode-ollama.json',
+    'nim': 'opencode-nim.json',
+    'nim2': 'opencode-nim2.json',
+    'openrouter': 'opencode-openrouter.json',
+    'huggingface': 'opencode-hf.json',
+})) {
+    PROVIDERS[id] = {
+        cmd: `opencode${EXE}`, args: ['acp'],
+        env: { OPENCODE_CONFIG: path.join(process.env.USERPROFILE || '', '.config', 'opencode', cfg) },
+    };
+}
+
 function envKey(providerId) {
     return `HEPHAISTOS_ACP_CMD_${String(providerId).toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
 }
@@ -48,7 +63,7 @@ function providerCommand(providerId) {
     const spec = PROVIDERS[providerId];
     if (!spec) return null;
     const override = process.env[envKey(providerId)];
-    return { cmd: override || spec.cmd, args: [...spec.args] };
+    return { cmd: override || spec.cmd, args: [...spec.args], env: spec.env || null };
 }
 
 function listProviders() {
@@ -86,7 +101,7 @@ function inject(opts) {
             cwd: cwd || process.cwd(),
             stdio: ['pipe', 'pipe', 'pipe'],
             windowsHide: true,
-            env: process.env
+            env: spec.env ? { ...process.env, ...spec.env } : process.env
         });
 
         let buf = '';
@@ -113,6 +128,7 @@ function inject(opts) {
             reject(err);
         }
         function succeed(extra) {
+            adapters.releaseAcpLock(providerId);
             if (settled) return;
             settled = true;
             clearTimeout(timer);

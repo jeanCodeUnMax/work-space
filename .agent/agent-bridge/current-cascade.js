@@ -28,7 +28,7 @@ const USER_PROVIDERS = new Set(['cascade', 'devin-cli']);
 
 // 1) Source fiable : sessioninfo.updatedAt dans le globalStorage Devin
 //    raw=true → inclut les drafts (pour savoir si le panel est sur un composer vide)
-function fromSessionInfo(raw) {
+function fromSessionInfo(raw, json = false) {
   try {
     const { DatabaseSync } = require('node:sqlite');
     const appdata = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
@@ -39,7 +39,7 @@ function fromSessionInfo(raw) {
       const rows = db.prepare(
         "SELECT value FROM ItemTable WHERE key LIKE 'windsurf.acp.sessioninfo.session.%'"
       ).all();
-      let best = '', bestTs = '', bestTitle = '';
+      let best = '', bestTs = '', bestTitle = '', bestProvider = '', bestUser = null, bestCreated = '';
       for (const r of rows) {
         try {
           const p = JSON.parse(r.value);
@@ -54,15 +54,23 @@ function fromSessionInfo(raw) {
           // (sub-agents / daemons partageant un requestingTabId) — jamais la
           // fenêtre où l'utilisateur écrit.
           const meta = p.info?._meta || {};
-          if (p.providerId === 'devin-cli' && !raw &&
-              typeof meta['cognition.ai/userMessageCount'] === 'number' &&
-              meta['cognition.ai/userMessageCount'] === 0) continue;
+          const userCount = typeof meta['cognition.ai/userMessageCount'] === 'number'
+              ? meta['cognition.ai/userMessageCount'] : null;
+          if (p.providerId === 'devin-cli' && !raw && userCount === 0) continue;
           const id = p.info?.sessionId || '';
           const ts = p.info?.updatedAt || '';
-          if (id && ts > bestTs) { bestTs = ts; best = id; bestTitle = title; }
+          if (id && ts > bestTs) {
+            bestTs = ts; best = id; bestTitle = title;
+            bestProvider = p.providerId; bestUser = userCount;
+            bestCreated = meta['cognition.ai/createdAt'] || '';
+          }
         } catch { /* entrée non-JSON */ }
       }
-      return raw ? JSON.stringify({ id: best, title: bestTitle }) : best;
+      return raw ? JSON.stringify({ id: best, title: bestTitle })
+          : json ? JSON.stringify({
+              id: best, title: bestTitle, provider: bestProvider,
+              userMessageCount: bestUser, createdAt: bestCreated, updatedAt: bestTs
+          }) : best;
     } finally { db.close(); }
   } catch { return ''; }
 }
@@ -83,6 +91,15 @@ if (process.argv.includes('--raw')) {
   const raw = fromSessionInfo(true);
   if (!raw || raw === '{"id":"","title":""}') { console.error('aucune session'); process.exit(1); }
   console.log(raw);
+  process.exit(0);
+}
+
+// --json : sélection FILTRÉE (brouillons exclus) + métadonnées différenciantes
+if (process.argv.includes('--json')) {
+  const out = fromSessionInfo(false, true);
+  const parsed = JSON.parse(out || '{}');
+  if (!parsed.id) { console.error('current-cascade: aucune cascade trouvée'); process.exit(1); }
+  console.log(out);
   process.exit(0);
 }
 

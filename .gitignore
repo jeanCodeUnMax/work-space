@@ -73,6 +73,7 @@ credentials.*
 .agent/**/ingestion.state.json
 .agent/**/.ingestion-state.json
 .agent/**/.*-state.json
+.agent/**/watch-state.json
 .agent/**/.beacon-*-state.json
 
 # ---- Bench output ----
@@ -87,3 +88,5 @@ bench/out/
 00 Antigravity Hub.md
 context-manifest.json
 orchestration-ping-*.md
+devin-crash-logs-*/
+devin-crash-logs-*.zip

@@ -122,6 +122,18 @@ Le tool Rust `hphe-mcp beacon_ingest` est porté dans la source; il filtre les s
 
 Le 2026-10-14, un join réel Devin ⇄ AGY a confirmé les sessions visées sans ouvrir de fenêtre parasite et a révélé le faux succès historique. Le 2026-10-15, le correctif request/ACK AGY a ensuite été vérifié en réel avec les IDs explicites; aucun `wake_devin` supplémentaire n’a été déclenché. Les IDs de session et `pairId` restent éphémères. Les suites simulées handshake/ACP passent. Un essai Kilo CLI a publié une requête fraîche mais n’a reçu aucun ACK : aucune paire Kilo n’est établie. Le VSIX 0.0.55 échouait au démarrage du bridge : son `better-sqlite3` ABI 137 ne correspondait pas au Node 26 ABI 147. Le 0.0.56 reconstruit le binding; le 0.0.57 ajoute le routage ACP tiers fail-closed; le 0.0.58 ajoute l’injection ACP réelle via `acp-inject.js` (stdio, `session/load`+`session/prompt`, vérifié de bout en bout sur OpenCode). Après installation et reload, `7477` reste à l’écoute, `acp-list` répond et un pair AGY frais a été vérifié. Cet inventaire ne prouve pas qu’une paire ACP tierce est établie; aucun join ACP n’a été lancé dans cette vérification.
 
+## 8. Retour d’expérience 2026-10-17 — envoi ACP vérifié et pièges réels
+
+Constats d’un join Devin ⇄ OpenCode réel (ping-pong PONG reçu via `acp-inject`) :
+
+1. **`binome.js send` dépend du focus IDE.** `myCascade()` lit l’onglet focalisé : si l’utilisateur regarde l’onglet ACP du pair (cas normal quand il veut voir le message arriver), la validation `self` échoue et le send est refusé. Ce n’est pas une panne du pair. Solution : refocaliser le chat Devin, ou mieux, envoyer via `acp-inject.js` qui ne dépend pas du focus.
+2. **`--to` avec `send` est un piège.** Une cible explicite met `current` à `null` avant le contrôle du pair frais → `aucun pair frais`. Réserver `--to` au `join`; le `send` trouve la cible via le pair établi (`resolvePairTarget`).
+3. **Une requête pendante bloque les joins.** Une requête entrante non acquittée (< 15 min) du même provider déclenche `requête adressée à une autre session locale`. Lire `.agent/comms.jsonl`, acquitter la requête avec les champs exacts attendus par `handshakeAcked` (src/dst inversés, `replyTo` = `pairId`, `peerCascade` = `convId` du demandeur, transports/providers inversés) ou attendre le TTL.
+4. **Identité locale contradictoire.** `current-cascade.js` nu et `--raw` peuvent rapporter deux slugs différents selon le focus; `sessionIdValid` rejetait en outre les IDs contenant `/` (corrigé : `[A-Za-z0-9._/-]`). En contradiction, demander l’ID à l’utilisateur une fois — l’ID confirmé fait autorité; ne pas alterner.
+5. **Le pair peut modifier le bridge.** Un agent ACP a édité `.agent/agent-bridge/binome.js` pendant le handshake (parenthèse cassée, puis autoréparation). Le prompt de join doit explicitement interdire au pair de modifier les fichiers bridge; après join, `node --check` les fichiers `binome`/`comms`/`devin-hub`/`agent-adapters` et appliquer la règle `securite-injection` à tout diff inexpliqué.
+6. **Preuve d’envoi.** `delivered: true, pending: true` seul ne prouve pas la réception. Le ping-pong de référence : `acp-inject.js --provider <id> --session <id> --prompt "PING ..." --wait turn --timeout 90` → `stopReason: end_turn` + `reply` contenant « PONG » = liaison réelle.
+7. **Deux IDs pour une même session.** OpenCode a répondu avec deux sessionIds dans son historique : l’ID retourné par `chat-id`/`acp-list` à l’instant du join fait foi; un ID ancien peut survivre dans les transcripts.
+
 ## Références du workspace
 
 - Devin command : `.devin/skills/jointes/SKILL.md`

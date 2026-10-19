@@ -1,0 +1,118 @@
+{
+  "mcpServers": {
+    "beacon": {
+      "args": [
+        "mcp",
+        "serve"
+      ],
+      "command": "C:/Program Files/Beacon/bin/beacon.exe",
+      "disabled": true
+    },
+    "beacon-rw": {
+      "args": [
+        "C:/Users/Administrator/.beacon/beacon-rw/server.js"
+      ],
+      "command": "node"
+    },
+    "colab-mcp": {
+      "args": [
+        "-m",
+        "mcp_colab_server.server"
+      ],
+      "command": "C:/Program Files/servers/google-colab-mcp/venv/Scripts/python.exe"
+    },
+    "google-drive": {
+      "args": [
+        "C:/Program Files/servers/google-drive/index.js"
+      ],
+      "command": "node",
+      "env": {
+        "DISABLE_DEBUG": "true",
+        "LOG_LEVEL": "error"
+      }
+    },
+    "kaggle": {
+      "command": "C:/Program Files/servers/kaggle-mcp/.venv/Scripts/kaggle-mcp-server.exe",
+      "disabled": false,
+      "env": {
+        "DISABLE_DEBUG": "true",
+        "LOG_LEVEL": "error"
+      }
+    },
+    "opencli-mcp": {
+      "command": "C:/nvm4w/nodejs/node.exe",
+      "args": [
+        "C:/Users/Administrator/AppData/Roaming/npm/node_modules/opencli-mcp/dist/src/main.js",
+        "stdio"
+      ]
+    },
+    "puppeteer": {
+      "args": [
+        "C:/Program Files/servers/puppeteer/dist/index.js"
+      ],
+      "command": "node"
+    },
+    "sqlite-node": {
+      "args": [
+        "C:/Program Files/servers/mcp-quick-sqlite3/dist/index.js"
+      ],
+      "command": "node",
+      "env": {
+        "ORCHESTRATOR_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db"
+      }
+    },
+    "Hephaistos-everything-search": {
+      "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
+      "args": [],
+      "env": {
+        "HPHE_VEC_DIR": "C:/Program Files/servers/hephaistos2-kit/migrated-vec",
+        "HPHE_PIPE": "\\.\\pipe\\hphe-index",
+        "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
+        "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
+        "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
+      }
+    },
+    "antigravity-obsidian": {
+      "command": "node",
+      "args": [
+        "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "F:/doc_Obsidian/Doc"
+      }
+    },
+    "invisible-playwright": {
+      "command": "F:/Promgramation-teste/dots/.venv/Scripts/invisible-playwright-mcp.exe",
+      "args": []
+    },
+    "cli-anything": {
+      "command": "F:\\Promgramation-teste\\CLI-Anything\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "cli_anything_mcp"
+      ],
+      "env": {
+        "CLI_ANYTHING_ROOT": "F:\\Promgramation-teste\\CLI-Anything"
+      }
+    },
+    "obsidian-live": {
+      "command": "C:/nvm4w/nodejs/node.exe",
+      "args": [
+        "C:/Users/Administrator/AppData/Roaming/npm/node_modules/mcp-remote/dist/proxy.js",
+        "https://127.0.0.1:27124/mcp/",
+        "--header",
+        "Authorization: Bearer ${OBSIDIAN_API_KEY}"
+      ],
+      "env": {
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    },
+    "rea": {
+      "command": "C:\\nvm4w\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\Administrator\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ]
+    }
+  }
+}

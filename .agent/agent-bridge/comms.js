@@ -181,6 +181,96 @@ function resolvePairTarget(explicitTarget, myCascade, pair) {
     return pair.peerCascade;
 }
 
+/* ---- FR-09 : persistance durable des paires dans orchestrator.db ----------
+   Le handshake comms.jsonl expire à 15 min et ne survit pas au restart IDE.
+   La table `pairs` (créée par ensure_schema côté hphe-kit) garde le lien :
+   pair_save à l'établissement, pair_get pour le rejoin sans handshake.
+   Accès direct node:sqlite comme bridge.js / nim-worker.mjs — jamais fatal. */
+
+function orchestratorDbPath() {
+    const candidates = [
+        process.env.HPHE_ORCH_DB,
+        process.env.ORCHESTRATOR_DB,
+        process.env.HPHE_INSTALL && path.join(process.env.HPHE_INSTALL, 'data', 'orchestrator.db'),
+        process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'servers', 'hephaistos2-kit', 'data', 'orchestrator.db'),
+    ].filter(Boolean);
+    for (const p of candidates) {
+        try { if (fs.existsSync(p)) return p; } catch { /* next */ }
+    }
+    return null;
+}
+
+function withPairsDb(fn) {
+    let DatabaseSync;
+    try { DatabaseSync = require('node:sqlite').DatabaseSync; } catch { return null; }
+    const dbPath = orchestratorDbPath();
+    if (!dbPath) return null;
+    let db = null;
+    try {
+        db = new DatabaseSync(dbPath);
+        return fn(db);
+    } catch { return null; }
+    finally { try { db?.close(); } catch { /* ignore */ } }
+}
+
+/** Persiste une paire établie. Entrée : {pairId, agentA, agentB, session,
+ *  transportA, transportB, cascadeA, cascadeB, model?, meta?}. */
+function pairSave(pair) {
+    if (!pair?.pairId || !pair.agentA || !pair.agentB) return false;
+    return withPairsDb((db) => {
+        db.prepare(
+            `INSERT INTO pairs (pair_id, agent_a, agent_b, session, transport_a, transport_b, cascade_a, cascade_b, model, established_at, last_seen, meta)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+             ON CONFLICT(pair_id) DO UPDATE SET
+               agent_a=excluded.agent_a, agent_b=excluded.agent_b, session=excluded.session,
+               transport_a=excluded.transport_a, transport_b=excluded.transport_b,
+               cascade_a=excluded.cascade_a, cascade_b=excluded.cascade_b,
+               model=excluded.model, last_seen=excluded.last_seen, meta=excluded.meta`
+        ).run(
+            String(pair.pairId), String(pair.agentA), String(pair.agentB),
+            pair.session || null, pair.transportA || null, pair.transportB || null,
+            pair.cascadeA || null, pair.cascadeB || null, pair.model || null,
+            new Date().toISOString(), new Date().toISOString(),
+            pair.meta ? String(pair.meta).slice(0, 4000) : null
+        );
+        return true;
+    }) === true;
+}
+
+/** Rappelle la dernière paire persistée pour (agent, peer[, session]).
+ *  → {pairId, session, myCascade, peerCascade, myTransport, peerTransport}
+ *  orienté du point de vue de `agent`. null si absente. */
+function pairGet(agent, peer, session) {
+    if (typeof agent !== 'string' || !agent) return null;
+    return withPairsDb((db) => {
+        const row = session
+            ? db.prepare(
+                `SELECT * FROM pairs
+                 WHERE ((agent_a=? AND agent_b=?) OR (agent_a=? AND agent_b=?)) AND session=?
+                 ORDER BY last_seen DESC LIMIT 1`
+              ).get(agent, peer || '', peer || '', agent, session)
+            : db.prepare(
+                `SELECT * FROM pairs
+                 WHERE (agent_a=? AND agent_b=?) OR (agent_a=? AND agent_b=?)
+                 ORDER BY last_seen DESC LIMIT 1`
+              ).get(agent, peer || '', peer || '', agent);
+        if (!row) return null;
+        const mine = row.agent_a === agent;
+        return {
+            pairId: row.pair_id,
+            session: row.session,
+            peer: mine ? row.agent_b : row.agent_a,
+            myCascade: mine ? row.cascade_a : row.cascade_b,
+            peerCascade: mine ? row.cascade_b : row.cascade_a,
+            myTransport: mine ? row.transport_a : row.transport_b,
+            peerTransport: mine ? row.transport_b : row.transport_a,
+            model: row.model,
+            lastSeen: row.last_seen,
+            restored: true,
+        };
+    });
+}
+
 /**
  * Lit les octets ajoutés depuis `offset`. → {entries, offset}
  * offset négatif/géré par l'appelant (bridge : offset = taille lue précédente).
@@ -225,5 +315,7 @@ module.exports = {
     PAIRING_TTL_MS,
     findPendingHandshake,
     findEstablishedPair,
-    resolvePairTarget
+    resolvePairTarget,
+    pairSave,
+    pairGet
 };

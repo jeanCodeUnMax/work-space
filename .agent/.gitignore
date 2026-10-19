@@ -8,5 +8,7 @@ logs/
 **/ingestion.state.json
 **/.ingestion-state.json
 **/.*-state.json
+**/watch-state.json
 **/.*-learn-state.json
 **/.beacon-offset-state.json.lock
+queue/
