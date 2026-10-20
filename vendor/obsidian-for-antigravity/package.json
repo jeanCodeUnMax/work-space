@@ -1,0 +1,268 @@
+{
+	"name": "obsidian-for-antigravity",
+	"displayName": "Obsidian for Antigravity",
+	"description": "Hermes Closed Learning Loop, Bounded Memory & Autonomous Second Brain for Antigravity AI connected to Obsidian.",
+	"version": "1.8.7",
+	"publisher": "Davissss2",
+	"author": {
+		"name": "Davissss2",
+		"url": "https://github.com/Davissss2"
+	},
+	"license": "MIT",
+	"homepage": "https://github.com/Davissss2/obsidian-for-antigravity#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Davissss2/obsidian-for-antigravity.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Davissss2/obsidian-for-antigravity/issues"
+	},
+	"qna": "https://github.com/Davissss2/obsidian-for-antigravity/discussions",
+	"icon": "logo.png",
+	"engines": {
+		"vscode": "^1.74.0"
+	},
+	"categories": [
+		"Other",
+		"Machine Learning",
+		"Snippets"
+	],
+	"keywords": [
+		"obsidian",
+		"antigravity",
+		"second-brain",
+		"ai-memory",
+		"skills",
+		"knowledge-graph"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "antigravity-obsidian",
+					"title": "Obsidian for Antigravity",
+					"icon": "media/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"antigravity-obsidian": [
+				{
+					"type": "webview",
+					"id": "antigravityObsidian.panel",
+					"name": "Obsidian for Antigravity",
+					"icon": "media/icon.svg"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "antigravityObsidian.syncNow",
+				"title": "Obsidian: Sync All Now",
+				"icon": "$(sync)"
+			},
+			{
+				"command": "antigravityObsidian.openHub",
+				"title": "Obsidian: Open Hub in App",
+				"icon": "$(book)"
+			},
+			{
+				"command": "antigravityObsidian.selectVault",
+				"title": "Obsidian: Select Vault Folder Manually",
+				"icon": "$(folder)"
+			},
+			{
+				"command": "antigravityObsidian.newMemory",
+				"title": "Obsidian: Save New Memory",
+				"icon": "$(add)"
+			},
+			{
+				"command": "antigravityObsidian.newSkill",
+				"title": "Obsidian: Create New AI Skill",
+				"icon": "$(zap)"
+			},
+			{
+				"command": "antigravityObsidian.listSkills",
+				"title": "Obsidian: View AI Skills Catalog",
+				"icon": "$(list-unordered)"
+			},
+			{
+				"command": "antigravityObsidian.showSoul",
+				"title": "Obsidian: View Soul, Personality & Profile",
+				"icon": "$(account)"
+			},
+			{
+				"command": "antigravityObsidian.configurePersonality",
+				"title": "Obsidian: Configure AI Agent Personality",
+				"icon": "$(gear)"
+			},
+			{
+				"command": "antigravityObsidian.showStatus",
+				"title": "Obsidian: Connection Status & Stats",
+				"icon": "$(dashboard)"
+			},
+			{
+				"command": "antigravityObsidian.openGraph",
+				"title": "Obsidian: Open Graph View in App",
+				"icon": "$(graph)"
+			},
+			{
+				"command": "antigravityObsidian.registerProject",
+				"title": "Obsidian: Register Workspace Project in Unified Registry",
+				"icon": "$(file-submodule)"
+			},
+			{
+				"command": "antigravityObsidian.showProjects",
+				"title": "Obsidian: View Unified Projects Index",
+				"icon": "$(list-unordered)"
+			},
+			{
+				"command": "antigravityObsidian.scanProject",
+				"title": "Obsidian: Deep Scan Project Architecture (Living Blueprint)",
+				"icon": "$(search)"
+			},
+			{
+				"command": "antigravityObsidian.saveSession",
+				"title": "Obsidian: Save Current Working Session Checkpoint",
+				"icon": "$(history)"
+			},
+			{
+				"command": "antigravityObsidian.showSessions",
+				"title": "Obsidian: View Session Checkpoints Index",
+				"icon": "$(list-ordered)"
+			},
+			{
+				"command": "antigravityObsidian.exportVault",
+				"title": "Obsidian: Export Encrypted Vault Backup (.agvault)",
+				"icon": "$(cloud-download)"
+			},
+			{
+				"command": "antigravityObsidian.importVault",
+				"title": "Obsidian: Import Encrypted Vault Backup (.agvault)",
+				"icon": "$(cloud-upload)"
+			},
+			{
+				"command": "antigravityObsidian.installMcp",
+				"title": "Obsidian: Install / Enable MCP Server in Antigravity",
+				"icon": "$(plug)"
+			},
+			{
+				"command": "antigravityObsidian.disableMcp",
+				"title": "Obsidian: Disable MCP Server in Antigravity (Node CLI Fallback)",
+				"icon": "$(circle-slash)"
+			},
+			{
+				"command": "antigravityObsidian.mcpStatus",
+				"title": "Obsidian: Check MCP Server Status",
+				"icon": "$(server-process)"
+			},
+			{
+				"command": "antigravityObsidian.setPersonality",
+				"title": "Obsidian: Configure AI Identity & User Callsign",
+				"icon": "$(person)"
+			},
+			{
+				"command": "antigravityObsidian.installTool",
+				"title": "Obsidian: Install AI Tool from GitHub",
+				"icon": "$(cloud-download)"
+			},
+			{
+				"command": "antigravityObsidian.listTools",
+				"title": "Obsidian: View Installed AI Tools",
+				"icon": "$(tools)"
+			},
+			{
+				"command": "antigravityObsidian.resetData",
+				"title": "Obsidian: Wipe All Data & Start Fresh",
+				"icon": "$(trash)"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "antigravityObsidian.syncNow",
+					"when": "view == antigravityObsidian.panel",
+					"group": "navigation@1"
+				},
+				{
+					"command": "antigravityObsidian.openHub",
+					"when": "view == antigravityObsidian.panel",
+					"group": "navigation@2"
+				},
+				{
+					"command": "antigravityObsidian.newMemory",
+					"when": "view == antigravityObsidian.panel",
+					"group": "navigation@3"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Obsidian for Antigravity",
+			"properties": {
+				"antigravityObsidian.vaultPath": {
+					"type": "string",
+					"default": "",
+					"description": "Custom path to local Obsidian vault. Leave empty to automatically detect."
+				},
+				"antigravityObsidian.autoSync": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically synchronize on startup and upon relevant changes."
+				},
+				"antigravityObsidian.apiToken": {
+					"type": "string",
+					"default": "",
+					"description": "Optional Bearer token for Obsidian Local REST API plugin."
+				},
+				"antigravityObsidian.language": {
+					"type": "string",
+					"enum": [
+						"auto",
+						"en",
+						"es",
+						"fr",
+						"de",
+						"zh",
+						"ja"
+					],
+					"default": "auto",
+					"description": "Preferred language for Antigravity AI interactions and Soul/Profile rules. 'auto' detects from Antigravity IDE UI."
+				},
+				"antigravityObsidian.userName": {
+					"type": "string",
+					"default": "",
+					"description": "Custom user name for the Hermes User Profile and rules. Leave empty to automatically detect."
+				},
+				"antigravityObsidian.aiName": {
+					"type": "string",
+					"default": "Hermes",
+					"description": "Custom name assigned to the Antigravity AI agent (e.g. Hermes, Jarvis, Antigravity)."
+				},
+				"antigravityObsidian.userCallsign": {
+					"type": "string",
+					"default": "",
+					"description": "How the AI should address you (e.g. your name, nickname, 'Jefe', 'Chief'). Leave empty for default user name."
+				},
+				"antigravityObsidian.personality": {
+					"type": "string",
+					"default": "",
+					"description": "Personality traits, demeanor, and tone for the AI agent."
+				},
+				"antigravityObsidian.personalityConfigured": {
+					"type": "boolean",
+					"default": false,
+					"description": "Whether the AI personality and callsign have been configured."
+				}
+			}
+		}
+	},
+	"__metadata": {
+		"installedTimestamp": 1792388300254,
+		"targetPlatform": "undefined",
+		"size": 1538730
+	}
+}
