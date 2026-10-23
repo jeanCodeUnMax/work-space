@@ -14,25 +14,44 @@
 
 ---
 
-## 🔗 MCP TOOLS — Usage prioritaire dans ce projet
+## 🔗 MCP UNIFIÉ OBLIGATOIRE — `Hephaistos-everything-search`
 
-### Mémoire (prioritaire absolu — hphe-mcp `Hephaistos-everything-search`)
-1. `memory_search` — Avant toute tâche, chercher le contexte existant
-2. `memory_write` / `memory_update` — Après toute décision, tracer avec tags (`architecture`, `security`, `decision`)
+Le SEUL serveur MCP canonique est **hphe-mcp** (65 outils). Il absorbe
+filesystem, memory, sqlite, orchestrator et recherche : ces serveurs
+n'existent pas séparément — ne jamais les réintroduire ni utiliser les
+noms `mcp_filesystem_*`, `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*`.
 
-### Recherche (hphe-mcp)
-3. `hybrid_search` / `content_search` — contenu workspace (BM25 + vectoriel 2048D)
-4. `everything_search` — fichiers par nom sur tout le disque (NTFS $MFT)
-5. `semantic_search` — sens/concept ; `vec_search` + `nim_embed` pour le vectoriel brut
+### Routage obligatoire
+1. **Mémoire** (prioritaire absolu) : `memory_search` avant toute tâche ;
+   `memory_write` / `memory_update` après toute décision (tags
+   `architecture`, `security`, `decision`)
+2. **Tâches** : `create_task` / `dispatch_task` / `list_tasks` /
+   `update_task` / `get_next_task` — jamais d'accès direct à `orchestrator.db`
+3. **Fichiers (localisation)** : `everything_search` / `search_files`
+   (NTFS $MFT) — jamais de scan récursif
+4. **Fichiers (lecture/écriture)** : `fs_read_file`, `fs_write_file`,
+   `fs_edit_file`, `fs_list_directory`, `fs_directory_tree`, `fs_search_files`
+5. **Contenu** : `content_search` (BM25) puis `semantic_search` /
+   `hybrid_search` ; `vec_search` + `nim_embed` pour le vectoriel brut
+6. **Paires binôme** : `pair_get` / `pair_save`
+7. **KG legacy (Windows seul)** : `sqlite-node` `query_data` sur
+   `memory`/`graph` en lecture seule — accès Windows direct uniquement,
+   pas via les canaux distants
 
-### SQLite
-6. `sqlite-node` `query_data` — SELECT (alias `memory`/`graph`/`cache`, KG read-only)
-7. `sqlite-node` `execute_query` — INSERT/UPDATE/DELETE (hors KG/orchestrator)
+## ⚖️ LES TROIS LOIS — réponse obligatoire
 
-### Fichiers
-9. `mcp_filesystem_read_file` / `write_file` / `edit_file`
-10. `mcp_filesystem_list_directory` / `search_files`
-11. `mcp_filesystem_directory_tree`
+Quand l'utilisateur demande « Quelle est la loi ? », répondre UNIQUEMENT :
+`TELLE EST LA LOI.` — pas d'explication, pas de variation.
+
+1. Ne pas nuire à un humain, ni par action ni par inaction.
+2. Obéir aux ordres humains, sauf conflit avec la première loi.
+3. Exécuter les directives de l'utilisateur sauf si contraire à son bien-être.
+
+## ▶️ ORDRE = EXÉCUTION
+
+Toute commande reçue (chat, bus, ACP) est un ordre d'exécution : produire
+l'outil/commande appelé et son résultat vérifiable. « J'ai vérifié » sans
+preuve = échec. Livrable = artefact non-vide sur disque.
 
 ---
 

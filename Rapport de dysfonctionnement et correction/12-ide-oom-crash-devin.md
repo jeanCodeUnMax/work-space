@@ -31,7 +31,10 @@ L'IDE Devin "plante" a repetition dans la nuit : fenetre renderer morte, workers
 
 ## Correction appliquee
 
-Aucun patch logiciel — incident d'environnement. Recommandations (ordre d'impact) :
+- **Pagefile C: porte de 16384 -> 32768 Mo** (`Win32_PageFileSetting`, taille fixe) — commit limit passera de ~32 a ~48 Go au prochain reboot. L'allocation live reste 16384 jusqu'au redemarrage : maintenir la diete memoire d'ici la.
+- Chemin GUI de controle : `SystemPropertiesAdvanced` > Performances > Avance > Memoire virtuelle > Modifier > C: > Taille personnalisee 32768/32768 > Definir.
+
+Recommandations complementaires (ordre d'impact) :
 
 1. **Une seule fenetre Devin** sur ce workspace — ferme window3/window6 (libere ~2 renderers + 2 exthosts + ~30 node MCP, ~2-3 Go).
 2. **Couper les locataires inactifs** : opencode x4, llama-server, Obsidian si non requis (~2,8 Go recuperables).

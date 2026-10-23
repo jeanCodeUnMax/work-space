@@ -27,10 +27,10 @@
         "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>"
       }
     },
-    "sqlite-node": {
+    "sqlite-node: {
       "_comment": "SQLite multi-bases — accès direct KG/cache. <CHEMIN_DATABASES> = racine des bases mémoire (AGENT_DB_ROOT).",
       "args": [
-        "<CHEMIN_SERVEURS>/mcp-quick-sqlite3/dist/index.js"
+        "<CHEMIN_SERVEURS>/mcp-quick-sqlite3/dist/sqlite-node-launch.mjs"
       ],
       "command": "node",
       "disabled": false,
@@ -38,11 +38,11 @@
         "AGENT_DB_ROOT": "<CHEMIN_DATABASES>",
         "CACHE_DB": "<CHEMIN_DATABASES>/current_workspace/cache/runtime-cache.db",
         "CACHE_TABLE": "cache_table",
-        "DEFAULT_DB_PATH": "<CHEMIN_DATABASES>/current_workspace/graph/memory_mcp.db",
+        "DEFAULT_DB_PATH": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/memory_mcp.db",
         "DISABLE_DEBUG": "true",
-        "GRAPH_DB": "<CHEMIN_DATABASES>/current_workspace/graph/graph-memory.db",
+        "GRAPH_DB": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/graph-memory.db",
         "LOG_LEVEL": "error",
-        "MEMORY_DB": "<CHEMIN_DATABASES>/current_workspace/graph/memory_mcp.db",
+        "MEMORY_DB": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/memory_mcp.db",
         "ORCHESTRATOR_DB": "<INSTALL>/data/orchestrator.db",
         "TTL_HOURS": "1"
       }

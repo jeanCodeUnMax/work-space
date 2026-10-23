@@ -37,6 +37,17 @@ const PROVIDERS = {
     'mistral-vibe': { cmd: `vibe-acp${EXE}`, args: [] },
     'hermes': { cmd: `hermes${EXE}`, args: ['acp', '--accept-hooks'] },
     'kilo': { cmd: `kilo${EXE}`, args: ['acp'] },
+    // Fenêtres hephaistos-chats (extension VS Code) : serveur ACP stdio adossé à .agent/chats/sessions.json
+    'hephaistos': {
+        cmd: process.execPath,
+        args: [path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs')],
+    },
+    // Cerberos : pont SSH vers `hermes acp` sur le laptop Herald OS —
+    // même spawn que la distribution Devin (acp/registry.json).
+    'cerberos': {
+        cmd: process.env.CERBEROS_ACP_NODE || 'C:\\nvm4w\\nodejs\\node.exe',
+        args: [process.env.CERBEROS_ACP_BIN || 'F:\\Promgramation-teste\\CLI-Anything\\cerberos\\agent-harness\\bin\\cerberos-acp.js'],
+    },
 };
 
 /* Profils OpenCode : providers Devin spawnés via `opencode acp`, différenciés

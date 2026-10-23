@@ -46,10 +46,10 @@ const AGENTS = [
     {
         agent_name: 'nim1', agent_type: 'cli', active: 1,
         config: {
-            command: 'cd /d "{workspace}" && node ".agent/scripts/nim-worker.mjs" --account 1 --model "{model}" --task-id {task_id} --message "{message}" > .agent\\nim1-dispatch.log 2>&1 < NUL',
+            command: 'cd /d "{workspace}" && node "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/scripts/nim-worker.mjs" --account 1 --model "{model}" --task-id {task_id} --message "{message}" > "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/nim1-dispatch.log" 2>&1 < NUL',
             transport: 'direct',
             providers: ['nvidia-nim'],
-            model_prefs: ['nemotron-3.5-lightning-30b', 'super-120b'],
+            model_prefs: ['nemotron-3-ultra-550b', 'super-120b'],
             skills: ['code', 'review', 'docs', 'explore', 'test'],
             priority: 20,
             full_prompt: true,
@@ -59,7 +59,7 @@ const AGENTS = [
     {
         agent_name: 'nim2', agent_type: 'cli', active: 1,
         config: {
-            command: 'cd /d "{workspace}" && node ".agent/scripts/nim-worker.mjs" --account 2 --model "{model}" --task-id {task_id} --message "{message}" > .agent\\nim2-dispatch.log 2>&1 < NUL',
+            command: 'cd /d "{workspace}" && node "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/scripts/nim-worker.mjs" --account 2 --model "{model}" --task-id {task_id} --message "{message}" > "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/nim2-dispatch.log" 2>&1 < NUL',
             transport: 'direct',
             providers: ['nvidia-nim2'],
             model_prefs: ['nemotron-3.5-lightning-30b', 'super-120b'],
@@ -72,7 +72,8 @@ const AGENTS = [
     {
         agent_name: 'ollama-cloud', agent_type: 'cli', active: 1,
         config: {
-            command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/hermes.exe" -z "{message}" -m "{model}" --provider ollama-cloud --yolo --no-restore-cwd > .agent\\ollama-cloud-dispatch.log 2>&1 < NUL',
+            command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/hermes.exe" --provider ollama-cloud --model "{model}" -z "{message}" --yolo --no-restore-cwd > "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/ollama-cloud-dispatch.log" 2>&1 < NUL',
+            full_prompt: true,
             providers: ['ollama-cloud'],
             model_prefs: ['gpt-oss:120b-cloud', 'nemotron-3-ultra:cloud'],
             skills: ['code', 'review', 'docs', 'explore'],
@@ -92,23 +93,25 @@ const AGENTS = [
     {
         agent_name: 'kilo', agent_type: 'cli', active: 1,
         config: {
-            command: 'cd /d "{workspace}" && "%APPDATA%/npm/kilo.cmd" run -m "{model}" --auto "{message}" > .agent\\kilo-dispatch.log 2>&1 < NUL',
-            providers: ['kilo-free', 'openrouter-free', 'nvidia-nim2', 'nvidia-nim'],
+            command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/kilo.exe" run -m "{model}" --auto "{message}" > "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/kilo-dispatch.log" 2>&1 < NUL',
+            full_prompt: true,
+            providers: ['kilo-free', 'openrouter-free'],
             model_prefs: ['free', 'laguna', 'nemotron-3.5-lightning'],
             skills: ['code', 'review', 'docs', 'debug', 'test'],
             priority: 80,
-            notes: 'Renfort 3e/4e recours : modèles FREE en priorité, NIM uniquement pour ajouter de la capacité sans saturer NIM1/NIM2.'
+            notes: 'Renfort fin de chaîne : kilo-free puis openrouter-free. Jamais de provider NIM — NIM1/NIM2 sont des workers directs.'
         }
     },
     {
         agent_name: 'hermes', agent_type: 'cli', active: 1,
         config: {
-            command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/hermes.exe" -z "{message}" -m "{model}" --provider {provider_arg} --yolo --no-restore-cwd > .agent\\hermes-dispatch.log 2>&1 < NUL',
-            providers: ['hermes-free', 'openrouter-free', 'ollama-cloud', 'nvidia-nim2'],
+            command: 'cd /d "{workspace}" && "%USERPROFILE%/.local/bin/hermes.exe" --provider {provider_arg} --model "{model}" -z "{message}" --yolo --no-restore-cwd > "%ProgramFiles%/Projet-complet/hephaistos2-kit/.agent/hermes-dispatch.log" 2>&1 < NUL',
+            full_prompt: true,
+            providers: ['hermes-free', 'openrouter-free'],
             model_prefs: ['free', 'laguna', 'nemotron-3.5-lightning'],
             skills: ['docs', 'explore', 'code', 'review'],
             priority: 90,
-            notes: 'Renfort 3e/4e recours : nous/openrouter :free en priorité, ollama-cloud, NIM en dernier recours absolu (--provider custom = NVIDIA direct).'
+            notes: 'Renfort fin de chaîne : hermes-free puis openrouter-free. --provider et --model sont devant -z. Jamais de provider NIM.'
         }
     },
     {

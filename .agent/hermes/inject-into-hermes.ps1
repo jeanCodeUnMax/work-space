@@ -162,7 +162,7 @@ Write-Host "  skills-adapters/         ← (répertoire pour adaptateurs)" -Fore
 Write-Host "  agents-ref/              ← (répertoire pour références agents)" -ForegroundColor Green
 
 Write-Host "`nCe que la couche apporte à Hermès :" -ForegroundColor Yellow
-Write-Host "  • Connaissance des 9 MCP unifiés (Memory, Qdrant, Zvec, sqlite-node, etc.)" -ForegroundColor White
+Write-Host "  • Connaissance du MCP unifié hphe-mcp (65 outils : recherche, mémoire, tâches, fs, NIM) + sqlite-node KG" -ForegroundColor White
 Write-Host "  • Procédures d'usage du système de mémoire unifiée" -ForegroundColor White
 Write-Host "  • Règles de stockage dual (local + global)" -ForegroundColor White
 Write-Host "  • Routage recherche hphe (everything/content/semantic/hybrid)" -ForegroundColor White

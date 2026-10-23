@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hephaistos Chats — Dev Sandbox &amp; Live Preview</title>
+    <link rel="stylesheet" href="../media/chat.css">
+    <style>
+        :root {
+            --vscode-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --vscode-editor-background: #181818;
+            --vscode-editor-foreground: #cccccc;
+            --vscode-foreground: #cccccc;
+            --vscode-descriptionForeground: #8c8c8c;
+            --vscode-panel-border: #2d2d2d;
+            --vscode-button-background: #007acc;
+            --vscode-button-foreground: #ffffff;
+            --vscode-button-hoverBackground: #0062a3;
+            --vscode-input-background: #252526;
+            --vscode-input-border: #3c3c3c;
+            --vscode-toolbar-hoverBackground: rgba(90, 93, 94, 0.31);
+            --vscode-menu-border: #454545;
+            --vscode-menu-background: #1f1f1f;
+            --vscode-list-activeSelectionBackground: #094771;
+            --vscode-list-activeSelectionForeground: #ffffff;
+            --vscode-list-hoverBackground: #2a2d2e;
+            --vscode-badge-background: #4d4d4d;
+            --vscode-badge-foreground: #ffffff;
+            --vscode-focusBorder: #007acc;
+        }
+
+        body.preview-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background: #141414;
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+        }
+
+        .preview-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1f1f1f;
+            border-bottom: 1px solid #2d2d2d;
+            padding: 8px 16px;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .preview-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-tab {
+            background: transparent;
+            border: 1px solid #3c3c3c;
+            color: #bbb;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .preview-tab.active {
+            background: #007acc;
+            color: #fff;
+            border-color: #007acc;
+        }
+
+        .preview-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .preview-sidebar {
+            width: 270px;
+            border-right: 1px solid #2d2d2d;
+            background: #181818;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .sidebar-btn-open {
+            flex: 1;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: 0;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .sidebar-btn-ping {
+            background: transparent;
+            border: 1px solid var(--vscode-panel-border);
+            color: inherit;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .search-box-input {
+            width: 100%;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            margin-bottom: 12px;
+            outline: none;
+            font-size: 11px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--vscode-descriptionForeground);
+            margin: 12px 0 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .session-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            border: 0;
+            border-radius: 6px;
+            padding: 6px 8px;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .session-card:hover, .session-card.active {
+            background: var(--vscode-list-hoverBackground);
+        }
+
+        .providers-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .provider-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid var(--vscode-panel-border);
+            color: var(--vscode-descriptionForeground);
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .provider-chip:has(input:checked) {
+            color: var(--vscode-foreground);
+            border-color: #007acc;
+            background: rgba(0, 122, 204, 0.1);
+        }
+
+        .sidebar-status {
+            margin-top: 14px;
+            padding-top: 8px;
+            border-top: 1px solid #2d2d2d;
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .preview-main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--vscode-editor-background);
+            position: relative;
+            height: 100%;
+        }
+
+        .editor-tab-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1f1f1f;
+            padding: 7px 14px;
+            border-bottom: 1px solid #2d2d2d;
+            font-size: 12px;
+            color: #cccccc;
+            flex-shrink: 0;
+        }
+
+        .orch-status-pill {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .orch-status-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .orch-dot-live {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2ea043;
+            display: inline-block;
+        }
+
+        .new-chat-card {
+            background: #252526;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .new-chat-card label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #eee;
+        }
+
+        .provider-select-ctl {
+            width: 100%;
+            padding: 6px;
+            border-radius: 4px;
+            background: #1f1f1f;
+            color: #fff;
+            border: 1px solid #3c3c3c;
+            font-size: 11px;
+        }
+
+        .preview-subtitle {
+            margin-left: 10px;
+            opacity: 0.6;
+            font-size: 11px;
+        }
+
+        .session-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .session-card-title {
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .session-card-meta {
+            opacity: 0.6;
+            font-size: 10px;
+        }
+
+        .mode-badge-mini {
+            font-size: 9px;
+        }
+    </style>
+</head>
+<body class="preview-wrapper">
+    <header class="preview-top-bar">
+        <div>
+            <strong>Hephaistos Chats — Dev Sandbox &amp; Live Preview</strong>
+            <span class="preview-subtitle">(Environnement de test interactif)</span>
+        </div>
+        <div class="preview-tabs">
+            <button type="button" class="preview-tab active" id="btn-toggle-layout" onclick="toggleSidebar()">Masquer / Afficher Sidebar</button>
+            <button type="button" class="preview-tab" onclick="simulateNewChat()">+ Nouveau Chat</button>
+        </div>
+    </header>
+
+    <div class="preview-body">
+        <aside class="preview-sidebar" id="sidebarContainer">
+            <div class="brand-banner">
+                <img src="../media/hephaistos-banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" />
+                <div class="brand-overlay">
+                    <span class="brand-title">Hephaistos Chats</span>
+                    <span class="brand-subtitle">The Developer's Forge — Dialogues Multi-Agents</span>
+                </div>
+            </div>
+            <div class="orch-status-pill">
+                <div class="orch-status-left">
+                    <span class="orch-dot-live"></span>
+                    <span>Orchestrateur relié</span>
+                </div>
+                <small class="preview-subtitle">13 agents</small>
+            </div>
+            <div class="new-chat-card">
+                <label for="providerSelect">⚡ Fournisseur pour le chat :</label>
+                <select id="providerSelect" class="provider-select-ctl">
+                    <option value="openrouter">OpenRouter Free</option>
+                    <option value="ollama">Ollama (Local)</option>
+                    <option value="ollama-cloud">Ollama Cloud</option>
+                    <option value="nim">NVIDIA NIM</option>
+                    <option value="nim2">NVIDIA NIM 2</option>
+                    <option value="kilo">KiloCode</option>
+                    <option value="hermes">Hermes</option>
+                </select>
+                <button type="button" class="sidebar-btn-open" id="open" onclick="simulateNewChatWithSelectedProvider()">+ Nouveau Chat sur ce fournisseur</button>
+            </div>
+            <h2 class="sidebar-title"><span>Chats Récents</span></h2>
+            <input type="text" class="search-box-input" id="sidebar-search" placeholder="🔍 Filtrer les conversations...">
+            <div id="sessions" class="session-list"></div>
+            <h2 class="sidebar-title"><span>Fournisseurs Actifs</span></h2>
+            <div id="providers" class="providers-box"></div>
+            <p id="home-status" class="sidebar-status">18 modèles répondent.</p>
+        </aside>
+
+        <section class="preview-main-chat">
+            <div class="editor-tab-header">
+                <span>💬</span>
+                <span id="tab-title">liquid/lfm-2.5-2.6b:free</span>
+            </div>
+
+            <header class="top">
+                <button type="button" id="providerBtn" class="top-provider-btn" title="Cliquer pour copier l'identifiant du chat (Protocole Binôme)">
+                    <strong id="providerName">OpenRouter</strong>
+                </button>
+                <span class="spacer"></span>
+                <button type="button" id="historyBtn" class="history-pill" title="Historique des conversations">
+                    <span>🕒 Historique</span>
+                    <span class="chevron">▾</span>
+                </button>
+                <div id="historyMenu" class="dropdown-menu history-dropdown" hidden>
+                    <div class="history-dropdown-header">Historique des sessions</div>
+                    <div id="historyList" class="history-scroll-list"></div>
+                </div>
+            </header>
+
+            <main id="transcript" class="transcript-container"></main>
+
+            <div class="composer-container">
+                <div id="slashMenu" class="slash-suggestions" hidden>
+                    <div class="slash-item" data-cmd="/help"><strong>/help</strong> <span>Aide et commandes</span></div>
+                    <div class="slash-item" data-cmd="/chat-id"><strong>/chat-id</strong> <span>Copier l'ID de session binôme</span></div>
+                    <div class="slash-item" data-cmd="/jointes"><strong>/jointes &lt;agent&gt;</strong> <span>Protocole binôme</span></div>
+                    <div class="slash-item" data-cmd="/plan"><strong>/plan</strong> <span>Mode Plan</span></div>
+                    <div class="slash-item" data-cmd="/ask"><strong>/ask</strong> <span>Mode Ask</span></div>
+                    <div class="slash-item" data-cmd="/agent"><strong>/agent</strong> <span>Mode Agent</span></div>
+                    <div class="slash-item" data-cmd="/debug"><strong>/debug</strong> <span>Mode Debug</span></div>
+                    <div class="slash-item" data-cmd="/clear"><strong>/clear</strong> <span>Vider l'historique</span></div>
+                </div>
+                <div class="composer-box">
+                    <textarea id="draft" rows="1" placeholder="Décris ce que tu veux faire..."></textarea>
+                    <div class="composer-toolbar">
+                        <div class="selector-group">
+                            <button type="button" class="pill-btn mode-pill" id="modeBtn" title="Changer le mode">
+                                <span class="mode-dot"></span>
+                                <span id="modeLabel">Agent</span>
+                            </button>
+                            <button type="button" class="pill-btn model-pill" id="modelBtn" title="Changer de modèle">
+                                <span id="modelLabel">lfm-2.5-2.6b:free</span>
+                            </button>
+                        </div>
+                        <span class="spacer"></span>
+                        <div class="composer-actions">
+                            <span class="composer-hint">Entrée ↵ pour envoyer</span>
+                            <button type="button" id="send" class="send-btn" aria-label="Envoyer" disabled>
+                                <span class="send-icon">↑</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modeMenu" class="dropdown-menu mode-dropdown" hidden></div>
+
+                <div id="modelMenu" class="dropdown-menu model-dropdown" hidden>
+                    <div class="search-box">
+                        <input type="text" id="modelSearch" placeholder="🔍 Rechercher un modèle..." autocomplete="off">
+                    </div>
+                    <div id="modelList" class="model-scroll-list"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let savedState = null;
+
+        const fakeVsCode = {
+            postMessage: (msg) => {
+                console.log('[Webview postMessage]', msg);
+                handleWebviewMessage(msg);
+            },
+            getState: () => savedState,
+            setState: (s) => { savedState = s; }
+        };
+        window.acquireVsCodeApi = () => fakeVsCode;
+
+        let mockState = {
+            session: {
+                id: 'chat-demo-1',
+                title: 'Assistance Hephaistos',
+                mode: 'agent',
+                provider: 'openrouter',
+                model: 'liquid/lfm-2.5-2.6b:free',
+                messages: [
+                    { role: 'user', text: 'salut', at: new Date().toISOString() },
+                    { role: 'assistant', text: 'Bonjour ! Je suis prêt à vous assister sur votre projet **Hephaistos 2.1-kit**.\n\nQue souhaitez-vous réaliser aujourd\'hui ?\n```typescript\n// Prêt pour générer du code ou planifier une tâche\nconst status = "operational";\n```', at: new Date().toISOString() }
+                ],
+                updatedAt: new Date().toISOString()
+            },
+            providers: [
+                { id: 'openrouter', label: 'OpenRouter Free', enabled: true },
+                { id: 'ollama', label: 'Ollama (Local)', enabled: true },
+                { id: 'ollama-cloud', label: 'Ollama Cloud', enabled: true },
+                { id: 'nim', label: 'NVIDIA NIM', enabled: true },
+                { id: 'kilo', label: 'KiloCode', enabled: false },
+                { id: 'hermes', label: 'Hermes', enabled: false }
+            ],
+            models: [
+                { provider: 'openrouter', id: 'liquid/lfm-2.5-2.6b:free' },
+                { provider: 'openrouter', id: 'poolside/laguna-s-2.1:free' },
+                { provider: 'ollama', id: 'qwen3.5:4b' },
+                { provider: 'ollama', id: 'llama3.2:latest' },
+                { provider: 'ollama-cloud', id: 'gpt-oss:120b-cloud' }
+            ],
+            status: '18 modèles répondent.',
+            isGenerating: false
+        };
+
+        function toggleSidebar() {
+            const sb = document.getElementById('sidebarContainer');
+            sb.style.display = (sb.style.display === 'none') ? 'flex' : 'none';
+        }
+
+        function renderSidebar() {
+            const list = document.getElementById('sessions');
+            list.innerHTML = `
+                <div class="session-card active">
+                    <div class="session-card-info">
+                        <span class="session-card-title">Assistance Hephaistos</span>
+                        <small class="session-card-meta">liquid/lfm-2.5-2.6b:free · 14:30</small>
+                    </div>
+                    <span class="mode-badge agent mode-badge-mini">Agent</span>
+                </div>
+            `;
+
+            const provDiv = document.getElementById('providers');
+            provDiv.innerHTML = mockState.providers.map(p => `
+                <label class="provider-chip">
+                    <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="toggleProvider('${p.id}', this.checked)">
+                    <span>${p.label}</span>
+                </label>
+            `).join('');
+
+            document.getElementById('home-status').textContent = mockState.status;
+        }
+
+        function toggleProvider(id, enabled) {
+            const p = mockState.providers.find(item => item.id === id);
+            if (p) p.enabled = enabled;
+            mockState.status = `${id} ${enabled ? 'activé.' : 'coupé.'}`;
+            renderSidebar();
+            pushStateToWebview();
+        }
+
+        function simulatePing() {
+            mockState.status = 'Interrogation des fournisseurs…';
+            renderSidebar();
+            setTimeout(() => {
+                mockState.status = `${mockState.models.length} modèles répondent.`;
+                renderSidebar();
+                pushStateToWebview();
+            }, 400);
+        }
+
+        function simulateNewChat() {
+            simulateNewChatWithSelectedProvider();
+        }
+
+        function simulateNewChatWithSelectedProvider() {
+            const sel = document.getElementById('providerSelect');
+            const provider = sel ? sel.value : 'openrouter';
+            const defaultModel = provider === 'ollama' ? 'qwen3.5:4b' :
+                                 provider === 'ollama-cloud' ? 'gpt-oss:120b-cloud' :
+                                 provider === 'nim' ? 'meta/llama-3.1-70b-instruct' : 'liquid/lfm-2.5-2.6b:free';
+
+            mockState.session = {
+                id: 'chat-' + Date.now().toString(36),
+                title: 'Nouveau Chat (' + provider + ')',
+                mode: 'agent',
+                provider: provider,
+                model: defaultModel,
+                messages: [],
+                updatedAt: new Date().toISOString()
+            };
+            document.getElementById('tab-title').textContent = defaultModel;
+            pushStateToWebview();
+        }
+
+        function pushStateToWebview() {
+            window.dispatchEvent(new MessageEvent('message', {
+                data: {
+                    type: 'state',
+                    session: mockState.session,
+                    providers: mockState.providers,
+                    models: mockState.models,
+                    status: mockState.status,
+                    isGenerating: mockState.isGenerating
+                }
+            }));
+        }
+
+        function handleWebviewMessage(msg) {
+            if (msg.type === 'ready') {
+                pushStateToWebview();
+                renderSidebar();
+            } else if (msg.type === 'meta') {
+                mockState.session.mode = msg.mode;
+                mockState.session.provider = msg.provider;
+                mockState.session.model = msg.model;
+                document.getElementById('tab-title').textContent = msg.model;
+                pushStateToWebview();
+            } else if (msg.type === 'rename') {
+                mockState.session.title = msg.title;
+                document.getElementById('tab-title').textContent = msg.title;
+                pushStateToWebview();
+            } else if (msg.type === 'clear') {
+                mockState.session.messages = [];
+                pushStateToWebview();
+            } else if (msg.type === 'send') {
+                mockState.session.messages.push({
+                    role: 'user',
+                    text: msg.text,
+                    at: new Date().toISOString()
+                });
+                mockState.session.messages.push({
+                    role: 'assistant',
+                    text: '',
+                    at: new Date().toISOString()
+                });
+                mockState.isGenerating = true;
+                pushStateToWebview();
+
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: mockState.session.provider,
+                        model: mockState.session.model,
+                        mode: mockState.session.mode,
+                        prompt: msg.text
+                    })
+                }).then(r => r.json()).then(res => {
+                    const last = mockState.session.messages[mockState.session.messages.length - 1];
+                    last.text = res.reply || res.error || 'Réponse reçue.';
+                    mockState.isGenerating = false;
+                    pushStateToWebview();
+                }).catch(err => {
+                    const last = mockState.session.messages[mockState.session.messages.length - 1];
+                    last.text = '⚠️ Erreur : ' + err.message;
+                    last.isError = true;
+                    mockState.isGenerating = false;
+                    pushStateToWebview();
+                });
+            } else if (msg.type === 'abort') {
+                mockState.isGenerating = false;
+                pushStateToWebview();
+            }
+        }
+    </script>
+    <script src="../media/chat.js"></script>
+</body>
+</html>

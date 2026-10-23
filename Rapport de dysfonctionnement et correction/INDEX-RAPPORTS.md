@@ -18,6 +18,10 @@ Periode couverte : nuit 18-19/10/2026.
 | 10 | audit de securite Hephaistos 2.1 + livrable #542 non fiable | #540 #542 #548 | transverse (orch.rs, memory.rs, nim-worker.mjs, agent-bridge, bridge.js, extension.ts, watchdog.ps1) | Moyenne (aucun critique) | Audite + durci (F1-F5 corriges, cargo check vert) |
 | 11 | audit de conformite du code Hephaistos 2.1 | #541 (livrable associe #543) | gates Rust, worker NIM, extension, CLI, auto-injection | Haute (FR-05/FR-04 partiels, FR-11 incomplet) | Audit termine ; ecarts consignes, corrections recommandees |
 | 12 | crashes recurrents IDE Devin : OOM systemique | transverse | hote Windows + IDE Devin | Haute (perte fenetre, workers orphelins) | Diagnostique (OOM commit/RAM, reco empreinte) |
+| 13 | demarrage ingestion workspace dual-mode | - | pipeline ingestion | - | Documente |
+| 14 | dispatches non signes hors chaine provider : equal-level (Bleubite 1) | #556-#560 | dispatch_task, acp-messages, discipline | Moyenne | Sanctionne + corrige (signature imposee) |
+| 15 | devin-hub : attribution sourceAgent='agy' par defaut, confusion d'identite sessions + protocole PING/PONG canonique | transverse | agent-bridge/devin-hub.js, comms.jsonl, protocole-binome | Moyenne | Corrige (defaut honnete + --as + doc 9) |
+| 16 | wake_acp_agent : prompt livre dans la mauvaise fenetre (redux focusedSessionId != panneau chat) | transverse | extension.ts wakeAcpAgent, matchesWorkspace | Haute (perte silencieuse de prompts) | Corrige (openCascadeIdInChatPanel systematique + fallback FIFO + post-verif) |
 
 ### Verification de cloture C - 2026-10-19
 

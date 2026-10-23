@@ -146,19 +146,32 @@ function resolvePlanModelFromConfig(modelConfig, modelRef) {
     throw new Error(`AGY model has no usable modelOrAlias: ${modelRef}`);
 }
 
-async function resolvePlanModel(hub, modelRef) {
-    if (modelRef === undefined || modelRef === null) {
-        throw new Error('AGY send requires an explicit Gemini model ID or label');
-    }
-    if (typeof modelRef === 'object') return modelRef;
+async function resolvePlanModel(hub, cascadeId, modelRef) {
+    if (typeof modelRef === 'object' && modelRef !== null) return modelRef;
     const modelConfig = await rpc(hub, 'GetCascadeModelConfigData', {});
-    return resolvePlanModelFromConfig(modelConfig, modelRef);
+    if (typeof modelRef === 'string' && modelRef.trim()) {
+        return resolvePlanModelFromConfig(modelConfig, modelRef);
+    }
+    // Pas de ref : le modèle en COURS de la cascade = celui du dernier step
+    // exécuté (metadata.modelUsage) — jamais defaultOverrideModelConfig
+    // (peut être un modèle à sec → plantage de la fenêtre AGY).
+    try {
+        const t = await rpc(hub, 'GetCascadeTrajectorySteps', { cascadeId });
+        const last = [...(t?.steps || [])].reverse()
+            .map((s) => s?.metadata?.modelUsage?.model)
+            .find((m) => typeof m === 'string' && m.length);
+        if (last) return last;
+    } catch { /* fallback ci-dessous */ }
+    const def = modelConfig?.defaultOverrideModelConfig?.modelOrAlias;
+    if (typeof def?.model === 'string' && def.model) return def.model;
+    if (typeof def?.alias === 'string' && def.alias) return { alias: def.alias };
+    return (modelConfig?.clientModelConfigs || []).find((c) => !c.disabled)?.modelOrAlias?.model;
 }
 
 function buildSendBody(cascadeId, text, planModel) {
     const body = { cascadeId, items: [{ text }] };
-    // planModel is the exact hub-side model token resolved from an explicit
-    // UI model ID/label; never infer it from the hub default.
+    // planModel uniquement si --model explicite : sinon la fenêtre garde
+    // le modèle qu'elle a déjà sélectionné (pas d'override).
     if (planModel !== undefined && planModel !== null) {
         body.cascadeConfig = {
             plannerConfig: typeof planModel === 'string'
@@ -171,7 +184,7 @@ function buildSendBody(cascadeId, text, planModel) {
 
 /** Injecte un message sans remplacer le modèle choisi dans l'UI. */
 async function sendMessage(hub, cascadeId, text, planModel) {
-    const resolvedModel = await resolvePlanModel(hub, planModel);
+    const resolvedModel = await resolvePlanModel(hub, cascadeId, planModel);
     const body = buildSendBody(cascadeId, text, resolvedModel);
     // Focus côté hub (équiv. openCascadeIdInChatPanel) — best effort
     try {
@@ -322,7 +335,7 @@ async function main() {
             return;
         }
         default:
-            console.error('cmds: discover|current|list|models|send <cascadeId?> --model <modelId|label> <text>|read|wait|ask <cascadeId?> --model <modelId|label> <text> [timeoutSec]');
+            console.error('cmds: discover|current|list|models|send <cascadeId?> [--model <id|label>] <text>|read|wait|ask <cascadeId?> [--model <id|label>] <text> [timeoutSec]');
             process.exit(2);
     }
 }

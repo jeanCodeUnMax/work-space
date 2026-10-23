@@ -2,14 +2,6 @@
   "mcpServers": {
     "beacon": {
       "args": [
-        "mcp",
-        "serve"
-      ],
-      "command": "C:/Program Files/Beacon/bin/beacon.exe",
-      "disabled": true
-    },
-    "beacon-rw": {
-      "args": [
         "C:/Users/Administrator/.beacon/beacon-rw/server.js"
       ],
       "command": "node"

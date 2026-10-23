@@ -130,15 +130,15 @@ const base = (process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v
 if (!key) { console.error(`NVIDIA_API_KEY${account === '1' ? '' : '_2'} absente`); process.exit(1); }
 if (!message || message.startsWith('--')) { console.error('message requis'); process.exit(1); }
 
-// Livrable : premier chemin .agent/xxx.ext présent dans le message
-// (hors token file:<path>, qui désigne une SOURCE, pas une cible).
+// Contexte DB d'abord : expected_artifact est le contrat de livrable,
+// pas une mention .agent/ dans le prompt (les chemins absolus du vault
+// n'étaient jamais écrits — la tâche restait sans fichier).
+const taskRow = readTask(taskId);
 const msgForDeliverable = fileMatch ? rawMessage.replace(fileMatch[0], '') : rawMessage;
 const m = msgForDeliverable.match(/\.agent[\\/][\w.\\/\\-]+\.(?:md|txt|json|js|ts|rs|py|yaml|yml)/i);
-const deliverable = m ? m[0].replace(/\\/g, '/') : null;
-
-// Contexte DB de la tâche : description + expected_artifact concaténés au
-// prompt — le worker est le seul maillon qui les connaît de façon fiable.
-const taskRow = readTask(taskId);
+const fromMessage = m ? m[0].replace(/\\/g, '/') : null;
+const fromTask = taskRow?.expected_artifact ? String(taskRow.expected_artifact).trim() : '';
+const deliverable = fromMessage || fromTask || null;
 if (taskRow) {
   message += `\n\n## TACHE ORCHESTRATEUR #${taskId}\nTITRE: ${taskRow.title || ''}\nDESCRIPTION:\n${taskRow.description || ''}\nEXPECTED_ARTIFACT: ${taskRow.expected_artifact || deliverable || '(aucun)'}`;
 }

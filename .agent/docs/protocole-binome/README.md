@@ -123,3 +123,47 @@ Le 2026-10-14, un join réel Devin ⇄ AGY a confirmé les sessions visées sans
 - Règles communes : `.agent/rules/global_rules.md`
 - Entrée du checklist d’installation : `.agent/docs/install-checklist-collab.md`
 - Note d’architecture : `.agent/knowledge/decisions/004-binome-jointes.md`
+
+## 8. Registre d'équipe en mémoire unifiée — `team/roster` (règle fixe, 2026-10-21)
+
+**Problème résolu :** un agent ne doit jamais rescanner les disques, `state.vscdb`
+ou `acp-list` pour retrouver son équipe, ni pinger des sessions d'un autre
+workspace. Le roster d'équipe vit dans la **mémoire unifiée par projet**
+(`agentmemory` via hphe-mcp), jamais dans un fichier JSON/md du workspace ou
+du vault.
+
+**Clé canonique :** `memory_read projectId=<nom-du-dossier-workspace> key=team/roster`.
+
+**Contenu (JSON dans `content`) :** `binome.cash` (identity `devin`, sessionId,
+transport), `binome.tango` (identity `agy`, cascadeId, transport `hub`, titre
+de la conversation), `bleubites[]` (alias, sessionId, transport, nom
+orchestrateur), `pairId`, `session`, `verified` (timestamps des derniers
+pong constatés sur le bus).
+
+**Cycle de vie :**
+1. **Ouverture de session** → `memory_read team/roster`. Si trouvé : l'équipe
+   est connue immédiatement — rejoindre/pinger directement ces IDs.
+2. **Absent ou IDs périmés** → découvrir : `chat-id.js` pour soi ;
+   `agy-hub.js list` + `read` pour trouver la cascade Tango **de ce workspace**
+   (vérifier le contenu, ne jamais réutiliser une cascade d'un autre projet) ;
+   pour les bleubites, sessions ACP **de ce workspace** uniquement
+   (`state.vscdb` filtré par contenu workspace, ou sessions créées ici).
+3. **Vérification obligatoire** → handshake request/ACK corrélé (`pairId`/
+   `replyTo` < 15 min) pour le binôme ; PING→`reply` sur `comms.jsonl` pour
+   chaque bleubite. `sent`/`delivered` seul ne prouve rien : exiger la ligne
+   `reply` dont `src` = la session cible.
+4. **Persistance** → `memory_write`/`memory_update team/roster` après chaque
+   join/pong vérifié ou changement d'équipe, avec le timestamp de preuve.
+
+**Règles anti-misroute (apprises le 2026-10-21) :**
+- `devin-hub.js send` / `wake_devin` n'injecte que dans le chat **focalisé** :
+  cibler une session non ouverte = le texte atterrit chez l'agent actif.
+  Interdit pour joindre un bleubite.
+- La voie bleubite est `sendToAcpAgent` (`wake_acp_agent`) : l'extension ouvre
+  l'onglet cible puis soumet. Course focus/submit possible → toujours vérifier
+  le `reply` sur le bus avant de conclure.
+- Les sessions vierges (`userMessageCount: 0`, sans titre) sont des coquilles
+  reload : incapables de répondre — ne pas les choisir comme bleubites.
+- Seules les identités **Cash = devin** et **Tango = agy** sont fixes. Les
+  bleubites sont dynamiques : jamais de slugs en dur dans les règles, le
+  vault ou les templates — uniquement dans `team/roster` mémoire.

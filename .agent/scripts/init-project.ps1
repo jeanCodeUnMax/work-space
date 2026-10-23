@@ -292,13 +292,64 @@ if (Test-Path $rdRule) {
 }
 if (-not (Test-Path $rdDir)) { New-Item -ItemType Directory -Path $rdDir -Force | Out-Null }
 Write-Host "  [OK] repertoire Rapport de dysfonctionnement et correction present" -ForegroundColor Green
-$tasksJson = Join-Path $ProjectRoot ".vscode\tasks.json"
-$hasWdTask = (Test-Path $tasksJson) -and ((Get-Content $tasksJson -Raw) -match 'Watchdog Hephaistos')
-if ($hasWdTask) {
-    Write-Host "  [OK] tache VS Code 'Watchdog Hephaistos' (runOn=folderOpen) presente" -ForegroundColor Green
-} else {
-    Write-Host "  [INFO] tache watchdog absente de tasks.json — l'extension orchestrator-monitor supervise quand meme le watchdog" -ForegroundColor DarkGray
+Write-Host "  [INFO] .vscode/tasks.json n'est plus injecte (2.1) — watchdog auto-start via extension orchestrator-monitor" -ForegroundColor DarkGray
+
+# === PHASE 4b: STOCKAGE MEMOIRE DUAL-MODE (reprend start-workspace.ps1) ===
+# LOCAL  : memory-database/agentmemory + .agent/memory-database/{graph,vector,cache}
+# GLOBAL : si .env definit AGENT_DB_ROOT -> <root>/memory-database = junction
+#          vers $AGENT_DB_ROOT/current_workspace/{cache,graph,vector}
+Write-Host "`n[PHASE 4b] Stockage memoire dual-mode" -ForegroundColor Yellow
+
+# Lecture .env -> AGENT_DB_ROOT
+$EnvFile = Join-Path $ProjectRoot ".env"
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        if (-not $_.StartsWith('#') -and $_ -match '=') {
+            $parts = $_.Split('=', 2)
+            if ($parts[0].Trim() -eq 'AGENT_DB_ROOT' -and $parts[1].Trim()) {
+                $env:AGENT_DB_ROOT = $parts[1].Trim() -replace '^["'']|["'']$', ''
+            }
+        }
+    }
 }
+
+$AgentMemDb = Join-Path $ProjectRoot ".agent\memory-database"
+$LocalMemDb = Join-Path $ProjectRoot "memory-database"
+
+if ($env:AGENT_DB_ROOT) {
+    $globalDir = Join-Path $env:AGENT_DB_ROOT "current_workspace"
+    foreach ($d in @($globalDir, "$globalDir\cache", "$globalDir\graph", "$globalDir\vector")) {
+        if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+    }
+    if (Test-Path $LocalMemDb) {
+        $it = Get-Item $LocalMemDb -Force -ErrorAction SilentlyContinue
+        if ($it -and $it.LinkType -eq 'Junction') {
+            $cur = @($it.Target)[0]
+            if ([IO.Path]::GetFullPath($cur) -eq [IO.Path]::GetFullPath($globalDir)) {
+                Write-Host "  [OK] junction memory-database deja correcte" -ForegroundColor Green
+            } else { $it.Delete() }
+        } else {
+            Get-ChildItem -LiteralPath $LocalMemDb -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                $dst = Join-Path $globalDir $_.Name
+                if (-not (Test-Path $dst)) { Move-Item $_.FullName $dst -Force -ErrorAction SilentlyContinue }
+            }
+            Remove-Item -LiteralPath $LocalMemDb -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    if (-not (Test-Path $LocalMemDb)) {
+        New-Item -ItemType Junction -Path $LocalMemDb -Target $globalDir -Force | Out-Null
+        Write-Host "  [OK] junction memory-database -> $globalDir" -ForegroundColor Green
+    }
+} else {
+    foreach ($d in @("$LocalMemDb\agentmemory", "$AgentMemDb\graph", "$AgentMemDb\vector", "$AgentMemDb\cache", "$ProjectRoot\.agent\knowledge")) {
+        if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+    }
+    Write-Host "  [OK] stockage memoire LOCAL (.agent/memory-database)" -ForegroundColor Green
+}
+# Nettoyage junction obsolete heritee de la v2
+$staleJ = Join-Path $ProjectRoot "semantic-cache-data"
+$staleIt = Get-Item $staleJ -Force -ErrorAction SilentlyContinue
+if ($staleIt -and $staleIt.LinkType -eq 'Junction') { $staleIt.Delete() }
 
 # === RÉSUMÉ ===
 Write-Host "`n========================================" -ForegroundColor Cyan

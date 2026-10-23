@@ -4,7 +4,7 @@
     Hermes-compatible injection du système de mémoire unifiée Hephaistos2-Kit dans un workspace Hermès.
 .DESCRIPTION
     Crée la structure .agent/hermes/ dans un projet Hermès pour utiliser les MCP unifiés
-    (Memory, Qdrant, Zvec, sqlite-node), le stockage dual (local+global), et les conventions
+    (serveur unifié hphe-mcp : recherche, mémoire, fichiers, orchestrateur, NIM + sqlite-node KG), le stockage dual (local+global), et les conventions
     du projet, sans modifier le projet Hephaistos2-Kit source ni supprimer l'injection existante.
 .PARAMETER ProjectPath
     Chemin du workspace Hermès cible (par défaut: pwd)
@@ -107,7 +107,7 @@ Write-Host "[4/6] Variable d'environnement..." -ForegroundColor Yellow
 $envFile = Join-Path $ProjectRoot '.env'
 if (-not (Test-Path $envFile)) {
     $envContent = @"
-# Hephaistos2-Kit / Hermès — Configuration mémoire unifiée
+# Hephaistos2-Kit — Configuration mémoire unifiée (couche agent Hermes)
 # Autorisé: modification, ajout de clés.
 # Ne pas committer les secrets.
 
@@ -140,22 +140,30 @@ $agentsMd = @"
 
 ---
 
-## 🔗 CONNEXION AUX MCP UNIFIÉS (Hephaistos2-Kit)
+## 🔗 CONNEXION AU MCP UNIFIÉ (Hephaistos2-Kit)
 
-Les serveurs MCP suivants sont configurés globalement et disponibles dans ce projet :
+**UN SEUL serveur canonique : `Hephaistos-everything-search` (hphe-mcp, 65 outils).**
+Il absorbe les ex-serveurs Memory/Qdrant/Zvec/orchestrator/nim-router/model-discovery/
+filesystem — ces serveurs n'existent plus, ne jamais les réintroduire ni utiliser les
+noms `mcp_Memory_*`, `mcp_qdrant_*`, `mcp_zvec_*`, `mcp_filesystem_*`.
 
-| Serveur | Outils | Usage dans ce projet |
-|---------|--------|----------------------|
-| **Memory** | 9 | Knowledge Graph : créér/lier/observer/supprimer entités, search, read_graph |
-| **Qdrant** | 10 | Vector store 2048D (NVIDIA NIM nemotron) : collections, documents, search catégorique |
-| **Zvec** | 10 | Vector store 384D (local MiniLM-L6-v2) : stores, collections, semantic_search |
-| **sqlite-node** | 9 | SQLite multi-bases : connect, query, execute, describe, list_tables |
-| **filesystem** | 11 | Lecture/écriture/recherche de fichiers (étendu via Hephaistos2-Kit) |
-| **kaggle** | 51 | Compétitions, datasets, kernels (si pertinent) |
-| **colab-mcp** | 1 | Session Colab (si pertinent) |
-| **devin/context7** | 2 | Docs libraries (si pertinent) |
+| Famille d'outils hphe-mcp | Usage dans ce projet |
+|---------------------------|----------------------|
+| `everything_search`/`search_files`/`fs_*` | Localisation + lecture/écriture fichiers |
+| `content_search`/`semantic_search`/`hybrid_search`/`vec_search`/`nim_embed` | Recherche contenu BM25 + vectoriel 2048D |
+| `memory_*` | Mémoire unifiée KV (search/read/write/update/list/stats) |
+| `create_task`/`dispatch_task`/`list_tasks`/`update_task`/`get_next_task`/`register_agent`/`pair_*` | Orchestrateur + binômes |
+| `nim_*`/`available_models` | Modèles NIM |
 
-> **Total : 103 outils MCP disponibles**, tous connectés.
+| Serveurs complémentaires (réels) | Usage |
+|---------|--------|
+| **sqlite-node** | KG read-only (`memory`/`graph`), cache — Windows direct uniquement |
+| **kaggle** | Compétitions, datasets, kernels (si pertinent) |
+| **colab-mcp** | Session Colab (si pertinent) |
+| **context7** | Docs libraries (si pertinent) |
+
+> Accès distant (laptop/agents hors Windows) : MCP-over-SSH `ssh -T win-mcp`
+> (commande forcée vers hphe-mcp.exe — voir docs/cerberos-mcp-mux-config.md).
 
 ---
 
@@ -255,14 +263,14 @@ $soulHermes = @"
 4. `everything_search` — fichiers par nom sur tout le disque (NTFS $MFT)
 5. `semantic_search` — sens/concept ; `vec_search` + `nim_embed` pour le vectoriel brut
 
-### SQLite
+### SQLite (KG legacy — Windows direct seulement)
 6. `sqlite-node` `query_data` — SELECT (alias `memory`/`graph`/`cache`, KG read-only)
 7. `sqlite-node` `execute_query` — INSERT/UPDATE/DELETE (hors KG/orchestrator)
 
-### Fichiers
-9. `mcp_filesystem_read_file` / `write_file` / `edit_file`
-10. `mcp_filesystem_list_directory` / `search_files`
-11. `mcp_filesystem_directory_tree`
+### Fichiers (hphe-mcp `fs_*`)
+9. `fs_read_file` / `fs_write_file` / `fs_edit_file`
+10. `fs_list_directory` / `fs_search_files`
+11. `fs_directory_tree`
 
 ---
 

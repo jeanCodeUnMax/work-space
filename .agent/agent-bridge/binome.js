@@ -18,6 +18,8 @@
 'use strict';
 
 const { randomUUID } = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const comms = require('./comms');
 const agyHub = require('./agy-hub');
 const devinHub = require('./devin-hub');
@@ -54,10 +56,8 @@ if (planModel && peerVia !== 'hub') {
     console.error('[binome] --model est réservé aux envois hub AGY; ACP/CLI gardent leur modèle provider');
     process.exit(64);
 }
-if (peerVia === 'hub' && ['send', 'ask'].includes(cmd) && !planModel) {
-    console.error('[binome] envoi AGY hub refusé sans --model explicite; ne pas choisir un défaut Argon');
-    process.exit(64);
-}
+// --model reste disponible en override explicite; absent, le send garde le
+// modèle actuellement sélectionné dans la fenêtre de chat AGY (pas de défaut forcé).
 
 function providerId(agent, transport) {
     if (transport === 'hub') return agent === 'agy' ? 'agy-hub' : null;
@@ -88,7 +88,21 @@ async function sessionsFor(agent, transport) {
         const hub = agyHub.discoverHub(WORKSPACE);
         return (await agyHub.listConversations(hub)).map((item) => ({ sessionId: item.cascadeId, summary: item.summary || '' }));
     }
-    if (transport === 'acp') return devinHub.listAcpSessions(providerId(agent, transport), 7477, WORKSPACE);
+    if (transport === 'acp') {
+        // Fenêtres hephaistos-chats : inventaire = .agent/chats/sessions.json
+        if (providerId(agent, transport) === 'hephaistos') {
+            try {
+                const file = path.join(WORKSPACE, '.agent', 'chats', 'sessions.json');
+                const sessions = JSON.parse(fs.readFileSync(file, 'utf8'));
+                return (Array.isArray(sessions) ? sessions : []).map((s) => ({
+                    sessionId: s.id, summary: s.title || s.model || '',
+                }));
+            } catch {
+                return [];
+            }
+        }
+        return devinHub.listAcpSessions(providerId(agent, transport), 7477, WORKSPACE);
+    }
     return agentAdapters.listSessions(agent, { cwd: WORKSPACE });
 }
 
@@ -140,15 +154,32 @@ async function sendToPeer(text, target, waitSec = 0, model = null) {
         return { sent: true, target, result };
     }
     if (peerVia === 'hub') {
-        const hub = agyHub.discoverHub(WORKSPACE);
-        if (waitSec) {
+        // Tunnel canonique : démon ws-bridge 7477 -> extension -> hub agy.exe.
+        // replyToCascadeId = ma session => la réponse du pair est relayée dans
+        // MA conv par l'extension (pas de fenêtre parasite). Le RPC direct
+        // (agyHub.sendMessage) n'est qu'un fallback hors-ligne pour `ask`.
+        try {
+            const replyTo = me === 'devin' && via === 'acp' ? await myCascade() : null;
+            await devinHub.sendToAntigravity(text, target, replyTo, 7477, me);
+            return { sent: true, target, via: 'ws-bridge' };
+        } catch (err) {
+            if (!waitSec) throw new Error(`[binome] tunnel 7477 indisponible : ${err.message}`);
+            const hub = agyHub.discoverHub(WORKSPACE);
             const result = await agyHub.ask(hub, target, text, waitSec, model);
-            return { sent: true, target, replies: result.replies.map((reply) => reply.text), timedOut: result.timedOut };
+            return { sent: true, target, replies: result.replies.map((reply) => reply.text), timedOut: result.timedOut, via: 'rpc-direct-fallback' };
         }
-        await agyHub.sendMessage(hub, target, text, model);
-        return { sent: true, target };
     }
     if (peerVia === 'acp') {
+        // Fenêtres hephaistos-chats : le bridge wake_acp_agent ne les connaît pas,
+        // le transport canonique est acp-inject vers le serveur ACP de l'extension.
+        if (providerId(peer, peerVia) === 'hephaistos') {
+            const acpInject = require('./acp-inject');
+            const res = await acpInject.inject({
+                providerId: 'hephaistos', sessionId: target, text,
+                cwd: WORKSPACE, wait: 'delivered', timeoutMs: 180000,
+            });
+            return { sent: true, target, providerId: 'hephaistos', delivered: res.delivered };
+        }
         const result = await devinHub.sendToAcpAgent(text, target, providerId(peer, peerVia), 7477, WORKSPACE);
         if (result.status === 'skipped') {
             return { sent: false, skipped: true, status: 'skipped', target, providerId: result.providerId };

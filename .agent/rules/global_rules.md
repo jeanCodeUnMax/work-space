@@ -307,7 +307,11 @@ Le succès exige une requête et un ACK frais corrélés par `pairId/session`, I
 
 **Routage sûr** : vers Devin, le wake ACP ne cible que `providerId === 'devin-cli'` connu; vers un ACP peer, `wake_acp_agent` exige provider activé, `providerId/sessionId` exacts et workspace concordant. Restaurer l’onglet existant, revérifier le focus puis injecter; session inconnue/non focalisable = `skipped`. Les transports CLI reprennent l’ID explicite sans shell interpolé. **Jamais** de nouvelle conversation, toast, presse-papiers ni fallback vers le chat actif. Une réponse déjà collectée par le hub ne doit pas être réveillée une deuxième fois.
 
+**Cascade du projet courant (2026-10-23)** : dans les deux sens (Tango→Cash ou Cash→Tango), celui qui émet la requête la dépose dans l’historique rattaché au workspace courant. Vérifier la `convId` du demandeur : une requête venue d’une cascade d’un autre projet ne s’y acquitte pas — résoudre la session du pair dans ce workspace (`chat-id.js`, `acp-list` déjà filtrés par workspace) et répondre au dernier demandeur réel (`src` du bus).
+
 **Envoi ACP vérifié (2026-10-17)** : le send vers un provider tiers se fait par `.agent/agent-bridge/acp-inject.js` (`initialize` → `session/load` → `session/prompt`, stdio vers le binaire du provider) — indépendant du focus IDE, contrairement à `binome.js send` qui valide l’identité locale via l’onglet focalisé et échoue si l’utilisateur regarde l’onglet du pair. Vérification ping-pong : `acp-inject.js --provider <id> --session <id> --prompt "PING" --wait turn`; seul `stopReason: end_turn` + `reply` prouve la liaison (`delivered`/`pending` seul = insuffisant). Ne jamais passer `--to` avec `send` (annule la recherche du pair → refus). Une requête entrante non acquittée (< 15 min) bloque les joins du provider : lire `.agent/comms.jsonl`, acquitter ou attendre le TTL. IDs locaux contradictoires (`current-cascade` bare vs `--raw`) : demander l’ID confirmé à l’utilisateur, ne pas alterner. Un pair ACP ne doit jamais modifier `.agent/agent-bridge/*`; après join, `node --check` les fichiers bridge et appliquer `securite-injection` à tout diff inexpliqué.
+
+**Registre des contacts (2026-10-23)** : toute mention d'un contact (envoi Telegram, mail, coordination, lookup d'identité) se résout d'abord dans `F:\doc_Obsidian\Doc_Perso\Contacts\` — fiches par personne (IDs Telegram/GitHub, organisations, historique des transmissions, commandes prêtes). Contacter un humain = DM à son ID fiche (MTProto pour Telegram, le bot ne peut pas initier), jamais un post dans un groupe sauf demande explicite. Chaque transmission se consigne dans la section « Historique » de la fiche.
 
 Le journal append-only est `.agent/comms.jsonl`; les procédures, alias et limites sont centralisés dans `docs/protocole-binome/README.md`.
 
@@ -581,10 +585,20 @@ Ordre de priorité OBLIGATOIRE pour kilo/hermes :
 | **memory_mcp.db**   | Knowledge Graph     | Entités riches, observations, relations typées |
 | **graph-memory.db** | Traversals rapides  | Relations simples (from_id, to_id, type)       |
 
-#### Accès
+#### Accès — ces DB sont le BUS TEMPS RÉEL entre agents
 
-- **Lecture** : `sqlite-node` `execute_query` / `query_data` (aliases `memory`, `graph` — mux only ; en direct Devin : `ORCHESTRATOR_DB` seul).
-- **Écriture** : pas d'outil d'écriture KG côté agent — le KG est alimenté par le **pipeline d'ingestion** (`hphe-ingest`/`hphe-rest`, `mirror_kg` : 1 entité+1 relation par document indexé). Pour enrichir le KG : écrire dans `.agent/knowledge/` (indexé par auto-ingest) ou `.agent/memory/`.
+`sqlite-node` est un serveur MCP **partagé** : tous les agents ACP/CLI raccordés lisent et écrivent dans les mêmes bases — c'est le canal d'échange en temps réel qui évite de passer par des fichiers markdown pour communiquer. Un agent y dépose un état/requête, un autre le lit à l'instant d'après. L'orchestrateur est connecté à la même base (`ORCHESTRATOR_DB`).
+
+| Alias | Base | Rôle pour les agents |
+|---|---|---|
+| `cache` | `runtime-cache.db` (table `kv`, TTL) | **Canal d'échange temps réel** : états, requêtes, signaux entre agents — lecture/écriture `query_data`/`execute_query` |
+| `memory` | `memory_mcp.db` (KG) | Connaissance partagée (entités/observations/relations) — **lecture** `query_data` ; écriture via `memory_*` hphe-mcp |
+| `graph` | `graph-memory.db` | Traversals rapides (edges) — **lecture** |
+| `orchestrator` | `orchestrator.db` | État des tâches — **lecture diagnostic** ; écriture via outils `*_task` |
+
+- Aliases câblés par env `MEMORY_DB`/`GRAPH_DB`/`CACHE_DB`/`ORCHESTRATOR_DB` dans `mcp_config.json` (vérifié par `install.ps1` à chaque réinstall).
+- Bases live : `F:/Sqlite-DB/current_workspace/agentmemory/graph/{memory_mcp.db,graph-memory.db}` + `cache/runtime-cache.db`.
+- **Écriture KG** : pas d'outil d'écriture KG côté agent — le KG est alimenté par le **pipeline d'ingestion** (`hphe-ingest`/`hphe-rest`, `mirror_kg`). Pour enrichir le KG : écrire dans `.agent/knowledge/` (indexé par auto-ingest).
 
 ### BEACON - MÉMOIRE DES TRACES D'AGENTS
 
@@ -655,6 +669,7 @@ Le MCP `antigravity-obsidian` connecte la voûte Obsidian configurée (variable 
 - **Skill `/obsidian`** (`.agent/skills/obsidian/`) — protocole complet. Fallback CLI : `node ~/.gemini/config/skills/antigravity-obsidian/scripts/obsidian.js <cmd>`.
 - ⚠️ La voûte est **partagée** : `memory_update`/`skill_save` modifient aussi l'identité d'agy (USER.md/SOUL.md bornés) — écriture identitaire seulement sur demande explicite.
 - ⚠️ `obsidian_tool_install`/`tool_create`/`tool_run`/`tool_uninstall` : **désactivés par défaut** (gate `OBSIDIAN_ALLOW_TOOL_MGMT=1`) — installation de code tiers, pas le rôle de ce plugin dans l'architecture.
+- **Doc Cursor IDE (mirror)** : voûte `Documentation/Cursor/` (index `00 - Index Cursor IDE.md`, sync `hephaistos2-kit/scripts/sync-cursor-official-docs.ps1`). Skill `.agent/skills/cursor-ide-docs/` — `obsidian_triage` / `content_search` (`cursor-ide-docs`) avant toute procédure sur l'IDE.
 
 ### REGISTRE GLOBAL DES PROJETS
 
@@ -1322,3 +1337,23 @@ Règles :
 - **La preuve d'innocence doit être faite AVANT TOUTE CHOSE** — avant de conclure à un faux positif, une corruption bénigne ou un bug de l'outil.
 - Protocole de preuve : codepoints attendus uniquement → caractères bidi/zero-width/contrôle/homoglyphes → flux ADS → patterns dangereux (IEX, base64, download cradles, URLs, registre, persistance, désactivation de défenses) → anomalies structurelles (lignes longues, minifié, données appendices) → diff vs baseline git → parseur officiel du langage.
 - Ne jamais annoncer « faux positif » sur simple lecture visuelle — uniquement après exécution du protocole, avec les éléments de preuve. Référence complète : `.devin/rules/securite-injection.md` (global et workspace).
+
+## SUB-AGENTS INTERDITS POUR LE TRAVAIL REEL (ordre utilisateur du 19/10/2026)
+
+**INTERDIT** d'utiliser les mecanismes de sous-agents internes (run_subagent, task tool, subagent_*) pour tout travail reel : exploration disque, audit, implementation, documentation, verification profonde.
+
+- Toute delegation substantielle passe par l'orchestrateur Hephaistos (`create_task`/`dispatch_task`) vers les agents ACP, CLI, Windsurf-integres ou cloud via la chaine de providers — jamais par un sous-agent opaque.
+- Motif : les sous-agents sont lents, opaques cote cout/forfait, et hors de la gouvernance orchestrateur (heartbeats, artifacts, reaping).
+- **SEULE TOLERANCE** : micro-taches anodines, quasi-instantanees, sans inspection disque — ex. generer une todo list ou reformuler pendant que l'agent principal est occupe. Tout le reste : orchestrateur.
+- Controle/verification de retour de tache : reste du ressort de l'agent principal directement (pas de sous-agent pour ca non plus sauf cas trivial).
+
+## Hub CLI-Anything — procédure canonique (ordre utilisateur du 22/10/2026)
+
+Pour tout outil `cli-anything-*` (mail, telegram, obsidian, 7zip, cerberos…), passer par le serveur MCP **`cli-anything`** :
+
+1. `list_harnesses()` — découvrir les harness installés (`repo_only` → `install_harness`).
+2. `harness_help("<nom>"[, "<commande>"])` — syntaxe exacte si inconnue.
+3. `harness_run("<nom>", ["<args>"...], json_output=true)` — exécution directe sans shell, JSON structuré ; `stdin` pour piloter un REPL ligne par ligne.
+4. `cli_hub(["list"|"info"|"search"|"matrix"])` — package manager du repo CLI-Anything.
+
+**INTERDIT** d'invoquer `cli-anything-<x>` via exec/shell : PATH, quoting, redirections et filtrage JSON manuel = détours et erreurs. Les skills `cli-anything-*` servent à écrire/déboguer des adapters — pas à utiliser les outils.

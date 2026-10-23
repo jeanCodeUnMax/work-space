@@ -1,4 +1,4 @@
-﻿Param(
+Param(
     [ValidateSet('auto', 'force', 'skip')]
     [string]$IngestMode = 'auto',
     [bool]$Watch = $true,

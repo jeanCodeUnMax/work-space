@@ -262,6 +262,26 @@ if (Test-Path $cfgPath) {
   if ($cfg.mcpServers.PSObject.Properties['everything-search']) {
     $cfg.mcpServers.PSObject.Properties.Remove('everything-search')
   }
+  # sqlite-node : garantir les alias multi-bases (KG memory/graph + cache + orchestrator).
+  # Sans ce bloc, les alias tombent en fallback silencieux sur ORCHESTRATOR_DB (régression 2026-10-22).
+  $dbRoot = if ($env:AGENT_DB_ROOT) { $env:AGENT_DB_ROOT } else { 'F:/Sqlite-DB' }
+  $sn = [pscustomobject]@{
+    command = 'node'
+    args    = @('C:/PROGRA~1/servers/MCP-QU~1/dist/sqlite-node-launch.mjs')
+    env     = [pscustomobject]@{
+      AGENT_DB_ROOT   = $dbRoot
+      CACHE_DB        = "$dbRoot/current_workspace/cache/runtime-cache.db"
+      CACHE_TABLE     = 'cache_table'
+      DEFAULT_DB_PATH = "$dbRoot/current_workspace/agentmemory/graph/memory_mcp.db"
+      DISABLE_DEBUG   = 'true'
+      GRAPH_DB        = "$dbRoot/current_workspace/agentmemory/graph/graph-memory.db"
+      LOG_LEVEL       = 'error'
+      MEMORY_DB       = "$dbRoot/current_workspace/agentmemory/graph/memory_mcp.db"
+      ORCHESTRATOR_DB = "$DATA/orchestrator.db"
+      TTL_HOURS       = '1'
+    }
+  }
+  $cfg.mcpServers | Add-Member -NotePropertyName 'sqlite-node' -NotePropertyValue $sn -Force
   $cfg | ConvertTo-Json -Depth 20 | Set-Content $cfgPath -Encoding UTF8
   Write-Host "  + Hephaistos-everything-search -> $SRV\hphe-mcp.exe"
 } else { Write-Warning "mcp_config.json introuvable : $cfgPath" }
@@ -281,6 +301,29 @@ if ($Elevated) {
   schtasks /run /tn hphe-indexd | Out-Null
 } else {
   Write-Host "[6/6] tâche planifiée : relancer en admin avec -Elevated"
+}
+
+# 6c) taskwatch — veille de la file orchestrateur (comble le trou create_task
+#     qui ne notifie personne). Poll list_tasks toutes les 5 min, notifie sur le
+#     bus comms.jsonl + inject ACP pour devin. -----------------------------------
+Write-Host "[6c] taskwatch -> $SRV\taskwatch.mjs"
+Copy-Item "$PRJ\tools\taskwatch.mjs" "$SRV\taskwatch.mjs" -Force
+$nodeExe = (Get-Command node -ErrorAction SilentlyContinue).Source
+if (-not $nodeExe) { $nodeExe = 'C:\nvm4w\nodejs\node.exe' }
+# CRLF obligatoire pour cmd.exe ; le repertoire $DATA est cree plus haut dans l'install
+@('@echo off','rem taskwatch - poll orchestrateur pending toutes les 5 min (tache hphe-taskwatch)',"`"$nodeExe`" `"$SRV\taskwatch.mjs`" >> `"$DATA\taskwatch.log`" 2>&1") |
+  Set-Content "$SRV\taskwatch-run.cmd" -Encoding ASCII
+if ($Elevated) {
+  # SYSTEM + HIGHEST : tourne session fermée ou verrouillée ; batterie désactivée.
+  # New-ScheduledTaskAction évite le bug de quoting schtasks sur les chemins avec espaces.
+  $act = New-ScheduledTaskAction -Execute "$SRV\taskwatch-run.cmd"
+  $trg = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
+  $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+  Register-ScheduledTask -TaskName 'hphe-taskwatch' -Action $act -Trigger $trg -Settings $set -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+  Start-ScheduledTask -TaskName 'hphe-taskwatch'
+  Write-Host "  + hphe-taskwatch (SYSTEM, 5 min) enregistree"
+} else {
+  Write-Host "  taskwatch : relancer en admin avec -Elevated pour enregistrer hphe-taskwatch"
 }
 
 # 6b) Agents ACP dans Devin (enabledAgents / agentEnv / agentPreferences) ----------

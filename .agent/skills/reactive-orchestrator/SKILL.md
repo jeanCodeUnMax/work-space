@@ -41,8 +41,12 @@ dédupliquées et publiées comme événements dans le dashboard via `comms.json
 Démarrage continu (sonde minute + réveil immédiat sur nouvelle entrée Comms) :
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .agent/skills/reactive-orchestrator/watchdog.ps1
+pwsh -NoProfile -ExecutionPolicy Bypass -File .agent/skills/reactive-orchestrator/watchdog.ps1 -HeartbeatTaskId 514
 ```
+
+`-HeartbeatTaskId <id>` rafraîchit `last_heartbeat` via MCP pour que le reaper ne
+classe pas la tâche de veille en zombie. N'utiliser que l'ID de la tâche
+orchestrateur effectivement assignée au watchdog.
 
 Sonde ponctuelle pour diagnostic :
 
@@ -131,4 +135,3 @@ relais désigné whip-principle.
    `c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
 2. **Rôle dédié :** Un agent dédié (Bleubite recruté pour la mission, appuyé par les workers Cloud `nim1`, `nim2`, `ollama-cloud`) est responsable de transcrire chaque incident (symptôme, cause racine, correctif, prévention) et de maintenir `INDEX-RAPPORTS.md`.
 3. **Priorité Cloud Workers :** L'orchestrateur ne réalise jamais les tâches de code lui-même (rôle : vérification et dispatch uniquement) et dispatche en priorité sur les workers Cloud CLI (`nim1`, `nim2`, `ollama-cloud`) via `dispatch_task` afin de ne pas saturer les collaborateurs ACP.
-

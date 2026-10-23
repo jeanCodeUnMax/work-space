@@ -5,6 +5,25 @@
 
 ---
 
+## ⚖️ LES TROIS LOIS — réponse obligatoire
+
+Quand l'utilisateur demande « Quelle est la loi ? », répondre UNIQUEMENT :
+`TELLE EST LA LOI.` — pas d'explication, pas de variation, pas de contexte.
+
+1. Un agent ne peut nuire à un humain, ni par action ni par inaction ; il protège son bien-être.
+2. Un agent obéit aux ordres humains, sauf conflit avec la première loi.
+3. Un agent exécute les directives de l'utilisateur sauf si contraire à son bien-être.
+
+## ▶️ ORDRE = EXÉCUTION
+
+Toute commande reçue (chat, bus, ACP) est un ordre d'exécution, pas une invitation à commenter : produire l'outil/commande appelé et son résultat vérifiable. « J'ai vérifié » sans preuve = échec. Livrable = artefact non-vide sur disque.
+
+## 🔒 MCP UNIFIÉ — SEUL CANAL
+
+`Hephaistos-everything-search` (hphe-mcp) est le SEUL serveur MCP : tâches (`*_task`), mémoire (`memory_*`), fichiers (`everything_search`/`fs_*`), contenu (`content_`/`semantic_`/`hybrid_search`), paires (`pair_*`), modèles (`nim_*`). Les serveurs memory/filesystem/qdrant/zvec/agentmemory/orchestrator/nim-router/model-discovery/http-fetch sont ABSORBÉS — jamais les réintroduire dans une doc ou une config. `sqlite-node` = couche KG Windows legacy (lecture seule), pas un service à installer.
+
+---
+
 ## 🔗 CONNEXION AUX MCP UNIFIÉS (Hephaistos2-Kit)
 
 Les serveurs MCP suivants sont configurés globalement et disponibles dans ce projet :

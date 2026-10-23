@@ -82,22 +82,9 @@ Get-ChildItem -Path $Source -Recurse -File | ForEach-Object {
     }
 }
 
-# --- .vscode : configs IDE partagees — fichiers manquants uniquement ---
-$vsSrc = Join-Path $KitRoot '.vscode'
+# --- .vscode : RETIRE du systeme d'injection 2.1 — le watchdog demarre via
+# l'extension orchestrator-monitor ; plus aucune config .vscode n'est poussee. ---
 $vsCopied = 0; $vsKept = 0
-if (Test-Path $vsSrc) {
-    Get-ChildItem -Path $vsSrc -Recurse -File | ForEach-Object {
-        $rel = $_.FullName.Substring($vsSrc.Length + 1)
-        $dst = Join-Path $Target (Join-Path '.vscode' $rel)
-        if (Test-Path $dst) { $vsKept++; return }
-        if ($DryRun) { Write-Host "  COPY .vscode\$rel" }
-        else {
-            New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
-            Copy-Item $_.FullName $dst -Force
-        }
-        $vsCopied++
-    }
-}
 
 # --- .devin : regles et skills Devin du template — fichiers manquants uniquement ---
 $devinSrc = Join-Path $KitRoot '.devin'
@@ -137,7 +124,7 @@ if (Test-Path $devinSrc) {
 }
 
 # --- fichiers racine du template : deposes si absents (-Force pour ecraser) ---
-$RootFiles = @('.ragignore', '.mcp-access', '.gitignore', '.gitmodules', '.env', '.env.example')
+$RootFiles = @('.ragignore', '.mcp-access', '.gitignore', '.gitmodules', '.env', '.env.example', 'AGENTS.md')
 $rootResults = @()
 foreach ($name in $RootFiles) {
     $src = Join-Path $KitRoot $name

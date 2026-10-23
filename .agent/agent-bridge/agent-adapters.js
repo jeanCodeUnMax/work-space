@@ -105,6 +105,7 @@ const ADAPTERS = {
     nim: { provider: true, note: 'NVIDIA NIM API 1 — provider, dispatch via kilo/hermes' },
     nim2: { provider: true, note: 'NVIDIA NIM API 2 — provider, dispatch via kilo' },
     openrouter: { provider: true, note: 'provider via opencode (OPENCODE_CONFIG opencode-openrouter.json)' },
+    omniroute: { provider: true, api: 'http://localhost:20128/v1/chat/completions', note: 'OmniRoute — gateway locale multi-providers :20128 (agent omni1, worker omniroute-worker.mjs)' },
     'devin-cloud': { provider: true, note: 'Devin cloud — sessions API Devin' }
 };
 
@@ -124,7 +125,10 @@ const ACP_PROVIDER_IDS = Object.freeze({
     nim2: 'nim2',
     'mistral-vibe': 'mistral-vibe',
     'codex-acp': 'codex-acp',
-    huggingface: 'huggingface'
+    huggingface: 'huggingface',
+    cerberos: 'cerberos',
+    // Fenêtres de chat de l'extension hephaistos-chats (provider ACP dédié)
+    hephaistos: 'hephaistos'
 });
 
 const AGENT_ALIASES = Object.freeze({
@@ -134,7 +138,9 @@ const AGENT_ALIASES = Object.freeze({
     'nvidia nim': 'nim', 'nvidia nim 1': 'nim', 'nvidia nim #1': 'nim', 'nvidia anim 1': 'nim', 'nim1': 'nim', 'nim 1': 'nim',
     'nvidia nim 2': 'nim2', 'nvidia nim #2': 'nim2', 'nvidia anim 2': 'nim2', 'nim 2': 'nim2',
     'open router': 'openrouter', 'open code': 'opencode', 'mistral vibe': 'mistral-vibe',
-    'hugging face': 'huggingface', 'codex': 'codex-acp'
+    'hugging face': 'huggingface', 'codex': 'codex-acp',
+    'hephaistos chats': 'hephaistos',
+    'cerber': 'cerberos', 'cerberos': 'cerberos', 'cerber os': 'cerberos', 'cerbere': 'cerberos', 'cerbere os': 'cerberos', 'hephaistos-chat': 'hephaistos', 'hphe': 'hephaistos'
 });
 
 function resolveAgent(value) {

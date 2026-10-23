@@ -101,7 +101,7 @@ function getActiveCascade() {
     return null;
 }
 
-function sendToDevin(text, cascadeId, port = 7477, sourceAgent = 'agy') {
+function sendToDevin(text, cascadeId, port = 7477, sourceAgent = process.env.HEPHAISTOS_AGENT || 'devin-hub') {
     return new Promise((resolve, reject) => {
         // Cible explicite d'abord (un message adressé à X ne doit jamais
         // atterrir dans Y) ; sans cible, la conv actuellement active.
@@ -230,6 +230,37 @@ async function sendToAcpAgent(text, sessionId, providerId, port = 7477, workspac
     return { status: result.status, sessionId, providerId };
 }
 
+/**
+ * Envoi AGY via le démon ws-bridge 7477 — SEUL tunnel canonique.
+ * L'extension route `wake_antigravity` vers le hub agy.exe (Connect-RPC) et,
+ * si replyToCascadeId est fourni, relaie la réponse du pair dans la conv Devin
+ * de l'expéditeur. Ne jamais appeler agy-hub.sendMessage en direct : ça court-
+ * circuite le démon (pas de routage central, pas de relay, fenêtres parasites).
+ */
+function sendToAntigravity(text, agyCascadeId, replyToCascadeId, port = 7477, sourceAgent = process.env.HEPHAISTOS_AGENT || 'devin-hub') {
+    return new Promise((resolve, reject) => {
+        const ws = new WebSocket(bridgeWsUrl(port));
+        const timeout = setTimeout(() => {
+            ws.close();
+            reject(new Error(`Timeout de connexion au bridge Devin ws://127.0.0.1:${port}`));
+        }, 5000);
+        ws.on('open', () => {
+            ws.send(JSON.stringify({
+                command: 'wake_antigravity',
+                text: text,
+                agyCascadeId: agyCascadeId,
+                replyToCascadeId: replyToCascadeId || ''
+            }));
+            if (comms) {
+                comms.log({ src: sourceAgent, dst: 'agy', kind: 'prompt', text: text, convId: agyCascadeId });
+            }
+            clearTimeout(timeout);
+            setTimeout(() => { ws.close(); resolve({ sent: true, agyCascadeId }); }, 300);
+        });
+        ws.on('error', (err) => { clearTimeout(timeout); reject(err); });
+    });
+}
+
 // CLI
 if (require.main === module) {
     const [cmd, ...args] = process.argv.slice(2);
@@ -272,13 +303,16 @@ if (require.main === module) {
     }
 
     if (cmd === 'send') {
-        const text = args[0];
+        const asIdx = args.indexOf('--as');
+        const asAgent = asIdx !== -1 ? args[asIdx + 1] : null;
+        const pos = args.filter((a, i) => i !== asIdx && i !== asIdx + 1);
+        const text = pos[0];
         if (!text) {
-            console.error('Erreur: texte requis. Usage: node devin-hub.js send "<texte>" [cascadeId]');
+            console.error('Erreur: texte requis. Usage: node devin-hub.js send "<texte>" [cascadeId] [--as <agent>]');
             process.exit(1);
         }
-        const cascadeId = args[1] || null;
-        sendToDevin(text, cascadeId)
+        const cascadeId = pos[1] || null;
+        sendToDevin(text, cascadeId, 7477, asAgent || process.env.HEPHAISTOS_AGENT || 'devin-hub')
             .then(res => {
                 console.log(JSON.stringify({ status: 'sent', cascadeId: res.cascadeId, text: text }, null, 2));
             })
@@ -289,4 +323,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { getActiveCascade, sendToDevin, listAcpSessions, listAcpSessionsDirect, sendToAcpAgent };
+module.exports = { getActiveCascade, sendToDevin, listAcpSessions, listAcpSessionsDirect, sendToAcpAgent, sendToAntigravity };

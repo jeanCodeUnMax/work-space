@@ -18,7 +18,7 @@ Hephaistos2-Kit is a modular system consisting of:
 ## 📁 Arborescence — séparation PROJET / INSTALL
 
 | Rôle | Chemin | Contenu |
-|---|---|---|
+| --- | --- | --- |
 | **PROJET (dev)** | `<repo>` = dossier du clone (emplacement libre, auto-détecté par `install.ps1`) | sources complètes : `hphe/` (workspace Rust), `extension/`, `extensions/orchestrator-monitor/`, `.agent/`, `docs/`, `tests/`, `tools/`, `.git`, `install.ps1` |
 | **INSTALL (runtime)** | `%ProgramFiles%\servers\hephaistos2-kit\` par défaut (`-InstallRoot` / `HPHE_INSTALL`) | runtime seul : `extension/server/` (hphe-mcp, hphe-rest, hphe-indexd + `.cmd`), `data/` (content-index, orchestrator.db, logs), `migrated-vec/`, `memory-database` (jonction ou dossier réel) |
 
@@ -32,6 +32,13 @@ Hephaistos2-Kit is a modular system consisting of:
 > Tâche planifiée `hphe-indexd` (SYSTEM, démarrage) → binaire install.
 > Anciens MCP archivés dans `servers/servers_backup/`.
 > MCP dans Devin : **`Hephaistos-everything-search`**.
+>
+> **Accès distant (CerberOS/Hermes laptop)** : MCP-over-SSH — entrée
+> `authorized_keys` à commande forcée → `hphe-mcp-launch.cmd` (pas de proxy
+> applicatif). Côté laptop : `mcp_servers.hephaistos` = `ssh -T win-mcp`.
+> Voir `docs/cerberos-mcp-mux-config.md`. Règle : tous les agents (y compris
+> distants) passent par ce serveur — les MCP séparés `filesystem`/`memory`/
+> `sqlite-node` pour CerberOS n'existent pas.
 
 ---
 
@@ -46,14 +53,14 @@ Hephaistos2-Kit is a modular system consisting of:
 > Les 58 outils correspondent à la source du projet. Le runtime installé reste à 57 jusqu’à un déploiement autorisé; Beacon reste désactivé.
 
 | Famille | Outils | Backend |
-|---|---|---|
+| --- | --- | --- |
 | **Index NTFS** | `everything_search`, `search_files`, `everything_count`, `everything_index_stats`, `hphe_health` | `hphe-indexd` (SYSTEM task) : $MFT → 6,4M entrées, USN live, pipe `\\.\pipe\hphe-index` |
 | **Contenu** | `content_ingest`, `content_search` | Tantivy `install/data/content-index` (BM25+snippets, FRN lié MFT) |
 | **Vecteurs** | `vec_search`, `vec_stats`, `semantic_search`, `hybrid_search` | usearch `install/migrated-vec/*.usearch` (2048D) |
 | **Orchestration** | `list_agents`, `create_task`, `update_task`, `delete_task`, `list_tasks`, `get_next_task`, `dispatch_task`, `suggest_agent`, `register_agent`, `update_agent`, `list_prompt_templates`, `set_prompt_template`, `list_worktrees`, `worktree_cleanup` | `orchestrator.db` (env `HPHE_ORCH_DB`) — pickAgent/pickModel portés du JS |
 | **NIM/modèles** | `nim_domains` (17), `nim_models`, `nim_chat`, `nim_chat_model`, `nim_embed` (2048D), `available_models` | NVIDIA NIM x2 + OpenRouter free + Ollama — absorbe nim-router + model-discovery |
 | **Mémoire** | `memory_write`, `memory_read`, `memory_search`, `memory_list`, `memory_update`, `memory_stats`, `project_init` | agentmemory JSON sous `HPHE_MEMORY_ROOT` (configuré par `install.ps1 -MemoryRoot`, défaut `<install>/data/agentmemory`) |
-| **Ingestion** | `beacon_ingest`, `hephaistos_update` (= "Hephaistos update force") | Tantivy + KG mirror (`memory-database/agentmemory/graph/*.db`) + vecteurs optionnels + état incrémental + `.ragignore` |
+| **Ingestion** | `beacon_ingest`, `hephaistos_update` (= "Hephaistos update force") | Tantivy + KG mirror (`current_workspace/agentmemory/graph/*.db`) + vecteurs optionnels + état incrémental + `.ragignore` |
 | **FS** | `fs_*` (18 outils) | allowed_roots inchangés |
 
 **REST** : `hphe-rest.exe` (127.0.0.1:8792, même 58 outils + `/health`).
@@ -66,6 +73,30 @@ d'ingestion automatique** (`HPHE_INGEST_ROOTS`, intervalle `HPHE_INGEST_INTERVAL
 **Scripts remplacés** : `.agent/rag/*.py` (cli/pipeline/chunker/embedder/router/
 rag_rest_bridge) → voir `_archive/agent-rag/DEPRECATED-BY-RUST.md` ;
 `ingest-workspace.ps1`/`auto-ingest.ps1` → wrappers fins vers le binaire.
+
+---
+
+## 🔌 `sqlite-node` — bus temps réel entre agents (MCP partagé)
+
+Complémentaire de hphe-mcp : **tous les agents ACP/CLI se raccordent au même
+serveur sqlite-node et donc aux mêmes bases SQLite** — c'est le canal
+d'échange en temps réel entre agents, sans passer par des fichiers markdown.
+Un agent dépose un état/requête, un autre le lit à l'instant d'après.
+
+| Alias | Base | Rôle |
+| --- | --- | --- |
+| `cache` | `current_workspace/cache/runtime-cache.db` | **Canal éphémère** (kv, TTL 1h) : signaux/requêtes/états entre agents — lecture+écriture |
+| `memory` | `current_workspace/agentmemory/graph/memory_mcp.db` | KG partagé (entities/observations/relations) — lecture |
+| `graph` | `current_workspace/agentmemory/graph/graph-memory.db` | Traversals edges — lecture |
+| `orchestrator` | `<install>/data/orchestrator.db` | État des tâches — lecture diag (écriture via outils `*_task`) |
+
+- Launch : `node <serveurs>/mcp-quick-sqlite3/dist/sqlite-node-launch.mjs` — le
+  **wrapper porte les env vars lui-même** (MEMORY_DB/GRAPH_DB/CACHE_DB/
+  ORCHESTRATOR_DB) : si `mcp_config.json` est régénéré et perd l'env, les
+  alias restent câblés (régression du 2026-10-22).
+- `install.ps1` réécrit le bloc env complet à chaque install (`-Elevated`).
+- Règle : KG = alimenté par le pipeline (mirror_kg), pas par écriture agent
+  directe. Le canal `cache` est celui des échanges agents↔agents.
 
 ---
 
@@ -124,7 +155,7 @@ dans kv 'maintenance:last_report' → consommé par /reflect.
 ```
 
 | Dossier | Rôle dans la boucle |
-|---|---|
+| --- | --- |
 | `knowledge/` | Connaissance **durable et auditable** : ADR (decisions/), docs d'archi. Lu avant décision, écrit après (double écriture avec memory_write). Indexé → cherchable. |
 | `consciousness/` | **Spécification** des couches Awareness→Memory→Reflection→Intention. Awareness≈Beacon, Memory≈mémoire unifiée, Reflection+Intention≈`/reflect`. Doc de référence, indexée comme corpus. |
 
@@ -264,8 +295,8 @@ Modular knowledge domains that agents can load on-demand. based on task context.
 
 ### Hephaistos & Orchestration
 
-| Skill            | Description                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------- |
+| Skill            | Description                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------ |
 | `boost`          | `/boost` — mode haute performance (délégation agressive, recherche Hephaistos-first) |
 | `hephaistos-kit` | Référence du kit : serveur unifié hphe-mcp, propagation `.agent/`                    |
 | `obsidian`       | `/obsidian` — second cerveau partagé Devin↔agy (triage, sessions, anti-patrons)      |

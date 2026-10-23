@@ -70,6 +70,10 @@ credentials.*
 # ---- Runtime state .agent (bus, états d'ingestion, logs) ----
 .agent/comms.jsonl
 .agent/logs/
+.agent/chats/
+.agent/deliverables/
+_archive/vault-scatter/
+*.vsix
 .agent/**/ingestion.state.json
 .agent/**/.ingestion-state.json
 .agent/**/.*-state.json

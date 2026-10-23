@@ -31,14 +31,19 @@ catch {
     path.join(__dirname, '..', 'ws-bridge', 'node_modules', 'ws'),
     path.join(__dirname, '..', '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
   ];
-  try {
-    const extRoot = path.join(process.env.USERPROFILE || '', '.devin', 'extensions');
-    for (const name of fs.readdirSync(extRoot)) {
-      if (name.startsWith('hephaistos.orchestrator-monitor-')) {
-        fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+  const home = process.env.USERPROFILE || '';
+  for (const extRoot of [
+    path.join(home, '.devin', 'extensions'),
+    path.join(home, '.cursor', 'extensions'),
+  ]) {
+    try {
+      for (const name of fs.readdirSync(extRoot)) {
+        if (name.startsWith('hephaistos.orchestrator-monitor-')) {
+          fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+        }
       }
-    }
-  } catch {}
+    } catch { /* profil absent */ }
+  }
   for (const p of fallbackDirs) { try { WebSocket = require(p); break; } catch {} }
 }
 if (!WebSocket) { console.error('[WS-ERR] module "ws" introuvable — npm i ws'); process.exit(2); }

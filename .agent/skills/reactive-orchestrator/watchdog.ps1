@@ -7,9 +7,11 @@ param(
   [int]$StaleTaskMinutes = 30,
   [ValidateRange(1, 1440)]
   [int]$CriticalTaskMinutes = 90,
+  [string]$HeartbeatTaskId = '',
   [string]$AgyCascadeId = '7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3',
   [string]$AgyModel = 'MODEL_PLACEHOLDER_M418',
-  [switch]$Once
+  [switch]$Once,
+  [switch]$SkipBootstrap
 )
 
 Set-StrictMode -Version Latest
@@ -19,6 +21,22 @@ if (-not $WorkspaceRoot) {
   $WorkspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 }
 $WorkspaceRoot = (Resolve-Path -LiteralPath $WorkspaceRoot).Path
+
+# Single-instance par workspace : l'extension orchestrator-monitor spawn le
+# watchdog avec backoff — si un demon manuel tourne deja (ou double fenetre
+# IDE sur le meme workspace), le second spawn sort immediatement au lieu de
+# dupliquer snapshots/alertes. -Once reste hors mutex (diagnostic pur).
+$script:InstanceMutex = $null
+if (-not $Once) {
+  try {
+    $mutexName = 'hephaistos-watchdog-' + ($WorkspaceRoot -replace '[^a-zA-Z0-9]', '-').ToLower()
+    $script:InstanceMutex = [System.Threading.Mutex]::new($false, $mutexName)
+    if (-not $script:InstanceMutex.WaitOne(0)) {
+      Write-Output ('{"level":"info","event":"already_running","details":{"workspace":"' + $WorkspaceRoot + '"}}')
+      exit 0
+    }
+  } catch { $script:InstanceMutex = $null }
+}
 
 $script:AgentDir = Join-Path $WorkspaceRoot '.agent'
 $script:LogPath = Join-Path $script:AgentDir 'logs\reactive-orchestrator-watchdog.jsonl'
@@ -74,13 +92,13 @@ if (-not $stateLoaded -and (Test-Path -LiteralPath $script:CommsPath)) {
 function Write-Log {
   param(
     [Parameter(Mandatory)][string]$Level,
-    [Parameter(Mandatory)][string]$Event,
+    [Parameter(Mandatory)][string]$Category,
     [hashtable]$Details = @{}
   )
   $record = [ordered]@{
     ts = [DateTime]::UtcNow.ToString('o')
     level = $Level
-    event = $Event
+    event = $Category
     details = $Details
   }
   $line = $record | ConvertTo-Json -Compress -Depth 8
@@ -138,7 +156,7 @@ function Write-CommsEvent {
   [System.IO.File]::AppendAllText($script:CommsPath, $line, $script:Utf8NoBom)
 }
 
-function Queue-AgyWakeNote {
+function Add-WakeNote {
   param([Parameter(Mandatory)][string]$Note)
   if (-not $script:PendingWakeNotes.Contains($Note)) {
     $script:PendingWakeNotes.Add($Note)
@@ -156,13 +174,13 @@ function Set-Alert {
     $script:State.alerts[$Key] = [DateTime]::UtcNow.ToString('o')
     $details = @{ code = $Code }
     if ($TaskId) { $details.taskId = $TaskId }
-    Write-Log -Level 'warning' -Event 'alert' -Details $details
+    Write-Log -Level 'warning' -Category 'alert' -Details $details
     try { Write-CommsEvent -Code $Code -TaskId $TaskId } catch {
-      Write-Log -Level 'error' -Event 'comms_write_failed' -Details @{}
+      Write-Log -Level 'error' -Category 'comms_write_failed' -Details @{}
     }
     if ($Code -notmatch '^wakeup_wake-noroute$') {
       $alertLabel = if ($TaskId) { "ALERT:$Code(#$TaskId)" } else { "ALERT:$Code" }
-      Queue-AgyWakeNote -Note $alertLabel
+      Add-WakeNote -Note $alertLabel
     }
   }
 }
@@ -237,7 +255,7 @@ function Read-CommsDelta {
     }
     $messageTaskId = Get-Field $message 'taskId'
     if ($null -ne $messageTaskId) { $details.taskId = [string]$messageTaskId }
-    Write-Log -Level 'info' -Event 'wakeup' -Details $details
+    Write-Log -Level 'info' -Category 'wakeup' -Details $details
     $msgText = [string](Get-Field $message 'text')
     if ($msgText -match '\[WAKE\]\s+t.che\s+#(\d+)\s+.+\s+(completed|failed|cancelled)') {
       $tid = $Matches[1]
@@ -246,7 +264,7 @@ function Read-CommsDelta {
       if (-not $script:State.wokenTasks.ContainsKey($wakeKey)) {
         $script:State.wokenTasks[$wakeKey] = [DateTime]::UtcNow.ToString('o')
         if ($msgText -match '\(non rout.\)' -and $msgText -notmatch 'agycascade:') {
-          Queue-AgyWakeNote -Note "TASK #$tid -> $tstatus"
+          Add-WakeNote -Note "TASK #$tid -> $tstatus"
         }
       }
     }
@@ -294,6 +312,20 @@ function Invoke-Snapshot {
   } catch {
     Set-Alert -Key 'mcp:unavailable' -Code 'orchestrator_mcp_unavailable'
   }
+  $watchHeartbeat = $null
+  if ($mcpOk -and $HeartbeatTaskId) {
+    try {
+      $heartbeatArgs = @{ task_id = [string]$HeartbeatTaskId } | ConvertTo-Json -Compress
+      $heartbeatResult = Invoke-McpJson -Tool 'task_heartbeat' -ArgsJson $heartbeatArgs
+      $watchHeartbeat = (Get-Field $heartbeatResult 'heartbeat') -eq $true
+      if (-not $watchHeartbeat) {
+        Write-Log -Level 'warning' -Category 'watch_heartbeat_not_applied' -Details @{ taskId = $HeartbeatTaskId }
+      }
+    } catch {
+      $watchHeartbeat = $false
+      Write-Log -Level 'error' -Category 'watch_heartbeat_failed' -Details @{ taskId = $HeartbeatTaskId }
+    }
+  }
 
   $isInitialStatusSeed = ($script:State.taskStatuses.Count -eq 0)
   $tasksById = @{}
@@ -310,7 +342,7 @@ function Invoke-Snapshot {
         if (-not $script:State.wokenTasks.ContainsKey($wakeKey)) {
           $script:State.wokenTasks[$wakeKey] = $now.ToString('o')
           $tTitle = [string](Get-Field $task 'title')
-          Queue-AgyWakeNote -Note "TASK #$idStr -> $curStatus ($tTitle)"
+          Add-WakeNote -Note "TASK #$idStr -> $curStatus ($tTitle)"
         }
       }
     }
@@ -381,6 +413,21 @@ function Invoke-Snapshot {
     $cpuRow = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'"
     if ($cpuRow) { $cpu = [int]$cpuRow.PercentProcessorTime }
   } catch { }
+
+  # Audit OOM (rapport 12) : surveiller la charge commit + RAM libre.
+  # memFreeMB/commitUsedPct = METRIQUES (observation+alerte), pas liberation.
+  $memFreeMB = $null
+  $commitUsedPct = $null
+  try {
+    $osRow = Get-CimInstance Win32_OperatingSystem
+    $memFreeMB = [int]($osRow.FreePhysicalMemory / 1024)
+    if ($osRow.TotalVirtualMemorySize -gt 0) {
+      $commitUsedPct = [int][Math]::Round(100 * ($osRow.TotalVirtualMemorySize - $osRow.FreeVirtualMemory) / $osRow.TotalVirtualMemorySize)
+    }
+  } catch { }
+  if ($null -ne $commitUsedPct -and $commitUsedPct -ge 85) {
+    Set-Alert -Key 'mem:commit-high' -Code 'commit_charge_high'
+  }
 
   $processes = @()
   try { $processes = @(Get-CimInstance Win32_Process) } catch { }
@@ -453,10 +500,17 @@ function Invoke-Snapshot {
       foreach ($row in $acpRows) {
         $provider = [string](Get-Field $row 'providerId')
         if (-not $acpSummary.ContainsKey($provider)) {
-          $acpSummary[$provider] = @{ listed = 0; focused = 0 }
+          $acpSummary[$provider] = @{ listed = 0; focused = 0; freshMin = $null }
         }
         $acpSummary[$provider].listed++
         if ((Get-Field $row 'focused') -eq $true) { $acpSummary[$provider].focused++ }
+        $upd = ConvertTo-UtcDateTime -Value (Get-Field $row 'updatedAt') -Fallback $null
+        if ($upd) {
+          $ageMin = ($now - $upd).TotalMinutes
+          if ($null -eq $acpSummary[$provider].freshMin -or $ageMin -lt $acpSummary[$provider].freshMin) {
+            $acpSummary[$provider].freshMin = [Math]::Round($ageMin, 1)
+          }
+        }
       }
       $script:State.lastAcpProbeAt = $now.ToString('o')
     } catch {
@@ -464,12 +518,60 @@ function Invoke-Snapshot {
     }
   }
 
+  # --- Reaper ACP : l'IDE (Devin.exe NodeService) spawn des serveurs acp
+  # en rafale lors de requetes echouees et ne les referme jamais. On purge
+  # les processus acp dont le provider n'a aucune session vivante. ---
+  $reapedCount = 0
+  try {
+    # Chaque provider a desormais son processus propre (registry ACP corrige :
+    # nim/ollama/openrouter passent par les adaptateurs cli-anything-*).
+    # Un processus n'est purge que si AUCUN provider de son groupe n'a de
+    # session vivante.
+    $acpWorkerPatterns = @(
+      @{ Providers = @('opencode');   Match = { param($w) $w.Name -match '^opencode(\.exe)?$' -and $w.CommandLine -match '\bacp\b' } }
+      @{ Providers = @('nim','nim2'); Match = { param($w) $w.Name -match '^node(\.exe)?$' -and $w.CommandLine -match 'nim-acp\.js' } }
+      @{ Providers = @('ollama');     Match = { param($w) $w.Name -match '^node(\.exe)?$' -and $w.CommandLine -match 'ollama-acp\.js' } }
+      @{ Providers = @('openrouter'); Match = { param($w) $w.Name -match '^node(\.exe)?$' -and $w.CommandLine -match 'openrouter-acp\.js' } }
+      @{ Providers = @('kilo');       Match = { param($w) $w.Name -match '^node(\.exe)?$' -and $w.CommandLine -match 'kilocode/cli' -and $w.CommandLine -match '\bacp\b' } }
+      @{ Providers = @('hermes');     Match = { param($w) $w.Name -match '^hermes(\.exe)?$' -and $w.CommandLine -match '\bacp\b' } }
+    )
+    $busyProviders = @($inProgress | ForEach-Object { [string](Get-Field $_ 'provider') } | Where-Object { $_ })
+    foreach ($p in $processes) {
+      if ($reapedCount -ge 6) { break }
+      foreach ($pat in $acpWorkerPatterns) {
+        if (-not (& $pat.Match $p)) { continue }
+        $ageMin = ($now - $p.CreationDate).TotalMinutes
+        if ($ageMin -lt 15) { break }
+        $live = $false
+        foreach ($prov in $pat.Providers) {
+          if ($busyProviders -contains $prov) { $live = $true; break }
+          if ($null -ne $acpSummary -and $acpSummary.ContainsKey($prov)) {
+            $s = $acpSummary[$prov]
+            if ($s.focused -gt 0 -or ($null -ne $s.freshMin -and $s.freshMin -lt 120)) { $live = $true; break }
+          }
+        }
+        if (-not $live -and $null -eq $acpSummary -and $ageMin -lt 60) { $live = $true }
+        if (-not $live) {
+          try {
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop
+            $reapedCount++
+            Write-Log -Level 'warning' -Category 'process_reaped' -Details @{ pid = $p.ProcessId; name = $p.Name; providers = $pat.Providers; ageMin = [int]$ageMin }
+          } catch { }
+        }
+        break
+      }
+    }
+    if ($reapedCount -gt 0) { Set-Alert -Key 'reaper:ghosts' -Code 'acp_ghost_workers_reaped' }
+  } catch { }
+
   $summary = @{
     inProgress = $inProgress.Count
     pending = $pending.Count
     failed = $failed.Count
     recentFailedIds = @($failed | Select-Object -First 10 | ForEach-Object { [string]$_.id })
     cpuPercent = $cpu
+    memFreeMB = $memFreeMB
+    commitUsedPct = $commitUsedPct
     workerCount = $workerProcesses.Count
     dbPulseAgeMinutes = if ($null -ne $dbAgeMinutes) { [Math]::Round($dbAgeMinutes, 1) } else { $null }
     hpheHealth = $health
@@ -477,8 +579,12 @@ function Invoke-Snapshot {
     agyHub = $agyHub
     agyConversationCount = $agyConversationCount
   }
+  if ($HeartbeatTaskId) {
+    $summary.watchTaskId = $HeartbeatTaskId
+    $summary.watchTaskHeartbeat = $watchHeartbeat
+  }
   if ($null -ne $acpSummary) { $summary.acpProviders = $acpSummary }
-  Write-Log -Level 'info' -Event 'snapshot' -Details $summary
+  Write-Log -Level 'info' -Category 'snapshot' -Details $summary
 
   if ($script:PendingWakeNotes.Count -gt 0 -and $agyHub -eq 'connected' -and $AgyCascadeId) {
     $wakeText = "[WATCHDOG -> TANGO] " + ($script:PendingWakeNotes -join ' | ') + " (inProgress=$($inProgress.Count), pending=$($pending.Count))"
@@ -487,9 +593,9 @@ function Invoke-Snapshot {
         'send', $AgyCascadeId, '--model', $AgyModel, $wakeText
       ) | Out-Null
       $script:State.lastAgyWakeAt = $now.ToString('o')
-      Write-Log -Level 'info' -Event 'agy_wake_sent' -Details @{ cascadeId = $AgyCascadeId; notes = @($script:PendingWakeNotes) }
+      Write-Log -Level 'info' -Category 'agy_wake_sent' -Details @{ cascadeId = $AgyCascadeId; notes = @($script:PendingWakeNotes) }
     } catch {
-      Write-Log -Level 'error' -Event 'agy_wake_failed' -Details @{ cascadeId = $AgyCascadeId }
+      Write-Log -Level 'error' -Category 'agy_wake_failed' -Details @{ cascadeId = $AgyCascadeId }
     }
   }
 
@@ -499,7 +605,124 @@ function Invoke-Snapshot {
   Save-State
 }
 
+function Invoke-Bootstrap {
+  # Phase BOOT : reprise des fonctions structurelles de l'ancien
+  # start-workspace.ps1 — junctions memoire dual-mode, kick ingestion
+  # incrementale, ws-bridge :7477, console-hider, beacon-sync, maintenance
+  # memoire. Idempotent, chaque etape non fatale ; le monitoring continue
+  # quoi qu'il arrive. La boucle d'ingestion continue est portee par
+  # hphe-rest.exe :8792 (tache planifiee SYSTEM), pas reproduite ici.
+  $logsDir = Split-Path $script:LogPath -Parent
+  if (-not (Test-Path -LiteralPath $logsDir)) {
+    New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+  }
+  $scriptsDir = Join-Path $WorkspaceRoot '.agent\scripts'
+  Write-Log -Level 'info' -Category 'bootstrap_started' -Details @{ workspace = $WorkspaceRoot }
+
+  # --- Stockage memoire dual-mode (port de init-project.ps1 Phase 4b) ---
+  try {
+    $envFile = Join-Path $WorkspaceRoot '.env'
+    if (Test-Path -LiteralPath $envFile) {
+      Get-Content -LiteralPath $envFile | ForEach-Object {
+        if (-not $_.StartsWith('#') -and $_ -match '=') {
+          $parts = $_.Split('=', 2)
+          if ($parts[0].Trim() -eq 'AGENT_DB_ROOT' -and $parts[1].Trim()) {
+            $env:AGENT_DB_ROOT = $parts[1].Trim() -replace '^["'']|["'']$', ''
+          }
+        }
+      }
+    }
+    $agentMemDb = Join-Path $WorkspaceRoot '.agent\memory-database'
+    $localMemDb = Join-Path $WorkspaceRoot 'memory-database'
+    if ($env:AGENT_DB_ROOT) {
+      $globalDir = Join-Path $env:AGENT_DB_ROOT 'current_workspace'
+      foreach ($d in @($globalDir, "$globalDir\cache", "$globalDir\graph", "$globalDir\vector")) {
+        if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+      }
+      if (Test-Path -LiteralPath $localMemDb) {
+        $it = Get-Item -LiteralPath $localMemDb -Force -ErrorAction SilentlyContinue
+        if ($it -and $it.LinkType -eq 'Junction') {
+          $cur = @($it.Target)[0]
+          if ([IO.Path]::GetFullPath($cur) -ne [IO.Path]::GetFullPath($globalDir)) { $it.Delete() }
+        } else {
+          Get-ChildItem -LiteralPath $localMemDb -Force -ErrorAction SilentlyContinue | ForEach-Object {
+            $dst = Join-Path $globalDir $_.Name
+            if (-not (Test-Path -LiteralPath $dst)) { Move-Item $_.FullName $dst -Force -ErrorAction SilentlyContinue }
+          }
+          Remove-Item -LiteralPath $localMemDb -Recurse -Force -ErrorAction SilentlyContinue
+        }
+      }
+      if (-not (Test-Path -LiteralPath $localMemDb)) {
+        New-Item -ItemType Junction -Path $localMemDb -Target $globalDir -Force | Out-Null
+      }
+      Write-Log -Level 'info' -Category 'bootstrap_memory' -Details @{ mode = 'global'; target = $globalDir }
+    } else {
+      foreach ($d in @("$localMemDb\agentmemory", "$agentMemDb\graph", "$agentMemDb\vector", "$agentMemDb\cache", (Join-Path $WorkspaceRoot '.agent\knowledge'))) {
+        if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+      }
+      Write-Log -Level 'info' -Category 'bootstrap_memory' -Details @{ mode = 'local' }
+    }
+    $staleJunction = Get-Item -LiteralPath (Join-Path $WorkspaceRoot 'semantic-cache-data') -Force -ErrorAction SilentlyContinue
+    if ($staleJunction -and $staleJunction.LinkType -eq 'Junction') { $staleJunction.Delete() }
+  } catch {
+    Write-Log -Level 'error' -Category 'bootstrap_memory_failed' -Details @{ error = [string]$_ }
+  }
+
+  # --- Kicks detaches (pwsh hidden, non-bloquants pour la boucle) ---
+  $ingestConfig = Join-Path $scriptsDir 'ingestion.config.json'
+  foreach ($kick in @(
+      @{ name = 'auto-ingest'; args = @('-File', (Join-Path $scriptsDir 'auto-ingest.ps1'), '-Mode', 'auto', '-ConfigPath', $ingestConfig) }
+      @{ name = 'beacon-sync'; args = @('-File', (Join-Path $scriptsDir 'beacon-sync.ps1'), '-ConfigPath', $ingestConfig) }
+      @{ name = 'memory-maintenance'; args = @('-File', (Join-Path $scriptsDir 'memory-maintenance.ps1')) }
+    )) {
+    $target = $kick.args[1]
+    if (-not (Test-Path -LiteralPath $target)) { continue }
+    try {
+      Start-Process -FilePath 'pwsh' -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass') + $kick.args) -WindowStyle Hidden -WorkingDirectory $WorkspaceRoot
+      Write-Log -Level 'info' -Category 'bootstrap_kick' -Details @{ script = $kick.name }
+    } catch {
+      Write-Log -Level 'error' -Category 'bootstrap_kick_failed' -Details @{ script = $kick.name; error = [string]$_ }
+    }
+  }
+
+  # --- Console-hider : masque les consoles des process du kit ---
+  $hider = Join-Path $scriptsDir 'console-hider.ps1'
+  if (Test-Path -LiteralPath $hider) {
+    try {
+      $already = Get-CimInstance Win32_Process -Filter "Name='pwsh.exe' or Name='powershell.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match 'console-hider\.ps1' } |
+        Select-Object -First 1
+      if (-not $already) {
+        Start-Process -FilePath 'pwsh' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$hider`"") -WindowStyle Hidden
+        Write-Log -Level 'info' -Category 'bootstrap_kick' -Details @{ script = 'console-hider' }
+      }
+    } catch {
+      Write-Log -Level 'error' -Category 'bootstrap_kick_failed' -Details @{ script = 'console-hider'; error = [string]$_ }
+    }
+  }
+
+  # --- ws-bridge :7477 — fallback si l'extension n'est pas la ---
+  try {
+    $up = Get-NetTCPConnection -LocalPort 7477 -State Listen -ErrorAction SilentlyContinue
+    if (-not $up) {
+      $candidates = @((Join-Path $WorkspaceRoot 'extensions\orchestrator-monitor\ws-bridge\bridge.js'))
+      $candidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+      $candidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+      $bridgeJs = $candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+      if ($bridgeJs) {
+        Start-Process -FilePath 'node' -ArgumentList "`"$bridgeJs`"" -WorkingDirectory (Split-Path $bridgeJs -Parent) -WindowStyle Hidden -Environment @{ HEPHAISTOS_WORKSPACE = $WorkspaceRoot }
+        Write-Log -Level 'info' -Category 'bootstrap_kick' -Details @{ script = 'ws-bridge'; path = $bridgeJs }
+      }
+    }
+  } catch {
+    Write-Log -Level 'error' -Category 'bootstrap_bridge_failed' -Details @{ error = [string]$_ }
+  }
+
+  Write-Log -Level 'info' -Category 'bootstrap_done' -Details @{}
+}
+
 if ($Once) {
+  if (-not $SkipBootstrap) { Invoke-Bootstrap }
   Invoke-Snapshot
   exit 0
 }
@@ -522,22 +745,23 @@ try {
     $commsWatcher.EnableRaisingEvents = $true
   }
 
-  Write-Log -Level 'info' -Event 'watch_started' -Details @{
+  if (-not $SkipBootstrap) { Invoke-Bootstrap }
+  Write-Log -Level 'info' -Category 'watch_started' -Details @{
     workspace = $WorkspaceRoot
     intervalSeconds = $IntervalSeconds
     database = $script:DbPath
   }
   Invoke-Snapshot
   while ($true) {
-    $event = Wait-Event -Timeout ($IntervalSeconds + 5)
-    if ($event) { Remove-Event -EventIdentifier $event.EventIdentifier -ErrorAction SilentlyContinue }
+    $queuedEvent = Wait-Event -Timeout ($IntervalSeconds + 5)
+    if ($queuedEvent) { Remove-Event -EventIdentifier $queuedEvent.EventIdentifier -ErrorAction SilentlyContinue }
     foreach ($queuedEvent in @(Get-Event -ErrorAction SilentlyContinue)) {
       if ($eventSources -contains $queuedEvent.SourceIdentifier) {
         Remove-Event -EventIdentifier $queuedEvent.EventIdentifier -ErrorAction SilentlyContinue
       }
     }
     try { Invoke-Snapshot } catch {
-      Write-Log -Level 'error' -Event 'snapshot_failed' -Details @{}
+      Write-Log -Level 'error' -Category 'snapshot_failed' -Details @{}
     }
   }
 } finally {

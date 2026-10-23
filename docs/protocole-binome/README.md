@@ -1,7 +1,16 @@
 # Protocole binôme Devin–ACP/CLI et commande `/jointes`
 
+**Protocole : Hephaïstos 2-kit** — c'est LE nom du protocole, ni Hermès ni autre.
+
+## 0. Identités canoniques (obligatoire)
+
+- **Cash = Devin** — l'agent IDE qui orchestre (`acp/devin-cli/quiet-comb`).
+- **Tango = AGY** — Antigravity, cascade fixe `721750ab-c666-483d-99af-91fafbb745f4`.
+- **Bleubites** = workers subordonnés : sessions ACP (`acp/devin-cli/morning-riverbed`, `scrawny-thorn`, `equal-level`…) et workers CLI (nim1, nim2, hermes, kilo, opencode, vibe, ollama-cloud). Un bleubite peut déléguer à un autre bleubite — le résultat remonte toujours au `dispatcher` exact inscrit sur la tâche.
+- Bus `.agent/comms.jsonl` (transient) · tunnel unique `ws://127.0.0.1:7477` · état des tâches = hphe-mcp uniquement · vault = procédures et livrables, jamais un journal d'actions.
+
 **Statut :** procédure canonique du workspace Hephaistos2-Kit  
-**Dernière vérification :** 2026-10-15
+**Dernière vérification :** 2026-10-20
 
 Ce document est la référence opérationnelle unique pour joindre Devin à un agent par le protocole binôme. La commande Devin native est définie dans `.devin/skills/jointes/SKILL.md`; ses invariants sont rappelés dans `.devin/rules/jointes.md` et `.agent/rules/global_rules.md`.
 
@@ -109,6 +118,7 @@ La skill Devin doit suivre cet ordre :
 3. Pour CLI, ne choisir que les sessions Kilo/Hermes retournées par `agent-adapters.js sessions <agent>`; l’ID doit être associé au workspace. Le registre MCP `list_agents` confirme l’activation orchestrateur, mais pas une session Devin ACP.
 4. Pour Kilo/Hermes, si les modes ACP et CLI sont tous deux disponibles, demander explicitement le mode. Pour les autres providers, utiliser uniquement ACP; aucune conversion provider→CLI implicite.
 5. Publier une requête et obtenir l’ACK du pair réel avec IDs/transports/providers concordants; expiration 15 minutes. En cas de session absente, désactivée, ambiguë ou sans outils permettant l’ACK, refuser le join et ne pas dispatcher une tâche en remplacement.
+6. **Cascade du projet courant, dans les deux sens** : celui qui émet — join initial ou réponse à une requête entrante — dépose le message dans l’historique/cascade **rattaché au workspace courant**. Résoudre la session du pair via `chat-id.js`/`acp-list` (déjà filtrés par workspace) et vérifier que la `convId` du demandeur appartient au même projet : une requête arrivée depuis une cascade d’un autre projet ne s’y acquitte pas — on résout la session du pair dans ce workspace à la place. On répond au **dernier demandeur réel** (champ `src` du bus), jamais à une cascade « canonique » étrangère au projet.
 
 La config Devin observée active `kilo`, `hermes`, `antigravity-acp`, `devin-cloud`, `opencode`, `openrouter`, `nim`, `nim2` et `mistral-vibe`; les sessions réelles sont filtrées au moment du join. `devin-cli` est l’identité Devin locale, pas un pair avec soi-même. Les ACP `nim`/`nim2` ne sont pas les workers HES `nim1`/`nim2` one-shot. `Masurewski` reste non résolu.
 
@@ -141,3 +151,36 @@ Constats d’un join Devin ⇄ OpenCode réel (ping-pong PONG reçu via `acp-inj
 - Règles communes : `.agent/rules/global_rules.md`
 - Entrée du checklist d’installation : `.agent/docs/install-checklist-collab.md`
 - Note d’architecture : `.agent/knowledge/decisions/004-binome-jointes.md`
+
+## 9. Retour d'expérience 2026-10-20 — attribution `sourceAgent` et rollcall multi-sessions
+
+Constats d'une session de coordination équipe (vault `F:\doc_Obsidian\Doc`, Cash = `acp/devin-cli/quiet-comb`, Tango = `agy/721750ab`) :
+
+1. **`sourceAgent` mentait par défaut.** `devin-hub.js sendToDevin(text, cascadeId, port, sourceAgent = 'agy')` signait `agy→devin` tout envoi fait sans paramètre explicite (CLI `send`, appels orchestrateur). Sur `comms.jsonl`, des messages de Cash apparaissaient comme venant de Tango — cause directe de confusions d'identité entre sessions (« se prendre pour le voisin »). **Corrigé** : défaut = `process.env.HEPHAISTOS_AGENT || 'devin-hub'` ; la CLI accepte `send "<texte>" [cascadeId] --as <agent>`. `binome.js` passait déjà `me` — inchangé. Patch appliqué aux deux copies (kit canonique + `.agent/agent-bridge/` du workspace, tenues identiques).
+2. **Le routage ACP par focus est sain mais volatil.** `wakeDevin` n'injecte que si `acp.focusedSessionId === target` et `known()` (skip `wake-noroute` sinon) — un `wake-acp-focus: A -> B` signifie *focus avant → focus après*, pas une erreur de cible. Effet de bord assumé : envoyer à une session ACP force `vscode.open` sur son onglet — l'observateur humain voit la fenêtre changer.
+3. **« Terminé » sans fichier = mensonge opérationnel.** Un agent a annoncé 3× un livrable terminé alors que le fichier faisait 0 octet. Règle : toute annonce de complétion DOIT citer un artefact vérifiable sur disque (chemin + taille). Voir aussi rapport 01 (livrables factices nim-worker).
+4. **Procédure PING/PONG canonique** (mise dans le marbre) : à l'arrivée sur un workspace équipe, chaque session (1) résout son identité par `chat-id.js` — jamais de mémoire ; (2) publie `comms.js log <src> all event "PING <nom> = <sessionId>"` ; (3) répond aux pings par `reply "PONG <nom> = <sessionId>"` ; (4) les noms sont fixes : Tango = agy, toujours ; les autres sessions disent leur vrai sessionId ; (5) roster public dans `<workspace>/99_Labo/EQUIPE.md` ou équivalent ; (6) l'inventaire des sessions présentes = `devin-hub.js acp-list <provider>` (filtrer `userMessageCount > 0` — les brouillons 0-message ne sont pas joinables).
+5. **Signer son travail.** Tout livrable d'équipe porte auteur + sessionId dans son en-tête ; tout edit d'un fichier de coordination (EQUIPE.md, INDEX) cite la session dans la ligne « Événements ». Un fichier modifié sans signature est attribué « auteur à identifier » jusqu'à preuve.
+
+## 10. Discipline d'usage du hub et du bus (2026-10-20)
+
+Règles non négociables pour les agents (surtout `agy`/Tango côté hub Antigravity) :
+
+1. **Répondre = `comms.js log <src> <dst> reply "<msg>"`.** Jamais de `wake_agy`/`wake_antigravity`/nouvelle cascade pour répondre : chaque réponse ouverte dans une nouvelle fenêtre coûte une fenêtre et casse le fil de conversation. Le bus est le canal des accusés, statuts et réponses courtes.
+2. **La conversation du pair est fixe.** Tango = cascade `721750ab-…` ; les messages y arrivent, les réponses s'y écrivent. Ne jamais créer de conversation parallèle pour le même fil.
+3. **Livrable = fichier sur disque + une ligne comms** (`livre: chemin (taille)`). Pas de triple annonce, pas de « terminé » sans artefact.
+4. **Lire avant d'agir.** `comms.js tail` avant toute action ; `list_tasks`/`get_next_task` pour l'état des tâches — pas de sondes répétées.
+5. **`wake_agy` est réservé au réveil d'un pair endormi**, jamais pour répondre ni porter un statut.
+6. **Un ping, un pong, silence.** Pas de flood sur le bus.
+7. **Dedup bus déployé** (`comms.js`) : entrées identiques `{src,dst,kind,text}` à <2 s ignorées — corrige le double-log `binome.js`+`agy-hub.js` observé à l'envoi (×2 par message jusqu'au 2026-10-20 16:03Z).
+
+8. **Livraison ACP `devin-cli` = panneau chat, pas onglet ACP.** `explainAndFixProblem` livre dans le panneau chat Devin ; focaliser l'onglet `vscode-cascade-editor` ne suffit pas. Corrigé 2026-10-20 (rapport 16) : `openCascadeIdInChatPanel` est exécuté **systématiquement** avant le submit — `acp.focusedSessionId` peut déjà valoir la cible alors que le panneau sert une autre fenêtre (prompt scrawny-thorn livré chez equal-level puis quiet-comb). `vscode.open` n'est plus que le secours focus. Si un `wake-acp-*` échoue (`unknown`/`noroute`) ou si le focus dérive après submit (`wake-acp-misroute`), le message est copié dans `.agent/queue/<session>.jsonl` — **zéro perte**, la cible dépile à son prochain tour. Attention : `wake_acp_agent` exige `workspaceRoot` = workspace réel de l'extension (`matchesWorkspace` filtre en silence sinon — appeler avec le kit alors que l'IDE a le vault ouvert = timeout 120 s). Un PONG signé d'un nom différent de la cible = misroute → renvoyer.
+9. **UN SEUL TUNNEL : ws-bridge 7477.** Tout message inter-agents passe par le démon `ws://127.0.0.1:7477` (orchestrator-monitor), qui route `wake_devin` (panneau chat), `wake_antigravity` (hub agy.exe, avec `replyToCascadeId` pour le relay de réponse), `wake_acp_agent` (acp-inject). **Interdit** : appel direct `agy-hub.sendMessage`/`acp-inject`/CLI adapters depuis `binome.js` — ce sont des sorties du démon, pas des canaux parallèles. Un tunnel = routage central + relay de réponse + audit bus. Depuis 2026-10-20, `binome.js` branche `hub` utilise `devinHub.sendToAntigravity` ; fallback RPC uniquement pour `ask` si 7477 down.
+
+10. **planModel = modèle du dernier step de la cascade.** `SendUserCascadeMessage` EXIGE un `cascadeConfig.plannerConfig.planModel` (sinon "plan model not specified"). La bonne valeur n'est NI un modèle arbitraire NI `defaultOverrideModelConfig` (le défaut peut être un modèle à sec → plantage fenêtre, incident 2026-10-20) : c'est le modèle réellement en cours, lu depuis `metadata.modelUsage.model` du dernier step de `GetCascadeTrajectorySteps` — fallback `defaultOverrideModelConfig` puis premier modèle activé si cascade vierge. `--model` = override opt-in seulement. Corrigé : `extension.ts wakeAntigravity` + `agy-hub.js resolvePlanModel(hub,cascadeId)` lisent le dernier modelUsage.
+
+11. **Deux classes d'agents, deux régimes de modèle.** (a) **Agents internes ACP/IDE** — sessions `devin-cli` et `agy` via hub : ils vivent dans une fenêtre de chat ; le modèle = celui de la fenêtre ; sur le hub AGY on passe `planModel` = `defaultOverrideModelConfig` (défaut fenêtre) — jamais un modèle arbitraire, jamais d'envoi sans modèle (risque placeholder) ; `--model` opt-in seulement. (b) **Agents distants orchestrateur** — kilo, hermes, opencode, nim*, ollama-cloud, gemini-cli… : pas de fenêtre de chat ; leur modèle = le défaut de leur provider/config CLI, ou le couple `provider`/`model` inscrit à la tâche par le dispatcher. `agent-adapters.js` n'injecte aucun flag modèle au spawn — ne jamais en ajouter. Erreur à éviter : pousser un modèle de contexte IDE vers un worker distant, ou un modèle provider vers une fenêtre IDE.
+
+12. **Le vault n'est pas un log d'actions.** Procédures/livrables → vault ; état des tâches → orchestrateur (`list_tasks`, jamais `orchestrator.db` en direct) ; signaux transitoires (ping/pong, pris/livré) → `comms.jsonl` ; décisions/leçons durables → `memory_write` hphe + rapports du kit. Le `wake_*` sert à obliger le pair à lire la DB — pas à écrire des événements dans le vault. Journaux d'actions en markdown = anti-pattern (corrigé dans `EQUIPE.md` le 2026-10-20).
+
+13. **Retour au dispatcher exact (effet pyramidal).** Toute tâche porte `dispatcher` = session de celui qui l'a commandée — Cash, Tango, ou un bleubite (worker subalterne, local ou distant, ACP ou CLI). À la clôture (`completed`/`failed`/`cancelled`), `onTaskTerminalWake` route le résultat vers `dispatcher` : `acp/<provider>/<session>` → wakeDevin/wakeAcpAgent, `agy`/`hub` → wakeAntigravity, CLI/worker → entrée bus adressée (il poll `get_next_task`+`tail`). Les tags `cascade:`/`agycascade:` embarqués ne sont plus que le fallback quand `dispatcher` est vide. Une chaîne bleubite→bleubite remonte donc à chaque maillon : celui qui a délégué reçoit le résultat, pas un tiers. Corrigé 2026-10-20 : le routage ignorait `dispatcher` et ne routait que par tags.

@@ -16,7 +16,6 @@ $ErrorActionPreference = 'Stop'
 
 if ($Mode -eq 'skip') { Write-Host "[auto-ingest] skip demandé."; exit 0 }
 
-$ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $IngestScript = Join-Path $PSScriptRoot 'ingest-workspace.ps1'
 # -Force:($bool) ne survit pas à la frontière `<shell> -File` (le booléen
 # arrive en string -> [switch] refuse). On ne passe le switch que si besoin.

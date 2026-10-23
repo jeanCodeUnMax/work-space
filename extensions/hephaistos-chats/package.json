@@ -1,0 +1,68 @@
+{
+  "name": "hephaistos-chats",
+  "displayName": "Hephaistos Chats",
+  "description": "Onglets de chat Hephaistos dans l'éditeur. Coque d'ergonomie : historique local, mode, agent, fournisseur et modèle. Aucune connexion ACP.",
+  "version": "0.1.2",
+  "icon": "media/icon.png",
+  "publisher": "hephaistos",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hephaistosChats",
+          "title": "Hephaistos Chats",
+          "icon": "media/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "hephaistosChats": [
+        {
+          "id": "hephaistosChats.list",
+          "name": "Chats",
+          "type": "webview",
+          "icon": "media/icon.png",
+          "contextualTitle": "Hephaistos Chats",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "hephaistosChats.newChat",
+        "title": "Hephaistos : Nouveau chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "hephaistosChats.openChat",
+        "title": "Hephaistos : Ouvrir le chat",
+        "icon": "$(comment-discussion)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "hephaistosChats.openChat",
+        "key": "ctrl+alt+h"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.0.0"
+  }
+}
