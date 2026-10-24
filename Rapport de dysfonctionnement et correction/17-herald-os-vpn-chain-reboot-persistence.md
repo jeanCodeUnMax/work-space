@@ -42,3 +42,34 @@
 
 - Reboot-test reel non encore effectue : verifier au prochain boot que `deliriuum-autoup` monte le tunnel sans intervention et que les fenetres privees repondent end-to-end.
 - Les sleep targets restent masked (etat conserve) ; si une MAJ bootc reinstalle les presets, verifier `systemctl is-enabled sleep.target suspend.target hibernate.target hybrid-sleep.target` = `masked`.
+
+## Suite — 2026-10-24 soir : empilement d'interfaces + architecture reelle du canal prive
+
+### Ce qui s'est passe
+
+- Apres un nouveau reboot, tous les services ont remonte correctement (`autoup` a marche) MAIS **6+ interfaces `deliriuum0..N` se sont empilees** avec la meme IP : `deliriuumctl up` n'est pas idempotent et chaque appel cree un tun supplementaire ; `down` ne les supprime pas. Le routage marque est mort → canal prive KO malgre `up:true`.
+- Erreur commise cote PC : demarrage manuel de `WireGuardTunnel$Deliriuum` (config `AllowedIPs 0.0.0.0/0` = full capture) → coupure internet du PC. Inverse : le VPN canal est **laptop-side** ; le PC n'a pas a monter de tunnel.
+
+### Architecture reelle du canal prive (confirmee par l'utilisateur)
+
+```
+Navigateur PC + extension "Cerber Canal" (fenetre privee)
+    -> SOCKS5 127.0.0.1:1080 sur le PC  (ssh -N -D 1080 vpnproxy@192.168.1.9)
+    -> sshd herald -> sortie sous uid 1001 (vpnproxy)
+    -> nft mark 0x63 -> table 100 -> deliriuum0 -> VPN Delirium
+```
+
+- Le forward SSH `-D` est le canal ; l'extension ne fait que pointer dessus.
+- Aucun proxy ne tourne sur le LAN du laptop — tout passe par sshd.
+
+### Corrections supplementaires
+
+- Purge manuelle des interfaces orphelines (`ip link del deliriuumN`) + un seul `up` -> egress vpnproxy `93.95.226.72` verifie.
+- `deliriuum-autoup` durci : `ExecStartPre` supprime tout `deliriuum[0-9]+` residuel avant `up`, `ExecStartPost` verifie `deliriuum0`.
+- Test end-to-end PC : `curl --socks5-hostname 127.0.0.1:1080 ifconfig.me` -> IP VPN. Canal prive restaure.
+- `deliriuum-direct-app.exe` (PC) arrete : hors perimetre, le canal est cote laptop.
+
+### Fragilite restante
+
+- Le `ssh -D` cote PC n'est pas un service : si le process meurt, relancer `ssh -N -D 1080 ... vpnproxy@192.168.1.9`.
+- Si `deliriuumctl` recree des interfaces multiples un jour, la purge `ExecStartPre` d'autoup couvre le boot mais pas les `up` manuels ulterieurs.
