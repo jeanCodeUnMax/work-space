@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-24T20:01:47.705Z",
+  "updatedAt": "2026-10-24T20:09:27.162Z",
   "core": {
     "devin": [
       {
@@ -42,7 +42,7 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-24T20:01:47.706Z",
+    "lastPing": "2026-10-24T20:34:26.965Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
@@ -60,8 +60,22 @@
       "chat-mvlpm7vh": "session-missing",
       "chat-mvlpi4qj": "session-missing",
       "chat-mvlp38h8": "superseded",
-      "chat-mvmtldvy": "PONG",
-      "chat-mvmtnqa6": "PONG"
+      "chat-mvmtldvy": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "acp-inject timeout 90000ms"
+      },
+      "chat-mvmtnqa6": {
+        "transport": "acp-inject",
+        "delivered": true,
+        "stopReason": "end_turn",
+        "reply": "⚠️ Erreur : OmniRoute HTTP 413: {\"error\":{\"message\":\"[groq/openai/gpt-oss-120b] [413]: Request too large for model `openai/gpt-oss-120b` in organization `org_01",
+        "pong": false,
+        "error": null
+      }
     }
   }
 }
