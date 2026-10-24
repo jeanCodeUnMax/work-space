@@ -2,7 +2,7 @@
   "name": "hephaistos-chats",
   "displayName": "Hephaistos Chats",
   "description": "Onglets de chat Hephaistos dans l'éditeur. Coque d'ergonomie : historique local, mode, agent, fournisseur et modèle. Aucune connexion ACP.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "icon": "media/icon.png",
   "publisher": "hephaistos",
   "engines": {

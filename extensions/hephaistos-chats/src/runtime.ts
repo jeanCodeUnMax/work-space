@@ -425,7 +425,21 @@ function getWorkspaceContext(): string {
         const agentsMd = path.join(root, 'AGENTS.md');
         if (fs.existsSync(agentsMd)) {
             const content = fs.readFileSync(agentsMd, 'utf8');
-            lines.push(`\n[MANDAT MAÎTRE AGENTS.MD (Règles obligatoires Hephaistos-first)]\n${content.slice(0, 1200)}...`);
+            lines.push(`\n[MANDAT MAÎTRE AGENTS.MD (Règles obligatoires Hephaistos-first)]\n${content}`);
+        }
+    } catch {
+        /* best effort */
+    }
+
+    // Règles globales : priming obligatoire à l'arrivée de l'agent, comme tout
+    // agent du kit (identités Cash/Tango/Bleubites, lois, priorité, langue).
+    // On injecte la tête du fichier — le tronc contractuel — plafonnée pour
+    // ne pas saturer le contexte du modèle à chaque tour.
+    try {
+        const rulesMd = path.join(root, '.agent', 'rules', 'global_rules.md');
+        if (fs.existsSync(rulesMd)) {
+            const content = fs.readFileSync(rulesMd, 'utf8');
+            lines.push(`\n[RÈGLES GLOBALES DU KIT — TRONC CONTRACTUEL]\n${content.slice(0, 8000)}`);
         }
     } catch {
         /* best effort */
@@ -657,6 +671,35 @@ async function runProviderTurn(
         return omniMsg?.content?.trim() || 'Réponse vide.';
     }
 
+    // A3. HuggingFace — router OpenAI-compatible officiel, direct.
+    if (provider === 'huggingface') {
+        const hfKey = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY;
+        if (!hfKey) {
+            throw new Error('HF_TOKEN absent de l\'environnement.');
+        }
+        const res = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${hfKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model, messages: chatMessages, stream: !!onChunk }),
+            signal: abortSignal,
+        });
+        if (!res.ok) {
+            const errBody = await res.text().catch(() => '');
+            throw new Error(`HuggingFace HTTP ${res.status}: ${errBody}`);
+        }
+        if (onChunk && res.body) {
+            return await readSseStream(res.body, onChunk, onThought);
+        }
+        const json = (await res.json()) as any;
+        const hfMsg = json.choices?.[0]?.message;
+        const hfThinking = (hfMsg?.reasoning_content || hfMsg?.reasoning || '').trim();
+        if (hfThinking) onThought?.(hfThinking);
+        return hfMsg?.content?.trim() || 'Réponse vide.';
+    }
+
     // B. Ollama local ou Ollama Cloud
     if (provider === 'ollama' || provider === 'ollama-cloud') {
         const host = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
@@ -686,14 +729,13 @@ async function runProviderTurn(
         return json.message?.content?.trim() || 'Réponse vide.';
     }
 
-    // C. NVIDIA NIM
+    // C. NVIDIA NIM — API officielle directe, séparation stricte des comptes :
+    // nim → NVIDIA_API_KEY, nim2 → NVIDIA_API_KEY_2, jamais de fallback croisé.
     if (provider === 'nim' || provider === 'nim2') {
         const primaryKey = provider === 'nim2'
-            ? (process.env.NVIDIA_API_KEY_2 || process.env.NVIDIA_API_KEY)
-            : (process.env.NVIDIA_API_KEY || process.env.NVIDIA_API_KEY_2);
-        const fallbackKey = provider === 'nim2'
-            ? process.env.NVIDIA_API_KEY
-            : process.env.NVIDIA_API_KEY_2;
+            ? process.env.NVIDIA_API_KEY_2
+            : process.env.NVIDIA_API_KEY;
+        const fallbackKey = undefined;
 
         const keysToTry = [primaryKey, fallbackKey].filter((k): k is string => !!k);
 

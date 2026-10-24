@@ -66,6 +66,15 @@ function buildSystemPrompt(mode) {
         '',
         'Directives : réponses en français, professionnelles, concises, directes ; code propre et sécurisé.',
     ];
+    // Priming : mandat + règles globales du kit, comme tout agent à l'arrivée.
+    try {
+        const agentsMd = path.join(root, 'AGENTS.md');
+        if (fs.existsSync(agentsMd)) lines.push(`\n[MANDAT MAÎTRE AGENTS.MD]\n${fs.readFileSync(agentsMd, 'utf8')}`);
+    } catch { /* best effort */ }
+    try {
+        const rulesMd = path.join(root, '.agent', 'rules', 'global_rules.md');
+        if (fs.existsSync(rulesMd)) lines.push(`\n[RÈGLES GLOBALES DU KIT — TRONC CONTRACTUEL]\n${fs.readFileSync(rulesMd, 'utf8').slice(0, 8000)}`);
+    } catch { /* best effort */ }
     const suffix = {
         plan: '\n\n[MODE PLAN] Architecte logiciel : analyse, décomposition en étapes vérifiables, pas de code tant que la stratégie n\'est pas validée.',
         ask: '\n\n[MODE ASK] Oracle technique : réponses précises, aucune modification de fichiers.',
@@ -107,6 +116,23 @@ async function completeTurn(session) {
         };
     }
 
+    if (provider === 'huggingface') {
+        const hfKey = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY;
+        if (!hfKey) throw new Error('HF_TOKEN absent.');
+        const res = await fetch('https://router.huggingface.co/v1/chat/completions', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${hfKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model, messages: chatMessages, stream: false }),
+        });
+        if (!res.ok) throw new Error(`HuggingFace HTTP ${res.status}: ${await res.text().catch(() => '')}`);
+        const json = await res.json();
+        const hfMsg = json.choices?.[0]?.message || {};
+        return {
+            content: (hfMsg.content || '').trim(),
+            reasoning: (hfMsg.reasoning_content || hfMsg.reasoning || '').trim(),
+        };
+    }
+
     if (provider === 'ollama' || provider === 'ollama-cloud') {
         const host = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
         const res = await fetch(`${host}/api/chat`, {
@@ -144,10 +170,10 @@ async function completeTurn(session) {
     }
 
     if (provider === 'nim' || provider === 'nim2') {
-        const apiKey = provider === 'nim2'
-            ? (process.env.NVIDIA_API_KEY_2 || process.env.NVIDIA_API_KEY)
-            : process.env.NVIDIA_API_KEY;
-        if (!apiKey) throw new Error('NVIDIA_API_KEY absente.');
+        // Séparation stricte des comptes : nim → NVIDIA_API_KEY, nim2 → NVIDIA_API_KEY_2.
+        // Pas de fallback croisé — sinon les deux fenêtres finissent sur le même compte.
+        const apiKey = provider === 'nim2' ? process.env.NVIDIA_API_KEY_2 : process.env.NVIDIA_API_KEY;
+        if (!apiKey) throw new Error(provider === 'nim2' ? 'NVIDIA_API_KEY_2 absente.' : 'NVIDIA_API_KEY absente.');
         const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
             method: 'POST',
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -183,11 +209,9 @@ const AGENT_SPECS = {
     'kilo': { cmd: `kilo${EXE}`, args: ['acp'] },
     'gemini': { cmd: `gemini${EXE}`, args: ['--acp'] },
     'codex-acp': { cmd: `codex-acp${EXE}`, args: [] },
-    'ollama': acpProfile('opencode-ollama.json'),
-    'nim': acpProfile('opencode-nim.json'),
-    'nim2': acpProfile('opencode-nim2.json'),
-    'openrouter': acpProfile('opencode-openrouter.json'),
-    'huggingface': acpProfile('opencode-hf.json'),
+    // RÈGLE : seuls les vrais agents CLI ont leur transport ACP ici.
+    // nim/nim2/ollama/openrouter/huggingface : API officielle directe,
+    // jamais via `opencode acp` (sessions partagées = cross-talk).
     // OmniRoute : serveur ACP stdio de la gateway locale (localhost:20128) —
     // le modèle est figé au spawn (--model passé par l'appelant si présent).
     'omniroute': { cmd: 'omniroute', args: ['acp'] },

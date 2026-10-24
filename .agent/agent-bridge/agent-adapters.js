@@ -104,7 +104,7 @@ const ADAPTERS = {
     },
     nim: { provider: true, note: 'NVIDIA NIM API 1 — provider, dispatch via kilo/hermes' },
     nim2: { provider: true, note: 'NVIDIA NIM API 2 — provider, dispatch via kilo' },
-    openrouter: { provider: true, note: 'provider via opencode (OPENCODE_CONFIG opencode-openrouter.json)' },
+    openrouter: { provider: true, note: 'API directe openrouter.ai — jamais via opencode acp' },
     omniroute: { provider: true, api: 'http://localhost:20128/v1/chat/completions', note: 'OmniRoute — gateway locale multi-providers :20128 (agent omni1, worker omniroute-worker.mjs)' },
     'devin-cloud': { provider: true, note: 'Devin cloud — sessions API Devin' }
 };

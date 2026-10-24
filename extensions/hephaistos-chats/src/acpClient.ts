@@ -83,11 +83,11 @@ const PROVIDERS: Record<string, ProviderSpec> = {
     'kilo': { cmd: `kilo${EXE}`, args: ['acp'] },
     'gemini': { cmd: `gemini${EXE}`, args: ['--acp'] },
     'codex-acp': { cmd: `codex-acp${EXE}`, args: [] },
-    'ollama': opencodeProfile('opencode-ollama.json'),
-    'nim': opencodeProfile('opencode-nim.json'),
-    'nim2': opencodeProfile('opencode-nim2.json'),
-    'openrouter': opencodeProfile('opencode-openrouter.json'),
-    'huggingface': opencodeProfile('opencode-hf.json'),
+    // RÈGLE : seuls les vrais agents CLI ont leur transport ACP ici
+    // (opencode→opencode, kilo→kilo, hermes→hermes, agy→agy, vibe→vibe,
+    // gemini→gemini, codex→codex). Tout provider "API" (nim, ollama,
+    // openrouter, huggingface) passe par son endpoint officiel direct —
+    // jamais via `opencode acp` (sessions partagées = cross-talk).
     'omniroute': { cmd: 'omniroute', args: ['acp'], modelArg: true },
 };
 

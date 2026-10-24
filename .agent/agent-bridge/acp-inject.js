@@ -52,20 +52,11 @@ const PROVIDERS = {
     },
 };
 
-/* Profils OpenCode : providers Devin spawnés via `opencode acp`, différenciés
- * uniquement par OPENCODE_CONFIG (settings.json → devin.acp.agentEnv.*). */
-for (const [id, cfg] of Object.entries({
-    'ollama': 'opencode-ollama.json',
-    'nim': 'opencode-nim.json',
-    'nim2': 'opencode-nim2.json',
-    'openrouter': 'opencode-openrouter.json',
-    'huggingface': 'opencode-hf.json',
-})) {
-    PROVIDERS[id] = {
-        cmd: `opencode${EXE}`, args: ['acp'],
-        env: { OPENCODE_CONFIG: path.join(process.env.USERPROFILE || '', '.config', 'opencode', cfg) },
-    };
-}
+/* RÈGLE : seuls les vrais agents CLI ont un transport ACP injectable.
+ * nim/nim2/ollama/openrouter/huggingface = API officielles directes —
+ * jamais `opencode acp` (sessions partagées = cross-talk entre fenêtres).
+ * Pour injecter dans une fenêtre hephaistos-chats de ces providers,
+ * utiliser --provider hephaistos --session <chatId> (acp-server.mjs). */
 
 function envKey(providerId) {
     return `HEPHAISTOS_ACP_CMD_${String(providerId).toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
