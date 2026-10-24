@@ -46,12 +46,12 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-24T03:18:16.898Z",
+    "lastPing": "2026-10-24T18:16:58.698Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
-        "status": "sent",
-        "delivered": true
+        "status": "skipped",
+        "delivered": false
       },
       "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4": {
         "transport": "acp-inject",

@@ -478,6 +478,23 @@ function Invoke-Snapshot {
       ConvertFrom-Json -AsHashtable
     if ($bridgeResult.status -eq 'connected') { $bridge = 'connected' }
   } catch { }
+  if ($bridge -ne 'connected') {
+    try {
+      $candidates = @((Join-Path $WorkspaceRoot 'extensions\orchestrator-monitor\ws-bridge\bridge.js'))
+      $candidates += Get-ChildItem "$env:USERPROFILE\.devin\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+      $candidates += Get-ChildItem "$env:USERPROFILE\.vscode\extensions\hephaistos.orchestrator-monitor-*\ws-bridge\bridge.js" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+      $bridgeJs = $candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+      if ($bridgeJs) {
+        Start-Process -FilePath 'node' -ArgumentList "`"$bridgeJs`"" -WorkingDirectory (Split-Path $bridgeJs -Parent) -WindowStyle Hidden -Environment @{ HEPHAISTOS_WORKSPACE = $WorkspaceRoot }
+        Write-Log -Level 'info' -Category 'bridge_auto_revive' -Details @{ path = $bridgeJs }
+        try {
+          $bridgeResult = Invoke-NodeText -ScriptPath $script:BridgeHelper -NodeArgs @('status') |
+            ConvertFrom-Json -AsHashtable
+          if ($bridgeResult.status -eq 'connected') { $bridge = 'connected' }
+        } catch { }
+      }
+    } catch { }
+  }
   if ($bridge -ne 'connected') { Set-Alert -Key 'bridge:down' -Code 'websocket_bridge_unreachable' }
 
   $agyHub = 'unreachable'
