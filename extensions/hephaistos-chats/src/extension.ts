@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { acpDisposeAll, acpProfileModel } from './acpClient';
+import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
 import { devinAcpConfig, devinAgentPreference } from './devinConfig';
 import { HomeView } from './homeView';
@@ -206,7 +206,11 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
         if (message.type === 'delete' && message.id) {
+            // Tue la connexion ACP du chat supprimé — sans ça le processus
+            // de l'agent survivrait jusqu'au prochain refresh du watcher.
+            acpDispose(message.id);
             store.delete(message.id);
+            ChatPanel.refreshOpen(store);
             await paint();
             return;
         }

@@ -114,8 +114,12 @@ export class ChatPanel {
     }): Promise<void> {
         if (message.type === 'switch_session' && message.id) {
             const nextSession = this.store.get(message.id);
-            if (nextSession) {
+            if (nextSession && nextSession.id !== this.session.id) {
+                const previousId = this.session.id;
+                acpDispose(previousId);
+                ChatPanel.openById.delete(previousId);
                 this.session = nextSession;
+                ChatPanel.openById.set(nextSession.id, this);
                 this.panel.title = sessionTitle(this.session);
                 this.push();
             }
@@ -366,7 +370,10 @@ export class ChatPanel {
             this.currentAbortController = null;
         }
         acpDispose(this.session.id);
-        ChatPanel.openById.delete(this.session.id);
+        // Purge toute clé pointant encore vers ce panneau (ex. session permutée)
+        for (const [id, chat] of ChatPanel.openById) {
+            if (chat === this) ChatPanel.openById.delete(id);
+        }
         while (this.disposables.length) {
             this.disposables.pop()?.dispose();
         }

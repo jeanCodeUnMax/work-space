@@ -202,12 +202,12 @@ class AcpConnection {
                     return this.terminalWaitExit(id, params);
                 case 'terminal/kill': {
                     const t = this.terminals.get(params?.terminalId);
-                    try { t?.child.kill(); } catch { /* noop */ }
+                    killTree(t?.child);
                     return this.respond(id, {});
                 }
                 case 'terminal/release': {
                     const t = this.terminals.get(params?.terminalId);
-                    try { t?.child.kill(); } catch { /* noop */ }
+                    killTree(t?.child);
                     this.terminals.delete(params?.terminalId);
                     return this.respond(id, {});
                 }
@@ -512,8 +512,11 @@ class AcpConnection {
 
     dispose(): void {
         this.alive = false;
+        for (const p of this.pending.values()) p.rej(new Error('connexion ACP disposée'));
+        this.pending.clear();
         for (const t of this.terminals.values()) {
             killTree(t.child);
+            for (const w of t.waiters.splice(0)) w({ exitCode: null, signal: null });
         }
         this.terminals.clear();
         killTree(this.child);
