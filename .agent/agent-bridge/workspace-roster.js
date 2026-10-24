@@ -217,7 +217,10 @@ async function main() {
             results[e.sessionId] = await pingEntry(root, e);
         }
         if (args.includes('--write')) {
-            roster.verification = { lastPing: new Date().toISOString(), results };
+            // Fusion : --only <subset> ne doit pas effacer les résultats des
+            // agents non pingés — chaque entrée garde son dernier verdict.
+            const prev = roster.verification?.results || {};
+            roster.verification = { lastPing: new Date().toISOString(), results: { ...prev, ...results } };
             fs.writeFileSync(rosterPath(root), JSON.stringify(roster, null, 2) + '\n', 'utf8');
         }
         console.log(JSON.stringify({ command: 'ping', workspace: roster.workspace, results }, null, 1));
