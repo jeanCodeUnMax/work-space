@@ -120,8 +120,23 @@ function injectPing(root, providerId, sessionId) {
     }
 }
 
+function currentDevinSession(root) {
+    try {
+        const id = spawnSync(process.execPath, [
+            path.join(__dirname, 'current-cascade.js')
+        ], { encoding: 'utf8', cwd: root, windowsHide: true }).stdout.trim();
+        return id.startsWith('acp/') ? id : `acp/devin-cli/${id}`;
+    } catch { return null; }
+}
+
 async function pingEntry(root, e) {
     if (e.providerId === 'devin-cli') {
+        // Jamais de ping sur la session courante de l'agent : s'injecter soi-
+        // même ouvre un doublon de la conversation active dans l'IDE.
+        const self = currentDevinSession(root);
+        if (self && e.sessionId === self) {
+            return { transport: 'wake_acp_agent', status: 'skipped-self', delivered: false };
+        }
         const hub = require('./devin-hub');
         const r = await hub.sendToAcpAgent(PING_TEXT, e.sessionId, e.providerId, DEFAULT_PORT, root);
         return { transport: 'wake_acp_agent', status: r.status, delivered: r.status === 'sent' || r.status === 'delivered' };
