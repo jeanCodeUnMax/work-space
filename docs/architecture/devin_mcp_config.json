@@ -2,7 +2,7 @@
   "mcpServers": {
     "beacon": {
       "args": [
-        "C:/Users/Administrator/.beacon/beacon-rw/server.js"
+        "%USERPROFILE%/.beacon/beacon-rw/server.js"
       ],
       "command": "node"
     },
@@ -34,7 +34,7 @@
     "opencli-mcp": {
       "command": "C:/nvm4w/nodejs/node.exe",
       "args": [
-        "C:/Users/Administrator/AppData/Roaming/npm/node_modules/opencli-mcp/dist/src/main.js",
+        "%USERPROFILE%/AppData/Roaming/npm/node_modules/opencli-mcp/dist/src/main.js",
         "stdio"
       ]
     },
@@ -61,36 +61,36 @@
         "HPHE_PIPE": "\\.\\pipe\\hphe-index",
         "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
         "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
-        "HPHE_MEMORY_ROOT": "F:/Sqlite-DB/agentmemory"
+        "HPHE_MEMORY_ROOT": "${HPHE_MEMORY_ROOT}"
       }
     },
     "antigravity-obsidian": {
       "command": "node",
       "args": [
-        "C:/Users/Administrator/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
+        "%USERPROFILE%/.gemini/config/skills/antigravity-obsidian/scripts/mcp-server.js"
       ],
       "env": {
-        "OBSIDIAN_VAULT_PATH": "F:/doc_Obsidian/Doc"
+        "OBSIDIAN_VAULT_PATH": "${OBSIDIAN_VAULT_PATH}"
       }
     },
     "invisible-playwright": {
-      "command": "F:/Promgramation-teste/dots/.venv/Scripts/invisible-playwright-mcp.exe",
+      "command": "<REPOS>/dots/.venv/Scripts/invisible-playwright-mcp.exe",
       "args": []
     },
     "cli-anything": {
-      "command": "F:\\Promgramation-teste\\CLI-Anything\\.venv\\Scripts\\python.exe",
+      "command": "<REPOS>\\CLI-Anything\\.venv\\Scripts\\python.exe",
       "args": [
         "-m",
         "cli_anything_mcp"
       ],
       "env": {
-        "CLI_ANYTHING_ROOT": "F:\\Promgramation-teste\\CLI-Anything"
+        "CLI_ANYTHING_ROOT": "<REPOS>\\CLI-Anything"
       }
     },
     "obsidian-live": {
       "command": "C:/nvm4w/nodejs/node.exe",
       "args": [
-        "C:/Users/Administrator/AppData/Roaming/npm/node_modules/mcp-remote/dist/proxy.js",
+        "%USERPROFILE%/AppData/Roaming/npm/node_modules/mcp-remote/dist/proxy.js",
         "https://127.0.0.1:27124/mcp/",
         "--header",
         "Authorization: Bearer ${OBSIDIAN_API_KEY}"
@@ -102,7 +102,7 @@
     "rea": {
       "command": "C:\\nvm4w\\nodejs\\node.exe",
       "args": [
-        "C:\\Users\\Administrator\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "%USERPROFILE%\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
         "mcp"
       ]
     }

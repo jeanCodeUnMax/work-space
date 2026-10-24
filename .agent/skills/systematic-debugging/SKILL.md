@@ -117,7 +117,7 @@ pm2 logs app-name --err --lines 100
 
 Every orchestration dysfunction, worker failure, gate bypass, or structural fix applied in `hephaistos2-kit` MUST be systematically documented in Markdown (zero emojis) inside the dedicated directory:
 
-`c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
+`<workspace>\Rapport de dysfonctionnement et correction\`
 
 Each report must include:
 1. **Incident ID, Tasks (`#id`), and Date**

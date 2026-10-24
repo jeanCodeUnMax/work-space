@@ -11,7 +11,7 @@
   Destination : <VaultRoot>/Documentation/VS Code/
 #>
 param(
-    [string]$VaultRoot = $(if ($env:OBSIDIAN_VAULT_PATH) { $env:OBSIDIAN_VAULT_PATH } else { 'F:\doc_Obsidian\Doc' }),
+    [string]$VaultRoot = $(if ($env:OBSIDIAN_VAULT_PATH) { $env:OBSIDIAN_VAULT_PATH } else { throw 'OBSIDIAN_VAULT_PATH requis (ou -VaultRoot)' }),
     [string]$DestSubdir = 'Documentation/VS Code',
     [switch]$SkipIngest
 )

@@ -263,7 +263,7 @@ node .agent/agent-bridge/binome.js --as <peerAgent> --via <peerTransport> --self
 
 1. **Traçabilité Systématique des Dysfonctionnements et Corrections** :
    - Tout dysfonctionnement de l'orchestrateur, livrable factice, panne de worker, contournement de gate ou correctif appliqué aux rules, skills, scripts ou crates Rust DOIT être systématiquement documenté en Markdown (`.md`, strictement sans emoji) dans le répertoire dédié :
-     `c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
+     `<workspace>\Rapport de dysfonctionnement et correction\`
    - Un agent dédié (Bleubite recruté par l'orchestrateur, assisté des workers Cloud) est chargé de transcrire chaque incident et sa résolution dans ce répertoire et de tenir à jour `INDEX-RAPPORTS.md`.
    - Tous les collaborateurs (Cash, Luna, Bleubites, workers Cloud) doivent être avisés et appliquer cette règle.
 2. **Rôle Strict de l'Orchestrateur et Priorité aux Modèles Cloud** :

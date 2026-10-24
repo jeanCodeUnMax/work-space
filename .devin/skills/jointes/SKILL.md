@@ -98,7 +98,7 @@ Chaque travail de subalterne est noté sur **100 points** selon la grille suivan
 
 #### Rôle 5 : Remise dans le Droit Chemin / Substitution Chirurgicale
 - Si le subalterne tourne en rond par manque de contexte (ex: ne trouve pas le bon chemin de coffre) :
-  - Injecter le chemin exact (ex: `D:\!!Doc_Perso\Coffre`).
+  - Injecter le chemin exact (ex: `D:\<coffre>`).
   - Ou exécuter **directement et immédiatement** la vérification technique à sa place pour livrer le résultat final à Boss sans lui faire perdre une seconde.
 
 ---

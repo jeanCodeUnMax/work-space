@@ -12,3 +12,4 @@ logs/
 **/.*-learn-state.json
 **/.beacon-offset-state.json.lock
 queue/
+agent-bridge/local-paths.json

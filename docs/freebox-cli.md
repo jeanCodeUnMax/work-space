@@ -7,9 +7,9 @@ Vérifié en direct le 2026-10-23 : box `fbxgw-r2/mini`, firmware `4.13.1`, lien
 
 | Élément | Emplacement |
 |---|---|
-| Exécutable | `F:\Promgramation-teste\CLI-Anything\.venv\Scripts\cli-anything-freebox.exe` |
-| Source harness | `F:\Promgramation-teste\CLI-Anything\freebox\agent-harness\` (`setup.py`, `cli_anything/`) |
-| Skill | `F:\Promgramation-teste\CLI-Anything\.devin\skills\cli-anything-freebox\` |
+| Exécutable | `<CLI_ANYTHING_ROOT>\.venv\Scripts\cli-anything-freebox.exe` |
+| Source harness | `<CLI_ANYTHING_ROOT>\freebox\agent-harness\` (`setup.py`, `cli_anything/`) |
+| Skill | `<CLI_ANYTHING_ROOT>\.devin\skills\cli-anything-freebox\` |
 | Credentials | `~/.config/herald-os/freebox.json` (url, app_id, app_token, session_token — ne jamais committer) |
 | MCP | harness `freebox` du serveur `cli-anything` (`harness_run`) |
 

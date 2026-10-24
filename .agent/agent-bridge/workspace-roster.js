@@ -131,7 +131,9 @@ async function pingEntry(root, e) {
         transport: 'acp-inject',
         delivered: !!r.delivered || !!r.sent,
         stopReason: r.stopReason || null,
-        reply: r.reply || null,
+        // Reply tronquée : le manifeste est commité, il ne doit pas
+        // embarquer de contenu d'agent (données internes potentielles).
+        reply: (r.reply || '').slice(0, 160) || null,
         pong: !!(r.delivered && r.stopReason === 'end_turn' && /pong/i.test(r.reply || '')),
         error: r.error || null,
     };

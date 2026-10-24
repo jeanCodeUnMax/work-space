@@ -3,7 +3,7 @@
     Resynchronise la couche .agent Hephaistos2-Kit sur TOUS les workspaces.
 .DESCRIPTION
     Enumere les workspaces des racines projets (par defaut
-    C:\Program Files\Projet-complet et F:\Promgramation-teste) et appelle
+    <ROOTS_CONFIGUREES>) et appelle
     .agent\scripts\sync-agent-layer.ps1 sur chacun.
 
     - hephaistos2-kit est EXCLU (source de verite — jamais cible).
@@ -20,7 +20,7 @@
     pwsh -File tools\sync-all-workspaces.ps1 -DryRun
 #>
 param(
-    [string[]]$Roots = @('C:\Program Files\Projet-complet', 'F:\Promgramation-teste'),
+    [string[]]$Roots = $(if ($env:HPHE_SYNC_ROOTS) { $env:HPHE_SYNC_ROOTS -split ';' | Where-Object { $_ } } else { throw 'HPHE_SYNC_ROOTS requis (liste ;-separee de racines) ou -Roots' }),
     [string]$SyncScript = "$PSScriptRoot\..\.agent\scripts\sync-agent-layer.ps1",
     [string[]]$SkipDirs = @('hephaistos2-kit'),
     [switch]$DryRun

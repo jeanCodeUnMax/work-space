@@ -3,7 +3,7 @@
     Configuration automatique et portable des agents Devin (Dual-Mode ACP + CLI) pour collaborateur.
 .DESCRIPTION
     Script autonome concu pour repliquer l'architecture Hephaistos sur n'importe quel poste collaborateur.
-    Garantit 100% de portabilite avec des chemins relatifs (, C:\Users\Administrator, C:\Users\Administrator\AppData\Roaming).
+    Garantit 100% de portabilite avec des chemins relatifs (, %USERPROFILE%, %APPDATA%).
     Configure simultanement :
       1. Les profils IDE (.devin prioritaire, .codeium/windsurf en compatibilite)
       2. Le mode Dual (CLI pour orchestrateur-monitor + ACP pour protocole binome et comms)

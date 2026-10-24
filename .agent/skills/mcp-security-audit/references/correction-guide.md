@@ -97,7 +97,7 @@ curl http://<IP_LOCALE>:11434/api/tags  # doit échouer
 ### Identification
 
 1. Lire le fichier source du serveur :
-   - `F:\Promgramation-teste\agentMemory\out\mcp-server\server.js`
+   - `<REPOS>\agentMemory\out\mcp-server\server.js`
 2. Chercher les appels de binding :
    - `server.listen(...)`
    - `app.listen(...)`
@@ -115,7 +115,7 @@ Stop-Process -Id <liste_des_PIDs>
 
 ## Correction monitor.js (port 3055)
 
-1. Ouvrir `F:\Promgramation-teste\maigret\.agent\scripts\monitor.js`
+1. Ouvrir `<REPOS>\maigret\.agent\scripts\monitor.js`
 2. Identifier la ligne de binding (`.listen(3055, '0.0.0.0')` ou `.listen(3055)`)
 3. Modifier pour `.listen(3055, '127.0.0.1')`
 4. Redémarrer le script
@@ -159,7 +159,7 @@ Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in $mcpPorts }
   2. Utiliser un vault (Windows Credential Manager, HashiCorp Vault) si le MCP client le supporte
   3. Restreindre les permissions du fichier en lecture seule :
      ```cmd
-     icacls "C:\Users\Administrator\AppData\Roaming\devin\mcp_config.json" /grant:r "%USERNAME%:R"
+     icacls "%USERPROFILE%\AppData\Roaming\devin\mcp_config.json" /grant:r "%USERNAME%:R"
      ```
 
 ## Dépendances

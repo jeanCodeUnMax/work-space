@@ -3,29 +3,39 @@
 // enregistré en tâche planifiée `hphe-taskwatch` (toutes les 5 min).
 // Comble le trou : create_task ne notifie personne — ce script réveille
 // le destinataire via le bus (.agent/comms.jsonl) + acp-inject pour devin.
-// Workspace résolu via HPHE_WORKSPACE, sinon le projet canonique.
+// Workspace : HPHE_WORKSPACE obligatoire (injecté dans taskwatch-run.cmd par
+// install.ps1). Aucun chemin machine en dur — tout est dérivé.
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const WS = process.env.HPHE_WORKSPACE || 'F:/Promgramation-teste/Herald-OS';
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const WS = process.env.HPHE_WORKSPACE;
+if (!WS) { console.error('[taskwatch] HPHE_WORKSPACE non défini — abandon'); process.exit(1); }
 const BRIDGE = WS + '/.agent/agent-bridge';
-// SYSTEM n'a pas le meme USERPROFILE — resoudre mcp-call.mjs par candidats.
+// Sous SYSTEM, USERPROFILE pointe vers systemprofile : on énumère C:/Users
+// pour retrouver le profil qui détient les configs Devin (fonctionne sur
+// n'importe quelle machine, sans nom d'utilisateur en dur).
+const USER_DIRS = (() => { try { return readdirSync('C:/Users').map(u => `C:/Users/${u}`); } catch { return []; } })();
 const MCP_CALL = [
   process.env.HPHE_MCP_CALL,
   process.env.USERPROFILE && process.env.USERPROFILE + '/.config/devin/scripts/mcp-call.mjs',
-  'C:/Users/Administrator/.config/devin/scripts/mcp-call.mjs',
+  ...USER_DIRS.map(u => u + '/.config/devin/scripts/mcp-call.mjs'),
 ].find(p => p && existsSync(p)) || null;
-const STATE = (process.env.HPHE_DATA || 'C:/Program Files/servers/hephaistos2-kit/data') + '/taskwatch-state.json';
+// <INSTALL>/extension/server/../../data = <INSTALL>/data (déployé) ; env prioritaire.
+const STATE = (process.env.HPHE_DATA || path.resolve(HERE, '..', '..', 'data')) + '/taskwatch-state.json';
 const log = (m) => console.log(`[taskwatch ${new Date().toISOString()}] ${m}`);
 
 // Sous SYSTEM, APPDATA/USERPROFILE pointent vers systemprofile : la config MCP
-// de Devin est introuvable. On force le profil qui detient mcp_config.json.
+// de Devin est introuvable. On force le profil qui détient mcp_config.json.
 const CHILD_ENV = { ...process.env };
-if (!existsSync(process.env.APPDATA + '/devin/mcp_config.json')
-    && existsSync('C:/Users/Administrator/AppData/Roaming/devin/mcp_config.json')) {
-  CHILD_ENV.APPDATA = 'C:/Users/Administrator/AppData/Roaming';
-  CHILD_ENV.USERPROFILE = 'C:/Users/Administrator';
-  CHILD_ENV.HOME = 'C:/Users/Administrator';
+const devinProfile = [process.env.HPHE_DEVIN_PROFILE, ...USER_DIRS]
+  .find(p => p && existsSync(p + '/AppData/Roaming/devin/mcp_config.json'));
+if (!existsSync(process.env.APPDATA + '/devin/mcp_config.json') && devinProfile) {
+  CHILD_ENV.APPDATA = devinProfile + '/AppData/Roaming';
+  CHILD_ENV.USERPROFILE = devinProfile;
+  CHILD_ENV.HOME = devinProfile;
 }
 
 const run = (cmd, args, timeout = 60000) => {

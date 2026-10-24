@@ -132,6 +132,6 @@ relais désigné whip-principle.
 ## Obligation de Documentation : Rapport de dysfonctionnement et correction
 
 1. **Répertoire obligatoire :** Tout dysfonctionnement d'orchestration, livrable factice, panne de worker, contournement de gate ou correction appliquée au kit DOIT être systématiquement consigné en Markdown (`.md`, sans emoji) dans :
-   `c:\Program Files\Projet-complet\hephaistos2-kit\Rapport de dysfonctionnement et correction\`
+   `<workspace>\Rapport de dysfonctionnement et correction\`
 2. **Rôle dédié :** Un agent dédié (Bleubite recruté pour la mission, appuyé par les workers Cloud `nim1`, `nim2`, `ollama-cloud`) est responsable de transcrire chaque incident (symptôme, cause racine, correctif, prévention) et de maintenir `INDEX-RAPPORTS.md`.
 3. **Priorité Cloud Workers :** L'orchestrateur ne réalise jamais les tâches de code lui-même (rôle : vérification et dispatch uniquement) et dispatche en priorité sur les workers Cloud CLI (`nim1`, `nim2`, `ollama-cloud`) via `dispatch_task` afin de ne pas saturer les collaborateurs ACP.

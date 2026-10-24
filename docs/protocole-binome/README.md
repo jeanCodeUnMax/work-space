@@ -154,7 +154,7 @@ Constats d’un join Devin ⇄ OpenCode réel (ping-pong PONG reçu via `acp-inj
 
 ## 9. Retour d'expérience 2026-10-20 — attribution `sourceAgent` et rollcall multi-sessions
 
-Constats d'une session de coordination équipe (vault `F:\doc_Obsidian\Doc`, Cash = `acp/devin-cli/quiet-comb`, Tango = `agy/721750ab`) :
+Constats d'une session de coordination équipe (vault `<VAULT>`, Cash = `acp/devin-cli/quiet-comb`, Tango = `agy/721750ab`) :
 
 1. **`sourceAgent` mentait par défaut.** `devin-hub.js sendToDevin(text, cascadeId, port, sourceAgent = 'agy')` signait `agy→devin` tout envoi fait sans paramètre explicite (CLI `send`, appels orchestrateur). Sur `comms.jsonl`, des messages de Cash apparaissaient comme venant de Tango — cause directe de confusions d'identité entre sessions (« se prendre pour le voisin »). **Corrigé** : défaut = `process.env.HEPHAISTOS_AGENT || 'devin-hub'` ; la CLI accepte `send "<texte>" [cascadeId] --as <agent>`. `binome.js` passait déjà `me` — inchangé. Patch appliqué aux deux copies (kit canonique + `.agent/agent-bridge/` du workspace, tenues identiques).
 2. **Le routage ACP par focus est sain mais volatil.** `wakeDevin` n'injecte que si `acp.focusedSessionId === target` et `known()` (skip `wake-noroute` sinon) — un `wake-acp-focus: A -> B` signifie *focus avant → focus après*, pas une erreur de cible. Effet de bord assumé : envoyer à une session ACP force `vscode.open` sur son onglet — l'observateur humain voit la fenêtre changer.

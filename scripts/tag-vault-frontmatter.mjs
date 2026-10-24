@@ -9,7 +9,8 @@ import path from 'node:path';
 const args = process.argv.slice(2);
 const DRY = args.includes('--dry');
 const vaultIdx = args.indexOf('--vault');
-const VAULT = vaultIdx >= 0 ? args[vaultIdx + 1] : 'F:/doc_Obsidian/Doc';
+const VAULT = vaultIdx >= 0 ? args[vaultIdx + 1]
+  : (process.env.OBSIDIAN_VAULT_PATH || (() => { throw new Error('OBSIDIAN_VAULT_PATH requis ou --vault <path>'); })());
 const TODAY = '2026-10-19';
 const AUTHOR = 'Cash (Devin)';
 

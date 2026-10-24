@@ -1,7 +1,12 @@
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve(process.env.OBSIDIAN_VAULT_PATH || 'F:/doc_Obsidian/Doc');
+// Chemin du vault : env d'abord, puis local-paths.json (gitignoré, par machine).
+const localCfg = (() => { try { return JSON.parse(readFileSync(new URL('./local-paths.json', import.meta.url), 'utf8')); } catch { return {}; } })();
+const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || localCfg.obsidianVault || null;
+if (!VAULT_PATH) { console.error('[obsidian-vault-mcp] OBSIDIAN_VAULT_PATH non défini et local-paths.json absent'); process.exit(1); }
+const ROOT = path.resolve(VAULT_PATH);
 const MAX_RESULTS = 200;
 const MAX_BYTES = 2 * 1024 * 1024;
 

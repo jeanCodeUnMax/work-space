@@ -5,9 +5,9 @@
 - **Extension upstream** : `davissss2.obsidian-for-antigravity`, version **1.8.7**
 - **Source vendored** : copie exacte de l'extension installée, **patchée**
 - **Installations patchées en production** :
-  - `C:\Users\Administrator\.devin\extensions\davissss2.obsidian-for-antigravity-1.8.7\`
-  - `C:\Users\Administrator\.cursor\extensions\davissss2.obsidian-for-antigravity-1.8.7\`
-  - `C:\Users\Administrator\.devin\extensions\davissss2.obsidian-for-antigravity-1.8.5\`
+  - `%USERPROFILE%\.devin\extensions\davissss2.obsidian-for-antigravity-1.8.7\`
+  - `%USERPROFILE%\.cursor\extensions\davissss2.obsidian-for-antigravity-1.8.7\`
+  - `%USERPROFILE%\.devin\extensions\davissss2.obsidian-for-antigravity-1.8.5\`
 
 ## Pourquoi ce patch
 
@@ -48,6 +48,6 @@ et `src/obsidian-runner.js`. Sémantique d'écriture bornée :
   d'écriture ou reprendre le helper `writeMarkedMd`.
 - Les marqueurs sont la convention stable : tout write de l'extension sur un fichier
   canonique Hephaistos doit passer par `writeMarkedMd`.
-- Rapport détaillé de la session : `F:/doc_Obsidian/Doc/99_Labo/PATCH_obsidian-for-antigravity.md`.
+- Rapport détaillé de la session : `<VAULT>/99_Labo/PATCH_obsidian-for-antigravity.md`.
 - Tâche orchestrateur : **#588** (completed) — dispatch #589 (worker sans artefact,
   patch refait en direct par Cash).

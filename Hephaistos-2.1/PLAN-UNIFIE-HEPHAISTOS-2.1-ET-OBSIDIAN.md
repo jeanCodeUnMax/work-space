@@ -49,7 +49,7 @@ flowchart TD
         WEBVIEW["Webview Sidebar Search<br/>(Historique dossiers persistant,<br/>Creation contextuelle fichiers/dossiers)"]
     end
 
-    subgraph VAULT ["Second Cerveau Obsidian (F:\doc_Obsidian\Doc)"]
+    subgraph VAULT ["Second Cerveau Obsidian (<VAULT_PATH>)"]
         DOCS["Notes Markdown & Blueprints"]
         REST_API["Obsidian Local REST API (:27124)"]
         SMART["Smart Connections / Embeddings"]
@@ -134,7 +134,7 @@ flowchart LR
 - Tests manuels de validation du flux Webview.
 
 ### Phase 3 : Unification Vectorielle & Indexation Obsidian
-- Configuration du watcher NTFS Hephaistos pour inclure explicitement `F:\doc_Obsidian\Doc` dans les partitions surveillées.
+- Configuration du watcher NTFS Hephaistos pour inclure explicitement `<VAULT_PATH>` dans les partitions surveillées.
 - Raccordement du pipeline d'embeddings Usearch 2048D au proxy NIM local (`127.0.0.1:8766`).
 - Indexation Tantivy BM25 synchronisée sur les modifications Markdown en temps réel.
 

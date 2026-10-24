@@ -5,7 +5,7 @@ description: CLI harness + ACP bridge pour le laptop Herald OS (chien de garde C
 
 # CLI-Anything Cerberos (Herald OS)
 
-Pont agent-natif vers le laptop **Herald OS** (`herald-slave`, `192.168.1.9`,
+Pont agent-natif vers le laptop **Herald OS** (`herald-slave` (alias `~/.ssh/config`),
 user `hermes`). Ce host est le chien de garde du réseau : DNS bloqueur de
 pubs (blocky), watchdog Freebox, VNC headless, Hermes v0.22+ installé.
 
@@ -38,7 +38,7 @@ Tous les flags globaux : `--json`, `--host`, `--key`.
 - `exec` passe par `base64 | bash` : les quotes/accents traversent sans casse.
 - `acp` doit rester silencieux sur stdout : tout stderr distant part dans
   `~/.cerberos-acp.log` — diagnostiquer un échec de handshake là.
-- SSH est key-only (`herald-slave-ed25519`) : si `ping` échoue, vérifier
+- SSH est key-only (clé dédiée), : si `ping` échoue, vérifier
   l'alias `herald-slave` dans `~/.ssh/config`, pas les credentials.
 
 ## Enregistrement Devin ACP

@@ -69,10 +69,15 @@ function makeRequestSignal(userSignal: AbortSignal | undefined, ms: number): { s
 
 // Chargement automatique des fichiers d'environnement du workspace et du kit
 function loadWorkspaceEnv(): void {
+    // Racine du kit dérivée de l'emplacement de l'extension (out/ → ../../..)
+    // — aucun chemin machine en dur. USERPROFILE reste la référence du profil.
+    const kitRoot = path.resolve(__dirname, '..', '..', '..');
     const candidates = [
-        path.join('C:', 'Program Files', 'Projet-complet', 'hephaistos2-kit', '.env'),
-        path.join(process.env.USERPROFILE || 'C:/Users/Administrator', 'AppData', 'Local', 'hermes', '.env'),
-        path.join(process.env.USERPROFILE || 'C:/Users/Administrator', '.env'),
+        path.join(kitRoot, '.env'),
+        ...(process.env.USERPROFILE ? [
+            path.join(process.env.USERPROFILE, 'AppData', 'Local', 'hermes', '.env'),
+            path.join(process.env.USERPROFILE, '.env'),
+        ] : []),
     ];
     const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (wsRoot) {

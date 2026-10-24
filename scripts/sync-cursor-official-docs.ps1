@@ -7,7 +7,7 @@
   strips fragment-only API anchors, and preserves path layout under Documentation/Cursor/.
 #>
 param(
-    [string]$VaultRoot = $(if ($env:OBSIDIAN_VAULT_PATH) { $env:OBSIDIAN_VAULT_PATH } else { 'F:\doc_Obsidian\Doc' }),
+    [string]$VaultRoot = $(if ($env:OBSIDIAN_VAULT_PATH) { $env:OBSIDIAN_VAULT_PATH } else { throw 'OBSIDIAN_VAULT_PATH requis (ou -VaultRoot)' }),
     [string]$DestSubdir = 'Documentation/Cursor',
     [int]$MaxParallel = 8,
     [switch]$SkipIngest

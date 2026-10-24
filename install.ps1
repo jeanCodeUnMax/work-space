@@ -311,7 +311,10 @@ Copy-Item "$PRJ\tools\taskwatch.mjs" "$SRV\taskwatch.mjs" -Force
 $nodeExe = (Get-Command node -ErrorAction SilentlyContinue).Source
 if (-not $nodeExe) { $nodeExe = 'C:\nvm4w\nodejs\node.exe' }
 # CRLF obligatoire pour cmd.exe ; le repertoire $DATA est cree plus haut dans l'install
-@('@echo off','rem taskwatch - poll orchestrateur pending toutes les 5 min (tache hphe-taskwatch)',"`"$nodeExe`" `"$SRV\taskwatch.mjs`" >> `"$DATA\taskwatch.log`" 2>&1") |
+# HPHE_WORKSPACE : workspace surveillé (par défaut la racine du projet,
+# surchargeable via HPHE_WATCH_WORKSPACE) — jamais de chemin en dur dans taskwatch.mjs.
+$watchWs = $(if ($env:HPHE_WATCH_WORKSPACE) { $env:HPHE_WATCH_WORKSPACE } else { $PRJ })
+@('@echo off','rem taskwatch - poll orchestrateur pending toutes les 5 min (tache hphe-taskwatch)',"set `"HPHE_WORKSPACE=$watchWs`"","`"$nodeExe`" `"$SRV\taskwatch.mjs`" >> `"$DATA\taskwatch.log`" 2>&1") |
   Set-Content "$SRV\taskwatch-run.cmd" -Encoding ASCII
 if ($Elevated) {
   # SYSTEM + HIGHEST : tourne session fermée ou verrouillée ; batterie désactivée.

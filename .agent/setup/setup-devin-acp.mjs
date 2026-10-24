@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
+import { localPath } from '../agent-bridge/local-paths.js';
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
@@ -72,68 +73,77 @@ const KIT_PREF_DEFAULTS = {
 // Registre ACP canonique du kit — miroir de User/acp/registry.json.
 // { name, description, cmd, args?, license? } — version/authors fixes.
 // Les entrées inconnues déjà présentes dans le fichier sont conservées.
-const NODE = 'C:\\nvm4w\\nodejs\\node.exe';
+// Chemins propres à la machine : variables d'environnement d'abord, puis
+// .agent/agent-bridge/local-paths.json (gitignoré). Jamais de chemin
+// personnel en dur dans le repo.
+const LP = (k, envName) => process.env[envName] || localPath(k) || null;
+const NODE = LP('nodeExe', 'HEPHAISTOS_NODE') || 'node';
+const KIT_ROOT = LP('kitRoot', 'HEPHAISTOS_KIT_ROOT') || '';
+const CLI_ANYTHING = LP('cliAnythingRoot', 'CLI_ANYTHING_ROOT') || '';
+const SERVERS = LP('serversRoot', 'HEPHAISTOS_SERVERS_ROOT') || '';
+const NPM_BIN = process.env.APPDATA ? `${process.env.APPDATA}\\npm` : 'npm';
+const LOCAL_BIN = process.env.LOCALAPPDATA || '';
 const KIT_REGISTRY = {
   'nim': {
     name: 'NVIDIA NIM',
     description: 'Agent ACP NVIDIA NIM - Canal direct 1 (NVIDIA_API_KEY) via cli-anything-nim. Direct NVIDIA API sans proxy. Priorite 1 : taches courantes/lourdes/importantes, modeles free.',
     cmd: NODE,
-    args: ['C:\\Program Files\\Projet-complet\\cli-anything-nim\\bin\\nim-acp.js', '--account', '1'],
+    args: [`${KIT_ROOT}\\cli-anything-nim\\bin\\nim-acp.js`, '--account', '1'],
   },
   'nim2': {
     name: 'NVIDIA NIM #2',
     description: 'Agent ACP NVIDIA NIM - Canal direct 2 (NVIDIA_API_KEY_2) via cli-anything-nim. Direct NVIDIA API sans proxy. Priorite 2 : fallback du compte 1.',
     cmd: NODE,
-    args: ['C:\\Program Files\\Projet-complet\\cli-anything-nim\\bin\\nim-acp.js', '--account', '2'],
+    args: [`${KIT_ROOT}\\cli-anything-nim\\bin\\nim-acp.js`, '--account', '2'],
   },
   'ollama': {
     name: 'Ollama (local + cloud)',
     description: 'Agent ACP Ollama via cli-anything-ollama (127.0.0.1:11434/v1, OpenAI-compatible) - modeles :cloud du compte Ollama accessibles via le daemon local. Priorite 3.',
     cmd: NODE,
-    args: ['C:\\Program Files\\Projet-complet\\cli-anything-ollama\\bin\\ollama-acp.js'],
+    args: [`${KIT_ROOT}\\cli-anything-ollama\\bin\\ollama-acp.js`],
   },
   'hermes': {
     name: 'Hermes',
     description: 'Hermes Agent local (ACP) - priorite 4 : automatismes et taches parallelisees, acces multi-modeles (NIM, OpenRouter :free, Ollama...).',
     license: 'proprietary',
-    cmd: 'C:\\Users\\Administrator\\AppData\\Local\\hermes\\bin\\hermes-acp.exe',
+    cmd: `${LOCAL_BIN}\\hermes\\bin\\hermes-acp.exe`,
   },
   'kilo': {
     name: 'KiloCode',
     description: 'Agent ACP KiloCode (kilo acp) - priorite 5 : automatismes et taches parallelisees, acces multi-modeles (NIM, Ollama Cloud, OpenRouter :free).',
-    cmd: 'C:\\Users\\Administrator\\AppData\\Roaming\\npm\\kilo.cmd',
+    cmd: `${NPM_BIN}\\kilo.cmd`,
     args: ['acp'],
   },
   'openrouter': {
     name: 'OpenRouter',
     description: 'Agent ACP OpenRouter via cli-anything-openrouter (openrouter.ai/api/v1, OPENROUTER_API_KEY) - modeles :free. Priorite 6.',
     cmd: NODE,
-    args: ['C:\\Program Files\\Projet-complet\\cli-anything-openrouter\\bin\\openrouter-acp.js'],
+    args: [`${KIT_ROOT}\\cli-anything-openrouter\\bin\\openrouter-acp.js`],
   },
   'cerberos': {
     name: 'Cerberos (Herald OS)',
-    description: 'Agent ACP Cerberos - pont SSH vers hermes acp sur le laptop Herald OS (hermes@192.168.1.9, cle herald-slave-ed25519). Acces distant au chien de garde.',
+    description: 'Agent ACP Cerberos - pont SSH vers hermes acp sur le laptop Herald OS (alias SSH `herald-slave` dans ~/.ssh/config). Acces distant au chien de garde.',
     license: 'proprietary',
     cmd: NODE,
-    args: ['F:\\Promgramation-teste\\CLI-Anything\\cerberos\\agent-harness\\bin\\cerberos-acp.js'],
+    args: [LP('cerberosAcpBin', 'CERBEROS_ACP_BIN') || `${CLI_ANYTHING}\\cerberos\\agent-harness\\bin\\cerberos-acp.js`],
   },
   'huggingface': {
     name: 'HuggingFace',
     description: 'Agent ACP HuggingFace via opencode (pas d\'adaptateur natif pour l\'instant - desactive).',
-    cmd: 'C:\\Users\\Administrator\\AppData\\Roaming\\npm\\opencode.exe',
+    cmd: `${NPM_BIN}\\opencode.exe`,
     args: ['acp'],
   },
   'cerberos-d2r2': {
     name: 'CerberOS D2R2 (Cerbere)',
-    description: 'Agent ACP Cerbere du serveur D2R2 (192.168.1.5) via SSH + cerbere-agent — NIM2/llama-3.2-11b. Chien de garde tour Debian.',
+    description: 'Agent ACP Cerbere du serveur D2R2 local via SSH + cerbere-agent — NIM2/llama-3.2-11b. Chien de garde tour Debian.',
     cmd: NODE,
-    args: ['F:/Promgramation-teste/CLI-Anything/cerberos/agent-harness/bin/d2r2-acp.js'],
+    args: [LP('cerberosD2r2Bin', 'CERBEROS_D2R2_BIN') || `${CLI_ANYTHING}/cerberos/agent-harness/bin/d2r2-acp.js`],
   },
   'omniroute': {
     name: 'OmniRoute',
     description: 'Agent ACP OmniRoute - gateway locale multi-providers (localhost:20128, ~440 modeles, auto-fallback) via le harness servers/omni-routeur. Modele fige au spawn (--model), defaut groq/openai/gpt-oss-120b.',
     cmd: NODE,
-    args: ['C:\\Program Files\\servers\\omni-routeur\\index.js', 'acp'],
+    args: [`${SERVERS}\\omni-routeur\\index.js`, 'acp'],
   },
 };
 

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs/promises';
+import fsSync from 'node:fs';
 import path from 'node:path';
 
-const vault = path.resolve(process.env.OBSIDIAN_VAULT_PATH || 'F:/doc_Obsidian/Doc');
+// Chemin du vault : env d'abord, puis local-paths.json (gitignoré, par machine).
+const localCfg = (() => { try { return JSON.parse(fsSync.readFileSync(new URL('./local-paths.json', import.meta.url), 'utf8')); } catch { return {}; } })();
+const vault = path.resolve(process.env.OBSIDIAN_VAULT_PATH || localCfg.obsidianVault || '.obsidian-vault-unset');
 const pluginsDir = path.join(vault, '.obsidian', 'plugins');
 const inventoryPath = path.join(vault, '99_Labo', 'SmartComposer_RE', 'INVENTAIRE_outils_plugins.md');
 const json = process.argv.includes('--json');

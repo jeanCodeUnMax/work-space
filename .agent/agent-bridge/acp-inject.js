@@ -25,6 +25,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const adapters = require('./agent-adapters');
+const { localPath } = require('./local-paths');
 
 const EXE = process.platform === 'win32' ? '.exe' : '';
 
@@ -44,9 +45,10 @@ const PROVIDERS = {
     },
     // Cerberos : pont SSH vers `hermes acp` sur le laptop Herald OS —
     // même spawn que la distribution Devin (acp/registry.json).
+    // Chemins machine : env d'abord, puis local-paths.json (gitignoré).
     'cerberos': {
-        cmd: process.env.CERBEROS_ACP_NODE || 'C:\\nvm4w\\nodejs\\node.exe',
-        args: [process.env.CERBEROS_ACP_BIN || 'F:\\Promgramation-teste\\CLI-Anything\\cerberos\\agent-harness\\bin\\cerberos-acp.js'],
+        cmd: process.env.CERBEROS_ACP_NODE || localPath('nodeExe') || 'node',
+        args: [process.env.CERBEROS_ACP_BIN || localPath('cerberosAcpBin') || 'cerberos-acp.js'],
     },
 };
 
