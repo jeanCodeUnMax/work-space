@@ -42,6 +42,12 @@ const DEFAULT_CLIENTS = [
 ];
 const CLIENTS = clients.length ? clients : DEFAULT_CLIENTS;
 
+// Jamais muxés ni conservés côté client : obsidian-live = mcp-remote vers le
+// plugin Local REST API (127.0.0.1:27124) — mort dès qu'Obsidian est éteint.
+// L'accès vault est couvert par antigravity-obsidian, hphe fs_* et
+// cli-anything-obsidian --local. Retiré aussi du broker s'il y traîne.
+const NEVER_MUX = new Set(['obsidian-live']);
+
 // Entrées à ne jamais muxer : celles marquées disabled dans le client.
 // (Tout le reste, y compris les serveurs .exe et python, passe par le broker.)
 function stripJsonc(src) {
@@ -73,7 +79,7 @@ for (const cp of CLIENTS) {
   const srv = json[key] || {};
   clientData.set(cp, { json, key });
   for (const [name, def] of Object.entries(srv)) {
-    if (name === 'mcp-mux' || def.disabled) continue;
+    if (name === 'mcp-mux' || def.disabled || NEVER_MUX.has(name)) continue;
     if (typeof def.command !== 'string' || !def.command) continue;
     if (!wanted.has(name)) wanted.set(name, { command: def.command, args: def.args || [], env: def.env || {} });
     else {
@@ -85,7 +91,8 @@ for (const cp of CLIENTS) {
 }
 
 // 2) Mise à jour de mcp-mux.json ---------------------------------------------
-let added = 0, envMerged = 0;
+let added = 0, envMerged = 0, removed = 0;
+for (const name of NEVER_MUX) if (mux.servers[name]) { delete mux.servers[name]; removed++; }
 for (const [name, def] of wanted) {
   if (!mux.servers[name]) { mux.servers[name] = def; added++; }
   else {
@@ -101,16 +108,17 @@ for (const [cp, { json, key }] of clientData) {
   const srv = json[key] || {};
   const direct = Object.keys(srv).filter((n) => n !== 'mcp-mux' && !(srv[n] && srv[n].disabled));
   const muxable = direct.filter((n) => wanted.has(n) && !mux.servers[n]?.disabled);
-  if (!muxable.length && srv['mcp-mux']) { report.push([cp, 'déjà muxée']); continue; }
+  const stale = Object.keys(srv).filter((n) => NEVER_MUX.has(n));
+  if (!muxable.length && !stale.length && srv['mcp-mux']) { report.push([cp, 'déjà muxée']); continue; }
   const kept = {};
-  for (const n of Object.keys(srv)) if (!muxable.includes(n) && n !== 'mcp-mux') kept[n] = srv[n];
+  for (const n of Object.keys(srv)) if (!muxable.includes(n) && n !== 'mcp-mux' && !NEVER_MUX.has(n)) kept[n] = srv[n];
   const next = { ...json, [key]: { 'mcp-mux': SHIM_ENTRY, ...kept } };
-  report.push([cp, `${muxable.length} entrée(s) → mcp-mux${muxable.length ? ' (' + muxable.join(', ') + ')' : ''}`]);
+  report.push([cp, `${muxable.length} entrée(s) → mcp-mux${muxable.length ? ' (' + muxable.join(', ') + ')' : ''}${stale.length ? ' ; exclu(s) retiré(s): ' + stale.join(', ') : ''}`]);
   if (!DRY && !VERIFY) { backup(cp); fs.writeFileSync(cp, JSON.stringify(next, null, 2) + '\n'); }
 }
 
-console.log(`mux.json : ${added} serveur(s) ajouté(s), ${envMerged} env fusionnée(s)`);
+console.log(`mux.json : ${added} serveur(s) ajouté(s), ${envMerged} env fusionnée(s), ${removed} exclu(s) retiré(s)`);
 for (const [cp, what] of report) console.log(`  ${path.basename(path.dirname(cp))}/${path.basename(cp)} : ${what}`);
-if (!DRY && !VERIFY && added) { backup(MUX_CONFIG); fs.writeFileSync(MUX_CONFIG, JSON.stringify(mux, null, 2) + '\n'); }
+if (!DRY && !VERIFY && (added || removed)) { backup(MUX_CONFIG); fs.writeFileSync(MUX_CONFIG, JSON.stringify(mux, null, 2) + '\n'); }
 console.log(DRY || VERIFY ? '— simulation, rien écrit —' : 'Terminé. Redémarrer les IDE pour appliquer.');
 if (VERIFY && added) process.exit(1);
