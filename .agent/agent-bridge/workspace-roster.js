@@ -227,7 +227,49 @@ async function main() {
         return;
     }
 
-    console.error('usage: workspace-roster.js status|restore|ping [--write] [--only id1,id2]');
+    if (cmd === 'add') {
+        // add <group> <providerId> <sessionId> [--model M] [--role R] [--restore mode]
+        const [group, providerId, sessionId] = args.slice(1);
+        if (!['devin', 'cerberos', 'bleubites'].includes(group) || !providerId || !sessionId) {
+            console.error('usage: add <devin|cerberos|bleubites> <providerId> <sessionId> [--model M] [--role R]');
+            process.exit(1);
+        }
+        roster.core[group] = roster.core[group] || [];
+        if (roster.core[group].some(e => e.sessionId === sessionId && e.providerId === providerId)) {
+            console.log(JSON.stringify({ command: 'add', status: 'duplicate-skip', sessionId }));
+            return;
+        }
+        const entry = { providerId, sessionId, restore: group === 'bleubites' ? 'open-or-reveal' : 'existing-only' };
+        const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
+        const model = flag('--model'); if (model) entry.model = model;
+        const role = flag('--role'); if (role) entry.role = role;
+        roster.core[group].push(entry);
+        roster.updatedAt = new Date().toISOString();
+        fs.writeFileSync(rosterPath(root), JSON.stringify(roster, null, 2) + '\n', 'utf8');
+        console.log(JSON.stringify({ command: 'add', status: 'added', group, entry }));
+        return;
+    }
+
+    if (cmd === 'remove') {
+        // remove <sessionId> — retire l'agent du roster (la fenêtre reste ouverte,
+        // l'agent n'est simplement plus dans l'équipe).
+        const sid = args[1];
+        if (!sid) { console.error('usage: remove <sessionId>'); process.exit(1); }
+        let removed = null;
+        for (const group of ['devin', 'cerberos', 'bleubites']) {
+            const arr = (roster.core && roster.core[group]) || [];
+            const i = arr.findIndex(e => e.sessionId === sid);
+            if (i >= 0) { removed = arr.splice(i, 1)[0]; break; }
+        }
+        if (!removed) { console.log(JSON.stringify({ command: 'remove', status: 'not-found', sessionId: sid })); return; }
+        if (roster.verification?.results) delete roster.verification.results[sid];
+        roster.updatedAt = new Date().toISOString();
+        fs.writeFileSync(rosterPath(root), JSON.stringify(roster, null, 2) + '\n', 'utf8');
+        console.log(JSON.stringify({ command: 'remove', status: 'removed', sessionId: sid }));
+        return;
+    }
+
+    console.error('usage: workspace-roster.js status|restore|ping|add|remove [--write] [--only id1,id2]');
     process.exit(1);
 }
 
