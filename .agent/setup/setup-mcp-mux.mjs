@@ -34,6 +34,11 @@ const DEFAULT_CLIENTS = [
   path.join(process.env.APPDATA || '', 'devin', 'mcp_config.json'),
   path.join(HOME, '.gemini', 'config', 'mcp_config.json'),
   path.join(HOME, '.gemini', 'antigravity-ide', 'mcp_config.json'),
+  // Configs internes des extensions agent (chacune spawnait sa propre copie)
+  path.join(process.env.APPDATA || '', 'devin', 'User', 'Claude', 'claude_desktop_config.json'),
+  path.join(process.env.APPDATA || '', 'devin', 'User', 'globalStorage', 'kilocode.kilo-code', 'settings', 'mcp_settings.json'),
+  path.join(process.env.APPDATA || '', 'devin', 'User', 'globalStorage', 'saoudrizwan.claude-dev', 'settings', 'cline_mcp_settings.json'),
+  path.join(process.env.APPDATA || '', 'devin', 'User', 'globalStorage', 'rooveterinaryinc.roo-cline', 'settings', 'mcp_settings.json'),
 ];
 const CLIENTS = clients.length ? clients : DEFAULT_CLIENTS;
 
