@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-24T03:14:22.305610+00:00",
+  "updatedAt": "2026-10-24T20:01:47.705Z",
   "core": {
     "devin": [
       {
@@ -21,21 +21,17 @@
     "bleubites": [
       {
         "providerId": "hephaistos",
-        "sessionId": "chat-mvlpm7vh",
+        "sessionId": "chat-mvmtldvy",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "restore": "open-or-reveal"
+        "restore": "open-or-reveal",
+        "role": "nim"
       },
       {
         "providerId": "hephaistos",
-        "sessionId": "chat-mvlpi4qj",
+        "sessionId": "chat-mvmtnqa6",
         "model": "groq/openai/gpt-oss-120b",
-        "restore": "open-or-reveal"
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvlp38h8",
-        "model": "groq/openai/gpt-oss-120b",
-        "restore": "open-or-reveal"
+        "restore": "open-or-reveal",
+        "role": "omniroute"
       }
     ]
   },
@@ -46,7 +42,7 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-24T18:31:09.729Z",
+    "lastPing": "2026-10-24T20:01:47.706Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
@@ -61,30 +57,11 @@
         "pong": true,
         "error": null
       },
-      "chat-mvlpm7vh": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      },
-      "chat-mvlpi4qj": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      },
-      "chat-mvlp38h8": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      }
+      "chat-mvlpm7vh": "session-missing",
+      "chat-mvlpi4qj": "session-missing",
+      "chat-mvlp38h8": "superseded",
+      "chat-mvmtldvy": "PONG",
+      "chat-mvmtnqa6": "PONG"
     }
   }
 }
