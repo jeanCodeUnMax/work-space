@@ -24,3 +24,9 @@ Estas reglas han sido registradas en Obsidian Second Brain y son de OBLIGATORIO 
 
 - Pousser hephaistos2-kit UNIQUEMENT vers les remotes `origin` (projet-temporaire) et `personal` (lascard-m).
 - **JAMAIS** pousser vers le remote/dépôt « art-qalam », jusqu'à nouvel ordre explicite de l'utilisateur.
+
+
+## ROSTER DE WORKSPACE (ordre utilisateur du 24/10/2026)
+
+- Antipatron : une session persistée (sessions.json, Redux) n'est PAS une fenêtre ouverte — toujours vérifier l'état live avant de revendiquer une restauration.
+- Manifeste canonique : `.agent/workspace-roster.json` + `memory team/roster`. Outil : `node .agent/agent-bridge/workspace-roster.js status|restore|ping [--write]`. Jamais de doublon ni de conversation de remplacement.

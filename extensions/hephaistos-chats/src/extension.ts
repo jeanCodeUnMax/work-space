@@ -66,6 +66,17 @@ export function activate(context: vscode.ExtensionContext): void {
         void paint();
     });
 
+    // Réouverture d'une fenêtre existante via le bus (ex. après crash IDE) —
+    // jamais de doublon : ChatPanel.open révèle le panel s'il existe déjà.
+    orchWs.on('message', (data: any) => {
+        if (data?.type === 'open_chat' && typeof data.sessionId === 'string') {
+            const session = store.get(data.sessionId);
+            if (!session) return;
+            ChatPanel.open(context, store, session.id, () => { void paint(); });
+            void paint();
+        }
+    });
+
     orchWs.on('snapshot', (snapshot) => {
         orchConnected = true;
         setRemoteProviders(snapshot.providers);

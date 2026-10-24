@@ -122,6 +122,27 @@ async function completeTurn(session) {
         };
     }
 
+    if (provider === 'omniroute') {
+        const raw = process.env.OMNIROUTE_BASE_URL || `http://localhost:${process.env.PORT || '20128'}/v1`;
+        const base = /\/v1$/i.test(raw.replace(/\/+$/, '')) ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
+        const key = process.env.OMNIROUTE_API_KEY;
+        const res = await fetch(`${base}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(key ? { Authorization: `Bearer ${key}` } : {}),
+            },
+            body: JSON.stringify({ model, messages: chatMessages, max_tokens: 8192, stream: false }),
+        });
+        if (!res.ok) throw new Error(`OmniRoute HTTP ${res.status}: ${await res.text().catch(() => '')}`);
+        const json = await res.json();
+        const omMsg = json.choices?.[0]?.message || {};
+        return {
+            content: (omMsg.content || '').trim(),
+            reasoning: (omMsg.reasoning || omMsg.reasoning_content || '').trim(),
+        };
+    }
+
     if (provider === 'nim' || provider === 'nim2') {
         const apiKey = provider === 'nim2'
             ? (process.env.NVIDIA_API_KEY_2 || process.env.NVIDIA_API_KEY)
@@ -142,7 +163,7 @@ async function completeTurn(session) {
         };
     }
 
-    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim).`);
+    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim/omniroute).`);
 }
 
 /* ---------- client ACP imbriqué : les providers passent par l'agent réel ----------

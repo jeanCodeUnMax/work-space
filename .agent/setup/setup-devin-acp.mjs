@@ -10,8 +10,11 @@
 //   devin.acp.agentPreferences  — entrées créées si absentes (pas de modèle
 //                                 par défaut : choisi dans l'UI, lié au compte)
 //   devin.acp.preferredAgent    — défini seulement si absent
-//   User/acp/registry.json      — entrées ACP (id → cmd/args) créées si
-//                                 absentes, mises à jour en --force
+//   acp/registry.json           — entrées ACP (id → cmd/args) créées si
+//                                 absentes, mises à jour en --force.
+//                                 ATTENTION : Devin lit le registre via
+//                                 getWindsurfConfigDirectory() = Code\User\acp,
+//                                 PAS devin\User\acp (miroir kit, docs).
 //
 // Usage : node setup-devin-acp.mjs [--verify] [--force] [--preferred <id>]
 //                                [--settings <path>] [--registry <path>]
@@ -29,8 +32,15 @@ const VERIFY = has('--verify');
 const FORCE = has('--force');
 const SETTINGS = opt('--settings',
   path.join(process.env.APPDATA || '', 'devin', 'User', 'settings.json'));
-const REGISTRY = opt('--registry',
-  path.join(process.env.APPDATA || '', 'devin', 'User', 'acp', 'registry.json'));
+// Devin Desktop lit le registre local via getWindsurfConfigDirectory() →
+// %APPDATA%\Code\User\acp\registry.json. %APPDATA%\devin\User\acp est le
+// miroir historique du kit (skills/docs y pointent) — on écrit les deux.
+const REGISTRIES = opt('--registry')
+  ? [opt('--registry')]
+  : [
+      path.join(process.env.APPDATA || '', 'Code', 'User', 'acp', 'registry.json'),
+      path.join(process.env.APPDATA || '', 'devin', 'User', 'acp', 'registry.json'),
+    ];
 
 // Providers reconnus par le kit (miroir de la config de référence).
 const KIT_ENABLED = {
@@ -258,31 +268,36 @@ function toRegistryEntry(id, def) {
 }
 
 const regRows = [];
-let regChanged = 0;
-let registry = null;
-if (fs.existsSync(REGISTRY)) {
-  try {
-    registry = JSON.parse(stripJsonc(fs.readFileSync(REGISTRY, 'utf8')));
-  } catch (e) {
-    console.error(`[WARN] registry.json non parsable (${e.message}) — section ignorée, je n'y touche pas.`);
+const regWrites = [];
+for (const regPath of REGISTRIES) {
+  const scope = regPath.split(path.sep).slice(-4, -3)[0] || regPath;
+  let registry = null;
+  if (fs.existsSync(regPath)) {
+    try {
+      registry = JSON.parse(stripJsonc(fs.readFileSync(regPath, 'utf8')));
+    } catch (e) {
+      console.error(`[WARN] ${regPath} non parsable (${e.message}) — ignoré.`);
+    }
+  } else {
+    registry = { version: '1.0.0', agents: [] };
   }
-} else {
-  registry = { version: '1.0.0', agents: [] };
-}
-if (registry && Array.isArray(registry.agents)) {
+  if (!registry || !Array.isArray(registry.agents)) continue;
   const byId = new Map(registry.agents.map((a) => [a.id, a]));
+  let dirty = false;
   for (const [id, def] of Object.entries(KIT_REGISTRY)) {
     const want = toRegistryEntry(id, def);
     const cur = byId.get(id);
     if (!cur) {
-      registry.agents.push(want); regRows.push({ id, status: 'AJOUT' }); regChanged++;
+      registry.agents.push(want); dirty = true;
+      regRows.push({ id, scope, status: 'AJOUT' });
     } else if (JSON.stringify(cur) !== JSON.stringify(want)) {
-      if (FORCE) { registry.agents[registry.agents.indexOf(cur)] = want; regChanged++; }
-      regRows.push({ id, status: FORCE ? 'MAJ' : 'DIFF (--force pour écraser)' });
+      if (FORCE) { registry.agents[registry.agents.indexOf(cur)] = want; dirty = true; }
+      regRows.push({ id, scope, status: FORCE ? 'MAJ' : 'DIFF (--force pour écraser)' });
     } else {
-      regRows.push({ id, status: 'OK' });
+      regRows.push({ id, scope, status: 'OK' });
     }
   }
+  if (dirty) regWrites.push({ path: regPath, registry });
 }
 
 let prefAction = 'conservé';
@@ -298,11 +313,10 @@ for (const r of rows) {
 }
 console.log(`preferredAgent : ${preferred ?? '(absent)'} (${prefAction})`);
 console.log(`env providers  : ${KIT_ENV_PROVIDERS.filter((p) => env[p]).length}/${KIT_ENV_PROVIDERS.length} couverts`);
-if (registry) {
-  console.log('\n=== User/acp/registry.json ===');
-  for (const r of regRows) console.log(`[${r.status.padEnd(26)}] ${r.id}`);
-  const custom = registry.agents.filter((a) => !KIT_REGISTRY[a.id]).length;
-  console.log(`kit couvert : ${regRows.length}/${Object.keys(KIT_REGISTRY).length}, entrées hors-kit conservées : ${custom}`);
+if (regRows.length) {
+  console.log('\n=== acp/registry.json (Code + devin) ===');
+  for (const r of regRows) console.log(`[${r.status.padEnd(26)}] ${r.id} (${r.scope})`);
+  console.log(`kit couvert : ${regRows.filter((r) => r.status === 'OK').length}/${regRows.length} conformes`);
 }
 
 if (VERIFY) {
@@ -312,7 +326,7 @@ if (VERIFY) {
   process.exit(bad === 0 ? 0 : 1);
 }
 
-if (!changed && !regChanged) { console.log('\nRien à écrire — déjà conforme.'); process.exit(0); }
+if (!changed && !regWrites.length) { console.log('\nRien à écrire — déjà conforme.'); process.exit(0); }
 
 if (changed) {
   settings['devin.acp.enabledAgents'] = enabled;
@@ -323,11 +337,13 @@ if (changed) {
   fs.writeFileSync(SETTINGS, JSON.stringify(settings, null, 2) + '\n');
   console.log(`\nÉcrit ${SETTINGS} (${changed} changement(s)), backup → ${path.basename(bak)}`);
 }
-if (regChanged && registry) {
-  fs.mkdirSync(path.dirname(REGISTRY), { recursive: true });
-  const bak = `${REGISTRY}.bak-acp-${new Date().toISOString().replace(/[:.]/g, '-')}`;
-  if (fs.existsSync(REGISTRY)) fs.copyFileSync(REGISTRY, bak);
-  fs.writeFileSync(REGISTRY, JSON.stringify(registry, null, 1) + '\n');
-  console.log(`Écrit ${REGISTRY} (${regChanged} entrée(s)), backup → ${path.basename(bak)}`);
+if (regWrites.length) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  for (const w of regWrites) {
+    fs.mkdirSync(path.dirname(w.path), { recursive: true });
+    if (fs.existsSync(w.path)) fs.copyFileSync(w.path, `${w.path}.bak-acp-${stamp}`);
+    fs.writeFileSync(w.path, JSON.stringify(w.registry, null, 1) + '\n');
+    console.log(`Écrit ${w.path}, backup → .bak-acp-${stamp}`);
+  }
 }
 console.log('Restart complet de Devin requis (le registry ACP est lu au démarrage du process maître, pas au Reload Window).');

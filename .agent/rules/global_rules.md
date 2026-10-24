@@ -1357,3 +1357,12 @@ Pour tout outil `cli-anything-*` (mail, telegram, obsidian, 7zip, cerberos…), 
 4. `cli_hub(["list"|"info"|"search"|"matrix"])` — package manager du repo CLI-Anything.
 
 **INTERDIT** d'invoquer `cli-anything-<x>` via exec/shell : PATH, quoting, redirections et filtrage JSON manuel = détours et erreurs. Les skills `cli-anything-*` servent à écrire/déboguer des adapters — pas à utiliser les outils.
+
+
+## ROSTER DE WORKSPACE — SWAT DE BASE (ordre utilisateur du 24/10/2026)
+
+- Les fenêtres/conversations d'agents d'un workspace sont déclarées dans **`.agent/workspace-roster.json`** (SWAT de base : 2 Devin + Cerberos optionnel + 3 Bleubites `hephaistos-chats`). Miroir canonique : `memory team/roster` (hphe-mcp, `projectId=<dossier-workspace>`).
+- Commandes : `node .agent/agent-bridge/workspace-roster.js status|restore|ping [--write]`.
+- Restauration idempotente : réutiliser l'onglet/panneau existant, ouvrir uniquement les absents (`open_chat` → `ChatPanel.openById`), **jamais de doublon ni de conversation de remplacement**.
+- Après `restore` : `ping --write` obligatoire — `acp-inject --wait turn` exige `delivered` + `end_turn` + `PONG` ; `devin-cli` via `wake_acp_agent` (soumission seule). Résultats persistés dans `verification.results`.
+- Ne jamais traiter une session persistée comme preuve qu'une fenêtre est ouverte.

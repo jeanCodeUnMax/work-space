@@ -274,3 +274,17 @@ node .agent/agent-bridge/binome.js --as <peerAgent> --via <peerTransport> --self
      - Position 2 : `ollama-cloud` (`ollama-cloud`)
 
 
+
+---
+
+## 10. Roster de workspace — SWAT de base (persistance des fenêtres agents)
+
+Les conversations/fenêtres d'agents ouvertes dans un workspace sont déclarées dans le manifeste local **`.agent/workspace-roster.json`** (miroir canonique : `memory_read/write key=team/roster projectId=<workspace>` via hphe-mcp). SWAT de base type : 2 agents Devin + Cerberos (optionnel) + 3 Bleubites `hephaistos-chats`.
+
+Outil : `node .agent/agent-bridge/workspace-roster.js status|restore|ping [--write] [--only id1,id2]`
+
+- `status` : état live — sessions ACP via bridge/Redux (fallback disque) + sessions Bleubites persistées dans `.agent/chats/sessions.json`. **Une entrée persistée n'est pas une fenêtre ouverte.**
+- `restore` : envoie `open_chat` via le bridge `ws://127.0.0.1:7477` pour chaque entrée `open-or-reveal` → l'extension appelle `ChatPanel.open`/`openById` (révèle le panneau existant, sinon le crée — jamais de doublon). Entrées `existing-only` : vérification de présence uniquement.
+- `ping` : PING/PONG par transport — `acp-inject.js --wait turn` pour `hephaistos`/`cerberos` (exiger `delivered` + `stopReason: end_turn` + reply `PONG`), `wake_acp_agent` pour `devin-cli` (focus onglet existant ou ouverture unique, pas de texte de réponse attendu).
+- `--write` persiste `verification.lastPing` + `results` dans le manifeste.
+- Règles absolues : couple exact `providerId/sessionId`, vérification du workspace, entrée absente = `missing` jamais devinée, **jamais de conversation de remplacement**.
