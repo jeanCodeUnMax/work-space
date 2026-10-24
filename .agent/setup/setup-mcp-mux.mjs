@@ -19,6 +19,7 @@ import path from 'node:path';
 const args = process.argv.slice(2);
 const VERIFY = args.includes('--verify');
 const DRY = args.includes('--dry-run');
+const JSON_OUT = args.includes('--json');
 const clients = [];
 for (let i = 0; i < args.length; i++) if (args[i] === '--client') clients.push(args[++i]);
 
@@ -113,12 +114,19 @@ for (const [cp, { json, key }] of clientData) {
   const kept = {};
   for (const n of Object.keys(srv)) if (!muxable.includes(n) && n !== 'mcp-mux' && !NEVER_MUX.has(n)) kept[n] = srv[n];
   const next = { ...json, [key]: { 'mcp-mux': SHIM_ENTRY, ...kept } };
-  report.push([cp, `${muxable.length} entrée(s) → mcp-mux${muxable.length ? ' (' + muxable.join(', ') + ')' : ''}${stale.length ? ' ; exclu(s) retiré(s): ' + stale.join(', ') : ''}`]);
+  report.push([cp, `${muxable.length} entrée(s) → mcp-mux${muxable.length ? ' (' + muxable.join(', ') + ')' : ''}${stale.length ? ' ; exclu(s) retiré(s): ' + stale.join(', ') : ''}`, { muxable, stale }]);
   if (!DRY && !VERIFY) { backup(cp); fs.writeFileSync(cp, JSON.stringify(next, null, 2) + '\n'); }
 }
 
-console.log(`mux.json : ${added} serveur(s) ajouté(s), ${envMerged} env fusionnée(s), ${removed} exclu(s) retiré(s)`);
-for (const [cp, what] of report) console.log(`  ${path.basename(path.dirname(cp))}/${path.basename(cp)} : ${what}`);
+if (JSON_OUT) {
+  const drift = report
+    .filter(([, , info]) => info && (info.muxable.length || info.stale.length))
+    .map(([cp, , info]) => ({ client: cp, muxable: info.muxable, stale: info.stale }));
+  console.log(JSON.stringify({ added, envMerged, removed, drift }, null, 2));
+} else {
+  console.log(`mux.json : ${added} serveur(s) ajouté(s), ${envMerged} env fusionnée(s), ${removed} exclu(s) retiré(s)`);
+  for (const [cp, what] of report) console.log(`  ${path.basename(path.dirname(cp))}/${path.basename(cp)} : ${what}`);
+}
 if (!DRY && !VERIFY && (added || removed)) { backup(MUX_CONFIG); fs.writeFileSync(MUX_CONFIG, JSON.stringify(mux, null, 2) + '\n'); }
-console.log(DRY || VERIFY ? '— simulation, rien écrit —' : 'Terminé. Redémarrer les IDE pour appliquer.');
+if (!JSON_OUT) console.log(DRY || VERIFY ? '— simulation, rien écrit —' : 'Terminé. Redémarrer les IDE pour appliquer.');
 if (VERIFY && added) process.exit(1);

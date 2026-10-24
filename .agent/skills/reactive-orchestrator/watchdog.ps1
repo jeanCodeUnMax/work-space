@@ -11,7 +11,8 @@ param(
   [string]$AgyCascadeId = '7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3',
   [string]$AgyModel = 'MODEL_PLACEHOLDER_M418',
   [switch]$Once,
-  [switch]$SkipBootstrap
+  [switch]$SkipBootstrap,
+  [switch]$NoMcpConfigRepair
 )
 
 Set-StrictMode -Version Latest
@@ -59,6 +60,8 @@ $script:State = @{
   cpuHighSince = $null
   lastAgyWakeAt = $null
   lastAcpProbeAt = $null
+  lastMuxCheckAt = $null
+  muxDriftSignature = $null
   taskFirstSeen = @{}
   taskStatuses = @{}
   wokenTasks = @{}
@@ -73,7 +76,7 @@ if (Test-Path -LiteralPath $script:StatePath) {
     foreach ($key in @('alerts', 'taskFirstSeen', 'taskStatuses', 'wokenTasks')) {
       if (-not $loaded.Contains($key) -or $loaded[$key] -isnot [System.Collections.IDictionary]) { $loaded[$key] = @{} }
     }
-    foreach ($key in @('commsOffset', 'cpuHighSince', 'lastAgyWakeAt', 'lastAcpProbeAt')) {
+    foreach ($key in @('commsOffset', 'cpuHighSince', 'lastAgyWakeAt', 'lastAcpProbeAt', 'lastMuxCheckAt', 'muxDriftSignature')) {
       if (-not $loaded.Contains($key)) { $loaded[$key] = $null }
     }
     if ($loaded.commsOffset -isnot [long] -and $loaded.commsOffset -isnot [int]) {
@@ -214,6 +217,80 @@ function Invoke-McpJson {
   } finally {
     $env:MCP_CALL_TIMEOUT_MS = $oldTimeout
   }
+}
+
+function Invoke-McpMuxCheck {
+  # Surveillance des configs MCP clientes (Devin surtout : Devin reecrit
+  # %APPDATA%\devin\mcp_config.json en entrees directes — source non
+  # identifiee). --verify --json de setup-mcp-mux.mjs est la reference :
+  # toute entree de la liste `drift` (muxable ou exclu stale) = derive.
+  # Copie forensique du fichier derive, alerte comms, puis reparation
+  # (sauf -NoMcpConfigRepair). Verifie toutes les ~5 min max.
+  param([Parameter(Mandatory)][DateTime]$Now)
+  $setupScript = Join-Path $script:AgentDir 'setup\setup-mcp-mux.mjs'
+  if (-not (Test-Path -LiteralPath $setupScript)) { return 'unavailable' }
+  $last = ConvertTo-UtcDateTime -Value $script:State.lastMuxCheckAt -Fallback ([DateTime]::MinValue)
+  if (($Now - $last).TotalMinutes -lt 5) { return 'skipped' }
+  $script:State.lastMuxCheckAt = $Now.ToString('o')
+
+  $verifyOut = ''
+  try {
+    # Appel direct : --verify sort 1 quand il y a derive, Invoke-NodeText
+    # leverait une exception sur exit != 0 et masquait le JSON.
+    $nodeExe = (Get-Command node.exe -ErrorAction Stop).Source
+    $verifyOut = & $nodeExe $setupScript '--verify' '--json' 2>$null | Out-String
+  } catch {
+    $verifyOut = [string]$_
+  }
+  $drift = @()
+  try {
+    $parsed = $verifyOut | ConvertFrom-Json -AsHashtable
+    $drift = @($parsed.drift)
+  } catch { }
+  if (-not $drift.Count) {
+    $script:State.muxDriftSignature = $null
+    return 'ok'
+  }
+
+  $signature = ($drift | ConvertTo-Json -Compress -Depth 5)
+  # Copie forensique des fichiers client derives (horodatee, 20 max).
+  $driftDir = Join-Path $script:AgentDir 'logs\mcp-drift'
+  if (-not (Test-Path -LiteralPath $driftDir)) {
+    New-Item -ItemType Directory -Path $driftDir -Force | Out-Null
+  }
+  $stamp = $Now.ToString('yyyyMMdd-HHmmss')
+  foreach ($clientPath in @(
+      (Join-Path $env:APPDATA 'devin\mcp_config.json'),
+      (Join-Path $env:USERPROFILE '.gemini\config\mcp_config.json'),
+      (Join-Path $env:USERPROFILE '.gemini\antigravity-ide\mcp_config.json')
+    )) {
+    if (Test-Path -LiteralPath $clientPath) {
+      try {
+        Copy-Item -LiteralPath $clientPath -Destination (Join-Path $driftDir "$(Split-Path $clientPath -Leaf)-$stamp.json") -Force
+      } catch { }
+    }
+  }
+  Get-ChildItem -LiteralPath $driftDir -Filter '*.json' -ErrorAction SilentlyContinue |
+    Sort-Object LastWriteTimeUtc -Descending | Select-Object -Skip 20 |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+
+  if ($signature -ne $script:State.muxDriftSignature) {
+    $script:State.muxDriftSignature = $signature
+    Write-Log -Level 'warning' -Category 'mcp_config_drift' -Details @{ drift = $drift }
+    try { Write-CommsEvent -Code 'mcp_config_drift' } catch { }
+  }
+
+  if (-not $NoMcpConfigRepair) {
+    try {
+      $repairOut = & $nodeExe $setupScript 2>$null | Out-String
+      Write-Log -Level 'info' -Category 'mcp_config_repaired' -Details @{ output = @($repairOut -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }) }
+    } catch {
+      Set-Alert -Key 'mcp:repair-failed' -Code 'mcp_config_repair_failed'
+      return 'repair-failed'
+    }
+    return 'drift-repaired'
+  }
+  return 'drift'
 }
 
 function Read-CommsDelta {
@@ -507,6 +584,8 @@ function Invoke-Snapshot {
   } catch { }
   if ($agyHub -ne 'connected') { Set-Alert -Key 'hub:agy' -Code 'antigravity_hub_unreachable' }
 
+  $muxStatus = [string](@(Invoke-McpMuxCheck -Now $now)[-1])
+
   $acpSummary = $null
   $lastAcpProbe = ConvertTo-UtcDateTime -Value $script:State.lastAcpProbeAt -Fallback ([DateTime]::MinValue)
   if (($now - $lastAcpProbe).TotalMinutes -ge 5) {
@@ -595,6 +674,7 @@ function Invoke-Snapshot {
     bridge = $bridge
     agyHub = $agyHub
     agyConversationCount = $agyConversationCount
+    mcpMux = $muxStatus
   }
   if ($HeartbeatTaskId) {
     $summary.watchTaskId = $HeartbeatTaskId
