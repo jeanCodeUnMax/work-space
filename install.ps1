@@ -329,6 +329,14 @@ if ($Elevated) {
   Write-Host "  taskwatch : relancer en admin avec -Elevated pour enregistrer hphe-taskwatch"
 }
 
+# 6a) MCP muxé : les configs clientes (Devin, AGY) passent par le broker partagé --
+$muxScript = "$PRJ\.agent\setup\setup-mcp-mux.mjs"
+if (Test-Path $muxScript) {
+  Write-Host "[MUX] configs MCP -> broker mcp-mux partagé"
+  & node $muxScript
+  if ($LASTEXITCODE -ne 0) { Write-Warning "mux MCP en échec — voir ci-dessus" }
+} else { Write-Warning "setup-mcp-mux.mjs introuvable : $muxScript" }
+
 # 6b) Agents ACP dans Devin (enabledAgents / agentEnv / agentPreferences) ----------
 $acpScript = "$PRJ\.agent\setup\setup-devin-acp.mjs"
 if (Test-Path $acpScript) {
@@ -360,6 +368,17 @@ if (-not $SkipVerify) {
     Write-Host "  [OK]   orchestrator-monitor v$foundExt installée (attendue >= $expectedExtVer)" -ForegroundColor Green
   } else {
     Write-Warning "orchestrator-monitor >= $expectedExtVer non détectée dans les extensions IDE (exécuter .agent\setup\install-extension-hub.ps1)"
+  }
+
+  # a1) MCP muxé
+  $muxScript = "$PRJ\.agent\setup\setup-mcp-mux.mjs"
+  if (Test-Path $muxScript) {
+    & node $muxScript --verify 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "  [OK]   configs MCP muxées (broker partagé)" -ForegroundColor Green
+    } else {
+      Write-Warning "configs MCP non muxées - exécuter: node .agent\setup\setup-mcp-mux.mjs"
+    }
   }
 
   # a2) Agents ACP Devin
