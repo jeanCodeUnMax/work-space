@@ -1,51 +1,13 @@
 {
-  "_comment": "Configuration MCP Hephaistos2-Kit v2 — exemple à adapter. Remplacez <INSTALL> par votre racine runtime (défaut : %ProgramFiles%/servers/hephaistos2-kit ou la valeur de HPHE_INSTALL / -InstallRoot de install.ps1) et <MEMORY_ROOT> par votre racine mémoire (défaut : <INSTALL>/data/agentmemory). v1 (qdrant/zvec/orchestrator-server/memory node) : absorbée par hphe-mcp.exe (58 outils : recherche NTFS, contenu Tantivy, vecteurs, orchestrateur, mémoire, ingestion).",
-  "_instructions": [
-    "1. Fusionnez la section mcpServers dans le fichier de config de votre IDE :",
-    "   Devin       : %APPDATA%/devin/mcp_config.json",
-    "   Antigravity : ~/.antigravity/mcp_config.json",
-    "   Cursor      : ~/.cursor/mcp.json",
-    "   KiloCode    : ~/.kilocode/mcp_config.json (ou ~/.config/kilo/mcp_config.json)",
-    "   KiloCode ext. VS Code : %APPDATA%/Code/User/globalStorage/kilocode.kilo-code/settings/mcp_settings.json",
-    "   Cline/Roo ext.        : %APPDATA%/<IDE>/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json",
-    "   Hermes CLI  : %LOCALAPPDATA%/hermes/config.yaml (clé agentmemory → hphe-mcp.exe)",
-    "2. Binaires serveur dans <INSTALL>/extension/server/",
-    "3. Les secrets passent par les variables d'environnement, jamais en clair.",
-    "4. Serveurs RETIRÉS en v2 (ne plus configurer — outils absorbés dans hphe-mcp) :",
-    "   qdrant, zvec, agentMemory (node), orchestrator-server, model-discovery, nim-router."
-  ],
+  "_comment": "Configuration MCP Hephaistos2-Kit — la SEULE entrée à déclarer dans la config GLOBALE de l'IDE. Tous les serveurs (hphe-mcp, sqlite-node, antigravity-obsidian, beacon, rea, puppeteer…) sont hébergés par le broker mcp-mux partagé, provisionné par .agent/setup/setup-mcp-mux.mjs (appelé aussi par install.ps1). Ne JAMAIS ajouter d'entrée MCP directe au niveau workspace : la config globale de l'IDE fait foi.",
   "mcpServers": {
-    "Hephaistos-everything-search": {
-      "_comment": "Serveur MCP Rust unique — 58 outils : recherche NTFS (pipe \\\\.\\pipe\\hphe-index), contenu Tantivy, vecteurs hphe-vec, KG mémoire, orchestrateur (tasks/agents/providers), modèles (available_models), NIM (nim_*), ingestion.",
-      "command": "<INSTALL>/extension/server/hphe-mcp.exe",
-      "args": [],
-      "disabled": false,
-      "env": {
-        "HPHE_CONTENT_DIR": "<INSTALL>/data/content-index",
-        "HPHE_VEC_DIR": "<INSTALL>/migrated-vec",
-        "HPHE_ORCH_DB": "<INSTALL>/data/orchestrator.db",
-        "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>"
-      }
-    },
-    "sqlite-node: {
-      "_comment": "SQLite multi-bases — accès direct KG/cache. <CHEMIN_DATABASES> = racine des bases mémoire (AGENT_DB_ROOT).",
-      "args": [
-        "<CHEMIN_SERVEURS>/mcp-quick-sqlite3/dist/sqlite-node-launch.mjs"
-      ],
+    "mcp-mux": {
       "command": "node",
-      "disabled": false,
-      "env": {
-        "AGENT_DB_ROOT": "<CHEMIN_DATABASES>",
-        "CACHE_DB": "<CHEMIN_DATABASES>/current_workspace/cache/runtime-cache.db",
-        "CACHE_TABLE": "cache_table",
-        "DEFAULT_DB_PATH": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/memory_mcp.db",
-        "DISABLE_DEBUG": "true",
-        "GRAPH_DB": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/graph-memory.db",
-        "LOG_LEVEL": "error",
-        "MEMORY_DB": "<CHEMIN_DATABASES>/current_workspace/agentmemory/graph/memory_mcp.db",
-        "ORCHESTRATOR_DB": "<INSTALL>/data/orchestrator.db",
-        "TTL_HOURS": "1"
-      }
+      "args": [
+        "%APPDATA%/npm/node_modules/mcp-mux/src/shim.mjs",
+        "--config",
+        "%USERPROFILE%/.config/mcp-mux/mcp-mux.json"
+      ]
     }
   }
 }
