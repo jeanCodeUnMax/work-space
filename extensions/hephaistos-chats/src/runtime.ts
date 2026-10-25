@@ -4,7 +4,8 @@ import * as process from 'process';
 import * as vscode from 'vscode';
 import { acpProfileModel, acpTurn, ACP_UNSUPPORTED, isAcpOnlyProvider, isAcpProvider, probeAcpModels } from './acpClient';
 import { devinAgentEnabled, devinAgentPreference } from './devinConfig';
-import { ACP_PROVIDERS, AcpProvider, ChatMode, ChatTool, ListedModel } from './types';
+import { runDevinTurn } from './devinRoute';
+import { ACP_PROVIDERS, AcpProvider, ChatMode, ChatTool, ListedModel, TurnCtx } from './types';
 
 const MODEL_SOURCE: Record<string, string> = {
     nim: 'nvidia-nim',
@@ -268,6 +269,14 @@ async function syncOmnirouteModels(providerId: string): Promise<ListedModel[]> {
  */
 export async function syncProviderModels(providerId: string, cwd: string): Promise<ProviderSyncResult> {
     try {
+        if (providerId === 'devin-cli') {
+            // Pas de transport ACP spawnable — la liste reflète les modèles Devin
+            // connus (préférence IDE en tête), pas une sonde live.
+            const pref = devinAgentPreference('devin-cli').model;
+            const known = ['swe-2-high', 'swe-2-max'];
+            const ids = pref ? [pref, ...known.filter((m) => m !== pref)] : known;
+            return { provider: providerId, models: ids.map((id) => ({ provider: providerId, id })), source: 'fallback' };
+        }
         if (ACP_UNSUPPORTED.has(providerId)) {
             return { provider: providerId, models: [], source: 'unsupported', error: 'pas de transport ACP local' };
         }
@@ -500,10 +509,14 @@ export async function completeTurn(
     });
     try {
         let reply: string;
-        if (ACP_UNSUPPORTED.has(provider)) {
+        if (provider === 'devin-cli') {
+            // Route hub : pas de transport ACP local — le message est injecté
+            // dans une session Devin existante via le ws-bridge :7477 et la
+            // réponse remonte par comms.jsonl (asynchrone, tour agent).
+            reply = await runDevinTurn(model, mode, messages, onChunk, abortSignal || req.signal, ctx, (m) => logRuntime(m));
+        } else if (ACP_UNSUPPORTED.has(provider)) {
             throw new Error(`Le provider "${provider}" n'a pas de transport ACP local (agent externe / cloud) — choisis un agent installé ou un provider routé.`);
-        }
-        if (isAcpProvider(provider)) {
+        } else if (isAcpProvider(provider)) {
             // Fenêtre agent ACP : même protocole que les onglets natifs de l'IDE.
             // Pas de timeout dur 120s — les tours agent (outils) peuvent durer.
             try {
@@ -527,13 +540,6 @@ export async function completeTurn(
     } finally {
         req.done();
     }
-}
-
-export interface TurnCtx {
-    chatSessionId?: string;
-    acpSessionId?: string;
-    onAcpSessionId?: (id: string) => void;
-    onTools?: (tools: ChatTool[]) => void;
 }
 
 /** Tour ACP : délègue la conversation à l'agent (spawn + session/new|load + prompt streamé). */

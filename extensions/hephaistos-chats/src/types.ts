@@ -38,6 +38,14 @@ export interface AcpProvider {
     enabled: boolean;
 }
 
+/** Contexte d'un tour — session ACP mémorisée ou, pour devin-cli, session Devin cible. */
+export interface TurnCtx {
+    chatSessionId?: string;
+    acpSessionId?: string;
+    onAcpSessionId?: (id: string) => void;
+    onTools?: (tools: ChatTool[]) => void;
+}
+
 export interface ListedModel {
     provider: string;
     id: string;
