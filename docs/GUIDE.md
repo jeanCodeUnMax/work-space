@@ -46,6 +46,7 @@ pwsh -File tools/reap-and-reconcile.ps1          # réconciliation des tâches &
 - `docs/MCP-TOOLS.md` — référence 58 outils
 - `docs/VSIX.md` — fiches des extensions
 - `docs/ONBOARDING.md` — accueil du projet dans l'org
+- `docs/GUIDE-POOL.md` — carte de l'org `projet-temporaire` et des modules complémentaires
 - `docs/wiki/` — wiki complet
 - `.agent/ARCHITECTURE.md` — architecture de référence
 - `docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md` — gouvernance processus et sécurité machine modeste
