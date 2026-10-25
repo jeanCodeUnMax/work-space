@@ -81,3 +81,10 @@ export function envVar(name: string): string | undefined {
     const d = loadDotenv()[name];
     return d || undefined;
 }
+
+/** Clé d'un provider : process.env → devin.acp.agentEnv[providerId] → .env.
+ * Ordre voulu pour la portabilité : la config Devin du collègue est la même
+ * source que Devin lui-même — pas de second fichier de clés à maintenir. */
+export function providerEnv(providerId: string, name: string): string | undefined {
+    return envVar(name) || devinAgentEnv(providerId)[name] || undefined;
+}

@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as process from 'process';
 import * as vscode from 'vscode';
 import { acpProfileModel, acpTurn, ACP_UNSUPPORTED, isAcpOnlyProvider, isAcpProvider, probeAcpModels } from './acpClient';
-import { devinAgentEnabled, devinAgentPreference } from './devinConfig';
+import { devinAgentEnabled, devinAgentPreference, providerEnv } from './devinConfig';
 import { runDevinTurn } from './devinRoute';
 import { ACP_PROVIDERS, AcpProvider, ChatMode, ChatTool, ListedModel, TurnCtx } from './types';
 
@@ -177,8 +177,8 @@ export interface ProviderSyncResult {
 /** NIM (compte 1 ou 2) — référence : liste officielle /v1/models. */
 async function syncNimModels(providerId: string): Promise<ListedModel[]> {
     const key = providerId === 'nim2'
-        ? (process.env.NVIDIA_API_KEY_2 || process.env.NVIDIA_API_KEY)
-        : (process.env.NVIDIA_API_KEY || process.env.NVIDIA_API_KEY_2);
+        ? (providerEnv('nim2','NVIDIA_API_KEY_2') || providerEnv('nim2','NVIDIA_API_KEY'))
+        : (providerEnv('nim','NVIDIA_API_KEY') || providerEnv('nim','NVIDIA_API_KEY_2'));
     if (!key) return [];
     try {
         const res = await fetch('https://integrate.api.nvidia.com/v1/models', {
@@ -219,7 +219,7 @@ const OPENROUTER_FALLBACK: ListedModel[] = [
 
 /** OpenRouter : /api/v1/models si clé, sinon liste :free curée. */
 async function syncOpenRouterModels(): Promise<ListedModel[]> {
-    const key = process.env.OPENROUTER_API_KEY;
+    const key = providerEnv('openrouter','OPENROUTER_API_KEY');
     if (key) {
         try {
             const res = await fetch('https://openrouter.ai/api/v1/models', {
@@ -241,14 +241,14 @@ async function syncOpenRouterModels(): Promise<ListedModel[]> {
 
 /** URL de base de la gateway OmniRoute (même règle que le harness omni-routeur). */
 function omnirouteBase(): string {
-    const raw = process.env.OMNIROUTE_BASE_URL || `http://localhost:${process.env.PORT || '20128'}/v1`;
+    const raw = providerEnv('omniroute','OMNIROUTE_BASE_URL') || `http://localhost:${process.env.PORT || '20128'}/v1`;
     const trimmed = String(raw).replace(/\/+$/, '');
     return /\/v1$/i.test(trimmed) ? trimmed : `${trimmed}/v1`;
 }
 
 /** OmniRoute : catalogue de la gateway locale — /v1/models (~440 entrées). */
 async function syncOmnirouteModels(providerId: string): Promise<ListedModel[]> {
-    const key = process.env.OMNIROUTE_API_KEY;
+    const key = providerEnv('omniroute','OMNIROUTE_API_KEY');
     try {
         const res = await fetch(`${omnirouteBase()}/models`, {
             headers: key ? { Authorization: `Bearer ${key}` } : {},
@@ -614,7 +614,7 @@ async function runProviderTurn(
 
     // A. OpenRouter
     if (provider === 'openrouter') {
-        const apiKey = process.env.OPENROUTER_API_KEY;
+        const apiKey = providerEnv('openrouter','OPENROUTER_API_KEY');
         if (!apiKey) {
             throw new Error('OPENROUTER_API_KEY absente de l\'environnement.');
         }
@@ -653,7 +653,7 @@ async function runProviderTurn(
 
     // A2. OmniRoute — gateway locale OpenAI-compatible (même contrat que le harness)
     if (provider === 'omniroute') {
-        const key = process.env.OMNIROUTE_API_KEY;
+        const key = providerEnv('omniroute','OMNIROUTE_API_KEY');
         const res = await fetch(`${omnirouteBase()}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -679,7 +679,7 @@ async function runProviderTurn(
 
     // A3. HuggingFace — router OpenAI-compatible officiel, direct.
     if (provider === 'huggingface') {
-        const hfKey = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY;
+        const hfKey = providerEnv('huggingface','HF_TOKEN') || providerEnv('huggingface','HUGGINGFACE_API_KEY');
         if (!hfKey) {
             throw new Error('HF_TOKEN absent de l\'environnement.');
         }
@@ -739,8 +739,8 @@ async function runProviderTurn(
     // nim → NVIDIA_API_KEY, nim2 → NVIDIA_API_KEY_2, jamais de fallback croisé.
     if (provider === 'nim' || provider === 'nim2') {
         const primaryKey = provider === 'nim2'
-            ? process.env.NVIDIA_API_KEY_2
-            : process.env.NVIDIA_API_KEY;
+            ? providerEnv('nim2','NVIDIA_API_KEY_2')
+            : providerEnv('nim','NVIDIA_API_KEY');
         const fallbackKey = undefined;
 
         const keysToTry = [primaryKey, fallbackKey].filter((k): k is string => !!k);
