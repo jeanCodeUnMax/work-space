@@ -49,6 +49,40 @@ test('workflow roster rejects cycles and removes links with a member', () => {
     assert.equal(data.edges.length, 0);
 });
 
+test('workflow nodes mirror active Hephaistos roster entries', () => {
+    const root = makeRosterRoot();
+    roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Devin' });
+    roster.upsertChatAgent(root, { sessionId: 'chat-two', model: 'model-b', role: 'Reviewer' });
+    roster.connectWorkflowAgents(root, 'chat-one', 'chat-two');
+
+    const rosterFile = path.join(root, '.agent', 'workspace-roster.json');
+    const data = JSON.parse(fs.readFileSync(rosterFile, 'utf8'));
+    data.core.bleubites = data.core.bleubites.filter((agent) => agent.sessionId !== 'chat-two');
+    fs.writeFileSync(rosterFile, JSON.stringify(data));
+
+    const graph = roster.syncRosterWorkflow(root, [
+        { id: 'chat-one', model: 'model-a' },
+        { id: 'chat-two', model: 'model-b' },
+        { id: 'chat-three', model: 'model-c' },
+    ]);
+    assert.deepEqual(graph.nodes.map((node) => node.sessionId), ['chat-one']);
+    assert.equal(graph.edges.length, 0);
+
+    const added = JSON.parse(fs.readFileSync(rosterFile, 'utf8'));
+    added.core.bleubites.push({
+        providerId: 'hephaistos',
+        sessionId: 'chat-three',
+        model: 'model-c',
+        restore: 'open-or-reveal',
+    });
+    fs.writeFileSync(rosterFile, JSON.stringify(added));
+    const refreshed = roster.syncRosterWorkflow(root, [
+        { id: 'chat-one', model: 'model-a' },
+        { id: 'chat-three', model: 'model-c' },
+    ]);
+    assert.deepEqual(refreshed.nodes.map((node) => node.sessionId), ['chat-one', 'chat-three']);
+});
+
 test('workflow execution starts with Devin, falls back to Antigravity, and follows reachable edges', () => {
     const graph = {
         version: 1,

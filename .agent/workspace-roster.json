@@ -2,20 +2,36 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-25T00:24:07.887Z",
+  "updatedAt": "2026-10-25T18:39:26.006Z",
   "core": {
     "devin": [
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/trusted-robin",
-        "restore": "existing-only"
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": false
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "restore": "existing-only",
+        "role": "Devin"
       }
     ],
     "cerberos": [
       {
         "providerId": "cerberos",
         "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
-        "restore": "existing-only"
+        "restore": "existing-only",
+        "hidden": true
       }
     ],
     "bleubites": [
@@ -24,21 +40,68 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "nim"
+        "role": "Codeur",
+        "hidden": false
       },
       {
         "providerId": "hephaistos",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-        "role": "nim2"
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Reviewer"
       },
       {
         "providerId": "hephaistos",
         "sessionId": "chat-mvmw57cq",
         "restore": "open-or-reveal",
-        "model": "groq/openai/gpt-oss-120b",
-        "role": "omniroute"
+        "model": "groq/openai/gpt-oss-20b",
+        "role": "Analyste"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/trusted-robin",
+        "restore": "open-or-reveal",
+        "role": "Devin"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "restore": "open-or-reveal",
+        "role": "Integrateur-Git"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvfrva4w",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "role": "Auditeur-securite"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvfqytbz",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Sentinelle"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvflr6cn",
+        "restore": "open-or-reveal",
+        "model": "meta/llama-3.1-70b-instruct",
+        "role": "Documentaliste-Vault"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvfj773t",
+        "restore": "open-or-reveal",
+        "model": "openai/gpt-oss-20b",
+        "role": "Verif-Submodules"
       }
     ]
   },
@@ -56,41 +119,188 @@
         "status": "skipped",
         "delivered": false
       },
-      "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "**État des lieux**\n\n- **MCP Obsidian Live** : le harnais `obsidian` est bien installé dans l'environnement CLI‑Anything (voir `list_harnesses`).  \n- **Vault loc",
-        "pong": true,
-        "error": null
-      },
       "chat-mvlpm7vh": "session-missing",
       "chat-mvlpi4qj": "session-missing",
-      "chat-mvlp38h8": "superseded",
-      "chat-mvmw59wa": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      },
-      "chat-mvmw5chd": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      },
-      "chat-mvmw57cq": {
-        "transport": "acp-inject",
-        "delivered": true,
-        "stopReason": "end_turn",
-        "reply": "PONG",
-        "pong": true,
-        "error": null
-      }
+      "chat-mvlp38h8": "superseded"
     }
+  },
+  "workflow": {
+    "version": 1,
+    "name": "Flux agents",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Codeur",
+        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
+        "skills": [
+          "clean-code",
+          "nodejs-best-practices"
+        ],
+        "title": "PING — reponds exactement…",
+        "position": {
+          "x": 38.92299582368037,
+          "y": 62.6901801050013
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Reviewer",
+        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
+        "skills": [
+          "code-review-checklist",
+          "testing-patterns"
+        ],
+        "title": "PING — reponds exactement…",
+        "position": {
+          "x": 412.0982835751815,
+          "y": -212.81943251320916
+        }
+      },
+      {
+        "sessionId": "chat-mvmw57cq",
+        "role": "Analyste",
+        "task": "Analyse la demande transmise par l'orchestrateur. Produit un plan structuré et les spécifications détaillées destinées au codeur.",
+        "skills": [
+          "architecture",
+          "api-patterns"
+        ],
+        "title": "PING — reponds exactement…",
+        "position": {
+          "x": -244.65338297454338,
+          "y": -42.82659228265918
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Orchestrateur",
+        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
+        "skills": [
+          "orchestrator",
+          "plan-writing"
+        ],
+        "title": "ionian-helicopter",
+        "position": {
+          "x": -547.3957047140188,
+          "y": -175.22306461362956
+        }
+      },
+      {
+        "sessionId": "chat-mvfrva4w",
+        "role": "Auditeur-securite",
+        "task": "Audite le code produit : injection, secrets embarqués, dépendances risquées, surface d'attaque. Verdict PASS/FAIL motivé.",
+        "skills": [
+          "vulnerability-scanner",
+          "mcp-security-audit"
+        ],
+        "title": "salut",
+        "position": {
+          "x": 401.11840658465456,
+          "y": 288.5340217846405
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle",
+        "task": "Dernier contrôle avant intégration : vérifie le verdict de l'auditeur, scanne le diff à la recherche de secrets, bloque si FAIL.",
+        "skills": [
+          "vulnerability-scanner",
+          "lint-and-validate"
+        ],
+        "title": "salut",
+        "position": {
+          "x": 741.6600006190772,
+          "y": 288.3156361832038
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
+        "skills": [
+          "lint-and-validate",
+          "testing-patterns"
+        ],
+        "title": "sugary-shoemaker",
+        "position": {
+          "x": 1312.4870120076207,
+          "y": -205.84302453098928
+        }
+      },
+      {
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Apres integration : redige/maj la documentation concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
+        "skills": [
+          "obsidian",
+          "vault-ingest"
+        ],
+        "title": "llama-3.1-70b-instruct",
+        "position": {
+          "x": 1619.6917691619842,
+          "y": -205.32370763448887
+        }
+      },
+      {
+        "sessionId": "chat-mvfj773t",
+        "role": "Verif-Submodules",
+        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre commite/pushe, alerte sur les derives.",
+        "skills": [
+          "lint-and-validate"
+        ],
+        "title": "gpt-oss-20b",
+        "position": {
+          "x": 1072.6691351150625,
+          "y": 286.51052686999407
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw57cq",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw57cq"
+      },
+      {
+        "id": "edge:chat-mvmw57cq->chat-mvmw59wa",
+        "source": "chat-mvmw57cq",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:chat-mvmw59wa->chat-mvmw5chd",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:chat-mvmw59wa->chat-mvfrva4w",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfrva4w"
+      },
+      {
+        "id": "edge:chat-mvfrva4w->chat-mvfqytbz",
+        "source": "chat-mvfrva4w",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:chat-mvmw5chd->acp/devin-cli/sugary-shoemaker",
+        "source": "chat-mvmw5chd",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvflr6cn"
+      }
+    ]
   }
 }

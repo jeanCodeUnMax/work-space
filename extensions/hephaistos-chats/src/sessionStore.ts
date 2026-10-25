@@ -40,9 +40,19 @@ export class SessionStore {
             if (fs.existsSync(indexFile)) {
                 const raw = fs.readFileSync(indexFile, 'utf8');
                 const diskSessions = JSON.parse(raw) as ChatSession[];
-                if (Array.isArray(diskSessions) && diskSessions.length > this.sessions.length) {
-                    this.sessions = diskSessions;
-                    void this.context.workspaceState.update(STORAGE_KEY, this.sessions);
+                if (Array.isArray(diskSessions)) {
+                    const merged = new Map(diskSessions.map((session) => [session.id, session]));
+                    for (const session of this.sessions) {
+                        const diskSession = merged.get(session.id);
+                        if (!diskSession || session.updatedAt >= diskSession.updatedAt) {
+                            merged.set(session.id, session);
+                        }
+                    }
+                    const restored = [...merged.values()];
+                    if (JSON.stringify(restored) !== JSON.stringify(this.sessions)) {
+                        this.sessions = restored;
+                        void this.context.workspaceState.update(STORAGE_KEY, this.sessions);
+                    }
                 }
             }
         } catch {

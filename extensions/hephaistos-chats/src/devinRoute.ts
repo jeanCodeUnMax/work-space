@@ -134,6 +134,58 @@ function waitCommsReply(client: OrchWsClient, reqId: string, abortSignal: AbortS
 }
 
 /**
+ * Même mécanisme que runDevinTurn mais pour un agent IDE arbitraire (devin-cli
+ * ou antigravity-acp) : wake_acp_agent ciblé + réponse via comms.jsonl.
+ * Utilisé par le runner de workflow pour les nœuds externes au store de chats.
+ */
+export async function runIdeAgentTurn(
+    providerId: string,
+    targetSessionId: string,
+    mode: ChatMode,
+    text: string,
+    log: LogFn = noopLog,
+): Promise<string> {
+    if (!bridge?.isConnected) {
+        throw new Error('Bridge ws://127.0.0.1:7477 injoignable - démarre l\'extension orchestrator-monitor.');
+    }
+    const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+    const reqId = randomUUID();
+    const envelope = buildEnvelope(reqId, mode, text);
+    const res = await bridgeRequest(bridge!, 'wake_acp_agent', {
+        text: envelope, sessionId: targetSessionId, providerId, workspaceRoot: wsRoot,
+    }, 'acp_wake_result', WAKE_TIMEOUT_MS);
+    const status = String(res?.status || 'failed');
+    if (status !== 'sent') {
+        throw new Error(`Injection refusée (${status}) dans la session ${targetSessionId} - fenêtre fermée ou provider désactivé.`);
+    }
+    log(`ide-agent-turn injecté req=${reqId} provider=${providerId} session=${targetSessionId}`);
+    const reply = await waitCommsReply(bridge!, reqId, undefined, log);
+    return reply || '*(Réponse vide - voir la fenêtre de l\'agent cible)*';
+}
+
+/**
+ * Liste les sessions IDE d'un provider (devin-cli / antigravity-acp) via le
+ * bridge. Retourne la session focalisée en priorité.
+ */
+export async function ideAgentSessions(
+    providerId: string,
+    workspaceRoot: string,
+): Promise<DevinSession[]> {
+    if (!bridge?.isConnected) return [];
+    try {
+        const res = await bridgeRequest(
+            bridge, 'list_acp_sessions',
+            { providerId, workspaceRoot },
+            'acp_sessions_result', LIST_TIMEOUT_MS,
+        );
+        const sessions = Array.isArray(res?.sessions) ? res.sessions : [];
+        return sessions.filter((s: DevinSession) => s?.sessionId && s.providerId === providerId);
+    } catch {
+        return [];
+    }
+}
+
+/**
  * Tour complet via la session Devin cible :
  *   1. résoudre la session (mémorisée dans ctx, sinon focalisée) ;
  *   2. injecter l'enveloppe via wake_acp_agent (ws-bridge → orchestrator-monitor) ;

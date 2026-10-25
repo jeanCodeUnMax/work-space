@@ -23,7 +23,27 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 
 ---
 
-## 2. `orchestrator-monitor` — supervision orchestrateur
+## 2. `hephaistos-chats` - workspace d'orchestration d'agents
+
+| Champ        | Valeur                                                                                          |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| ID           | `hephaistos.hephaistos-chats`                                                                 |
+| Version      | 0.2.0                                                                                           |
+| Nom affiche  | Hephaistos Chats                                                                                |
+| Source       | `extensions/hephaistos-chats/` (dossier local du repo)                                        |
+| Role         | Fenetres de chat multi-providers + canvas React Flow de composition de flux d'agents            |
+
+### Fonctionnement
+
+- **Chats** : onglets persistes (`.agent/chats/sessions.json`), transport canonique `completeTurn` (API directe, ACP, Devin via bridge ws :7477 + comms.jsonl).
+- **Espace de travail** : panneau React Flow ouvrable en onglet IDE ; nœuds = agents reels du roster `.agent/workspace-roster.json` (Bleubites chat-*, sessions Devin/AGY acp/*, Cerberos) ; roles, skills drag-drop, missions, positions et edges persistes dans le roster.
+- **Sync roster** : ajout/retrait de membre met a jour le graphe ; `hidden` retire un bloc sans sortir l'agent ; `double-clic` ouvre la fenetre de chat exacte ; schemas sauvegardables (`~/.hephaistos-workflow-schemas.json`, portee workspace, option tous-workspaces).
+- **CLI agent** : `node .agent/agent-bridge/workspace-roster.js` - `add|hide|unhide|workflow connect|configure [--role --task --skills --entry]|schema save|list|load` : le meme outil pour l'utilisateur et pour l'agent orchestrateur.
+- **Build VSIX** : `npx @vscode/vsce package` dans `extensions/hephaistos-chats/` ; artefact `hephaistos-chats-<version>.vsix` a la racine de l'extension, committe avec `git add -f` (gitignore `*.vsix`).
+
+---
+
+## 3. `orchestrator-monitor` — supervision orchestrateur
 
 | Champ        | Valeur                                                                                         |
 | ------------ | ---------------------------------------------------------------------------------------------- |

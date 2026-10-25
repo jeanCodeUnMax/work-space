@@ -1,15 +1,17 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
 import { devinAcpConfig, devinAgentPreference } from './devinConfig';
-import { setDevinBridge } from './devinRoute';
+import { ideAgentSessions, setDevinBridge } from './devinRoute';
 import { FlowWorkspacePanel } from './flowWorkspacePanel';
 import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setProviderEnabled, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
-import { createWorkflowView, WorkflowGraph } from './workflow';
+import { ACP_PROVIDERS } from './types';
+import { createWorkflowView, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
 
@@ -94,10 +96,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // jamais de doublon : ChatPanel.open révèle le panel s'il existe déjà.
     orchWs.on('message', (data: any) => {
         if (data?.type === 'open_chat' && typeof data.sessionId === 'string') {
-            const session = store.get(data.sessionId);
-            if (!session) return;
-            ChatPanel.open(context, store, session.id, () => { void paint(); });
-            void paint();
+            openSession(data.sessionId);
         }
     });
 
@@ -128,6 +127,48 @@ export function activate(context: vscode.ExtensionContext): void {
             }, 300);
         });
         context.subscriptions.push({ dispose: () => watcher.close() });
+    }
+    if (workspaceRoot && workflowStore) {
+        const rosterFile = path.join(workspaceRoot, '.agent', 'workspace-roster.json');
+        if (fs.existsSync(rosterFile)) {
+            let rosterTimer: NodeJS.Timeout | undefined;
+            const rosterWatcher = fs.watch(rosterFile, () => {
+                if (rosterTimer) clearTimeout(rosterTimer);
+                rosterTimer = setTimeout(() => { void paint(); }, 250);
+            });
+            context.subscriptions.push({ dispose: () => rosterWatcher.close() });
+        }
+    }
+
+    // Dev : le bundle du canvas est reconstruit par `watch:workspace` sans
+    // toucher l'extension host — le panneau ouvert se recharge à chaud.
+    const webviewOutDir = path.join(context.extensionPath, 'out', 'webview');
+    if (fs.existsSync(webviewOutDir)) {
+        let assetTimer: NodeJS.Timeout | undefined;
+        const assetWatcher = fs.watch(webviewOutDir, () => {
+            if (assetTimer) clearTimeout(assetTimer);
+            assetTimer = setTimeout(() => FlowWorkspacePanel.reload(), 300);
+        });
+        context.subscriptions.push({ dispose: () => assetWatcher.close() });
+    }
+    // Le code de l'extension (out/*.js) ne se hot-swappe pas : proposer le
+    // rechargement plutôt qu'attendre le Ctrl+Shift+P manuel.
+    const extOutDir = path.join(context.extensionPath, 'out');
+    if (fs.existsSync(extOutDir)) {
+        let reloadTimer: NodeJS.Timeout | undefined;
+        const outWatcher = fs.watch(extOutDir, (_event, filename) => {
+            if (!filename || !filename.endsWith('.js')) return;
+            if (reloadTimer) clearTimeout(reloadTimer);
+            reloadTimer = setTimeout(() => {
+                void vscode.window.showInformationMessage(
+                    'Hephaistos Chats : code extension recompilé. Recharger la fenêtre pour appliquer ?',
+                    'Recharger',
+                ).then((choice) => {
+                    if (choice === 'Recharger') void vscode.commands.executeCommand('workbench.action.reloadWindow');
+                });
+            }, 800);
+        });
+        context.subscriptions.push({ dispose: () => outWatcher.close() });
     }
 
     void paint();
@@ -160,7 +201,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (workflowStore) {
             try {
                 const graph = workflowStore.load(sessions);
-                FlowWorkspacePanel.update(createWorkflowView(graph, sessions));
+                FlowWorkspacePanel.update(view(graph));
             } catch (error) {
                 status = `Erreur workflow : ${String(error)}`;
             }
@@ -214,7 +255,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    function openNew(targetProvider?: string, preserveFocus = false): void {
+    function openNew(targetProvider?: string): void {
         const provider = targetProvider || 'openrouter';
         const model = defaultModelForProvider(provider);
         const session = store.create(provider, model);
@@ -223,17 +264,29 @@ export function activate(context: vscode.ExtensionContext): void {
         } catch (error) {
             status = `Agent non ajouté au roster : ${String(error)}`;
         }
-        const showOptions = preserveFocus
-            ? { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }
-            : vscode.ViewColumn.Active;
-        ChatPanel.open(context, store, session.id, () => { void paint(); }, showOptions);
+        ChatPanel.open(context, store, session.id, () => { void paint(); });
+        void paint();
+    }
+
+    // Rouvrir une session existante la réintègre au roster : sinon un agent
+    // retiré du workspace n'a aucun chemin de retour (la session existe
+    // toujours dans sessions.json, seule l'appartenance manque).
+    function openSession(sessionId: string): void {
+        const session = store.get(sessionId);
+        if (!session) return;
+        try {
+            workflowStore?.upsertSession(session);
+        } catch (error) {
+            status = `Agent non réintégré au roster : ${String(error)}`;
+        }
+        ChatPanel.open(context, store, session.id, () => { void paint(); });
         void paint();
     }
 
     function openLatest(): void {
         const latest = store.list()[0];
         if (latest) {
-            ChatPanel.open(context, store, latest.id, () => { void paint(); });
+            openSession(latest.id);
             return;
         }
         openNew();
@@ -249,7 +302,7 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
         if (message.type === 'open' && message.id) {
-            ChatPanel.open(context, store, message.id, () => { void paint(); });
+            openSession(message.id);
             return;
         }
         if (message.type === 'delete' && message.id) {
@@ -283,19 +336,59 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    function openWorkspace(): void {
+    function workflowCatalog(): WorkflowCatalog {
+        const skillsDir = workspaceRoot ? path.join(workspaceRoot, '.agent', 'skills') : '';
+        let skills: string[] = [];
+        try {
+            skills = fs.readdirSync(skillsDir, { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => entry.name)
+                .sort();
+        } catch { /* pas de dossier skills */ }
+        return {
+            roles: ['Devin', 'Antigravity', 'Codeur', 'Reviewer', 'Documentaliste', 'Testeur', 'Chercheur', 'Architecte', 'DevOps'],
+            skills,
+            providers: ACP_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label })),
+        };
+    }
+
+    function view(graph: WorkflowGraph): WorkflowView {
+        return { ...createWorkflowView(graph, store.list()), catalog: workflowCatalog() };
+    }
+
+    async function openWorkspace(): Promise<void> {
         if (!workflowStore) {
             void vscode.window.showErrorMessage('Ouvre un workspace Hephaistos pour utiliser le roster de workflow.');
             return;
         }
+        // Agent de tête = fenêtre IDE active au clic (Devin d'abord, Antigravity sinon).
+        if (workspaceRoot) {
+            try {
+                for (const providerId of ['devin-cli', 'antigravity-acp']) {
+                    const ideSessions = await ideAgentSessions(providerId, workspaceRoot);
+                    const focused = ideSessions.find((s) => s.focused) || ideSessions[0];
+                    if (focused?.sessionId) {
+                        workflowStore.upsertCoreAgent('devin', {
+                            providerId,
+                            sessionId: focused.sessionId,
+                            title: focused.title,
+                            role: providerId === 'devin-cli' ? 'Devin' : 'Antigravity',
+                        });
+                        break;
+                    }
+                }
+            } catch (error) {
+                status = `Agent IDE actif non détecté : ${String(error)}`;
+            }
+        }
         const sessions = store.list();
         try {
             const graph = workflowStore.load(sessions);
-            FlowWorkspacePanel.open(context, createWorkflowView(graph, sessions), (message) => {
+            FlowWorkspacePanel.open(context, view(graph), (message) => {
                 void onWorkflowMessage(message);
             });
         } catch (error) {
-            void vscode.window.showErrorMessage(`Impossible d’ouvrir le workflow : ${String(error)}`);
+            void vscode.window.showErrorMessage(`Impossible d'ouvrir le workflow : ${String(error)}`);
         }
     }
 
@@ -303,7 +396,6 @@ export function activate(context: vscode.ExtensionContext): void {
         type: string;
         graph?: WorkflowGraph;
         sessionId?: string;
-        provider?: string;
     }): Promise<void> {
         if (!workflowStore) return;
 
@@ -312,25 +404,70 @@ export function activate(context: vscode.ExtensionContext): void {
                 const sessionsById = new Map(store.list().map((session) => [session.id, session]));
                 for (const node of message.graph.nodes) {
                     const session = sessionsById.get(node.sessionId);
-                    if (!session) throw new Error(`Session absente du workspace: ${node.sessionId}`);
-                    if (session.workspace && workspaceRoot && session.workspace !== workspaceRoot) {
+                    if (!session && !node.sessionId.startsWith('acp/') && !node.sessionId.startsWith('local-')) {
+                        throw new Error(`Session absente du workspace: ${node.sessionId}`);
+                    }
+                    if (session && session.workspace && workspaceRoot && session.workspace !== workspaceRoot) {
                         throw new Error(`Session hors workspace refusée: ${node.sessionId}`);
                     }
                 }
                 const graph = workflowStore.save(message.graph);
-                FlowWorkspacePanel.update(createWorkflowView(graph, store.list()));
+                FlowWorkspacePanel.update(view(graph));
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }
             return;
         }
 
-        if (message.type === 'create_agent') {
-            if (message.provider !== 'devin-cli' && message.provider !== 'antigravity-acp') {
-                FlowWorkspacePanel.error('Seuls les chats Devin et Antigravity sont proposés comme entrée par défaut.');
-                return;
+        if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
+            openNew((message as { provider?: string }).provider);
+            return;
+        }
+
+        if (message.type === 'hide_agent' && message.sessionId) {
+            try {
+                FlowWorkspacePanel.update(view(workflowStore.setHidden(message.sessionId, true, store.list())));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
             }
-            openNew(message.provider, true);
+            return;
+        }
+
+        if (message.type === 'unhide_agent' && message.sessionId) {
+            try {
+                FlowWorkspacePanel.update(view(workflowStore.setHidden(message.sessionId, false, store.list())));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
+        if (message.type === 'schemas_list') {
+            FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+            return;
+        }
+
+        if (message.type === 'schema_save') {
+            try {
+                workflowStore.saveSchema(String((message as { name?: string }).name || 'Schema'), workflowStore.load(store.list()));
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
+        if (message.type === 'schema_load') {
+            try {
+                FlowWorkspacePanel.update(view(workflowStore.loadSchema(String((message as { id?: string }).id || ''))));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
+        if (message.type === 'open_agent' && message.sessionId) {
+            openSession(message.sessionId);
             return;
         }
 
@@ -341,7 +478,7 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
                 const graph = workflowStore.removeSession(message.sessionId);
                 void callHpheTool('update_agent', { agent_name: message.sessionId, active: 0 }).catch(() => undefined);
-                FlowWorkspacePanel.update(createWorkflowView(graph, store.list()));
+                FlowWorkspacePanel.update(view(graph));
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }

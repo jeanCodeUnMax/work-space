@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 
 export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonce: string): string {
-    const css = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.css'));
-    const script = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.js'));
+    const stamp = Date.now().toString(36);
+    const css = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.css')) + `?v=${stamp}`;
+    const script = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.js')) + `?v=${stamp}`;
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -76,6 +77,17 @@ export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonc
   </div>
 </div>
 
+<script nonce="${nonce}">
+window.addEventListener('error', function (e) {
+  var t = e && e.target;
+  if (t && t.tagName === 'SCRIPT') {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#e8d9c0;background:#161311;font-family:monospace;font-size:13px;padding:24px;text-align:center;z-index:9999';
+    d.textContent = 'Le script du chat n\'a pas pu se charger — recharge la fenêtre (Developer: Reload Window).';
+    document.body.appendChild(d);
+  }
+}, true);
+</script>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
 </html>`;

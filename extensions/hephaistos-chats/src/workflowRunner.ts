@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto';
-import { execFile, spawn } from 'child_process';
+import { execFile } from 'child_process';
 import * as path from 'path';
 import { promisify } from 'util';
 import { ChatSession } from './types';
-import { callHpheTool, logRuntime } from './runtime';
+import { runIdeAgentTurn } from './devinRoute';
+import { callHpheTool, completeTurn, logRuntime } from './runtime';
 import { buildWorkflowPrompt, WorkflowGraph, WorkflowNode, WorkflowRunStatus, workflowOrder } from './workflow';
 import { SessionStore } from './sessionStore';
 
@@ -15,7 +16,7 @@ interface RosterStatus {
 }
 
 interface WorkflowTask {
-    session: ChatSession;
+    session?: ChatSession;
     node: WorkflowNode;
     taskId: string;
     dependencies: string[];
@@ -23,7 +24,6 @@ interface WorkflowTask {
 
 export class WorkflowRunner {
     private readonly rosterScript: string;
-    private readonly injectScript: string;
     private activeRun = false;
 
     constructor(
@@ -33,7 +33,6 @@ export class WorkflowRunner {
         private readonly onFinished: (runId: string, success: boolean, message: string) => void,
     ) {
         this.rosterScript = path.join(workspaceRoot, '.agent', 'agent-bridge', 'workspace-roster.js');
-        this.injectScript = path.join(workspaceRoot, '.agent', 'agent-bridge', 'acp-inject.js');
     }
 
     async run(
@@ -78,21 +77,24 @@ export class WorkflowRunner {
         let failedSession: string | undefined;
         for (const task of tasks) {
             const { node, session, taskId } = task;
+            const sid = node.sessionId;
             try {
-                this.onProgress({ runId, sessionId: session.id, taskId, state: 'running' });
+                this.onProgress({ runId, sessionId: sid, taskId, state: 'running' });
                 await callHpheTool('update_task', { task_id: taskId, status: 'in_progress' });
                 const upstream = graph.edges
-                    .filter((edge) => edge.target === session.id && outputs.has(edge.source))
+                    .filter((edge) => edge.target === sid && outputs.has(edge.source))
                     .map((edge) => ({
                         role: this.nodeFor(graph, edge.source).role,
                         output: outputs.get(edge.source)!,
                     }));
-                const prompt = buildWorkflowPrompt(node, upstream);
-                const result = await this.inject(session.id, prompt);
+                const prompt = buildWorkflowPrompt(node, upstream, graph);
+                const result = session
+                    ? await this.runSessionTurn(session, prompt)
+                    : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' };
                 const output = result.reply.trim().slice(0, MAX_OUTPUT_CHARS);
                 if (!output) throw new Error('L’agent a terminé sans réponse textuelle.');
 
-                outputs.set(session.id, output);
+                outputs.set(sid, output);
                 await callHpheTool('update_task', {
                     task_id: taskId,
                     status: 'completed',
@@ -100,27 +102,27 @@ export class WorkflowRunner {
                 });
                 this.onProgress({
                     runId,
-                    sessionId: session.id,
+                    sessionId: sid,
                     taskId,
                     state: 'completed',
                     message: output.slice(0, 180),
                 });
             } catch (error) {
-                failedSession = session.id;
+                failedSession = sid;
                 const message = error instanceof Error ? error.message : String(error);
                 await this.updateTaskFailure(taskId, message);
-                this.onProgress({ runId, sessionId: session.id, taskId, state: 'failed', message });
+                this.onProgress({ runId, sessionId: sid, taskId, state: 'failed', message });
                 break;
             }
         }
 
         if (failedSession) {
             for (const task of tasks) {
-                if (outputs.has(task.session.id) || task.session.id === failedSession) continue;
+                if (outputs.has(task.node.sessionId) || task.node.sessionId === failedSession) continue;
                 await this.updateTaskFailure(task.taskId, `Bloqué par l’échec de ${failedSession}.`);
                 this.onProgress({
                     runId,
-                    sessionId: task.session.id,
+                    sessionId: task.node.sessionId,
                     taskId: task.taskId,
                     state: 'blocked',
                     message: `Bloqué par l’échec de ${failedSession}.`,
@@ -135,10 +137,13 @@ export class WorkflowRunner {
         for (const node of nodes) {
             if (!node.role.trim()) throw new Error(`Le rôle de ${node.sessionId} est vide.`);
             if (!node.task.trim()) throw new Error(`Ajoute une mission au bloc « ${node.role} » avant de lancer le flux.`);
-            if (!this.sessions.get(node.sessionId)) {
-                throw new Error(`La session ${node.sessionId} n’existe plus dans ce workspace.`);
+            const session = this.sessions.get(node.sessionId);
+            if (!session) {
+                if (!node.sessionId.startsWith('acp/')) {
+                    throw new Error(`La session ${node.sessionId} n'existe plus dans ce workspace.`);
+                }
+                continue; // Agent IDE externe : exécuté via le hub (wake_acp_agent).
             }
-            const session = this.sessions.get(node.sessionId)!;
             if (session.workspace && path.resolve(session.workspace) !== path.resolve(this.workspaceRoot)) {
                 throw new Error(`La session ${node.sessionId} appartient à un autre workspace.`);
             }
@@ -170,29 +175,30 @@ export class WorkflowRunner {
         const idBySession = new Map<string, string>();
         try {
             for (const node of nodes) {
-                if (!rosterIds.has(node.sessionId)) {
-                    throw new Error(`L’agent ${node.sessionId} n’est pas présent dans le roster live.`);
-                }
                 const session = this.sessions.get(node.sessionId);
-                if (!session) throw new Error(`Session absente: ${node.sessionId}`);
+                const external = !session && node.sessionId.startsWith('acp/');
+                if (!external && !rosterIds.has(node.sessionId)) {
+                    throw new Error(`L'agent ${node.sessionId} n'est pas présent dans le roster live.`);
+                }
+                if (!session && !external) throw new Error(`Session absente: ${node.sessionId}`);
 
-                await this.registerAgent(session, node);
+                await this.registerAgent(node, session);
                 const dependencies = graph.edges
-                    .filter((edge) => edge.target === session.id)
+                    .filter((edge) => edge.target === node.sessionId)
                     .map((edge) => idBySession.get(edge.source))
                     .filter((id): id is string => !!id);
-                const prompt = buildWorkflowPrompt(node, []);
+                const prompt = buildWorkflowPrompt(node, [], graph);
                 const response = await callHpheTool('create_task', {
-                    title: `[Flux] ${node.role} — ${session.id}`.slice(0, 180),
+                    title: `[Flux] ${node.role} - ${node.sessionId}`.slice(0, 180),
                     description: prompt.slice(0, 6000),
-                    assigned_to: session.id,
+                    assigned_to: node.sessionId,
                     dependencies,
                     priority: 'medium',
                     session: `workflow:${runId}`,
                     workspace: this.workspaceRoot,
                 });
                 const taskId = this.extractTaskId(response);
-                idBySession.set(session.id, taskId);
+                idBySession.set(node.sessionId, taskId);
                 created.push({ session, node, taskId, dependencies });
             }
             return created;
@@ -203,16 +209,16 @@ export class WorkflowRunner {
         }
     }
 
-    private async registerAgent(session: ChatSession, node: WorkflowNode): Promise<void> {
+    private async registerAgent(node: WorkflowNode, session?: ChatSession): Promise<void> {
         await callHpheTool('register_agent', {
-            agent_name: session.id,
+            agent_name: node.sessionId,
             agent_type: 'acp',
             capabilities: JSON.stringify(['fs_read', 'fs_write', 'cmd']),
             config: JSON.stringify({
-                transport: 'hephaistos-chat',
-                provider: session.provider,
-                model: session.model,
-                session: session.id,
+                transport: session ? 'hephaistos-chat' : 'ide-agent',
+                provider: session?.provider || node.sessionId.split('/')[1] || 'unknown',
+                model: session?.model || 'agent IDE',
+                session: node.sessionId,
                 workspace: this.workspaceRoot,
                 role: node.role,
             }),
@@ -245,52 +251,49 @@ export class WorkflowRunner {
         }
     }
 
-    private inject(sessionId: string, prompt: string): Promise<{ reply: string; stopReason: string }> {
-        return new Promise((resolve, reject) => {
-            const child = spawn(process.execPath, [
-                this.injectScript,
-                '--provider', 'hephaistos',
-                '--session', sessionId,
-                '--cwd', this.workspaceRoot,
-                '--wait', 'turn',
-                '--timeout', '240',
-                '--stdin',
-            ], {
-                cwd: this.workspaceRoot,
-                windowsHide: true,
-                stdio: ['pipe', 'pipe', 'pipe'],
-            });
-            let stdout = '';
-            let stderr = '';
-            const timer = setTimeout(() => {
-                child.kill();
-                reject(new Error(`Timeout ACP sur ${sessionId}.`));
-            }, 250_000);
-
-            child.stdout.setEncoding('utf8');
-            child.stderr.setEncoding('utf8');
-            child.stdout.on('data', (chunk: string) => { stdout = `${stdout}${chunk}`.slice(-128_000); });
-            child.stderr.on('data', (chunk: string) => { stderr = `${stderr}${chunk}`.slice(-4000); });
-            child.on('error', (error) => {
-                clearTimeout(timer);
-                reject(error);
-            });
-            child.on('close', (code) => {
-                clearTimeout(timer);
-                let result: any;
-                try {
-                    result = JSON.parse(stdout.trim());
-                } catch {
-                    reject(new Error(stderr || 'Réponse ACP illisible.'));
-                    return;
-                }
-                if (code !== 0 || !result.delivered || result.stopReason !== 'end_turn') {
-                    reject(new Error(result.error || `Tour ACP incomplet (${result.stopReason || code}).`));
-                    return;
-                }
-                resolve({ reply: String(result.reply || ''), stopReason: result.stopReason });
-            });
-            child.stdin.end(prompt);
-        });
+    /**
+     * Exécute l'étape dans la session de chat elle-même — même chemin que la
+     * webview (completeTurn) : devin-cli passe par le hub ws-bridge :7477, les
+     * providers API par leur backend HTTP, les agents ACP par runAcpTurn.
+     * Le message et la réponse sont persistés dans sessions.json : la fenêtre
+     * de chat affiche le tour comme si l'utilisateur l'avait tapé.
+     */
+    private async runSessionTurn(session: ChatSession, prompt: string): Promise<{ reply: string; stopReason: string }> {
+        const now = new Date().toISOString();
+        const working: ChatSession = {
+            ...session,
+            messages: [
+                ...session.messages,
+                { role: 'user', text: prompt, at: now },
+                { role: 'assistant', text: '', at: new Date().toISOString() },
+            ],
+        };
+        this.sessions.save(working);
+        const last = working.messages.length - 1;
+        try {
+            const reply = await completeTurn(
+                working.provider,
+                working.model,
+                working.mode,
+                working.messages.slice(0, last),
+                (accumulated) => { working.messages[last].text = accumulated; },
+                undefined,
+                undefined,
+                {
+                    chatSessionId: working.id,
+                    acpSessionId: working.acpSessionId,
+                    onAcpSessionId: (id) => { working.acpSessionId = id; },
+                },
+            );
+            working.messages[last].isError = false;
+            this.sessions.save(working);
+            return { reply, stopReason: 'end_turn' };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            working.messages[last].text = `⚠️ **Erreur :** ${message}`;
+            working.messages[last].isError = true;
+            this.sessions.save(working);
+            throw error;
+        }
     }
 }
