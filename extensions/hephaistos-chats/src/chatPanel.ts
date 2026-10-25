@@ -46,7 +46,6 @@ export class ChatPanel {
         store: SessionStore,
         sessionId: string,
         onChange: () => void,
-        showOptions: vscode.ViewColumn | { viewColumn: vscode.ViewColumn; preserveFocus?: boolean } = vscode.ViewColumn.Active,
     ): ChatPanel | undefined {
         const session = store.get(sessionId);
         if (!session) {
@@ -55,16 +54,14 @@ export class ChatPanel {
         const existing = ChatPanel.openById.get(sessionId);
         if (existing) {
             existing.session = session;
-            if (typeof showOptions === 'number' || !showOptions.preserveFocus) {
-                existing.panel.reveal(existing.panel.viewColumn);
-            }
+            existing.panel.reveal(existing.panel.viewColumn);
             existing.push();
             return existing;
         }
         const panel = vscode.window.createWebviewPanel(
             ChatPanel.viewType,
             sessionTitle(session),
-            showOptions,
+            vscode.ViewColumn.Active,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,

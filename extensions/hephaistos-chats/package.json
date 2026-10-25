@@ -1,8 +1,8 @@
 {
   "name": "hephaistos-chats",
   "displayName": "Hephaistos Chats",
-  "description": "Onglets de chat Hephaistos dans l'éditeur. Coque d'ergonomie : historique local, mode, agent, fournisseur et modèle. Aucune connexion ACP.",
-  "version": "0.1.5",
+  "description": "Onglets de chat Hephaistos + espace de travail React Flow : orchestration manuelle des agents du roster (roles, skills, missions, chaines de travail).",
+  "version": "0.2.0",
   "icon": "media/icon.png",
   "publisher": "hephaistos",
   "engines": {

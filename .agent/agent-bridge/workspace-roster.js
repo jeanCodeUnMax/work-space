@@ -29,6 +29,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawnSync } = require('child_process');
 
 const PING_TEXT = 'PING : réponds uniquement PONG';
@@ -77,10 +78,15 @@ function validateWorkflow(input) {
         if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 20000 || Math.abs(y) > 20000) {
             throw new Error(`position invalide pour ${sessionId}`);
         }
+        const skills = Array.isArray(raw.skills)
+            ? raw.skills.map((item) => String(item || '').slice(0, 120)).filter(Boolean).slice(0, 24)
+            : [];
         nodes.set(sessionId, {
             sessionId,
             role: String(raw.role || 'Agent').slice(0, 120),
             task: String(raw.task || '').slice(0, 6000),
+            skills,
+            title: String(raw.title || '').slice(0, 200),
             position: { x, y },
         });
     }
@@ -142,27 +148,71 @@ function syncRosterWorkflow(root, sessions) {
     const roster = loadRoster(root);
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
     const byId = new Map((Array.isArray(sessions) ? sessions : []).map((session) => [session.id, session]));
-    const nodes = new Map(workflow.nodes.map((node) => [node.sessionId, node]));
     let changed = false;
+    const members = [];
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        for (const member of (roster.core?.[group] || [])) members.push({ group, member });
+    }
+    const seen = new Set();
+    const uniqueMembers = members.filter((item) => {
+        if (seen.has(item.member.sessionId)) return false;
+        seen.add(item.member.sessionId);
+        return true;
+    });
+    const rosterIds = new Set(uniqueMembers.filter((item) => !item.member.hidden).map((item) => item.member.sessionId));
 
-    for (const [index, member] of (roster.core?.bleubites || []).entries()) {
-        if (member.providerId !== 'hephaistos') continue;
-        const session = byId.get(member.sessionId);
-        if (!session) continue;
-        const model = String(session.model || member.model || '').slice(0, 200);
-        if (model !== member.model) {
-            member.model = model;
+    const activeNodes = workflow.nodes.filter((node) => rosterIds.has(node.sessionId));
+    if (activeNodes.length !== workflow.nodes.length) {
+        workflow.nodes = activeNodes;
+        changed = true;
+    }
+    const activeNodeIds = new Set(activeNodes.map((node) => node.sessionId));
+    const activeEdges = workflow.edges.filter((edge) =>
+        activeNodeIds.has(edge.source) && activeNodeIds.has(edge.target));
+    if (activeEdges.length !== workflow.edges.length) {
+        workflow.edges = activeEdges;
+        changed = true;
+    }
+    if (workflow.entrySessionId && !activeNodeIds.has(workflow.entrySessionId)) {
+        workflow.entrySessionId = null;
+        changed = true;
+    }
+    const nodes = new Map();
+    for (const node of workflow.nodes) nodes.set(node.sessionId, node);
+
+    for (const [index, { group, member }] of uniqueMembers.entries()) {
+        if (member.hidden) continue;
+        if (member.providerId === 'hephaistos') {
+            const session = byId.get(member.sessionId);
+            if (!session) continue;
+            const model = String(session.model || member.model || '').slice(0, 200);
+            if (model !== member.model) {
+                member.model = model;
+                changed = true;
+            }
+        }
+        if (member.title && nodes.has(member.sessionId) && nodes.get(member.sessionId).title !== member.title) {
+            nodes.get(member.sessionId).title = String(member.title).slice(0, 200);
             changed = true;
         }
         if (!nodes.has(member.sessionId)) {
             const node = {
                 sessionId: member.sessionId,
-                role: String(member.role || 'Agent').slice(0, 120),
+                role: String(member.role || (group === 'devin' ? 'Devin' : 'Agent')).slice(0, 120),
                 task: '',
+                skills: [],
+                title: String(member.title || '').slice(0, 200),
                 position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
             };
             workflow.nodes.push(node);
-            nodes.set(node.sessionId, node);
+            nodes.set(member.sessionId, node);
+            changed = true;
+        }
+    }
+    if (!workflow.entrySessionId) {
+        const head = members.find((item) => item.group === 'devin' && nodes.has(item.member.sessionId));
+        if (head) {
+            workflow.entrySessionId = head.member.sessionId;
             changed = true;
         }
     }
@@ -227,6 +277,39 @@ function saveWorkflow(root, input) {
     return workflow;
 }
 
+function upsertCoreAgent(root, group, agent) {
+    if (!['devin', 'cerberos', 'bleubites'].includes(group)) throw new Error('groupe roster invalide');
+    const sessionId = String(agent?.sessionId || '');
+    if (!sessionId) throw new Error('sessionId requis');
+    const roster = loadRoster(root);
+    roster.core = roster.core || {};
+    roster.core[group] = roster.core[group] || [];
+    let member = roster.core[group].find((item) => item.sessionId === sessionId);
+    if (!member) {
+        member = { providerId: agent.providerId, sessionId, restore: agent.restore || 'existing-only' };
+        roster.core[group].push(member);
+    }
+    if (agent.providerId) member.providerId = agent.providerId;
+    if (agent.role) member.role = String(agent.role).slice(0, 120);
+    if (agent.title) member.title = String(agent.title).slice(0, 200);
+    const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
+    if (!workflow.nodes.some((node) => node.sessionId === sessionId)) {
+        const index = workflow.nodes.length;
+        workflow.nodes.push({
+            sessionId,
+            role: String(member.role || 'Devin').slice(0, 120),
+            task: '',
+            skills: [],
+            title: String(member.title || '').slice(0, 200),
+            position: { x: 100 + (index % 3) * 280, y: 40 },
+        });
+    }
+    if (!workflow.entrySessionId && group === 'devin') workflow.entrySessionId = sessionId;
+    roster.workflow = validateWorkflow(workflow);
+    writeRoster(root, roster);
+    return roster.workflow;
+}
+
 function removeChatAgent(root, sessionId) {
     const roster = loadRoster(root);
     const id = String(sessionId || '');
@@ -262,6 +345,7 @@ function configureWorkflowNode(root, sessionId, updates) {
     if (!node) throw new Error(`agent absent du workflow: ${sessionId}`);
     if (updates.role != null) node.role = String(updates.role).slice(0, 120);
     if (updates.task != null) node.task = String(updates.task).slice(0, 6000);
+    if (updates.skills != null) node.skills = (Array.isArray(updates.skills) ? updates.skills : [updates.skills]).map((s) => String(s).slice(0, 120)).filter(Boolean).slice(0, 24);
     if (updates.position != null) node.position = updates.position;
     if (updates.entry === true) workflow.entrySessionId = sessionId;
     if (updates.entry === false && workflow.entrySessionId === sessionId) workflow.entrySessionId = null;
@@ -283,6 +367,7 @@ function cmdWorkflow(root, args) {
         return configureWorkflowNode(root, sessionId, {
             role: option('--role'),
             task: option('--task'),
+            skills: option('--skills') ? String(option('--skills')).split(',').map((s) => s.trim()).filter(Boolean) : undefined,
             entry: args.includes('--entry') ? true : (args.includes('--no-entry') ? false : undefined),
         });
     }
@@ -425,6 +510,33 @@ async function main() {
     const cmd = args[0] || 'status';
     const root = workspaceRoot();
     const roster = loadRoster(root);
+    if (cmd === 'hide' || cmd === 'unhide') {
+        const sessionId = args[1];
+        if (!sessionId) throw new Error('usage: hide|unhide <sessionId>');
+        setMemberHidden(root, sessionId, cmd === 'hide');
+        const w = syncRosterWorkflow(root, cliSessions(root));
+        console.log(JSON.stringify({ command: cmd, sessionId, nodes: w.nodes.length }, null, 1));
+        return;
+    }
+    if (cmd === 'schema') {
+        const sub = args[1];
+        if (sub === 'save') {
+            const nameIdx = args.indexOf('--name');
+            const entry = saveSchema(root, nameIdx >= 0 ? args[nameIdx + 1] : 'Schema', syncRosterWorkflow(root, cliSessions(root)));
+            console.log(JSON.stringify({ command: 'schema save', id: entry.id, name: entry.name }, null, 1));
+            return;
+        }
+        if (sub === 'list') {
+            console.log(JSON.stringify({ command: 'schema list', schemas: listSchemas(root, args.includes('--all')) }, null, 1));
+            return;
+        }
+        if (sub === 'load') {
+            const w = loadSchema(root, args[2]);
+            console.log(JSON.stringify({ command: 'schema load', nodes: w.nodes.length, edges: w.edges.length }, null, 1));
+            return;
+        }
+        throw new Error('usage: schema save|list|load');
+    }
     if (cmd === 'workflow') {
         console.log(JSON.stringify({ command: 'workflow', workflow: cmdWorkflow(root, args.slice(1)) }, null, 1));
         return;
@@ -537,15 +649,100 @@ async function main() {
     process.exit(1);
 }
 
+const SCHEMAS_FILE = path.join(os.homedir(), '.hephaistos-workflow-schemas.json');
+
+function readSchemas() {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(SCHEMAS_FILE, 'utf8'));
+        return Array.isArray(parsed.schemas) ? parsed.schemas : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeSchemas(list) {
+    try {
+        fs.mkdirSync(path.dirname(SCHEMAS_FILE), { recursive: true });
+        fs.writeFileSync(SCHEMAS_FILE, JSON.stringify({ schemas: list }, null, 2));
+    } catch { /* silencieux */ }
+}
+
+function saveSchema(root, name, graph) {
+    const list = readSchemas();
+    const workspace = path.resolve(root);
+    const entry = {
+        id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        name: String(name || 'Schema').slice(0, 120),
+        workspace,
+        graph: validateWorkflow(graph),
+        savedAt: new Date().toISOString(),
+    };
+    const index = list.findIndex((item) => item.name === entry.name && item.workspace === workspace);
+    if (index >= 0) {
+        entry.id = list[index].id;
+        list[index] = entry;
+    } else {
+        list.push(entry);
+    }
+    writeSchemas(list);
+    return entry;
+}
+
+function listSchemas(root, all) {
+    const workspace = path.resolve(root);
+    return readSchemas()
+        .filter((item) => all || item.workspace === workspace)
+        .map((item) => ({
+            id: item.id,
+            name: item.name,
+            workspace: item.workspace,
+            savedAt: item.savedAt,
+            nodes: ((item.graph && item.graph.nodes) || []).length,
+        }));
+}
+
+function loadSchema(root, id) {
+    const entry = readSchemas().find((item) => item.id === id);
+    if (!entry) throw new Error(`Schema introuvable: ${id}`);
+    return saveWorkflow(root, entry.graph);
+}
+
+function setMemberHidden(root, sessionId, hidden) {
+    const roster = loadRoster(root);
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        const member = (roster.core && roster.core[group] || []).find((item) => item.sessionId === sessionId);
+        if (member) {
+            member.hidden = Boolean(hidden);
+            writeRoster(root, roster);
+            return true;
+        }
+    }
+    return false;
+}
+
+function cliSessions(root) {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'chats', 'sessions.json'), 'utf8'));
+        return Array.isArray(parsed) ? parsed : (parsed.sessions || []);
+    } catch {
+        return [];
+    }
+}
+
 module.exports = {
     configureWorkflowNode,
     connectWorkflowAgents,
     disconnectWorkflowAgents,
     readWorkflow,
     removeChatAgent,
+    upsertCoreAgent,
     saveWorkflow,
     syncRosterWorkflow,
     upsertChatAgent,
+    saveSchema,
+    listSchemas,
+    loadSchema,
+    setMemberHidden,
     validateWorkflow,
 };
 

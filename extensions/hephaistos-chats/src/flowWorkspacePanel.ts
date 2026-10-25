@@ -7,7 +7,6 @@ export interface FlowPanelMessage {
     workflow?: WorkflowView;
     graph?: WorkflowGraph;
     sessionId?: string;
-    provider?: string;
 }
 
 type MessageHandler = (message: FlowPanelMessage) => void;
@@ -68,6 +67,13 @@ export class FlowWorkspacePanel {
         FlowWorkspacePanel.current?.update(workflow);
     }
 
+    /** Dev : recharge le HTML du panneau ouvert après rebuild du bundle webview. */
+    static reload(): void {
+        const current = FlowWorkspacePanel.current;
+        if (!current) return;
+        current.panel.webview.html = current.render(current.panel.webview, current.extensionUri);
+    }
+
     static progress(status: WorkflowRunStatus): void {
         void FlowWorkspacePanel.current?.panel.webview.postMessage({
             type: 'workflow_progress',
@@ -82,6 +88,10 @@ export class FlowWorkspacePanel {
             success,
             message,
         });
+    }
+
+    static post(message: unknown): void {
+        void FlowWorkspacePanel.current?.panel.webview.postMessage(message);
     }
 
     static error(message: string): void {
@@ -103,20 +113,42 @@ export class FlowWorkspacePanel {
     private render(webview: vscode.Webview, extensionUri: vscode.Uri): string {
         const nonce = randomBytes(16).toString('hex');
         const assetsUri = vscode.Uri.joinPath(extensionUri, 'out', 'webview');
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.css'));
+        // Le webview cache les URI vscode-resource par URL : sans ?v=, un vieux
+        // workspace.js survit aux rebuilds du watcher et le panneau reste noir.
+        const bust = { query: `v=${Date.now().toString(36)}` };
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.js')).with(bust);
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.css')).with(bust);
 
         return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource} data:; script-src 'nonce-${nonce}';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource} data:; script-src ${webview.cspSource} 'nonce-${nonce}';">
   <link rel="stylesheet" href="${styleUri}">
   <title>Espace de travail Hephaistos</title>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="workspace-boot" role="status">
+      <strong>Hephaistos · Espace de travail</strong>
+      <span>Chargement du canvas React Flow…</span>
+    </div>
+  </div>
+  <script nonce="${nonce}">
+    (() => {
+      const showBootError = (detail) => {
+        const root = document.getElementById('root');
+        if (!root || root.querySelector('.workspace-shell')) return;
+        const message = document.createElement('pre');
+        message.className = 'workspace-boot-error';
+        message.textContent = 'Le canvas n’a pas démarré.\\n' + String(detail || 'Erreur Webview inconnue');
+        root.replaceChildren(message);
+      };
+      window.addEventListener('error', (event) => showBootError(event.message));
+      window.addEventListener('unhandledrejection', (event) => showBootError(event.reason?.message || event.reason));
+    })();
+  </script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
