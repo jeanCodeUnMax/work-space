@@ -52,6 +52,30 @@ function writeSessions(cwd, sessions) {
     fs.renameSync(tmp, file);
 }
 
+/* ---------- env provider : process.env → .env workspace → agentEnv Devin ---------- */
+let _dotenv;
+function dotenvWs() {
+    if (_dotenv !== undefined) return _dotenv;
+    _dotenv = {};
+    try {
+        for (const line of fs.readFileSync(path.join(workspace, '.env'), 'utf8').split(/\r?\n/)) {
+            const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/.exec(line);
+            if (m) _dotenv[m[1]] = m[2].replace(/^["']|["']$/g, '');
+        }
+    } catch { /* pas de .env */ }
+    return _dotenv;
+}
+function providerEnv(providerId, name) {
+    if (process.env[name]) return process.env[name];
+    if (dotenvWs()[name]) return dotenvWs()[name];
+    try {
+        const s = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA || '', 'devin', 'User', 'settings.json'), 'utf8'));
+        const v = s?.['devin.acp.agentEnv']?.[providerId]?.[name];
+        if (v) return v;
+    } catch { /* best effort */ }
+    return undefined;
+}
+
 /* ---------- prompt système (miroir de runtime.ts, sans vscode) ---------- */
 function buildSystemPrompt(mode) {
     const root = workspace;
@@ -95,7 +119,7 @@ async function completeTurn(session) {
     const model = session.model;
 
     if (provider === 'openrouter') {
-        const apiKey = process.env.OPENROUTER_API_KEY;
+        const apiKey = providerEnv('openrouter','OPENROUTER_API_KEY');
         if (!apiKey) throw new Error('OPENROUTER_API_KEY absente.');
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -117,7 +141,7 @@ async function completeTurn(session) {
     }
 
     if (provider === 'huggingface') {
-        const hfKey = process.env.HF_TOKEN || process.env.HUGGINGFACE_API_KEY;
+        const hfKey = providerEnv('huggingface','HF_TOKEN') || providerEnv('huggingface','HUGGINGFACE_API_KEY');
         if (!hfKey) throw new Error('HF_TOKEN absent.');
         const res = await fetch('https://router.huggingface.co/v1/chat/completions', {
             method: 'POST',
@@ -149,9 +173,9 @@ async function completeTurn(session) {
     }
 
     if (provider === 'omniroute') {
-        const raw = process.env.OMNIROUTE_BASE_URL || `http://localhost:${process.env.PORT || '20128'}/v1`;
+        const raw = providerEnv('omniroute','OMNIROUTE_BASE_URL') || `http://localhost:${process.env.PORT || '20128'}/v1`;
         const base = /\/v1$/i.test(raw.replace(/\/+$/, '')) ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
-        const key = process.env.OMNIROUTE_API_KEY;
+        const key = providerEnv('omniroute','OMNIROUTE_API_KEY');
         const res = await fetch(`${base}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -172,7 +196,7 @@ async function completeTurn(session) {
     if (provider === 'nim' || provider === 'nim2') {
         // Séparation stricte des comptes : nim → NVIDIA_API_KEY, nim2 → NVIDIA_API_KEY_2.
         // Pas de fallback croisé — sinon les deux fenêtres finissent sur le même compte.
-        const apiKey = provider === 'nim2' ? process.env.NVIDIA_API_KEY_2 : process.env.NVIDIA_API_KEY;
+        const apiKey = provider === 'nim2' ? providerEnv('nim2','NVIDIA_API_KEY_2') : providerEnv('nim','NVIDIA_API_KEY');
         if (!apiKey) throw new Error(provider === 'nim2' ? 'NVIDIA_API_KEY_2 absente.' : 'NVIDIA_API_KEY absente.');
         const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
             method: 'POST',
