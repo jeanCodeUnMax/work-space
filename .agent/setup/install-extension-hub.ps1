@@ -31,11 +31,30 @@ if (-not $CheckOnly) {
     Step '[2/6] Installation du VSIX'
     $installed = 0
     foreach ($ide in $selectedIdes) {
+        if ($ide -eq 'devin') {
+            # devin n'a pas de --install-extension : extraction directe du VSIX
+            # dans .devin\extensions\<id-ver>. Jamais 'code' (lance VS Code).
+            $pkg = [IO.Path]::Combine($vsix.FullName)
+            $tmp = Join-Path $env:TEMP ("hpx-" + [guid]::NewGuid().ToString('N'))
+            $zip = "$tmp.zip"
+            Copy-Item $pkg $zip -Force
+            Expand-Archive $zip $tmp -Force
+            $pj = Get-Content (Join-Path $tmp 'extension\package.json') -Raw | ConvertFrom-Json
+            $dest = Join-Path $env:USERPROFILE ".devin\extensions\$($pj.publisher).$($pj.name)-$($pj.version)"
+            Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force $dest | Out-Null
+            Copy-Item -Recurse -Force (Join-Path $tmp 'extension\*') $dest
+            Remove-Item -Recurse -Force $tmp, $zip -ErrorAction SilentlyContinue
+            if (Test-Path $dest) {
+                Pass "installee pour 'devin' -> $dest - RELOAD la fenetre (Ctrl+Shift+P -> Developer: Reload Window)"
+                $installed++
+            } else {
+                Warn "extraction VSIX echouee pour 'devin'"
+            }
+            continue
+        }
         $cli = if ($ide -eq 'windsurf') { 'windsurf' } else { 'code' }
         $extraArgs = @()
-        if ($ide -eq 'devin') {
-            $extraArgs = @('--extensions-dir', (Join-Path $env:USERPROFILE '.devin\extensions'))
-        }
         $cmd = Get-Command $cli -ErrorAction SilentlyContinue
         if ($cmd) {
             $installArgs = @('--install-extension', $vsix.FullName, '--force') + $extraArgs
