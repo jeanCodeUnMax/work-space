@@ -15,7 +15,7 @@ Date : 2026-10-19 · Tache #545 · Auteur : Cash (whip-principle)
 | Bridge ws :7477 + fallback ACP `state.vscdb` | `devin-hub.js` (sync layer), FR-10 | Oui |
 | Persistances paires (FR-09) | `comms.js`/`binome.js` (sync layer) + table `pairs` auto | Oui |
 | Extension orchestrator-monitor | VSIX 0.0.60 (`extensions/orchestrator-monitor/`), installe via `install-extension-hub.ps1 --force` | Oui |
-| Extension hephaistos-kit-search | VSIX 1.0.5 (`extension/`), installation sur validation Boss uniquement | Oui |
+| Extension hephaistos-kit-search | VSIX 1.0.5+ (`extensions/search-ext/`), installation sur validation Boss uniquement | Oui |
 
 ## Defauts corriges dans cette revision
 

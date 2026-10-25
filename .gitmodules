@@ -2,7 +2,7 @@
 	path = hphe
 	url = https://github.com/projet-temporaire/hephaistos2-engine.git
 [submodule "extension"]
-	path = extension
+	path = extensions/search-ext
 	url = https://github.com/projet-temporaire/hephaistos2-search-ext.git
 [submodule "extensions/orchestrator-monitor"]
 	path = extensions/orchestrator-monitor
