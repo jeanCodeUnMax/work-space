@@ -108,7 +108,7 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
             </div>
-            <strong className="flow-node-title">{data.title}</strong>
+            {(()=>{let h=0;for(const c of (data.sessionId||""))h=(h*31+c.charCodeAt(0))>>>0;const base=(window as any).__agentsUri;const src=base?base+"/p"+(1+h%6)+"-c"+String(h%16).padStart(2,"0")+".png":"";return src?<img src={src} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
             {(data.skills || []).length > 0 && (
@@ -524,7 +524,7 @@ function Workspace(): React.JSX.Element {
                                     Retirer du schéma
                                 </button>
                             </div>
-                            <h2>{selectedNode.data.title}</h2>
+                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{(()=>{let h=0;for(const c of (selectedNode.data.sessionId||""))h=(h*31+c.charCodeAt(0))>>>0;const base=(window as any).__agentsUri;const src=base?base+"/p"+(1+h%6)+"-c"+String(h%16).padStart(2,"0")+".png":"";return src?<img src={src} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
                             <p className="inspector-provider">{selectedNode.data.provider} · {selectedNode.data.model}</p>
                             <label className="field-label" htmlFor="agent-role">Rôle</label>
                             <select

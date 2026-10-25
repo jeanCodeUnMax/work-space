@@ -57,7 +57,7 @@ export class FlowWorkspacePanel {
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
-                localResourceRoots: [assetsUri],
+                localResourceRoots: [assetsUri, vscode.Uri.joinPath(context.extensionUri, 'media', 'agents')],
             },
         );
         FlowWorkspacePanel.current = new FlowWorkspacePanel(panel, context.extensionUri, workflow, handler);
@@ -117,6 +117,7 @@ export class FlowWorkspacePanel {
         // workspace.js survit aux rebuilds du watcher et le panneau reste noir.
         const bust = { query: `v=${Date.now().toString(36)}` };
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.js')).with(bust);
+        const agentsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents'));
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.css')).with(bust);
 
         return `<!DOCTYPE html>
@@ -136,6 +137,7 @@ export class FlowWorkspacePanel {
     </div>
   </div>
   <script nonce="${nonce}">
+        window.__agentsUri = "${agentsUri}";
     (() => {
       const showBootError = (detail) => {
         const root = document.getElementById('root');

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-25T18:39:26.006Z",
+  "updatedAt": "2026-10-25T21:04:37.078Z",
   "core": {
     "devin": [
       {
@@ -24,6 +24,13 @@
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
         "role": "Devin"
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/speckled-enthusiasm",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -52,31 +59,6 @@
       },
       {
         "providerId": "hephaistos",
-        "sessionId": "chat-mvmw57cq",
-        "restore": "open-or-reveal",
-        "model": "groq/openai/gpt-oss-20b",
-        "role": "Analyste"
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/trusted-robin",
-        "restore": "open-or-reveal",
-        "role": "Devin"
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "restore": "open-or-reveal",
-        "role": "Integrateur-Git"
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "restore": "open-or-reveal",
-        "role": "Orchestrateur"
-      },
-      {
-        "providerId": "hephaistos",
         "sessionId": "chat-mvfrva4w",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
@@ -93,7 +75,7 @@
         "providerId": "hephaistos",
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
-        "model": "meta/llama-3.1-70b-instruct",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "Documentaliste-Vault"
       },
       {
@@ -102,6 +84,32 @@
         "restore": "open-or-reveal",
         "model": "openai/gpt-oss-20b",
         "role": "Verif-Submodules"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "restore": "open-or-reveal",
+        "role": "Integrateur-Git"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvmw57cq",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-20b",
+        "role": "OmniRoute",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/speckled-enthusiasm",
+        "restore": "open-or-reveal",
+        "role": "Devin"
       }
     ]
   },
@@ -137,10 +145,10 @@
           "clean-code",
           "nodejs-best-practices"
         ],
-        "title": "PING — reponds exactement…",
+        "title": "keen-agent",
         "position": {
-          "x": 38.92299582368037,
-          "y": 62.6901801050013
+          "x": 240.92299582368037,
+          "y": 48.6901801050013
         }
       },
       {
@@ -151,24 +159,10 @@
           "code-review-checklist",
           "testing-patterns"
         ],
-        "title": "PING — reponds exactement…",
+        "title": "amber-agent",
         "position": {
-          "x": 412.0982835751815,
-          "y": -212.81943251320916
-        }
-      },
-      {
-        "sessionId": "chat-mvmw57cq",
-        "role": "Analyste",
-        "task": "Analyse la demande transmise par l'orchestrateur. Produit un plan structuré et les spécifications détaillées destinées au codeur.",
-        "skills": [
-          "architecture",
-          "api-patterns"
-        ],
-        "title": "PING — reponds exactement…",
-        "position": {
-          "x": -244.65338297454338,
-          "y": -42.82659228265918
+          "x": 494.0982835751815,
+          "y": -218.81943251320916
         }
       },
       {
@@ -177,12 +171,15 @@
         "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
         "skills": [
           "orchestrator",
-          "plan-writing"
+          "plan-writing",
+          "hephaistos-everything",
+          "hephaistos2-kit",
+          "reactive-orchestrator"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -547.3957047140188,
-          "y": -175.22306461362956
+          "x": -123.39570471401885,
+          "y": 26.77693538637044
         }
       },
       {
@@ -193,10 +190,10 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
-        "title": "salut",
+        "title": "urban-agent",
         "position": {
-          "x": 401.11840658465456,
-          "y": 288.5340217846405
+          "x": 739.1184065846546,
+          "y": 52.534021784640515
         }
       },
       {
@@ -207,10 +204,10 @@
           "vulnerability-scanner",
           "lint-and-validate"
         ],
-        "title": "salut",
+        "title": "keen-agent",
         "position": {
-          "x": 741.6600006190772,
-          "y": 288.3156361832038
+          "x": 1051.6600006190772,
+          "y": 56.31563618320382
         }
       },
       {
@@ -223,8 +220,8 @@
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": 1312.4870120076207,
-          "y": -205.84302453098928
+          "x": 1629.1260278291666,
+          "y": -219.01736550487757
         }
       },
       {
@@ -235,10 +232,10 @@
           "obsidian",
           "vault-ingest"
         ],
-        "title": "llama-3.1-70b-instruct",
+        "title": "rapid-agent",
         "position": {
-          "x": 1619.6917691619842,
-          "y": -205.32370763448887
+          "x": 1937.6917691619842,
+          "y": -219.32370763448887
         }
       },
       {
@@ -248,24 +245,14 @@
         "skills": [
           "lint-and-validate"
         ],
-        "title": "gpt-oss-20b",
+        "title": "xenial-agent",
         "position": {
-          "x": 1072.6691351150625,
-          "y": 286.51052686999407
+          "x": 1344.6691351150625,
+          "y": 56.51052686999407
         }
       }
     ],
     "edges": [
-      {
-        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw57cq",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw57cq"
-      },
-      {
-        "id": "edge:chat-mvmw57cq->chat-mvmw59wa",
-        "source": "chat-mvmw57cq",
-        "target": "chat-mvmw59wa"
-      },
       {
         "id": "edge:chat-mvmw59wa->chat-mvmw5chd",
         "source": "chat-mvmw59wa",
@@ -300,6 +287,16 @@
         "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
         "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:chat-mvmw5chd->chat-mvfrva4w",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfrva4w"
       }
     ]
   }

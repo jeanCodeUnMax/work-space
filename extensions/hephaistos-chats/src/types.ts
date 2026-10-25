@@ -21,6 +21,8 @@ export interface ChatMessage {
 export interface ChatSession {
     id: string;
     title?: string;
+    /** Blaze agent façon Devin (adjectif-nom) — identite stable de la session. */
+    codename?: string;
     mode: ChatMode;
     provider: string;
     model: string;
@@ -81,7 +83,21 @@ export const ACP_PROVIDERS: { id: string; label: string }[] = [
     { id: 'omniroute', label: 'OmniRoute' },
 ];
 
+const CODENAME_ADJ = ['amber','brave','calm','daring','eager','fair','gentle','hardy','ionic','jolly','keen','lunar','mighty','noble','onyx','proud','quiet','rapid','solar','trusted','urban','vivid','warm','xenial','young','zealous'];
+const CODENAME_NOUN = ['atlas','badger','comet','drift','ember','falcon','grove','harbor','ibis','juniper','kite','lantern','mesa','nova','orbit','pine','quartz','robin','shoemaker','tide','umbra','vault','willow','xylem','yew','zephyr'];
+
+export function ensureCodename(session: ChatSession): boolean {
+    if (session.codename && session.codename.trim() && !session.codename.includes("undefined")) return false;
+    let hash = 0;
+    for (const ch of session.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    session.codename = CODENAME_ADJ[hash % CODENAME_ADJ.length] + '-' + (CODENAME_NOUN[(hash >> 5) % CODENAME_NOUN.length] || 'agent');
+    return true;
+}
+
 export function sessionTitle(session: ChatSession): string {
+    if (session.codename && session.codename.trim()) {
+        return session.codename.trim();
+    }
     if (session.title && session.title.trim()) {
         return session.title.trim();
     }

@@ -1,0 +1,10 @@
+{
+  "orchestrateur": {"icon":"p1-c14","archetype":"engineer"},
+  "codeur": {"icon":"p1-c11","archetype":"engineer"},
+  "reviewer": {"icon":"p1-c02","archetype":"engineer"},
+  "auditeur": {"icon":"p1-c07","archetype":"engineer"},
+  "sentinelle": {"icon":"p1-c10","archetype":"engineer"},
+  "integrateur": {"icon":"p1-c06","archetype":"engineer"},
+  "documentaliste": {"icon":"p1-c00","archetype":"engineer"},
+  "verif-submodules": {"icon":"p1-c04","archetype":"engineer"}
+}

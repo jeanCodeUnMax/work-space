@@ -1,3 +1,4 @@
+import { ensureCodename } from './types';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -15,6 +16,8 @@ export class SessionStore {
 
     constructor(private readonly context: vscode.ExtensionContext) {
         this.sessions = context.workspaceState.get<ChatSession[]>(STORAGE_KEY, []);
+        this.sessions.forEach((sess) => ensureCodename(sess));
+        this.persistToDisk();
         this.tryRestoreFromDisk();
     }
 
@@ -41,6 +44,7 @@ export class SessionStore {
                 const raw = fs.readFileSync(indexFile, 'utf8');
                 const diskSessions = JSON.parse(raw) as ChatSession[];
                 if (Array.isArray(diskSessions)) {
+                    for (const session of diskSessions) ensureCodename(session);
                     const merged = new Map(diskSessions.map((session) => [session.id, session]));
                     for (const session of this.sessions) {
                         const diskSession = merged.get(session.id);
@@ -51,6 +55,7 @@ export class SessionStore {
                     const restored = [...merged.values()];
                     if (JSON.stringify(restored) !== JSON.stringify(this.sessions)) {
                         this.sessions = restored;
+                        this.sessions.forEach((x) => ensureCodename(x));
                         void this.context.workspaceState.update(STORAGE_KEY, this.sessions);
                     }
                 }

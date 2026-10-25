@@ -4,12 +4,13 @@ export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonc
     const stamp = Date.now().toString(36);
     const css = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.css')) + `?v=${stamp}`;
     const script = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.js')) + `?v=${stamp}`;
+    const agentsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents'));
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
 <link rel="stylesheet" href="${css}">
 </head>
 <body>
@@ -88,6 +89,7 @@ window.addEventListener('error', function (e) {
   }
 }, true);
 </script>
+<script nonce="${nonce}">window.__agentsUri="${agentsUri}";</script>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
 </html>`;
