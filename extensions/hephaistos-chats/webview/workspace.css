@@ -1,0 +1,610 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    overflow: hidden;
+    color: var(--vscode-editor-foreground, #d8d4cc);
+    background: var(--vscode-editor-background, #171918);
+    font-family: var(--vscode-font-family, 'Segoe UI', sans-serif);
+}
+
+button,
+input,
+textarea {
+    font: inherit;
+}
+
+.workspace-shell {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    background:
+        radial-gradient(ellipse at 10% 0%, rgba(200, 133, 64, 0.1), transparent 36%),
+        var(--vscode-editor-background, #171918);
+}
+
+.workspace-toolbar {
+    display: flex;
+    min-height: 74px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 11px 18px;
+    border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.1));
+    background: var(--vscode-sideBar-background, rgba(25, 28, 27, 0.84));
+}
+
+.workspace-title,
+.workspace-actions {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.workspace-mark {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border: 1px solid rgba(231, 165, 86, 0.46);
+    border-radius: 11px;
+    color: #f1bd78;
+    background: rgba(231, 165, 86, 0.1);
+    font-family: Georgia, serif;
+    font-size: 19px;
+}
+
+.workflow-name {
+    width: min(360px, 35vw);
+    padding: 0;
+    border: 0;
+    outline: 0;
+    color: var(--vscode-editor-foreground, #d8d4cc);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.workspace-title p {
+    margin: 3px 0 0;
+    color: var(--vscode-descriptionForeground, #92938f);
+    font-size: 10px;
+}
+
+.workspace-actions {
+    gap: 8px;
+}
+
+.node-count {
+    margin-right: 4px;
+    color: var(--vscode-descriptionForeground, #92938f);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.add-node,
+.run-workflow,
+.entry-toggle {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    border: 1px solid rgba(231, 165, 86, 0.45);
+    border-radius: 6px;
+    color: #f3c17d;
+    background: rgba(231, 165, 86, 0.1);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: background 140ms ease, border-color 140ms ease;
+}
+
+.add-node:hover,
+.entry-toggle:hover {
+    border-color: rgba(231, 165, 86, 0.8);
+    background: rgba(231, 165, 86, 0.18);
+}
+
+.add-node-secondary {
+    border-color: rgba(108, 164, 207, 0.4);
+    color: #9bcbed;
+    background: rgba(108, 164, 207, 0.08);
+}
+
+.add-node-secondary:hover {
+    border-color: rgba(108, 164, 207, 0.8);
+    background: rgba(108, 164, 207, 0.17);
+}
+
+.run-workflow {
+    min-width: 112px;
+    border-color: #b47a3e;
+    color: #21180f;
+    background: #e2a65d;
+}
+
+.run-workflow:hover:not(:disabled) {
+    background: #f1bd78;
+}
+
+.run-workflow:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.remove-edge {
+    min-height: 28px;
+    padding: 0 8px;
+    border: 1px solid rgba(248, 81, 73, 0.42);
+    border-radius: 5px;
+    color: #ff8178;
+    background: rgba(248, 81, 73, 0.08);
+    cursor: pointer;
+    font-size: 9px;
+}
+
+.remove-edge:hover {
+    background: rgba(248, 81, 73, 0.17);
+}
+
+.workspace-content {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+}
+
+.flow-canvas {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    flex: 1;
+}
+
+.flow-canvas .react-flow__pane {
+    cursor: grab;
+}
+
+.flow-canvas .react-flow__background {
+    background: transparent;
+}
+
+.flow-canvas .react-flow__edge-path {
+    stroke: #bb8750;
+    stroke-width: 1.8;
+}
+
+.flow-canvas .react-flow__connection-path {
+    stroke: #e8b16a;
+    stroke-width: 1.8;
+}
+
+.flow-canvas .react-flow__handle {
+    width: 9px;
+    height: 9px;
+    border: 2px solid var(--vscode-editor-background, #171918);
+    background: #e2a65d;
+}
+
+.flow-node {
+    display: flex;
+    width: 236px;
+    min-height: 118px;
+    flex-direction: column;
+    gap: 6px;
+    padding: 13px 14px;
+    border: 1px solid rgba(221, 172, 111, 0.48);
+    border-radius: 10px;
+    background: var(--vscode-editorWidget-background, #242725);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.flow-node.selected {
+    border-color: #f0bd79;
+    box-shadow: 0 0 0 2px rgba(240, 189, 121, 0.17), 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.flow-node.blue {
+    border-color: rgba(108, 164, 207, 0.55);
+}
+
+.flow-node.green {
+    border-color: rgba(112, 180, 131, 0.5);
+}
+
+.flow-node-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.flow-node-kicker,
+.inspector-kicker,
+.empty-kicker {
+    color: #d4a15f;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+}
+
+.flow-node.blue .flow-node-kicker {
+    color: #78b6df;
+}
+
+.flow-node.green .flow-node-kicker {
+    color: #82c192;
+}
+
+.flow-node-provider {
+    overflow: hidden;
+    max-width: 125px;
+    color: var(--vscode-descriptionForeground, #9a9c98);
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flow-node-title {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flow-node-model {
+    overflow: hidden;
+    color: var(--vscode-descriptionForeground, #9a9c98);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flow-node-role {
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    margin-top: 2px;
+    padding: 3px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: var(--vscode-foreground, #d8d4cc);
+    background: rgba(255, 255, 255, 0.035);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.node-inspector {
+    display: flex;
+    width: 310px;
+    flex: 0 0 310px;
+    flex-direction: column;
+    gap: 9px;
+    overflow: auto;
+    padding: 16px 15px;
+    border-left: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.1));
+    background: var(--vscode-sideBar-background, #1e211f);
+}
+
+.inspector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.inspector-header .inspector-kicker {
+    color: #d4a15f;
+}
+
+.icon-button {
+    display: grid;
+    width: 25px;
+    height: 25px;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: var(--vscode-descriptionForeground, #999);
+    background: transparent;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.icon-button:hover {
+    border-color: rgba(248, 81, 73, 0.4);
+    color: #ff8178;
+    background: rgba(248, 81, 73, 0.12);
+}
+
+.node-inspector h2 {
+    margin: 4px 0 0;
+    font-size: 14px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.inspector-provider {
+    margin: -4px 0 8px;
+    color: var(--vscode-descriptionForeground, #92938f);
+    font-size: 10px;
+    overflow-wrap: anywhere;
+}
+
+.field-label {
+    margin-top: 5px;
+    color: var(--vscode-descriptionForeground, #aaa);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.inspector-input,
+.inspector-textarea {
+    width: 100%;
+    border: 1px solid var(--vscode-input-border, #454943);
+    border-radius: 6px;
+    outline: 0;
+    color: var(--vscode-input-foreground, #ddd);
+    background: var(--vscode-input-background, #202320);
+    font-size: 11px;
+}
+
+.inspector-input {
+    min-height: 31px;
+    padding: 6px 8px;
+}
+
+.inspector-textarea {
+    min-height: 142px;
+    resize: vertical;
+    padding: 8px;
+    line-height: 1.45;
+}
+
+.inspector-input:focus,
+.inspector-textarea:focus {
+    border-color: var(--vscode-focusBorder, #d9a15c);
+}
+
+.inspector-textarea::placeholder {
+    color: var(--vscode-input-placeholderForeground, #777);
+}
+
+.entry-toggle {
+    width: 100%;
+    margin-top: 5px;
+}
+
+.entry-toggle.active {
+    border-color: #b47a3e;
+    color: #f3c17d;
+    background: rgba(231, 165, 86, 0.18);
+}
+
+.inspector-session {
+    margin-top: 3px;
+    color: var(--vscode-descriptionForeground, #858983);
+    font-size: 9px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.inspector-session code {
+    color: var(--vscode-foreground, #ccc);
+}
+
+.inspector-empty h2 {
+    margin-top: 12px;
+}
+
+.inspector-empty > p {
+    color: var(--vscode-descriptionForeground, #92938f);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.agent-roster-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.agent-roster-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.09));
+    border-radius: 6px;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.025);
+    cursor: pointer;
+    text-align: left;
+}
+
+.agent-roster-item:hover {
+    background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.07));
+}
+
+.agent-roster-item > span:nth-child(2) {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.agent-roster-item strong,
+.agent-roster-item small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.agent-roster-item strong {
+    font-size: 10px;
+}
+
+.agent-roster-item small,
+.roster-status {
+    color: var(--vscode-descriptionForeground, #92938f);
+    font-size: 8px;
+}
+
+.roster-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: #78b6df;
+}
+
+.roster-dot.amber { background: #e2a65d; }
+.roster-dot.green { background: #82c192; }
+
+.run-summary {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.09));
+    color: #82c192;
+    font-size: 9px;
+}
+
+.canvas-note {
+    position: absolute;
+    right: 15px;
+    bottom: 14px;
+    max-width: calc(100% - 30px);
+    padding: 7px 10px;
+    border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    color: var(--vscode-descriptionForeground, #92938f);
+    background: var(--vscode-editorWidget-background, rgba(30, 33, 31, 0.9));
+    font-size: 9px;
+    pointer-events: none;
+}
+
+.run-summary-toast {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    max-width: min(500px, calc(100% - 28px));
+    padding: 8px 11px;
+    border: 1px solid rgba(130, 193, 146, 0.35);
+    border-radius: 6px;
+    color: var(--vscode-foreground, #d8d4cc);
+    background: var(--vscode-editorWidget-background, rgba(30, 33, 31, 0.94));
+    font-size: 10px;
+    overflow-wrap: anywhere;
+}
+
+.canvas-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(430px, calc(100% - 48px));
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.canvas-empty h2 {
+    margin: 10px 0 8px;
+    font-size: 22px;
+    font-weight: 550;
+}
+
+.canvas-empty p {
+    max-width: 340px;
+    margin: 0 auto 18px;
+    color: var(--vscode-descriptionForeground, #999);
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.empty-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.flow-canvas .react-flow__controls {
+    overflow: hidden;
+    border: 1px solid var(--vscode-panel-border, #3a3d3a);
+    border-radius: 7px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.flow-canvas .react-flow__controls-button {
+    border-bottom-color: var(--vscode-panel-border, #3a3d3a);
+    background: var(--vscode-editorWidget-background, #242725);
+    fill: var(--vscode-foreground, #d8d4cc);
+}
+
+.flow-canvas .react-flow__minimap {
+    border: 1px solid var(--vscode-panel-border, #3a3d3a);
+    border-radius: 7px;
+    background: var(--vscode-editorWidget-background, #242725);
+}
+
+@media (max-width: 900px) {
+    .node-inspector {
+        width: 270px;
+        flex-basis: 270px;
+    }
+
+    .add-node {
+        padding: 0 7px;
+        font-size: 9px;
+    }
+}
+
+@media (max-width: 700px) {
+    .workspace-toolbar {
+        flex-wrap: wrap;
+        min-height: 74px;
+        padding: 9px 11px;
+    }
+
+    .workspace-content {
+        flex-direction: column;
+    }
+
+    .flow-canvas {
+        min-height: 52%;
+    }
+
+    .node-inspector {
+        width: 100%;
+        max-height: 48%;
+        flex: 1 1 48%;
+        border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.1));
+        border-left: 0;
+        padding: 11px;
+    }
+
+    .inspector-textarea {
+        min-height: 90px;
+    }
+
+    .workflow-name {
+        width: 55vw;
+    }
+}

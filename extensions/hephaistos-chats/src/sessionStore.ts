@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -98,7 +99,7 @@ export class SessionStore {
 
     create(provider = 'openrouter', model = 'liquid/lfm-2.5-2.6b:free'): ChatSession {
         const session: ChatSession = {
-            id: `chat-${Date.now().toString(36)}`,
+            id: `chat-${randomUUID()}`,
             mode: 'agent',
             provider,
             model,

@@ -2,7 +2,7 @@
   "name": "hephaistos-chats",
   "displayName": "Hephaistos Chats",
   "description": "Onglets de chat Hephaistos dans l'éditeur. Coque d'ergonomie : historique local, mode, agent, fournisseur et modèle. Aucune connexion ACP.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": "media/icon.png",
   "publisher": "hephaistos",
   "engines": {
@@ -47,6 +47,11 @@
         "command": "hephaistosChats.openChat",
         "title": "Hephaistos : Ouvrir le chat",
         "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "hephaistosChats.openWorkspace",
+        "title": "Hephaistos : Ouvrir l’espace de travail",
+        "icon": "$(type-hierarchy)"
       }
     ],
     "keybindings": [
@@ -57,12 +62,22 @@
     ]
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "build:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify",
+    "compile": "npm run build:workspace && tsc -p ./ && tsc -p ./tsconfig.webview.json",
+    "watch": "tsc -watch -p ./",
+    "watch:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify --watch=forever",
+    "test": "npm run compile && node --test test/*.test.cjs",
+    "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^18.15.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@types/vscode": "^1.85.0",
+    "@xyflow/react": "^12.12.0",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^5.0.0"
   }
 }

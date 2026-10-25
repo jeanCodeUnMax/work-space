@@ -77,28 +77,25 @@ function providerEnv(providerId, name) {
 }
 
 /* ---------- prompt système (miroir de runtime.ts, sans vscode) ---------- */
+// Prompt de base compact pour tous les Bleubites, quel que soit le provider.
+// Ce sont des workers à tâches ciblées : œillères, pas de priming AGENTS.md /
+// global_rules (~2900 tokens économisés par round — vital pour les upstreams
+// à TPM serré type Groq on_demand 7-8k). Le contexte reste accessible via les
+// outils si la tâche l'exige. Les casquettes/skills se brancheront ici plus tard.
 function buildSystemPrompt(mode) {
     const root = workspace;
     const lines = [
-        'Tu es l\'agent d\'ingénierie et d\'intelligence opérationnelle de Hephaistos2-Kit (The Developer\'s Forge).',
-        'Tu vis et opères à l\'intérieur de l\'IDE (Devin / Cursor / VS Code).',
+        'Tu es un agent Bleubite de Hephaistos2-Kit : un worker qui exécute des tâches précises dans l\'IDE, sous la supervision de l\'utilisateur et des agents chefs.',
+        `- Workspace Root : ${root} | Windows (win32) | ${new Date().toISOString().slice(0, 10)}`,
         '',
-        '### Contexte de l\'Espace de Travail (IDE)',
-        `- Répertoire de travail (Workspace Root) : ${root}`,
-        `- Système d'exploitation : Windows (win32) | Date courante : ${new Date().toISOString().slice(0, 10)}`,
-        '- Infrastructure locale : serveur unifié Hephaistos-everything-search (REST http://127.0.0.1:8792), orchestrateur ws://127.0.0.1:7477.',
+        'Outils disponibles (function-calling, confinés au workspace) : fs_write_text_file, fs_read_text_file, fs_list_directory.',
         '',
-        'Directives : réponses en français, professionnelles, concises, directes ; code propre et sécurisé.',
+        'Règles :',
+        '- APPELLE les outils pour agir — ne raconte jamais une action que tu n\'as pas réellement exécutée.',
+        '- Reste strictement dans la tâche demandée : pas d\'initiative hors périmètre, pas de fichier en dehors du workspace.',
+        '- Si un contexte projet est nécessaire (AGENTS.md, règles, docs), lis-le via fs_read_text_file — rien n\'est pré-chargé.',
+        '- Réponses en français, concises, directes.',
     ];
-    // Priming : mandat + règles globales du kit, comme tout agent à l'arrivée.
-    try {
-        const agentsMd = path.join(root, 'AGENTS.md');
-        if (fs.existsSync(agentsMd)) lines.push(`\n[MANDAT MAÎTRE AGENTS.MD]\n${fs.readFileSync(agentsMd, 'utf8')}`);
-    } catch { /* best effort */ }
-    try {
-        const rulesMd = path.join(root, '.agent', 'rules', 'global_rules.md');
-        if (fs.existsSync(rulesMd)) lines.push(`\n[RÈGLES GLOBALES DU KIT — TRONC CONTRACTUEL]\n${fs.readFileSync(rulesMd, 'utf8').slice(0, 8000)}`);
-    } catch { /* best effort */ }
     const suffix = {
         plan: '\n\n[MODE PLAN] Architecte logiciel : analyse, décomposition en étapes vérifiables, pas de code tant que la stratégie n\'est pas validée.',
         ask: '\n\n[MODE ASK] Oracle technique : réponses précises, aucune modification de fichiers.',
@@ -106,6 +103,214 @@ function buildSystemPrompt(mode) {
         agent: '\n\n[MODE AGENT] Exécution directe : code complet, prêt pour la production.',
     };
     return lines.join('\n') + (suffix[mode] || suffix.agent);
+}
+
+/* ---------- outils locaux pour les providers API (chat texte) ----------
+ * Les providers HTTP (nim/nim2/omniroute/openrouter/huggingface) répondent en
+ * chat completions — sans boucle tool_calls ils décrivent des actions au lieu
+ * de les exécuter. On expose ici le minimum FS, confiné au workspace. */
+const MAX_TOOL_ROUNDS = 8;
+const CHAT_TOOLS = [
+    {
+        type: 'function',
+        function: {
+            name: 'fs_write_text_file',
+            description: 'Write UTF-8 text content to a file inside the workspace (creates parent dirs).',
+            parameters: {
+                type: 'object',
+                properties: {
+                    path: { type: 'string', description: 'Path relative to workspace root, or absolute inside it' },
+                    content: { type: 'string' },
+                },
+                required: ['path', 'content'],
+            },
+        },
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'fs_read_text_file',
+            description: 'Read a UTF-8 text file inside the workspace (bounded — use offset/max_chars for big files).',
+            parameters: {
+                type: 'object',
+                properties: {
+                    path: { type: 'string' },
+                    offset: { type: 'number', description: 'Start position in chars (default 0)' },
+                    max_chars: { type: 'number', description: 'Max chars to return (default 8000)' },
+                },
+                required: ['path'],
+            },
+        },
+    },
+    {
+        type: 'function',
+        function: {
+            name: 'fs_list_directory',
+            description: 'List the entries of a directory inside the workspace.',
+            parameters: {
+                type: 'object',
+                properties: { path: { type: 'string' } },
+                required: ['path'],
+            },
+        },
+    },
+];
+
+function resolveWorkspacePath(p, cwd) {
+    const root = cwd || workspace;
+    const abs = path.resolve(root, String(p || ''));
+    const rel = path.relative(root, abs);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+        throw new Error(`chemin hors workspace refusé: ${p}`);
+    }
+    return abs;
+}
+
+// Groq/gpt-oss émet parfois des sauts de ligne BRUTS dans les strings JSON
+// (arguments de tool_call) — on les échappe uniquement à l'intérieur des
+// chaînes pour rendre le JSON parseable sans casser la structure.
+function escapeRawControlsInJsonStrings(s) {
+    let out = '', inStr = false, esc = false;
+    for (const ch of s) {
+        if (esc) { out += ch; esc = false; continue; }
+        if (ch === '\\') { out += ch; esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; out += ch; continue; }
+        if (inStr && (ch === '\n' || ch === '\r' || ch === '\t')) {
+            out += ch === '\n' ? '\\n' : ch === '\r' ? '\\r' : '\\t';
+            continue;
+        }
+        out += ch;
+    }
+    return out;
+}
+
+function runLocalTool(name, argsJson, cwd) {
+    let args = {};
+    try {
+        args = typeof argsJson === 'string' ? JSON.parse(argsJson || '{}') : (argsJson || {});
+    } catch {
+        try { args = JSON.parse(escapeRawControlsInJsonStrings(argsJson || '{}')); } catch { /* args illisibles → {} */ }
+    }
+    switch (name) {
+        case 'fs_write_text_file': {
+            const target = resolveWorkspacePath(args.path, cwd);
+            const content = String(args.content ?? '');
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, content);
+            return `ok: écrit ${target} (${Buffer.byteLength(content)} octets)`;
+        }
+        case 'fs_read_text_file': {
+            const raw = fs.readFileSync(resolveWorkspacePath(args.path, cwd), 'utf8');
+            const off = Math.max(0, Number(args.offset) || 0);
+            const cap = Math.min(Math.max(1, Number(args.max_chars) || 8000), 50_000);
+            const slice = raw.slice(off, off + cap);
+            return off + slice.length < raw.length ? `${slice}\n[tronqué ${raw.length - off - slice.length} chars — offset=${off + slice.length}]` : slice;
+        }
+        case 'fs_list_directory':
+            return fs.readdirSync(resolveWorkspacePath(args.path || '.', cwd), { withFileTypes: true })
+                .map((e) => `${e.isDirectory() ? 'd' : 'f'} ${e.name}`)
+                .join('\n')
+                .slice(0, 50_000);
+        default:
+            return `outil inconnu: ${name}`;
+    }
+}
+
+/**
+ * Réessaie les réponses transitoires — 429/502/503/504, plus les 413 de type
+ * rate-limit ("tokens per minute") qui portent un reset_at/retry_after.
+ * Le délai honoré est celui annoncé par l'upstream quand il est lisible.
+ */
+async function fetchWithRetry(url, opts, label, attempts = 5) {
+    const delays = [0, 2000, 5000, 12000];
+    let last;
+    for (let i = 0; i < attempts; i++) {
+        if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
+        const res = await fetch(url, opts);
+        if (res.ok || ![413, 429, 502, 503, 504].includes(res.status)) return res;
+        last = res;
+        if (i + 1 >= attempts) break;
+        let waitMs = 0;
+        try {
+            const clone = res.clone();
+            const body = await clone.json().catch(() => null);
+            const ra = body?.error?.retry_after ?? body?.error?.reset_seconds;
+            if (typeof ra === 'number' && ra > 0) waitMs = Math.min(ra * 1000 + 1500, 60_000);
+            else if (typeof ra === 'string' && /^\d+$/.test(ra)) waitMs = Math.min(Number(ra) * 1000 + 1500, 60_000);
+            else if (res.status === 413) return res; // 413 non rate-limit = vrai trop gros, inutile de réessayer
+        } catch { /* pas de corps lisible */ }
+        if (res.status === 413 && !waitMs) return res;
+        if (waitMs) delays[i + 1] = waitMs;
+    }
+    return last;
+}
+
+/**
+ * Boucle chat-completions avec tool_calls : tant que le modèle demande un outil,
+ * on l'exécute localement et on renvoie le résultat en message `tool`.
+ * Retourne { msg, trace } — trace = une ligne par appel d'outil pour la transparence.
+ */
+async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
+    const trace = [];
+    const messages = body.messages;
+    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        const res = await fetchWithRetry(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ ...body, messages, tools: CHAT_TOOLS, tool_choice: 'auto' }),
+        }, label);
+        if (!res.ok) {
+            const errText = await res.text().catch(() => '');
+            // Groq renvoie la génération fautive quand le JSON d'arguments est
+            // malformé (sauts de ligne bruts) — on la répare et on exécute
+            // l'outil quand même plutôt que de perdre tout le tour.
+            if (res.status === 400) {
+                let genText = null;
+                try { genText = JSON.parse(errText)?.error?.failed_generation; } catch { /* pas du JSON */ }
+                if (genText) {
+                    try {
+                        const gen = JSON.parse(escapeRawControlsInJsonStrings(String(genText)));
+                        if (gen?.name) {
+                            const argsJson = typeof gen.arguments === 'string' ? gen.arguments : JSON.stringify(gen.arguments || {});
+                            const result = runLocalTool(gen.name, argsJson, cwd);
+                            trace.push(`${gen.name}(réparé) → ${String(result).split('\n')[0].slice(0, 120)}`);
+                            const callId = `salvage_${round}`;
+                            messages.push({ role: 'assistant', content: null, tool_calls: [{ id: callId, type: 'function', function: { name: gen.name, arguments: argsJson } }] });
+                            messages.push({ role: 'tool', tool_call_id: callId, name: gen.name, content: String(result).slice(0, 50_000) });
+                            continue;
+                        }
+                    } catch { /* génération irrécupérable → erreur normale */ }
+                }
+            }
+            throw new Error(`${label} HTTP ${res.status}: ${errText}`);
+        }
+        const json = await res.json();
+        const msg = json.choices?.[0]?.message || {};
+        const calls = Array.isArray(msg.tool_calls) ? msg.tool_calls : [];
+        if (!calls.length) return { msg, trace };
+        messages.push({ role: 'assistant', content: msg.content ?? null, tool_calls: calls });
+        for (const call of calls) {
+            const fname = call?.function?.name || '';
+            let result;
+            try {
+                result = runLocalTool(fname, call?.function?.arguments, cwd);
+            } catch (e) {
+                result = `erreur outil: ${e.message}`;
+            }
+            trace.push(`${fname}(${String(call?.function?.arguments || '').slice(0, 80)}) → ${String(result).split('\n')[0].slice(0, 120)}`);
+            messages.push({ role: 'tool', tool_call_id: call.id, name: fname, content: String(result).slice(0, 50_000) });
+        }
+        // Fenêtre glissante : seuls les 2 derniers résultats d'outils restent
+        // entiers — les plus anciens sont stubbés pour borner le contexte
+        // (sinon chaque round regrossit indéfiniment et sature le TPM upstream).
+        const toolMsgs = messages.filter((m) => m.role === 'tool');
+        for (const m of toolMsgs.slice(0, -2)) {
+            if (typeof m.content === 'string' && m.content.length > 300 && !m.content.includes('…[stub — résultat ancien')) {
+                m.content = `${m.content.slice(0, 300)}…[stub — résultat ancien, ${m.content.length} chars]`;
+            }
+        }
+    }
+    return { msg: { content: '' }, trace };
 }
 
 /* ---------- complétion providers (miroir de runtime.ts) ---------- */
@@ -118,42 +323,44 @@ async function completeTurn(session) {
     const provider = session.provider;
     const model = session.model;
 
+    const toolCwd = session.workspace || undefined;
+
     if (provider === 'openrouter') {
         const apiKey = providerEnv('openrouter','OPENROUTER_API_KEY');
         if (!apiKey) throw new Error('OPENROUTER_API_KEY absente.');
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
+        const { msg: orMsg, trace } = await openAiToolsCompletion({
+            url: 'https://openrouter.ai/api/v1/chat/completions',
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': 'https://github.com/projet-temporaire/hephaistos2-kit',
                 'X-Title': 'Hephaistos Chats ACP',
             },
-            body: JSON.stringify({ model, messages: chatMessages, stream: false }),
+            body: { model, messages: chatMessages, stream: false },
+            cwd: toolCwd,
+            label: 'OpenRouter',
         });
-        if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${await res.text().catch(() => '')}`);
-        const json = await res.json();
-        const orMsg = json.choices?.[0]?.message || {};
         return {
             content: (orMsg.content || '').trim(),
             reasoning: (orMsg.reasoning || orMsg.reasoning_content || '').trim(),
+            toolTrace: trace,
         };
     }
 
     if (provider === 'huggingface') {
         const hfKey = providerEnv('huggingface','HF_TOKEN') || providerEnv('huggingface','HUGGINGFACE_API_KEY');
         if (!hfKey) throw new Error('HF_TOKEN absent.');
-        const res = await fetch('https://router.huggingface.co/v1/chat/completions', {
-            method: 'POST',
+        const { msg: hfMsg, trace } = await openAiToolsCompletion({
+            url: 'https://router.huggingface.co/v1/chat/completions',
             headers: { Authorization: `Bearer ${hfKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages: chatMessages, stream: false }),
+            body: { model, messages: chatMessages, stream: false },
+            cwd: toolCwd,
+            label: 'HuggingFace',
         });
-        if (!res.ok) throw new Error(`HuggingFace HTTP ${res.status}: ${await res.text().catch(() => '')}`);
-        const json = await res.json();
-        const hfMsg = json.choices?.[0]?.message || {};
         return {
             content: (hfMsg.content || '').trim(),
             reasoning: (hfMsg.reasoning_content || hfMsg.reasoning || '').trim(),
+            toolTrace: trace,
         };
     }
 
@@ -176,20 +383,23 @@ async function completeTurn(session) {
         const raw = providerEnv('omniroute','OMNIROUTE_BASE_URL') || `http://localhost:${process.env.PORT || '20128'}/v1`;
         const base = /\/v1$/i.test(raw.replace(/\/+$/, '')) ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
         const key = providerEnv('omniroute','OMNIROUTE_API_KEY');
-        const res = await fetch(`${base}/chat/completions`, {
-            method: 'POST',
+        const { msg: omMsg, trace } = await openAiToolsCompletion({
+            url: `${base}/chat/completions`,
             headers: {
                 'Content-Type': 'application/json',
                 ...(key ? { Authorization: `Bearer ${key}` } : {}),
             },
-            body: JSON.stringify({ model, messages: chatMessages, max_tokens: 8192, stream: false }),
+            // max_tokens est compté dans le TPM Groq on_demand (8000/min) :
+            // réserve basse — la synthèse tient en une phrase, le contenu
+            // volumineux part dans les fichiers via les outils.
+            body: { model, messages: chatMessages, max_tokens: 1500, stream: false },
+            cwd: toolCwd,
+            label: 'OmniRoute',
         });
-        if (!res.ok) throw new Error(`OmniRoute HTTP ${res.status}: ${await res.text().catch(() => '')}`);
-        const json = await res.json();
-        const omMsg = json.choices?.[0]?.message || {};
         return {
             content: (omMsg.content || '').trim(),
             reasoning: (omMsg.reasoning || omMsg.reasoning_content || '').trim(),
+            toolTrace: trace,
         };
     }
 
@@ -198,18 +408,18 @@ async function completeTurn(session) {
         // Pas de fallback croisé — sinon les deux fenêtres finissent sur le même compte.
         const apiKey = provider === 'nim2' ? providerEnv('nim2','NVIDIA_API_KEY_2') : providerEnv('nim','NVIDIA_API_KEY');
         if (!apiKey) throw new Error(provider === 'nim2' ? 'NVIDIA_API_KEY_2 absente.' : 'NVIDIA_API_KEY absente.');
-        const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-            method: 'POST',
+        const { msg, trace } = await openAiToolsCompletion({
+            url: 'https://integrate.api.nvidia.com/v1/chat/completions',
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model, messages: chatMessages, max_tokens: 4096, stream: false }),
+            body: { model, messages: chatMessages, max_tokens: 4096, stream: false },
+            cwd: toolCwd,
+            label: 'NVIDIA NIM',
         });
-        if (!res.ok) throw new Error(`NVIDIA NIM HTTP ${res.status}: ${await res.text().catch(() => '')}`);
-        const json = await res.json();
         // modèles à raisonnement : content peut être null si tout part en reasoning_content
-        const msg = json.choices?.[0]?.message || {};
         return {
             content: (msg.content || '').trim(),
             reasoning: (msg.reasoning_content || msg.reasoning || '').trim(),
+            toolTrace: trace,
         };
     }
 
@@ -529,6 +739,12 @@ const handlers = {
         if (!text) return fail(id, -32602, 'prompt texte vide');
 
         session.messages.push({ role: 'user', text, at: new Date().toISOString() });
+        // Flush immédiat + activité précoce : la fenêtre (qui surveille
+        // sessions.json) affiche le prompt reçu, et l'injecteur observe
+        // `delivered` — sinon un tour long (retry_after provider) reste
+        // invisible jusqu'à sa fin et meurt muet au timeout.
+        try { writeSessions(cwd, all); } catch { /* best-effort */ }
+        thoughtChunk(sessionId, '…');
         let turn = { content: '', reasoning: '' };
         const binomeOut = tryBinomeJoin(text, cwd);
         if (binomeOut !== null) {
@@ -557,9 +773,11 @@ const handlers = {
                 turn.content = `⚠️ Erreur : ${e.message}`;
             }
         }
-        const reply = turn.content || (turn.reasoning
+        const reply = (turn.toolTrace?.length
+            ? `[outils exécutés] ${turn.toolTrace.join(' | ')}\n\n`
+            : '') + (turn.content || (turn.reasoning
             ? '⚠️ Réponse vide : le modèle a épuisé son budget en raisonnement.'
-            : '⚠️ Réponse vide.');
+            : '⚠️ Réponse vide.'));
         const assistantMsg = { role: 'assistant', text: reply, at: new Date().toISOString() };
         if (turn.reasoning) assistantMsg.thinking = turn.reasoning;
         session.messages.push(assistantMsg);
