@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-24T20:09:27.162Z",
+  "updatedAt": "2026-10-25T00:24:07.887Z",
   "core": {
     "devin": [
       {
@@ -21,16 +21,23 @@
     "bleubites": [
       {
         "providerId": "hephaistos",
-        "sessionId": "chat-mvmtldvy",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "nim"
       },
       {
         "providerId": "hephaistos",
-        "sessionId": "chat-mvmtnqa6",
-        "model": "groq/openai/gpt-oss-120b",
+        "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "role": "nim2"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvmw57cq",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
         "role": "omniroute"
       }
     ]
@@ -42,7 +49,7 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-24T20:34:26.965Z",
+    "lastPing": "2026-10-25T00:24:17.068Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
@@ -60,20 +67,28 @@
       "chat-mvlpm7vh": "session-missing",
       "chat-mvlpi4qj": "session-missing",
       "chat-mvlp38h8": "superseded",
-      "chat-mvmtldvy": {
-        "transport": "acp-inject",
-        "delivered": false,
-        "stopReason": null,
-        "reply": null,
-        "pong": false,
-        "error": "acp-inject timeout 90000ms"
-      },
-      "chat-mvmtnqa6": {
+      "chat-mvmw59wa": {
         "transport": "acp-inject",
         "delivered": true,
         "stopReason": "end_turn",
-        "reply": "⚠️ Erreur : OmniRoute HTTP 413: {\"error\":{\"message\":\"[groq/openai/gpt-oss-120b] [413]: Request too large for model `openai/gpt-oss-120b` in organization `org_01",
-        "pong": false,
+        "reply": "PONG",
+        "pong": true,
+        "error": null
+      },
+      "chat-mvmw5chd": {
+        "transport": "acp-inject",
+        "delivered": true,
+        "stopReason": "end_turn",
+        "reply": "PONG",
+        "pong": true,
+        "error": null
+      },
+      "chat-mvmw57cq": {
+        "transport": "acp-inject",
+        "delivered": true,
+        "stopReason": "end_turn",
+        "reply": "PONG",
+        "pong": true,
         "error": null
       }
     }

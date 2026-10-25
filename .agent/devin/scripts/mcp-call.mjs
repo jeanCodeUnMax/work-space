@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // mcp-call.mjs — generic MCP stdio client for Devin hooks and scripts.
 // Usage: node mcp-call.mjs <server-name> <tool-name> [json-args]
-// Server definitions are read from Devin's mcp_config.json (%APPDATA%/devin).
+// Server definitions are read from Devin's mcp_config.json (%APPDATA%/devin)
+// with fallback to mcp-mux config (~/.config/mcp-mux/mcp-mux.json).
 // Prints the tool result content as text to stdout. Exit 0 on success.
 
 import { spawn } from 'node:child_process';
@@ -27,7 +28,19 @@ if (argsJson) {
 
 const cfg = JSON.parse(readFileSync(MCP_CONFIG, 'utf8'));
 const servers = cfg.mcpServers || cfg;
-const def = servers[serverName];
+let def = servers[serverName];
+if ((!def || !def.command) && servers['mcp-mux']?.args) {
+  const muxArgs = servers['mcp-mux'].args;
+  const cfgIdx = muxArgs.indexOf('--config');
+  const muxPath = cfgIdx >= 0 && muxArgs[cfgIdx + 1]
+    ? muxArgs[cfgIdx + 1]
+    : join(homedir(), '.config', 'mcp-mux', 'mcp-mux.json');
+  try {
+    const muxCfg = JSON.parse(readFileSync(muxPath, 'utf8'));
+    const muxSrv = (muxCfg.servers || muxCfg.mcpServers || muxCfg)[serverName];
+    if (muxSrv && !muxSrv.disabled && muxSrv.command) def = muxSrv;
+  } catch { /* fallback failed */ }
+}
 if (!def || !def.command) {
   console.error(`unknown stdio server: ${serverName}`);
   process.exit(65);
