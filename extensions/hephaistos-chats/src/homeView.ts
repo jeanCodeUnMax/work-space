@@ -155,6 +155,47 @@ button, input, select { font: inherit; color: inherit; }
   font-size: 10px; color: var(--vscode-descriptionForeground, #888);
 }
 
+.workspace-card {
+  margin: 0 auto 12px;
+  width: 96%;
+  max-width: 320px;
+  padding: 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: linear-gradient(145deg, rgba(200, 133, 64, 0.12), var(--card-bg) 58%);
+}
+.workspace-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; font-size: 11px; font-weight: 600;
+}
+.workspace-card-head span:last-child {
+  color: var(--vscode-descriptionForeground, #888); font-size: 9px; font-weight: 400;
+}
+.workspace-preview {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  min-height: 58px; padding: 6px; margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 5px;
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.13) 0.7px, transparent 0.7px);
+  background-size: 10px 10px;
+}
+.workspace-preview-node {
+  flex: 1; min-width: 0; padding: 5px 3px;
+  border: 1px solid rgba(221, 172, 111, 0.45); border-radius: 4px;
+  background: var(--card-bg); color: var(--vscode-foreground, #ddd);
+  text-align: center; font-size: 8px; white-space: nowrap;
+}
+.workspace-preview-link {
+  width: 9px; height: 1px; flex: 0 0 9px; background: #d99b52;
+}
+.workspace-open {
+  width: 100%; padding: 5px 8px; border: 0; border-radius: 4px;
+  background: var(--vscode-button-background, #9c6128);
+  color: var(--vscode-button-foreground, #fff); cursor: pointer;
+  font-size: 11px; font-weight: 600;
+}
+.workspace-open:hover { background: var(--vscode-button-hoverBackground, #b97536); }
+
 /* Zone Nouveau Chat Recadrée (Largeur contrôlée et centrée) */
 .new-chat-wrapper {
   margin: 0 auto 12px;
@@ -346,6 +387,23 @@ button, input, select { font: inherit; color: inherit; }
   </button>
 </div>
 
+<section class="workspace-card" aria-label="Espace de travail visuel">
+  <div class="workspace-card-head">
+    <span>Espace de travail</span>
+    <span>React Flow</span>
+  </div>
+  <div class="workspace-preview" aria-hidden="true">
+    <span class="workspace-preview-node">Départ</span>
+    <span class="workspace-preview-link"></span>
+    <span class="workspace-preview-node">Agent IA</span>
+    <span class="workspace-preview-link"></span>
+    <span class="workspace-preview-node">Résultat</span>
+  </div>
+  <button type="button" class="workspace-open" id="openWorkspaceBtn">
+    Ouvrir l’espace de travail
+  </button>
+</section>
+
 <!-- Section Chats Récents -->
 <div class="section-header">
   <span>Chats Récents</span>
@@ -437,6 +495,10 @@ document.getElementById('createChatBtn').onclick = () => {
   const sel = document.getElementById('providerSelect');
   const provider = sel ? sel.value : 'openrouter';
   vscode.postMessage({ type: 'new', provider });
+};
+
+document.getElementById('openWorkspaceBtn').onclick = () => {
+  vscode.postMessage({ type: 'open_workspace' });
 };
 
 document.getElementById('pingBtn').onclick = () => {

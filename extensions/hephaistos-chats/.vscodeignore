@@ -1,4 +1,7 @@
 src/**
+webview/**
+test/**
 tsconfig.json
+tsconfig.webview.json
 .gitignore
 **/*.map

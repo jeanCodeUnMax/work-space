@@ -504,6 +504,8 @@ function Invoke-Snapshot {
   } catch { }
   if ($null -ne $commitUsedPct -and $commitUsedPct -ge 85) {
     Set-Alert -Key 'mem:commit-high' -Code 'commit_charge_high'
+  } elseif ($null -ne $commitUsedPct -and $commitUsedPct -ge 80 -and $script:State.alerts.ContainsKey('mem:commit-high')) {
+    $script:ActiveAlertKeys['mem:commit-high'] = $true
   }
 
   $processes = @()
@@ -649,7 +651,8 @@ function Invoke-Snapshot {
         if (-not $live -and $null -eq $acpSummary -and $ageMin -lt 60) { $live = $true }
         if (-not $live) {
           try {
-            Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop
+            & taskkill.exe /pid $p.ProcessId /t /f *> $null
+            Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
             $reapedCount++
             Write-Log -Level 'warning' -Category 'process_reaped' -Details @{ pid = $p.ProcessId; name = $p.Name; providers = $pat.Providers; ageMin = [int]$ageMin }
           } catch { }

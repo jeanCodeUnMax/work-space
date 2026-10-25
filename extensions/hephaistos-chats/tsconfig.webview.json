@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "noEmit": true,
+    "rootDir": "webview",
+    "types": ["react", "react-dom"]
+  },
+  "include": ["webview/**/*.tsx", "webview/**/*.d.ts"],
+  "exclude": ["node_modules", "out"]
+}

@@ -167,6 +167,10 @@ async function rest(name: string, args: Record<string, unknown>): Promise<any> {
     return body;
 }
 
+export async function callHpheTool(name: string, args: Record<string, unknown>): Promise<any> {
+    return rest(name, args);
+}
+
 export interface ProviderSyncResult {
     provider: string;
     models: ListedModel[];
