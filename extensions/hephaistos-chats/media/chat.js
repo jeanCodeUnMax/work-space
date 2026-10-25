@@ -212,7 +212,7 @@
             const isAssistant = msg.role === 'assistant';
             const avatar = document.createElement('div');
             avatar.className = `avatar ${isAssistant ? 'assistant-avatar' : 'user-avatar'}`;
-            avatar.textContent = isAssistant ? '⚡' : 'U';
+            if (isAssistant && window.__agentsUri && session && session.id) { let hh=0; for(const ch of session.id) hh=(hh*31+ch.charCodeAt(0))>>>0; const ai=document.createElement('img'); ai.src=window.__agentsUri+"/p"+(1+hh%6)+"-c"+String(hh%16).padStart(2,"0")+".png"; ai.alt=''; ai.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit;'; avatar.textContent=''; avatar.appendChild(ai); } else { avatar.textContent = isAssistant ? '⚡' : 'U'; }
 
             const wrap = document.createElement('div');
             wrap.className = 'message-content-wrap';
@@ -509,14 +509,17 @@
         // Mise à jour du Fournisseur en haut à gauche
         const provObj = state.providers.find((p) => p.id === session.provider);
         const provLabel = provObj ? provObj.label : session.provider;
-        providerName.textContent = provLabel;
+        providerName.textContent = session.codename || provLabel;
+        let hash=0; for(const ch of (session.id||"")) hash=(hash*31+ch.charCodeAt(0))>>>0;
+        const ic=(window.__agentsUri?window.__agentsUri+"/":"")+"p"+(1+hash%6)+"-c"+String(hash%16).padStart(2,"0")+".png";
+        let img=document.getElementById("agentIcon"); if(!img){img=document.createElement("img");img.id="agentIcon";img.style.cssText="width:28px;height:28px;border-radius:6px;object-fit:cover;margin-right:6px;";providerBtn.insertBefore(img,providerName);} img.src=ic;
         providerBtn.title = `Fournisseur : ${provLabel}\nModèle : ${session.model}\nChat ID : ${session.id}\n(Cliquer pour copier l'identifiant pour le protocole Binôme)`;
 
         // Composer labels
         const modeInfo = MODES_DATA[session.mode] || MODES_DATA.agent;
         modeLabel.textContent = modeInfo.label;
         document.querySelector('.mode-dot').style.background = modeInfo.color;
-        modelLabel.textContent = shortModel(session.model);
+        modelLabel.textContent = shortModel(session.model) + " · " + provLabel;
         modelBtn.title = `${session.model} (${session.provider})`;
 
         renderTranscript();

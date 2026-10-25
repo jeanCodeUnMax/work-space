@@ -387,6 +387,13 @@ export function activate(context: vscode.ExtensionContext): void {
             FlowWorkspacePanel.open(context, view(graph), (message) => {
                 void onWorkflowMessage(message);
             });
+            for (const node of graph.nodes) {
+                if (node.sessionId.startsWith('chat-')) {
+                    try {
+                        openSession(node.sessionId);
+                    } catch { /* session indisponible */ }
+                }
+            }
         } catch (error) {
             void vscode.window.showErrorMessage(`Impossible d'ouvrir le workflow : ${String(error)}`);
         }
