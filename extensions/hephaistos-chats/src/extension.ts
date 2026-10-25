@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
 import { devinAcpConfig, devinAgentPreference } from './devinConfig';
+import { setDevinBridge } from './devinRoute';
 import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
 import { loadProviderFlags, pingModels, setProviderEnabled, setOrchTracker, setRemoteProviders } from './runtime';
@@ -18,6 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const orchWs = new OrchWsClient('ws://127.0.0.1:7477', workspaceRoot);
     setOrchTracker((p) => orchWs.trackRequest(p));
+    setDevinBridge(orchWs);
 
     const home = new HomeView(context.extensionUri, (message) => { void onHomeMessage(message); });
 
@@ -174,6 +176,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 return 'liquid/lfm-2.5-2.6b:free';
             case 'omniroute':
                 return 'groq/openai/gpt-oss-120b';
+            case 'devin-cli':
+                return 'swe-2-high';
             default:
                 return provider;
         }
