@@ -122,6 +122,7 @@ export class SessionStore {
             updatedAt: new Date().toISOString(),
             workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
         };
+        ensureCodename(session);
         this.save(session);
         return session;
     }
@@ -137,6 +138,7 @@ export class SessionStore {
             updatedAt: new Date().toISOString(),
             workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
         };
+        ensureCodename(session);
         this.save(session);
         return session;
     }
