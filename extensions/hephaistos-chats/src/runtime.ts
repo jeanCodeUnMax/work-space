@@ -933,21 +933,31 @@ export function setRemoteProviders(p: Record<string, boolean> | undefined): void
     remoteProviders = p || {};
 }
 
+/** Noms provider_prefs (orchestrateur) ↔ ids ACP de l'extension. */
+const ORCH_PROVIDER_NAME: Record<string, string> = {
+    nim: 'nvidia-nim',
+    nim2: 'nvidia-nim2',
+    openrouter: 'openrouter-free',
+    omniroute: 'omniroute-local',
+    kilo: 'kilo-free',
+    hermes: 'hermes-free',
+    'antigravity-acp': 'antigravity-subscription',
+    'devin-cli': 'devin-subscription',
+};
+
 export function loadProviderFlags(
     context: vscode.ExtensionContext,
     liveBridgeProviders?: Record<string, boolean>,
 ): AcpProvider[] {
-    const local = context.workspaceState.get<Record<string, boolean>>('hephaistosChats.providers', {});
+    void context;
     const remote = liveBridgeProviders || remoteProviders;
     return ACP_PROVIDERS.map((provider) => ({
         ...provider,
-        // orchestrateur > choix utilisateur > config Devin (enabledAgents) > défaut
-        enabled: remote[provider.id] ?? local[provider.id] ?? devinAgentEnabled(provider.id) ?? false,
+        // provider_prefs (orchestrateur-monitor) est la seule source de
+        // vérité — l'extension ne fait plus que la lire.
+        enabled: remote[ORCH_PROVIDER_NAME[provider.id] ?? provider.id]
+            ?? remote[provider.id]
+            ?? devinAgentEnabled(provider.id)
+            ?? false,
     }));
-}
-
-export async function setProviderEnabled(context: vscode.ExtensionContext, id: string, enabled: boolean): Promise<void> {
-    const local = context.workspaceState.get<Record<string, boolean>>('hephaistosChats.providers', {});
-    local[id] = enabled;
-    await context.workspaceState.update('hephaistosChats.providers', local);
 }

@@ -304,28 +304,6 @@ button, input, select { font: inherit; color: inherit; }
 .session-card:hover .session-del-btn { opacity: 0.7; }
 .session-del-btn:hover { opacity: 1 !important; background: rgba(248, 81, 73, 0.2); }
 
-/* Liste Fournisseurs Actifs (inchangée pour toggler les providers) */
-.providers-box {
-  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
-}
-.provider-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 7px; border-radius: 999px;
-  border: 1px solid var(--border-color);
-  color: var(--vscode-descriptionForeground, #999);
-  font-size: 10px; cursor: pointer; user-select: none;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-.provider-chip:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-.provider-chip:has(input:checked) {
-  color: var(--vscode-foreground, #eee);
-  border-color: var(--vscode-focusBorder, #007acc);
-  background: rgba(0, 122, 204, 0.1);
-}
-.provider-chip input { margin: 0; cursor: pointer; }
-
 /* Pied de page et barre de statut */
 .bottom-bar {
   margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-color);
@@ -412,13 +390,6 @@ button, input, select { font: inherit; color: inherit; }
 <input type="text" class="search-input" id="search" placeholder="🔍 Filtrer les conversations...">
 <div id="sessions" class="session-list"></div>
 
-<!-- Section Fournisseurs Actifs (inchangée pour toggler les providers) -->
-<div class="section-header">
-  <span>Fournisseurs Actifs</span>
-  <span id="providerCount" class="badge-count"></span>
-</div>
-<div id="providers" class="providers-box"></div>
-
 <!-- Pied de page -->
 <div class="bottom-bar">
   <button type="button" class="btn-refresh" id="pingBtn">
@@ -471,22 +442,6 @@ function renderSessions(filter = '') {
   }).join('');
 }
 
-function renderProvidersList() {
-  const container = document.getElementById('providers');
-  const activeCount = providersData.filter(p => p.enabled).length;
-  document.getElementById('providerCount').textContent = '(' + activeCount + '/' + providersData.length + ')';
-
-  container.innerHTML = providersData.map(p => {
-    const checked = p.enabled ? 'checked' : '';
-    return \`
-      <label class="provider-chip" title="Activer / Désactiver \${escapeHtml(p.label)}">
-        <input type="checkbox" data-provider="\${p.id}" \${checked}>
-        <span>\${escapeHtml(p.label)}</span>
-      </label>
-    \`;
-  }).join('');
-}
-
 function escapeHtml(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -522,16 +477,8 @@ document.getElementById('sessions').onclick = (e) => {
   }
 };
 
-document.getElementById('providers').onchange = (e) => {
-  const input = e.target;
-  if (input && input.dataset && input.dataset.provider) {
-    vscode.postMessage({ type: 'provider', id: input.dataset.provider, enabled: input.checked });
-  }
-};
-
 renderProviderSelect();
 renderSessions();
-renderProvidersList();
 </script>
 </body>
 </html>`;

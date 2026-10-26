@@ -212,6 +212,85 @@ test('workflow nodes mirror active Hephaistos roster entries', () => {
     assert.deepEqual(refreshed.nodes.map((node) => node.sessionId), ['chat-one', 'chat-three']);
 });
 
+test('createEmptySchema creates an active empty canvas that roster sync does not repopulate', () => {
+    const root = makeRosterRoot();
+    roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Codeur', providerId: 'omniroute' });
+    roster.syncRosterWorkflow(root, [{ id: 'chat-one', model: 'model-a' }]);
+
+    const created = roster.createEmptySchema(root, 'Mon flux vide');
+    assert.equal(created.name, 'Mon flux vide');
+    assert.equal(created.nodes.length, 0);
+    assert.equal(created.edges.length, 0);
+    assert.equal(created.activeSchema, 'Mon flux vide');
+    assert.ok(created.activeSchemaId);
+
+    // Le schéma vide reste vide après sync : aucun repeuplement roster.
+    const synced = roster.syncRosterWorkflow(root, [{ id: 'chat-one', model: 'model-a' }]);
+    assert.equal(synced.nodes.length, 0);
+    assert.equal(synced.activeSchema, 'Mon flux vide');
+
+    // Nom dupliqué -> suffixe automatique
+    const again = roster.createEmptySchema(root, 'Mon flux vide');
+    assert.equal(again.name, 'Mon flux vide 2');
+});
+
+test('standard schemas are flagged builtin and restorable from kit templates', () => {
+    const root = makeRosterRoot();
+    // Gabarit canonique dans .agent/templates/schemas/ du workspace
+    const templateDir = path.join(root, '.agent', 'templates', 'schemas');
+    fs.mkdirSync(templateDir, { recursive: true });
+    fs.writeFileSync(path.join(templateDir, 'swat-code-review.json'), JSON.stringify({
+        name: 'swat-code-review',
+        graph: {
+            version: 1,
+            name: 'swat-code-review',
+            entrySessionId: 'chat-rev',
+            nodes: [
+                { sessionId: 'chat-rev', role: 'Reviewer', task: 'audit', position: { x: 0, y: 0 } },
+                { sessionId: 'chat-beacon', role: 'Beacon', task: 'learn', position: { x: 300, y: 0 } },
+            ],
+            edges: [{ id: 'edge:r->b', source: 'chat-rev', target: 'chat-beacon' }],
+        },
+    }));
+
+    const entry = roster.saveSchema(root, 'swat-code-review', {
+        version: 1,
+        name: 'swat-code-review',
+        entrySessionId: 'chat-rev',
+        nodes: [
+            { sessionId: 'chat-rev', role: 'Reviewer', task: 'audit', position: { x: 0, y: 0 } },
+            { sessionId: 'chat-beacon', role: 'Beacon', task: 'learn', position: { x: 300, y: 0 } },
+        ],
+        edges: [{ id: 'edge:r->b', source: 'chat-rev', target: 'chat-beacon' }],
+    });
+    const userSchema = roster.saveSchema(root, 'flux-perso', {
+        version: 1,
+        name: 'flux-perso',
+        entrySessionId: 'chat-rev',
+        nodes: [{ sessionId: 'chat-rev', role: 'Solo', task: '', position: { x: 0, y: 0 } }],
+        edges: [],
+    });
+
+    const listed = roster.listSchemas(root, false);
+    assert.equal(listed.find((s) => s.name === 'swat-code-review').builtin, true);
+    assert.equal(listed.find((s) => s.name === 'flux-perso').builtin, false);
+
+    // Suppression du builtin puis restauration depuis le gabarit du kit
+    roster.deleteSchema(root, entry.id);
+    assert.equal(roster.listSchemas(root, false).some((s) => s.name === 'swat-code-review'), false);
+    const restored = roster.restoreStandardSchemas(root);
+    assert.deepEqual(restored.restored, ['swat-code-review']);
+    const back = roster.listSchemas(root, false).find((s) => s.name === 'swat-code-review');
+    assert.equal(back.builtin, true);
+    assert.equal(back.nodes, 2);
+
+    // Schéma utilisateur : suppression définitive, non restaurable
+    roster.deleteSchema(root, userSchema.id);
+    const again = roster.restoreStandardSchemas(root);
+    assert.deepEqual(again.restored, []);
+    assert.equal(roster.listSchemas(root, false).some((s) => s.name === 'flux-perso'), false);
+});
+
 test('workflow execution starts with Devin, falls back to Antigravity, and follows reachable edges', () => {
     const graph = {
         version: 1,

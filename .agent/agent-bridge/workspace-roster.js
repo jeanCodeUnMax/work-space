@@ -646,15 +646,25 @@ async function main() {
             return;
         }
         if (sub === 'load') {
-            if (args[1] === 'delete') {
-                console.log(JSON.stringify({ command: 'schema delete', ...deleteSchema(root, args[2]) }, null, 1));
-                return;
-            }
             const w = loadSchema(root, args[2]);
             console.log(JSON.stringify({ command: 'schema load', nodes: w.nodes.length, edges: w.edges.length }, null, 1));
             return;
         }
-        throw new Error('usage: schema save|list|load');
+        if (sub === 'delete') {
+            console.log(JSON.stringify({ command: 'schema delete', ...deleteSchema(root, args[2]) }, null, 1));
+            return;
+        }
+        if (sub === 'create') {
+            const nameIdx = args.indexOf('--name');
+            const w = createEmptySchema(root, nameIdx >= 0 ? args[nameIdx + 1] : 'Nouveau schema');
+            console.log(JSON.stringify({ command: 'schema create', name: w.name, nodes: w.nodes.length }, null, 1));
+            return;
+        }
+        if (sub === 'restore-standards') {
+            console.log(JSON.stringify({ command: 'schema restore-standards', ...restoreStandardSchemas(root) }, null, 1));
+            return;
+        }
+        throw new Error('usage: schema save|list|load|delete|create|restore-standards');
     }
     if (cmd === 'workflow') {
         console.log(JSON.stringify({ command: 'workflow', workflow: cmdWorkflow(root, args.slice(1)) }, null, 1));
@@ -773,6 +783,42 @@ function schemasFile() {
         || path.join(os.homedir(), '.hephaistos-workflow-schemas.json');
 }
 
+// Schémas génériques livrés avec le kit : protégés par un gabarit canonique
+// dans .agent/templates/schemas/ — leur suppression dans la banque reste
+// réversible via restoreStandardSchemas.
+const STANDARD_SCHEMA_NAMES = new Set([
+    'swat-orchestrateur',
+    'swat-fix-rapide',
+    'swat-code-review',
+    'swat-faisabilite',
+    'swat-plan-plugin',
+]);
+
+function isStandardSchemaName(name) {
+    return STANDARD_SCHEMA_NAMES.has(normSchemaName(name));
+}
+
+function schemaTemplateDir(root) {
+    return process.env.HEPHAISTOS_SCHEMA_TEMPLATE_DIR
+        || path.join(root, '.agent', 'templates', 'schemas');
+}
+
+function readSchemaTemplates(root) {
+    const dir = schemaTemplateDir(root);
+    const templates = [];
+    let files = [];
+    try { files = fs.readdirSync(dir).filter((name) => name.endsWith('.json')); } catch { return templates; }
+    for (const file of files) {
+        try {
+            const tpl = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+            const graph = tpl.graph && typeof tpl.graph === 'object' ? tpl.graph : tpl;
+            const name = String(tpl.name || graph.name || file.replace(/\.json$/, '')).slice(0, 120);
+            templates.push({ name, graph: cleanSchemaGraph(graph, name) });
+        } catch { /* gabarit illisible : ignoré */ }
+    }
+    return templates;
+}
+
 function readSchemas() {
     try {
         const parsed = JSON.parse(fs.readFileSync(schemasFile(), 'utf8'));
@@ -878,6 +924,7 @@ function saveSchema(root, name, graph) {
     const workspace = path.resolve(root);
     const effectiveName = String(name || graph?.activeSchema || graph?.name || 'Schema').trim().slice(0, 120) || 'Schema';
     const cleanGraph = cleanSchemaGraph(graph, effectiveName);
+    const index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(effectiveName) && sameWorkspace(item.workspace, workspace));
     const entry = {
         id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
         name: effectiveName,
@@ -885,8 +932,8 @@ function saveSchema(root, name, graph) {
         graph: cleanGraph,
         desc: schemaDesc(cleanGraph),
         savedAt: new Date().toISOString(),
+        builtin: isStandardSchemaName(effectiveName) || (index >= 0 && list[index].builtin === true) || undefined,
     };
-    const index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(entry.name) && sameWorkspace(item.workspace, workspace));
     if (index >= 0) {
         entry.id = list[index].id;
         list[index] = entry;
@@ -917,6 +964,7 @@ function listSchemas(root, all) {
             savedAt: item.savedAt,
             nodes: ((item.graph && item.graph.nodes) || []).length,
             desc: schemaDesc(item.graph || { name: item.name }),
+            builtin: item.builtin === true || isStandardSchemaName(item.name),
         }));
 }
 
@@ -931,6 +979,70 @@ function deleteSchema(root, id) {
         writeRoster(root, roster);
     }
     return { deleted: list.length - next.length };
+}
+
+function createEmptySchema(root, name) {
+    const list = readSchemas();
+    const workspace = path.resolve(root);
+    let effectiveName = String(name || '').trim().slice(0, 120) || 'Nouveau schema';
+    if (list.some((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(effectiveName))) {
+        let suffix = 2;
+        while (list.some((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(`${effectiveName} ${suffix}`))) suffix++;
+        effectiveName = `${effectiveName} ${suffix}`;
+    }
+    const graph = { version: 1, name: effectiveName, entrySessionId: null, nodes: [], edges: [] };
+    const entry = {
+        id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        name: effectiveName,
+        workspace,
+        graph,
+        desc: "Flux vide : composez votre pipeline agent par agent, puis reliez les blocs.",
+        savedAt: new Date().toISOString(),
+        builtin: isStandardSchemaName(effectiveName) || undefined,
+    };
+    list.push(entry);
+    writeSchemas(list);
+
+    const roster = loadRoster(root);
+    dedupeRosterCore(roster);
+    // Snapshot du schéma actif précédent avant de basculer sur le canvas vide.
+    if (roster.workflow && roster.workflow.activeSchemaId) {
+        syncActiveSchemaSnapshot(root, roster.workflow);
+    }
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        for (const member of (roster.core && roster.core[group]) || []) member.hidden = true;
+    }
+    roster.workflow = validateWorkflow({
+        ...graph,
+        activeSchema: entry.name,
+        activeSchemaId: entry.id,
+    });
+    writeRoster(root, roster);
+    return roster.workflow;
+}
+
+function restoreStandardSchemas(root) {
+    const templates = readSchemaTemplates(root);
+    const workspace = path.resolve(root);
+    const list = readSchemas();
+    const restored = [];
+    for (const tpl of templates) {
+        const exists = list.some((item) =>
+            sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(tpl.name));
+        if (exists) continue;
+        list.push({
+            id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+            name: tpl.name,
+            workspace,
+            graph: tpl.graph,
+            desc: schemaDesc(tpl.graph),
+            savedAt: new Date().toISOString(),
+            builtin: true,
+        });
+        restored.push(tpl.name);
+    }
+    if (restored.length) writeSchemas(list);
+    return { restored };
 }
 
 function loadSchema(root, id) {
@@ -1036,6 +1148,10 @@ module.exports = {
     saveSchema,
     listSchemas,
     loadSchema,
+    deleteSchema,
+    createEmptySchema,
+    restoreStandardSchemas,
+    isStandardSchemaName,
     setMemberHidden,
     getWorkflowAgentProfile,
     validateWorkflow,

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:05:00.562Z",
+  "updatedAt": "2026-10-26T17:16:26.904Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": true,
+        "hidden": false,
         "title": "sugary-shoemaker"
       },
       {
@@ -64,7 +64,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Analyste-Architecture",
+        "role": "Plan-Architecture",
         "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
@@ -73,8 +73,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Analyste-API-Devin",
-        "hidden": false,
+        "role": "Plan-Normalisation",
+        "hidden": true,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "amber-agent"
       },
@@ -83,7 +83,7 @@
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
         "role": "Auditeur-securite",
-        "hidden": true,
+        "hidden": false,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "urban-agent"
       },
@@ -91,7 +91,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Synthese-Faisabilite",
+        "role": "Redacteur-PRD",
         "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
@@ -110,7 +110,7 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": false,
+        "hidden": true,
         "model": "groq/openai/gpt-oss-20b",
         "title": "rapid-agent"
       },
@@ -119,7 +119,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": true,
+        "hidden": false,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "zealous-agent"
       },
@@ -137,7 +137,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": true,
+        "hidden": false,
         "model": "gpt-oss:120b-cloud"
       },
       {
@@ -170,107 +170,143 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-plan-plugin",
+    "name": "swat-fix-rapide",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadrage du PRD : définit le scope fonctionnel et distribue les 3 pans de spécifications parallèles.",
+        "task": "Cadrage d'urgence : qualifie le bug, isole le composant cible et lance l'intervention directe.",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -440,
+          "x": -330,
           "y": 0
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
-        "role": "Plan-Architecture",
-        "task": "Spécification Architecture : découpage des modules, communication IPC/pipe, points d'extension.",
+        "role": "Codeur",
+        "task": "Correctif ciblé : applique le patch minimal direct résolvant la cause racine.",
         "skills": [
-          "architecture",
-          "api-patterns"
+          "clean-code",
+          "nodejs-best-practices"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -110,
-          "y": -220
+          "x": 0,
+          "y": 0
         }
       },
       {
-        "sessionId": "chat-mvmw5chd",
-        "role": "Plan-Normalisation",
-        "task": "Spécification Compétences : normalisation des skills, commandes et formats de prompts.",
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation TDD : reproduit le bug par un test, vérifie qu'il passe au vert et valide le build.",
         "skills": [
-          "clean-code",
-          "plan-writing"
+          "testing-patterns",
+          "tdd-workflow"
         ],
-        "title": "amber-agent",
+        "title": "zealous-agent",
         "position": {
-          "x": -110,
-          "y": 0
+          "x": 330,
+          "y": -110
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Auditeur-securite",
+        "task": "Revue & Sécurité express : vérifie que le patch n'introduit aucune régression ni injection.",
+        "skills": [
+          "vulnerability-scanner",
+          "clean-code"
+        ],
+        "title": "urban-agent",
+        "position": {
+          "x": 330,
+          "y": 110
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
-        "role": "Redacteur-PRD",
-        "task": "Consolidation PRD Maître : fusionne les 3 PRDs en un prd-master.md et plan d'action ordonné.",
+        "role": "Sentinelle",
+        "task": "Feu vert rapide : contrôle la validation simultanée des tests et de l'audit, donne le GO intégration.",
         "skills": [
-          "plan-writing"
+          "vulnerability-scanner"
         ],
         "title": "keen-agent",
         "position": {
-          "x": 330,
+          "x": 660,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvflr6cn",
-        "role": "Documentaliste-Vault",
-        "task": "Documentation PRD Obsidian : consigne le plan dans le Vault Obsidian sous docs/plan/.",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Livraison du patch : commit conventionnel fix(...) et double push direct sur origin et personal.",
         "skills": [
-          "obsidian",
+          "lint-and-validate"
+        ],
+        "title": "sugary-shoemaker",
+        "position": {
+          "x": 990,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Feedback-Beacon-Knowledge",
+        "task": "Enregistrement de la solution : consigne l'incident et la recette de résolution dans agentmemory.",
+        "skills": [
           "vault-ingest"
         ],
-        "title": "rapid-agent",
+        "title": "beacon-agent",
         "position": {
-          "x": 660,
-          "y": -154
+          "x": 1320,
+          "y": 0
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:plan-orch->archi",
+        "id": "edge:fix-orch->codeur",
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmw59wa"
       },
       {
-        "id": "edge:plan-orch->norm",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:plan-archi->redacteur",
+        "id": "edge:fix-codeur->testeur",
         "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:fix-codeur->auditeur",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:fix-testeur->sentinelle",
+        "source": "chat-mvfj8b4m",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:plan-norm->redacteur",
-        "source": "chat-mvmw5chd",
+        "id": "edge:fix-auditeur->sentinelle",
+        "source": "chat-mvmtldvy",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:plan-redacteur->doc",
+        "id": "edge:fix-sentinelle->integrateur",
         "source": "chat-mvfqytbz",
-        "target": "chat-mvflr6cn"
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:fix-integrateur->feedback",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvp0beacon"
       }
     ],
-    "activeSchema": "swat-plan-plugin",
-    "activeSchemaId": "schema-mvol90md-pqwtv"
+    "activeSchema": "swat-fix-rapide",
+    "activeSchemaId": "schema-em9rovwy-4hbfn"
   }
 }

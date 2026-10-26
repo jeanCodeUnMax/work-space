@@ -256,9 +256,10 @@ function Workspace(): React.JSX.Element {
     const [skillQuery, setSkillQuery] = useState('');
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
-    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string }>>([]);
+    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }>>([]);
     const [showAllSchemas, setShowAllSchemas] = useState(false);
     const [schemaName, setSchemaName] = useState('');
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [progress, setProgress] = useState<Record<string, Progress>>({});
     const [isRunning, setIsRunning] = useState(false);
     const [runSummary, setRunSummary] = useState('');
@@ -266,6 +267,7 @@ function Workspace(): React.JSX.Element {
     const [newProvider, setNewProvider] = useState('openrouter');
     const [iconTheme, setIconTheme] = useState('commando');
     const saveTimer = useRef<number | undefined>(undefined);
+    const deleteTimer = useRef<number | undefined>(undefined);
 
     const selectedNode = useMemo(
         () => nodes.find((node) => node.id === selectedId),
@@ -540,6 +542,38 @@ function Workspace(): React.JSX.Element {
         schemaLoadPending.current = true;
         vscode.postMessage({ type: 'schema_load', id });
     };
+    const createSchema = (): void => {
+        if (saveTimer.current !== undefined) {
+            flushSave();
+        }
+        schemaLoadPending.current = true;
+        vscode.postMessage({
+            type: 'schema_create',
+            name: schemaName.trim() || 'Nouveau schema',
+            all: showAllSchemas,
+        });
+        setSchemaName('');
+    };
+    const restoreStandards = (): void => {
+        vscode.postMessage({ type: 'schemas_restore', all: showAllSchemas });
+    };
+    const requestDeleteSchema = (id: string): void => {
+        if (confirmDeleteId === id) {
+            setConfirmDeleteId(null);
+            if (deleteTimer.current !== undefined) {
+                window.clearTimeout(deleteTimer.current);
+                deleteTimer.current = undefined;
+            }
+            vscode.postMessage({ type: 'schema_delete', id, all: showAllSchemas });
+            return;
+        }
+        setConfirmDeleteId(id);
+        if (deleteTimer.current !== undefined) window.clearTimeout(deleteTimer.current);
+        deleteTimer.current = window.setTimeout(() => {
+            setConfirmDeleteId(null);
+            deleteTimer.current = undefined;
+        }, 5000);
+    };
     const openSchemas = (): void => {
         setSchemasCollapsed(false);
         refreshSchemas(showAllSchemas);
@@ -613,8 +647,24 @@ function Workspace(): React.JSX.Element {
                             value={schemaName}
                             onChange={(event) => setSchemaName(event.target.value)}
                         />
+                        <button
+                            type="button"
+                            className="schema-create"
+                            title="Crée un flux de travail vide et l'ouvre pour édition"
+                            onClick={createSchema}
+                        >
+                            + Créer un schéma vide
+                        </button>
                         <button type="button" className="schema-save" onClick={saveSchema}>
                             Sauvegarder le schéma
+                        </button>
+                        <button
+                            type="button"
+                            className="schema-restore"
+                            title="Réinstalle les schémas standards du kit (swat-*) s'ils ont été supprimés"
+                            onClick={restoreStandards}
+                        >
+                            Restaurer les standards
                         </button>
                         <label className="schema-all">
                             <input
@@ -631,20 +681,27 @@ function Workspace(): React.JSX.Element {
                                     <div className="schema-row">
                                         <button
                                             type="button"
-                                            className="schema-load"
+                                            className={"schema-load" + (schema.builtin ? " schema-load-builtin" : "")}
                                             title={schema.desc || schema.name}
                                             onClick={() => loadSchema(schema.id)}
-                                        >{schema.name}</button>
+                                        >
+                                            {schema.builtin && (
+                                                <span className="schema-builtin-badge" title="Schéma standard livré avec le kit Hephaistos — restaurable après suppression">★</span>
+                                            )}
+                                            {schema.name}
+                                        </button>
                                         <button
                                             type="button"
-                                            className="schema-delete"
-                                            title="Supprimer ce schéma"
+                                            className={"schema-delete" + (confirmDeleteId === schema.id ? " schema-delete-confirm" : "")}
+                                            title={confirmDeleteId === schema.id ? "Cliquer à nouveau pour confirmer la suppression" : "Supprimer ce schéma"}
                                             aria-label={"Supprimer " + schema.name}
-                                            onClick={() => vscode.postMessage({ type: 'schema_delete', id: schema.id, all: showAllSchemas })}
+                                            onClick={() => requestDeleteSchema(schema.id)}
                                         >
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M9 2h6a1 1 0 0 1 1 1v1h5v2h-2l-.9 15.1A2 2 0 0 1 16.1 23H7.9a2 2 0 0 1-2-1.9L5 6H3V4h5V3a1 1 0 0 1 1-1Zm1 7.5h1.5v8H10v-8Zm3 0h1.5v8H13v-8Z"/>
-                                            </svg>
+                                            {confirmDeleteId === schema.id ? "OK ?" : (
+                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                    <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M9 2h6a1 1 0 0 1 1 1v1h5v2h-2l-.9 15.1A2 2 0 0 1 16.1 23H7.9a2 2 0 0 1-2-1.9L5 6H3V4h5V3a1 1 0 0 1 1-1Zm1 7.5h1.5v8H10v-8Zm3 0h1.5v8H13v-8Z"/>
+                                                </svg>
+                                            )}
                                         </button>
                                     </div>
                                     <span className="schema-meta">
