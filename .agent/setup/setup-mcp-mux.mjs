@@ -64,7 +64,15 @@ function stripJsonc(src) {
   return out.replace(/,(\s*[}\]])/g, '$1');
 }
 const readJson = (p) => JSON.parse(stripJsonc(fs.readFileSync(p, 'utf8')));
-const backup = (p) => fs.copyFileSync(p, `${p}.bak-mux-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const backup = (p) => {
+  fs.copyFileSync(p, `${p}.bak-mux-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+  // Retention : garder les 5 derniers bak-mux par fichier
+  try {
+    const dir = path.dirname(p), base = path.basename(p) + '.bak-mux-';
+    const olds = fs.readdirSync(dir).filter((f) => f.startsWith(base)).sort();
+    for (const f of olds.slice(0, Math.max(0, olds.length - 5))) fs.unlinkSync(path.join(dir, f));
+  } catch { /* retention best-effort */ }
+};
 
 if (!fs.existsSync(MUX_CONFIG)) { console.error(`[FAIL] ${MUX_CONFIG} introuvable`); process.exit(1); }
 const mux = readJson(MUX_CONFIG);

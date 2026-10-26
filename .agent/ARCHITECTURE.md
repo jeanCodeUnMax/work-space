@@ -434,3 +434,7 @@ Les scripts sont listés dans [`scripts/`](scripts/).
 | Testing  | `test-engineer`       | testing-patterns, webapp-testing      |
 | Debug    | `debugger`            | systematic-debugging                  |
 | Plan     | `project-planner`     | brainstorming, plan-writing           |
+
+## 10. MCP — mcp-mux (canon)
+
+Les serveurs MCP des IDE passent par le **broker mcp-mux** (`~/.config/mcp-mux/mcp-mux.json`) — un seul processus shim (`mcp-mux/src/shim.mjs`) proxifie tous les serveurs (~305 outils). `mcp_config.json` ne contient que l'entree `mcp-mux` **activee**. `setup-mcp-mux.mjs` est idempotent (skip si deja muxee) et borne ses backups a 5. Le watchdog re-applique si Devin reecrit sa config — c'est voulu.
