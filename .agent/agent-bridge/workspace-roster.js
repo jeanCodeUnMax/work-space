@@ -141,9 +141,11 @@ function writeRoster(root, roster) {
 
 function readWorkflow(root) {
     const roster = loadRoster(root);
-    return validateWorkflow(roster.workflow || emptyWorkflow());
+    const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
+    if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
+    if (roster.workflow && roster.workflow.activeSchemaId) workflow.activeSchemaId = roster.workflow.activeSchemaId;
+    return workflow;
 }
-
 function syncRosterWorkflow(root, sessions) {
     const roster = loadRoster(root);
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
@@ -218,7 +220,11 @@ function syncRosterWorkflow(root, sessions) {
     }
 
     if (changed || !roster.workflow) {
-        roster.workflow = validateWorkflow(workflow);
+        const prevSync = roster.workflow || {};
+        const nextSync = validateWorkflow(workflow);
+        if (prevSync.activeSchema) nextSync.activeSchema = prevSync.activeSchema;
+        if (prevSync.activeSchemaId) nextSync.activeSchemaId = prevSync.activeSchemaId;
+        roster.workflow = nextSync;
         writeRoster(root, roster);
     }
     return roster.workflow || workflow;
@@ -272,6 +278,10 @@ function saveWorkflow(root, input) {
         member.role = node.role;
     }
 
+    if (input.activeSchema) workflow.activeSchema = input.activeSchema;
+    else if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
+    if (input.activeSchemaId) workflow.activeSchemaId = input.activeSchemaId;
+    else if (roster.workflow && roster.workflow.activeSchemaId) workflow.activeSchemaId = roster.workflow.activeSchemaId;
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
@@ -530,6 +540,17 @@ async function main() {
             console.log(JSON.stringify({ command: 'schema list', schemas: listSchemas(root, args.includes('--all')) }, null, 1));
             return;
         }
+        if (sub === 'rename') {
+            const target = readSchemas().find((item) => item.id === args[2] || item.name === args[2]);
+            if (!target) throw new Error('Schema introuvable: ' + args[2]);
+            const name = String(args.slice(3).join(' ') || '').replace(/[^\w\-\u00c0-\u024f ]/g, '').trim().slice(0, 120);
+            if (!name) throw new Error('nom de schema invalide');
+            target.name = name;
+            const list = readSchemas();
+            writeSchemas(list);
+            console.log(JSON.stringify({ command: 'schema rename', id: target.id, name }, null, 1));
+            return;
+        }
         if (sub === 'load') {
             const w = loadSchema(root, args[2]);
             console.log(JSON.stringify({ command: 'schema load', nodes: w.nodes.length, edges: w.edges.length }, null, 1));
@@ -691,7 +712,7 @@ function saveSchema(root, name, graph) {
 function listSchemas(root, all) {
     const workspace = path.resolve(root);
     return readSchemas()
-        .filter((item) => all || item.workspace === workspace)
+        .filter((item) => all || (item.workspace||'').toLowerCase() === workspace.toLowerCase())
         .map((item) => ({
             id: item.id,
             name: item.name,
@@ -704,9 +725,19 @@ function listSchemas(root, all) {
 function loadSchema(root, id) {
     const entry = readSchemas().find((item) => item.id === id);
     if (!entry) throw new Error(`Schema introuvable: ${id}`);
-    return saveWorkflow(root, entry.graph);
+    const roster = loadRoster(root);
+    const inSchema = new Set((entry.graph.nodes || []).map((node) => node.sessionId));
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        for (const member of (roster.core && roster.core[group]) || []) member.hidden = !inSchema.has(member.sessionId);
+    }
+    const workflow = validateWorkflow(entry.graph);
+    workflow.name = entry.name;
+    workflow.activeSchema = entry.name;
+    workflow.activeSchemaId = entry.id;
+    roster.workflow = workflow;
+    writeRoster(root, roster);
+    return workflow;
 }
-
 function setMemberHidden(root, sessionId, hidden) {
     const roster = loadRoster(root);
     for (const group of ['devin', 'cerberos', 'bleubites']) {
