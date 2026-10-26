@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T16:14:40.547Z",
+  "updatedAt": "2026-10-26T16:24:18.752Z",
   "core": {
     "devin": [
       {
@@ -122,6 +122,15 @@
         "hidden": false,
         "model": "liquid/lfm-2.5-2.6b:free",
         "title": "zealous-agent"
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Architecte",
+        "hidden": true,
+        "title": "nemotron-3-ultra-free"
       }
     ]
   },
