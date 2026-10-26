@@ -8,7 +8,7 @@ status: active
 
 # Reactive Orchestrator — Protocole de Veille
 
-Ordre du Boss (19/10/2026) : en mode veille, surveiller l'orchestrateur et
+Directive du propriétaire du kit : en mode veille, surveiller l'orchestrateur et
 l'activité CPU. Alerter Tango sur anomalie ; si Tango ne répond pas, prendre le
 relais complet du commandement jusqu'à la fin de PR10 et l'achèvement du projet.
 
@@ -78,7 +78,7 @@ relais désigné whip-principle.
 1. **Notification Tango** : session AGY hub
    `7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3` (revalider via
    `chat-id.js --agent agy --via hub`) ou canal mission `[LUNA -> TANGO]`.
-2. **Relais orchestrateur — whip-principle** (ordre Boss 19/10) : sur toute
+2. **Relais orchestrateur — whip-principle** (consigne du propriétaire) : sur toute
    interruption de chaîne ou agent muet constatée en veille, aviser
    **automatiquement** l'agent relais qui prend la casquette d'orchestrateur
    jusqu'au matin puis jusqu'à la fin du projet :

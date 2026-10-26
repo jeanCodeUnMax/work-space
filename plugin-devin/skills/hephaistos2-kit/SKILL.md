@@ -167,8 +167,8 @@ setup-collab\configurer-devin-agents.cmd
 ## 6. Politique Git Stricte (Double Remote Private)
 
 - **Remotes Autorisés Exclusivement** :
-  1. `origin` : Organisation projet provisoire (`https://github.com/projet-temporaire/...`)
-  2. `personal` : Dépôt personnel de Boss (`https://github.com/lascard-m/...`)
+  1. `origin` : remote d'organisation du projet
+  2. `personal` : remote personnel (configuré par l'installateur)
 - **Statut Obligatoire** : Tous les dépôts doivent impérativement demeurer en statut **PRIVATE**.
 - **Audit de Sécurité** : Vérification systématique de l'absence de tokens (`nvapi-`, `sk-`, `ghp_`, etc.) avant tout commit.
 
