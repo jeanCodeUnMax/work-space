@@ -1,21 +1,245 @@
 {
   "id": "hephaistos-devin",
   "name": "Hephaistos Devin Plugin",
-  "version": "0.1.0",
-  "description": "Plugin Devin wrapping hphe-mcp.exe JSON-RPC tools, with normalized skill commands and NTFS elevation.",
+  "version": "0.2.0",
+  "description": "Plugin Hephaistos pour Devin : proxy MCP hphe-mcp.exe (66 outils), skills normalisees, journal comms.jsonl, elevation NTFS justifiee.",
   "commands": {
-    "execute_skill_jointes": { "desc": "Execute jointes skill" },
-    "execute_skill_binome": { "desc": "Execute binome skill" },
-    "execute_skill_flux": { "desc": "Execute flux skill" },
-    "execute_skill_bleubite-dispatch": { "desc": "Execute bleubite-dispatch skill" },
-    "mcp_call": { "desc": "Generic MCP tool call proxy" }
+    "execute_skill_jointes": {
+      "description": "Skill jointes"
+    },
+    "execute_skill_binome": {
+      "description": "Skill binome"
+    },
+    "execute_skill_flux": {
+      "description": "Skill flux"
+    },
+    "execute_skill_bleubite-dispatch": {
+      "description": "Skill bleubite-dispatch"
+    },
+    "activity_feed": {
+      "description": "Display last shared journal entries"
+    },
+    "mcp_tools_list": {
+      "description": "List available MCP tools"
+    },
+    "mcp_everything_search": {
+      "description": "Search via everything MCP"
+    },
+    "mcp_everything_count": {
+      "description": "Count everything matches"
+    },
+    "mcp_search_files": {
+      "description": "Search files via MCP"
+    },
+    "mcp_everything_categories": {
+      "description": "Everything categories"
+    },
+    "mcp_everything_index_stats": {
+      "description": "Everything index stats"
+    },
+    "mcp_everything_stats": {
+      "description": "Everything stats"
+    },
+    "mcp_everything_refresh": {
+      "description": "Everything refresh"
+    },
+    "mcp_everything_open_gui": {
+      "description": "Everything open GUI"
+    },
+    "mcp_fs_read_file": {
+      "description": "Read file via MCP"
+    },
+    "mcp_fs_list_directory": {
+      "description": "List directory via MCP"
+    },
+    "mcp_fs_get_info": {
+      "description": "Get file info via MCP"
+    },
+    "mcp_get_file_info": {
+      "description": "Get file info via MCP"
+    },
+    "mcp_fs_write_file": {
+      "description": "Write file via MCP",
+      "confirm": true
+    },
+    "mcp_fs_create_directory": {
+      "description": "Create directory via MCP",
+      "confirm": true
+    },
+    "mcp_fs_move": {
+      "description": "Move via MCP",
+      "confirm": true
+    },
+    "mcp_fs_delete": {
+      "description": "Delete via MCP",
+      "confirm": true
+    },
+    "mcp_fs_read_multiple_files": {
+      "description": "Read multiple files via MCP"
+    },
+    "mcp_fs_edit_file": {
+      "description": "Edit file via MCP",
+      "confirm": true
+    },
+    "mcp_fs_directory_tree": {
+      "description": "Directory tree via MCP"
+    },
+    "mcp_fs_search_files": {
+      "description": "Search files via MCP"
+    },
+    "mcp_fs_list_allowed_roots": {
+      "description": "List allowed roots via MCP"
+    },
+    "mcp_resolve_path": {
+      "description": "Resolve path via MCP"
+    },
+    "mcp_content_search": {
+      "description": "Content search via MCP"
+    },
+    "mcp_vec_search": {
+      "description": "Vector search via MCP"
+    },
+    "mcp_semantic_search": {
+      "description": "Semantic search via MCP"
+    },
+    "mcp_vec_stats": {
+      "description": "Vector stats via MCP"
+    },
+    "mcp_hybrid_search": {
+      "description": "Hybrid search via MCP"
+    },
+    "mcp_hphe_health": {
+      "description": "Health check via MCP"
+    },
+    "mcp_create_task": {
+      "description": "Create task via MCP",
+      "confirm": true
+    },
+    "mcp_update_task": {
+      "description": "Update task via MCP",
+      "confirm": true
+    },
+    "mcp_get_next_task": {
+      "description": "Get next task via MCP"
+    },
+    "mcp_list_tasks": {
+      "description": "List tasks via MCP"
+    },
+    "mcp_delete_task": {
+      "description": "Delete task via MCP",
+      "confirm": true
+    },
+    "mcp_list_agents": {
+      "description": "List agents via MCP"
+    },
+    "mcp_register_agent": {
+      "description": "Register agent via MCP"
+    },
+    "mcp_update_agent": {
+      "description": "Update agent via MCP",
+      "confirm": true
+    },
+    "mcp_suggest_agent": {
+      "description": "Suggest agent via MCP"
+    },
+    "mcp_set_prompt_template": {
+      "description": "Set prompt template via MCP"
+    },
+    "mcp_list_prompt_templates": {
+      "description": "List prompt templates via MCP"
+    },
+    "mcp_dispatch_task": {
+      "description": "Dispatch task via MCP"
+    },
+    "mcp_discipline_agent": {
+      "description": "Discipline agent via MCP"
+    },
+    "mcp_agent_status": {
+      "description": "Agent status via MCP"
+    },
+    "mcp_list_worktrees": {
+      "description": "List worktrees via MCP"
+    },
+    "mcp_worktree_cleanup": {
+      "description": "Cleanup worktrees via MCP"
+    },
+    "mcp_available_models": {
+      "description": "Available models via MCP"
+    },
+    "mcp_nim_domains": {
+      "description": "NIM domains via MCP"
+    },
+    "mcp_nim_models": {
+      "description": "NIM models via MCP"
+    },
+    "mcp_nim_chat": {
+      "description": "NIM chat via MCP"
+    },
+    "mcp_nim_chat_model": {
+      "description": "NIM chat model via MCP"
+    },
+    "mcp_nim_embed": {
+      "description": "NIM embed via MCP"
+    },
+    "mcp_project_init": {
+      "description": "Project init via MCP"
+    },
+    "mcp_memory_write": {
+      "description": "Memory write via MCP",
+      "confirm": true
+    },
+    "mcp_memory_read": {
+      "description": "Memory read via MCP"
+    },
+    "mcp_memory_search": {
+      "description": "Memory search via MCP"
+    },
+    "mcp_memory_list": {
+      "description": "Memory list via MCP"
+    },
+    "mcp_memory_update": {
+      "description": "Memory update via MCP",
+      "confirm": true
+    },
+    "mcp_memory_stats": {
+      "description": "Memory stats via MCP"
+    },
+    "mcp_beacon_ingest": {
+      "description": "Beacon ingest via MCP"
+    },
+    "mcp_content_ingest": {
+      "description": "Content ingest via MCP"
+    },
+    "mcp_reconcile_tasks": {
+      "description": "Reconcile tasks via MCP"
+    },
+    "mcp_task_heartbeat": {
+      "description": "Task heartbeat via MCP"
+    },
+    "mcp_pair_save": {
+      "description": "Pair save via MCP"
+    },
+    "mcp_pair_get": {
+      "description": "Pair get via MCP"
+    },
+    "mcp_reap_ghosts": {
+      "description": "Reap ghosts via MCP"
+    },
+    "mcp_hephaistos_update": {
+      "description": "Hephaistos update via MCP",
+      "confirm": true
+    }
   },
   "permissions": [
     {
       "ntfsElevation": {
         "required": true,
-        "scope": ["read"],
-        "paths": ["<workspace>"],
+        "scope": [
+          "read"
+        ],
+        "paths": [
+          "<workspace>"
+        ],
         "justification": "Requis pour everything_search (index NTFS $MFT en lecture seule via hphe-mcp.exe); le plugin n'ecrit jamais directement en NTFS elevate"
       },
       "consentRequired": true

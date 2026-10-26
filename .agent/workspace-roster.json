@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T02:38:39.047Z",
+  "updatedAt": "2026-10-26T02:43:27.983Z",
   "core": {
     "devin": [
       {
@@ -170,7 +170,7 @@
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "MISSION J5 — PACKAGING plugin-devin: bundle manifest.json (58 outils declarent), install.ps1 (install environnement propre), test-post-install.js (verif plugin.json valide + MCP init + activity_feed), README install. Livrable PRD/implementation/j5-codeur.md",
+        "task": "MISSION J6 — DURCISSEMENT+DOC finale plugin-devin: doc-securite.md (modele securite complet: elevation, confirm, validation, masking), mapping-guide.md (skills<->commandes), decision-log.md (decisions J1-J6). Livrable PRD/implementation/j6-codeur.md",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
@@ -184,7 +184,7 @@
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "MISSION J5 — REVIEW packaging plugin-devin/ (manifest.json, install.ps1, test-post-install.js). Verdict VALIDE/CORRECTIONS dans PRD/implementation/j5-review.md",
+        "task": "MISSION J6 — REVIEW docs+code final plugin-devin. Verdict dans PRD/implementation/j6-review.md",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
@@ -198,7 +198,7 @@
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "MISSION J5 — AUDIT SECU packaging plugin-devin/: manifeste 58 outils (permissions minima), install.ps1 (pas d'exec aveugle), test script safe. Verdict PASS/FAIL dans PRD/implementation/j5-audit.md",
+        "task": "MISSION J6 — AUDIT FINAL complet plugin-devin (code+manifeste+install+docs secu). Verdict PASS/FAIL dans PRD/implementation/j6-audit.md",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
@@ -212,7 +212,7 @@
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "MISSION J5 — SENTINELLE arbitrage packaging. GO/GO-conditions/NO-GO dans PRD/implementation/j5-sentinelle.md",
+        "task": "MISSION J6 — SENTINELLE arbitrage final. Verdict dans PRD/implementation/j6-sentinelle.md",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
@@ -226,7 +226,7 @@
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "MISSION J5 — PREFLIGHT git packaging. Rapport PRD/implementation/j5-preflight.md",
+        "task": "MISSION J6 — PREFLIGHT git final. Rapport PRD/implementation/j6-preflight.md",
         "skills": [
           "lint-and-validate",
           "git-history"
@@ -254,7 +254,7 @@
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "MISSION J5 — DOC vault J5 dans PRD/implementation/j5-doc.md apres integration",
+        "task": "MISSION J6 — DOC vault final J6 + synthese projet dans PRD/implementation/j6-doc.md",
         "skills": [
           "obsidian",
           "vault-ingest"
