@@ -293,12 +293,22 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    function openNew(targetProvider?: string): void {
+    function openNew(targetProvider?: string, targetRole?: string): void {
         const provider = targetProvider || 'openrouter';
         const model = defaultModelForProvider(provider);
         const session = store.create(provider, model);
         try {
             workflowStore?.upsertSession(session);
+            // Rôle demandé (puce palette déposée sur le canvas) : l'assigner
+            // au nœud fraîchement créé — sinon il garde le rôle par défaut.
+            if (targetRole && workflowStore) {
+                const graph = workflowStore.load(store.list());
+                const node = graph.nodes.find((n) => n.sessionId === session.id);
+                if (node) {
+                    node.role = targetRole;
+                    workflowStore.save(graph);
+                }
+            }
         } catch (error) {
             status = `Agent non ajouté au roster : ${String(error)}`;
         }
@@ -486,7 +496,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
-            openNew((message as { provider?: string }).provider);
+            openNew((message as { provider?: string }).provider, (message as { role?: string }).role);
             return;
         }
 

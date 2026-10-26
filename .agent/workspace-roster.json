@@ -1,335 +1,338 @@
 {
-  "schemaVersion": 1,
-  "workspace": "hephaistos2-kit",
-  "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T02:54:20.120Z",
-  "core": {
-    "devin": [
-      {
-        "providerId": "devin-cli",
-        "sessionId": "acp/devin-cli/trusted-robin",
-        "restore": "existing-only",
-        "role": "Devin",
-        "hidden": true
-      },
-      {
-        "providerId": "devin-cli",
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "restore": "existing-only",
-        "role": "Devin",
-        "hidden": false
-      },
-      {
-        "providerId": "devin-cli",
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "restore": "existing-only",
-        "role": "Devin",
-        "hidden": false
-      },
-      {
-        "providerId": "devin-cli",
-        "sessionId": "acp/devin-cli/speckled-enthusiasm",
-        "restore": "existing-only",
-        "role": "Devin",
-        "hidden": true
-      }
-    ],
-    "cerberos": [
-      {
-        "providerId": "cerberos",
-        "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
-        "restore": "existing-only",
-        "hidden": true
-      }
-    ],
-    "bleubites": [
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvmw59wa",
-        "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Codeur",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvmw5chd",
-        "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Reviewer",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvfqytbz",
-        "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Sentinelle",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvflr6cn",
-        "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Documentaliste-Vault",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvfj773t",
-        "restore": "open-or-reveal",
-        "model": "openai/gpt-oss-20b",
-        "role": "Verif-Submodules",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "restore": "open-or-reveal",
-        "role": "Orchestrateur",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "restore": "open-or-reveal",
-        "role": "Integrateur-Git",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/trusted-robin",
-        "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": true
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
-        "restore": "open-or-reveal",
-        "role": "Agent",
-        "hidden": true
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/speckled-enthusiasm",
-        "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": true
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvmtldvy",
-        "restore": "existing-only",
-        "role": "Auditeur-securite",
-        "title": "urban-agent",
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "hidden": false
-      },
-      {
-        "providerId": "hephaistos",
-        "sessionId": "chat-mvfj8b4m",
-        "restore": "open-or-reveal",
-        "role": "Testeur",
-        "model": "openai/gpt-oss-20b"
-      }
-    ]
-  },
-  "restorePolicy": {
-    "neverDuplicate": true,
-    "requireExactSessionId": true,
-    "verifyWorkspace": true,
-    "pingAfterRestore": true
-  },
-  "verification": {
-    "lastPing": "2026-10-25T00:24:17.068Z",
-    "results": {
-      "acp/devin-cli/trusted-robin": {
-        "transport": "wake_acp_agent",
-        "status": "skipped",
-        "delivered": false
-      },
-      "chat-mvlpm7vh": "session-missing",
-      "chat-mvlpi4qj": "session-missing",
-      "chat-mvlp38h8": "superseded"
-    }
-  },
-  "workflow": {
-    "version": 1,
-    "name": "swat-orchestrateur",
-    "entrySessionId": "acp/devin-cli/ionian-helicopter",
-    "nodes": [
-      {
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur",
-        "task": "MISSION J4 — Orchestre le jalon J4 (synchro etat extension<->plugin): codeur implemente comms.js+activity-panel, review+audit paralleles, sentinelle, preflight, commit, doc",
-        "skills": [
-          "orchestrator",
-          "plan-writing"
-        ],
-        "title": "ionian-helicopter",
-        "position": {
-          "x": -1436.7452453096655,
-          "y": -148.72138340456553
-        }
-      },
-      {
-        "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "MISSION J6 — DURCISSEMENT+DOC finale plugin-devin: doc-securite.md (modele securite complet: elevation, confirm, validation, masking), mapping-guide.md (skills<->commandes), decision-log.md (decisions J1-J6). Livrable PRD/implementation/j6-codeur.md",
-        "skills": [
-          "clean-code",
-          "nodejs-best-practices"
-        ],
-        "title": "keen-agent",
-        "position": {
-          "x": -1140.10708583724,
-          "y": -147.95578042880155
-        }
-      },
-      {
-        "sessionId": "chat-mvmw5chd",
-        "role": "Reviewer",
-        "task": "MISSION J6 — REVIEW docs+code final plugin-devin. Verdict dans PRD/implementation/j6-review.md",
-        "skills": [
-          "code-review-checklist",
-          "testing-patterns"
-        ],
-        "title": "amber-agent",
-        "position": {
-          "x": -635.5833596674414,
-          "y": -158.51184371498468
-        }
-      },
-      {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Auditeur-securite",
-        "task": "MISSION J6 — AUDIT FINAL complet plugin-devin (code+manifeste+install+docs secu). Verdict PASS/FAIL dans PRD/implementation/j6-audit.md",
-        "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
-        ],
-        "title": "urban-agent",
-        "position": {
-          "x": -354.67884754678465,
-          "y": -149.66770565104943
-        }
-      },
-      {
-        "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "MISSION J6 — SENTINELLE arbitrage final. Verdict dans PRD/implementation/j6-sentinelle.md",
-        "skills": [
-          "vulnerability-scanner",
-          "lint-and-validate"
-        ],
-        "title": "keen-agent",
-        "position": {
-          "x": -1423.390350995092,
-          "y": 60.92940034518088
-        }
-      },
-      {
-        "sessionId": "chat-mvfj773t",
-        "role": "Verif-Submodules",
-        "task": "MISSION J6 — PREFLIGHT git final. Rapport PRD/implementation/j6-preflight.md",
-        "skills": [
-          "lint-and-validate",
-          "git-history"
-        ],
-        "title": "xenial-agent",
-        "position": {
-          "x": -1142.854696244247,
-          "y": 60.24890825595378
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "MISSION J1-J3 PLUGIN DEVIN — Integration git finale: relis le diff (plugin-devin/, PRD/implementation/, extensions/hephaistos-chats 0.3.10), verifie absence de secrets, commit conventionnel + push UNIQUEMENT si Sentinelle=GO",
-        "skills": [
-          "lint-and-validate",
-          "testing-patterns"
-        ],
-        "title": "sugary-shoemaker",
-        "position": {
-          "x": -866.3315953847684,
-          "y": 58.01783948757782
-        }
-      },
-      {
-        "sessionId": "chat-mvflr6cn",
-        "role": "Documentaliste-Vault",
-        "task": "MISSION J6 — DOC vault final J6 + synthese projet dans PRD/implementation/j6-doc.md",
-        "skills": [
-          "obsidian",
-          "vault-ingest"
-        ],
-        "title": "rapid-agent",
-        "position": {
-          "x": -574.248457237302,
-          "y": 55.71165360609663
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Testeur: apres chaque livraison du codeur, execute node --check sur chaque .js, lance test-post-install.js, verifie les livrables sur disque (jamais sur parole). Rapport PASS/FAIL dans PRD/implementation/<jalon>-test.md",
-        "skills": [],
-        "title": "zealous-agent",
-        "position": {
-          "x": -887.3855886398095,
-          "y": -142.86300486392304
-        }
-      }
-    ],
-    "edges": [
-      {
-        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa"
-      },
-      {
-        "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
-        "source": "chat-mvmw5chd",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
-        "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
-        "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
-        "source": "chat-mvfj773t",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvflr6cn"
-      },
-      {
-        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmtldvy"
-      }
-    ]
+ "schemaVersion": 1,
+ "workspace": "hephaistos2-kit",
+ "template": "hephaistos-swat-base",
+ "updatedAt": "2026-10-26T02:54:20.120Z",
+ "core": {
+  "devin": [
+   {
+    "providerId": "devin-cli",
+    "sessionId": "acp/devin-cli/trusted-robin",
+    "restore": "existing-only",
+    "role": "Devin",
+    "hidden": true
+   },
+   {
+    "providerId": "devin-cli",
+    "sessionId": "acp/devin-cli/sugary-shoemaker",
+    "restore": "existing-only",
+    "role": "Devin",
+    "hidden": false
+   },
+   {
+    "providerId": "devin-cli",
+    "sessionId": "acp/devin-cli/ionian-helicopter",
+    "restore": "existing-only",
+    "role": "Devin",
+    "hidden": false
+   },
+   {
+    "providerId": "devin-cli",
+    "sessionId": "acp/devin-cli/speckled-enthusiasm",
+    "restore": "existing-only",
+    "role": "Devin",
+    "hidden": true
+   }
+  ],
+  "cerberos": [
+   {
+    "providerId": "cerberos",
+    "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
+    "restore": "existing-only",
+    "hidden": true
+   }
+  ],
+  "bleubites": [
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvmw59wa",
+    "restore": "open-or-reveal",
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "role": "Codeur",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvmw5chd",
+    "restore": "open-or-reveal",
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "role": "Reviewer",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvfqytbz",
+    "restore": "open-or-reveal",
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "role": "Sentinelle",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvflr6cn",
+    "restore": "open-or-reveal",
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "role": "Documentaliste-Vault",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvfj773t",
+    "restore": "open-or-reveal",
+    "model": "openai/gpt-oss-20b",
+    "role": "Verif-Submodules",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "acp/devin-cli/ionian-helicopter",
+    "restore": "open-or-reveal",
+    "role": "Orchestrateur",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "acp/devin-cli/sugary-shoemaker",
+    "restore": "open-or-reveal",
+    "role": "Integrateur-Git",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "acp/devin-cli/trusted-robin",
+    "restore": "open-or-reveal",
+    "role": "Devin",
+    "hidden": true
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
+    "restore": "open-or-reveal",
+    "role": "Agent",
+    "hidden": true
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "acp/devin-cli/speckled-enthusiasm",
+    "restore": "open-or-reveal",
+    "role": "Devin",
+    "hidden": true
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvmtldvy",
+    "restore": "existing-only",
+    "role": "Auditeur-securite",
+    "title": "urban-agent",
+    "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "hidden": false
+   },
+   {
+    "providerId": "hephaistos",
+    "sessionId": "chat-mvfj8b4m",
+    "restore": "open-or-reveal",
+    "role": "Testeur",
+    "model": "openai/gpt-oss-20b"
+   }
+  ]
+ },
+ "restorePolicy": {
+  "neverDuplicate": true,
+  "requireExactSessionId": true,
+  "verifyWorkspace": true,
+  "pingAfterRestore": true
+ },
+ "verification": {
+  "lastPing": "2026-10-25T00:24:17.068Z",
+  "results": {
+   "acp/devin-cli/trusted-robin": {
+    "transport": "wake_acp_agent",
+    "status": "skipped",
+    "delivered": false
+   },
+   "chat-mvlpm7vh": "session-missing",
+   "chat-mvlpi4qj": "session-missing",
+   "chat-mvlp38h8": "superseded"
   }
+ },
+ "workflow": {
+  "version": 1,
+  "name": "swat-orchestrateur",
+  "entrySessionId": "acp/devin-cli/ionian-helicopter",
+  "nodes": [
+   {
+    "sessionId": "acp/devin-cli/ionian-helicopter",
+    "role": "Orchestrateur",
+    "task": "MISSION J4 — Orchestre le jalon J4 (synchro etat extension<->plugin): codeur implemente comms.js+activity-panel, review+audit paralleles, sentinelle, preflight, commit, doc",
+    "skills": [
+     "orchestrator",
+     "plan-writing"
+    ],
+    "title": "ionian-helicopter",
+    "position": {
+     "x": -1436.7452453096655,
+     "y": -148.72138340456553
+    }
+   },
+   {
+    "sessionId": "chat-mvmw59wa",
+    "role": "Codeur",
+    "task": "MISSION J6 — DURCISSEMENT+DOC finale plugin-devin: doc-securite.md (modele securite complet: elevation, confirm, validation, masking), mapping-guide.md (skills<->commandes), decision-log.md (decisions J1-J6). Livrable PRD/implementation/j6-codeur.md",
+    "skills": [
+     "clean-code",
+     "nodejs-best-practices"
+    ],
+    "title": "keen-agent",
+    "position": {
+     "x": -1140.10708583724,
+     "y": -147.95578042880155
+    }
+   },
+   {
+    "sessionId": "chat-mvmw5chd",
+    "role": "Reviewer",
+    "task": "MISSION J6 — REVIEW docs+code final plugin-devin. Verdict dans PRD/implementation/j6-review.md",
+    "skills": [
+     "code-review-checklist",
+     "testing-patterns"
+    ],
+    "title": "amber-agent",
+    "position": {
+     "x": -635.5833596674414,
+     "y": -158.51184371498468
+    }
+   },
+   {
+    "sessionId": "chat-mvmtldvy",
+    "role": "Auditeur-securite",
+    "task": "MISSION J6 — AUDIT FINAL complet plugin-devin (code+manifeste+install+docs secu). Verdict PASS/FAIL dans PRD/implementation/j6-audit.md",
+    "skills": [
+     "vulnerability-scanner",
+     "mcp-security-audit"
+    ],
+    "title": "urban-agent",
+    "position": {
+     "x": -354.67884754678465,
+     "y": -149.66770565104943
+    }
+   },
+   {
+    "sessionId": "chat-mvfqytbz",
+    "role": "Sentinelle",
+    "task": "MISSION J6 — SENTINELLE arbitrage final. Verdict dans PRD/implementation/j6-sentinelle.md",
+    "skills": [
+     "vulnerability-scanner",
+     "lint-and-validate"
+    ],
+    "title": "keen-agent",
+    "position": {
+     "x": -1423.390350995092,
+     "y": 60.92940034518088
+    }
+   },
+   {
+    "sessionId": "chat-mvfj773t",
+    "role": "Verif-Submodules",
+    "task": "MISSION J6 — PREFLIGHT git final. Rapport PRD/implementation/j6-preflight.md",
+    "skills": [
+     "lint-and-validate",
+     "git-history"
+    ],
+    "title": "xenial-agent",
+    "position": {
+     "x": -1142.854696244247,
+     "y": 60.24890825595378
+    }
+   },
+   {
+    "sessionId": "acp/devin-cli/sugary-shoemaker",
+    "role": "Integrateur-Git",
+    "task": "MISSION J1-J3 PLUGIN DEVIN — Integration git finale: relis le diff (plugin-devin/, PRD/implementation/, extensions/hephaistos-chats 0.3.10), verifie absence de secrets, commit conventionnel + push UNIQUEMENT si Sentinelle=GO",
+    "skills": [
+     "lint-and-validate",
+     "testing-patterns"
+    ],
+    "title": "sugary-shoemaker",
+    "position": {
+     "x": -866.3315953847684,
+     "y": 58.01783948757782
+    }
+   },
+   {
+    "sessionId": "chat-mvflr6cn",
+    "role": "Documentaliste-Vault",
+    "task": "MISSION J6 — DOC vault final J6 + synthese projet dans PRD/implementation/j6-doc.md",
+    "skills": [
+     "obsidian",
+     "vault-ingest"
+    ],
+    "title": "rapid-agent",
+    "position": {
+     "x": -574.248457237302,
+     "y": 55.71165360609663
+    }
+   },
+   {
+    "sessionId": "chat-mvfj8b4m",
+    "role": "Testeur",
+    "task": "Testeur: apres chaque livraison du codeur, execute node --check sur chaque .js, lance test-post-install.js, verifie les livrables sur disque (jamais sur parole). Rapport PASS/FAIL dans PRD/implementation/<jalon>-test.md",
+    "skills": [
+     "testing-patterns",
+     "lint-and-validate"
+    ],
+    "title": "zealous-agent",
+    "position": {
+     "x": -887.3855886398095,
+     "y": -142.86300486392304
+    }
+   }
+  ],
+  "edges": [
+   {
+    "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
+    "source": "acp/devin-cli/ionian-helicopter",
+    "target": "chat-mvmw59wa"
+   },
+   {
+    "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
+    "source": "chat-mvmw5chd",
+    "target": "chat-mvfqytbz"
+   },
+   {
+    "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
+    "source": "chat-mvmtldvy",
+    "target": "chat-mvfqytbz"
+   },
+   {
+    "id": "edge:chat-mvfqytbz->chat-mvfj773t",
+    "source": "chat-mvfqytbz",
+    "target": "chat-mvfj773t"
+   },
+   {
+    "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
+    "source": "chat-mvfj773t",
+    "target": "acp/devin-cli/sugary-shoemaker"
+   },
+   {
+    "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
+    "source": "acp/devin-cli/sugary-shoemaker",
+    "target": "chat-mvflr6cn"
+   },
+   {
+    "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
+    "source": "chat-mvmw59wa",
+    "target": "chat-mvfj8b4m"
+   },
+   {
+    "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
+    "source": "chat-mvfj8b4m",
+    "target": "chat-mvmw5chd"
+   },
+   {
+    "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
+    "source": "chat-mvfj8b4m",
+    "target": "chat-mvmtldvy"
+   }
+  ]
+ }
 }
