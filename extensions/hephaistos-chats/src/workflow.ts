@@ -10,6 +10,8 @@ export interface WorkflowNode {
     role: string;
     task: string;
     skills?: string[];
+    /** Serveurs MCP distribués à ce bloc (noms du broker mcp-mux). */
+    mcps?: string[];
     title?: string;
     position: WorkflowPosition;
 }
@@ -62,6 +64,7 @@ export interface WorkflowViewNode extends WorkflowNode {
         role: string;
         task: string;
         skills: string[];
+        mcps: string[];
         external: boolean;
         isEntry: boolean;
         tone: 'amber' | 'blue' | 'green';
@@ -139,6 +142,7 @@ export function createWorkflowView(
                 role: node.role,
                 task: node.task,
                 skills: node.skills || [],
+                mcps: node.mcps || [],
                 external,
                 isEntry: node.sessionId === entrySessionId,
                 tone,
