@@ -24,7 +24,9 @@ export class WorkflowStore {
         if (!fs.existsSync(script)) {
             throw new Error('Le roster Hephaistos est absent de ce workspace.');
         }
-        this.api = require(script) as RosterWorkflowApi;
+        const resolved = require.resolve(script);
+        delete require.cache[resolved];
+        this.api = require(resolved) as RosterWorkflowApi;
     }
 
     load(sessions: ChatSession[]): WorkflowGraph {

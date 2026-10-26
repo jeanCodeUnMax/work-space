@@ -56,10 +56,27 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.registerWebviewPanelSerializer(ChatPanel.viewType, {
             async deserializeWebviewPanel(panel, state) {
                 const sessionId = (state as { sessionId?: string } | undefined)?.sessionId;
-                if (!sessionId) {
+                const session = sessionId ? store.get(sessionId) : undefined;
+                // Restaure les fenetres telles qu'au depart (flottantes incluses),
+                // mais jamais de zombies : seuls les agents visibles du roster/
+                // graphe actif reviennent. Les autres panels sont detruits.
+                let legit = !!session;
+                if (session && workflowStore) {
+                    try {
+                        legit = workflowStore.load(store.list()).nodes
+                            .some((node) => node.sessionId === sessionId);
+                    } catch { legit = true; }
+                }
+                if (!sessionId || !legit) {
                     panel.dispose();
                     return;
                 }
+                // webview.options est reassignable au deserialize (SDK) :
+                // sans ca, les panels restaures perdent scripts + media roots -> fenetres noires.
+                panel.webview.options = {
+                    enableScripts: true,
+                    localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')],
+                };
                 ChatPanel.revive(panel, context, store, sessionId, () => { void paint(); });
             },
         }),
@@ -137,6 +154,19 @@ export function activate(context: vscode.ExtensionContext): void {
                 rosterTimer = setTimeout(() => { void paint(); }, 250);
             });
             context.subscriptions.push({ dispose: () => rosterWatcher.close() });
+    if (workflowStore) {
+        const schemasFile = path.join((process.env.USERPROFILE || require('os').homedir()), '.hephaistos-workflow-schemas.json');
+        if (fs.existsSync(schemasFile)) {
+            let schemaTimer: NodeJS.Timeout | undefined;
+            const schemaWatcher = fs.watch(schemasFile, () => {
+                if (schemaTimer) clearTimeout(schemaTimer);
+                schemaTimer = setTimeout(() => {
+                    try { FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(false) }); } catch { /* ignore */ }
+                }, 250);
+            });
+            context.subscriptions.push({ dispose: () => schemaWatcher.close() });
+        }
+    }
         }
     }
 

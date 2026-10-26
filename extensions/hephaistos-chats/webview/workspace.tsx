@@ -10,6 +10,7 @@ import {
     MiniMap,
     Position,
     ReactFlow,
+    SelectionMode,
     useEdgesState,
     useNodesState,
     type Connection,
@@ -210,16 +211,22 @@ function Workspace(): React.JSX.Element {
                 return;
             }
             if (message?.type === 'workflow_state') {
+                vscode.postMessage({ type: 'schemas_list', all: showAllSchemas });
                 const view = message.workflow as WorkflowView;
                 setNodes((current) => {
-                    const posById = new Map(current.map((n) => [n.id, n.position]));
-                    return view.nodes.map((node) => ({
-                        ...node,
-                        position: posById.get(node.id) || node.position,
-                        data: { ...node.data, onSkillDrop: (skill: string) => assignSkill(node.id, skill) },
-                    }));
+                    const byId = new Map(current.map((n) => [n.id, n]));
+                    return view.nodes.map((node) => {
+                        const prev = byId.get(node.id);
+                        return {
+                            ...node,
+                            selected: prev?.selected ?? node.selected,
+                            dragging: prev?.dragging ?? node.dragging,
+                            position: prev?.position || node.position,
+                            data: { ...node.data, onSkillDrop: (skill: string) => assignSkill(node.id, skill) },
+                        };
+                    });
                 });
-                setEdges(view.edges);
+                setEdges(view.edges.map(e=>({ ...e, interactionWidth: 1, selectable: false })));
                 setWorkflowName(view.graph.name);
                 setEntrySessionId(view.entrySessionId);
                 setEntryIsExplicit(!!view.graph.entrySessionId);
@@ -282,7 +289,7 @@ function Workspace(): React.JSX.Element {
     }, [setNodes]);
 
     const onConnect = useCallback((connection: Connection) => {
-        const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, edges);
+        const nextEdges = addEdge({ ...connection, type: 'smoothstep', interactionWidth: 1, selectable: false }, edges);
         setEdges(nextEdges);
         setSelectedEdgeId(null);
         sendSave(nodes, nextEdges);
@@ -469,6 +476,12 @@ function Workspace(): React.JSX.Element {
                     ) : (
                         <>
                             <ReactFlow
+                                selectionOnDrag
+                                panOnDrag={[2]}
+                                selectionMode={SelectionMode.Partial}
+                                selectNodesOnDrag
+                                elementsSelectable
+                                edgesFocusable={false}
                                 nodes={nodes}
                                 edges={edges}
                                 nodeTypes={nodeTypes}
@@ -489,7 +502,6 @@ function Workspace(): React.JSX.Element {
                                 fitView
                                 fitViewOptions={{ padding: 0.24 }}
                                 deleteKeyCode={null}
-                                selectionOnDrag
                             >
                                 <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
                                 <Controls />
