@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T03:12:07.240Z",
+  "updatedAt": "2026-10-26T03:48:19.636Z",
   "core": {
     "devin": [
       {
@@ -37,7 +37,8 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
-        "role": "Devin"
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -138,20 +139,23 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "model": "openai/gpt-oss-20b"
+        "model": "openai/gpt-oss-20b",
+        "hidden": false
       },
       {
         "providerId": "hephaistos",
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "open-or-reveal",
-        "role": "Devin"
+        "role": "Devin",
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
         "sessionId": "chat-9bbf1552-79d4-4bd8-a9ab-53daead49408",
         "restore": "open-or-reveal",
         "model": "opencode/nemotron-3-ultra-free",
-        "role": "Antigravity"
+        "role": "Antigravity",
+        "hidden": true
       }
     ]
   },
@@ -182,7 +186,7 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "MISSION J4 — Orchestre le jalon J4 (synchro etat extension<->plugin): codeur implemente comms.js+activity-panel, review+audit paralleles, sentinelle, preflight, commit, doc",
+        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
         "skills": [
           "orchestrator",
           "plan-writing"
@@ -196,7 +200,7 @@
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "MISSION J6 — DURCISSEMENT+DOC finale plugin-devin: doc-securite.md (modele securite complet: elevation, confirm, validation, masking), mapping-guide.md (skills<->commandes), decision-log.md (decisions J1-J6). Livrable PRD/implementation/j6-codeur.md",
+        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
@@ -210,35 +214,35 @@
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "MISSION J6 — REVIEW docs+code final plugin-devin. Verdict dans PRD/implementation/j6-review.md",
+        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
         ],
         "title": "amber-agent",
         "position": {
-          "x": -622.9476777624741,
-          "y": -142.4300667450262
+          "x": -858.9476777624741,
+          "y": -132.4300667450262
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "MISSION J6 — AUDIT FINAL complet plugin-devin (code+manifeste+install+docs secu). Verdict PASS/FAIL dans PRD/implementation/j6-audit.md",
+        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
         "title": "urban-agent",
         "position": {
-          "x": -349.0591967921414,
-          "y": -139.67103956762787
+          "x": -570,
+          "y": -128
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "MISSION J6 — SENTINELLE arbitrage final. Verdict dans PRD/implementation/j6-sentinelle.md",
+        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
@@ -252,7 +256,7 @@
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "MISSION J6 — PREFLIGHT git final. Rapport PRD/implementation/j6-preflight.md",
+        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
         "skills": [
           "lint-and-validate",
           "git-history"
@@ -266,65 +270,43 @@
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "MISSION J1-J3 PLUGIN DEVIN — Integration git finale: relis le diff (plugin-devin/, PRD/implementation/, extensions/hephaistos-chats 0.3.10), verifie absence de secrets, commit conventionnel + push UNIQUEMENT si Sentinelle=GO",
+        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
         "skills": [
           "lint-and-validate",
           "testing-patterns"
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": -866.3315953847684,
-          "y": 58.01783948757782
+          "x": -520,
+          "y": 72
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "MISSION J6 — DOC vault final J6 + synthese projet dans PRD/implementation/j6-doc.md",
+        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
         "skills": [
           "obsidian",
           "vault-ingest"
         ],
         "title": "rapid-agent",
         "position": {
-          "x": -574.248457237302,
-          "y": 55.71165360609663
+          "x": -810.248457237302,
+          "y": 65.71165360609663
         }
       },
       {
         "sessionId": "chat-mvfj8b4m",
         "role": "Testeur",
-        "task": "Testeur: apres chaque livraison du codeur, execute node --check sur chaque .js, lance test-post-install.js, verifie les livrables sur disque (jamais sur parole). Rapport PASS/FAIL dans PRD/implementation/<jalon>-test.md",
+        "task": "Validation technique : syntaxe (node --check), tests unitaires, smoke tests des livrables avant revue.",
         "skills": [
           "testing-patterns",
           "lint-and-validate"
         ],
         "title": "zealous-agent",
         "position": {
-          "x": -887.3855886398095,
-          "y": -142.86300486392304
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "role": "Devin",
-        "task": "",
-        "skills": [],
-        "title": "bloom-settee",
-        "position": {
-          "x": -1421.738151653209,
-          "y": 271.22306981179776
-        }
-      },
-      {
-        "sessionId": "chat-9bbf1552-79d4-4bd8-a9ab-53daead49408",
-        "role": "Antigravity",
-        "task": "",
-        "skills": [],
-        "title": "nemotron-3-ultra-free",
-        "position": {
-          "x": 380,
-          "y": 630
+          "x": -842.9195748287565,
+          "y": -326.29782054537054
         }
       }
     ],
@@ -374,6 +356,8 @@
         "source": "chat-mvfj8b4m",
         "target": "chat-mvmtldvy"
       }
-    ]
+    ],
+    "activeSchema": "swat-orchestrateur",
+    "activeSchemaId": "schema-yy5cfkox-i1t73"
   }
 }

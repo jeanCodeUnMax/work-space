@@ -58,7 +58,7 @@
 #>
 param(
     [string]$ProjectRoot = $PSScriptRoot,
-    [string]$InstallRoot = $(if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { Join-Path $env:ProgramFiles 'servers\hephaistos2-kit' }),
+    [string]$InstallRoot = $(if ($env:HPHE_INSTALL) { $env:HPHE_INSTALL } else { '' }),
     [string]$MemoryRoot = '',
     [string]$IngestScan = '',
     [string]$EverythingRoots = '',
@@ -71,6 +71,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $PRJ  = (Resolve-Path $ProjectRoot).Path
+if (-not $InstallRoot) {
+  if ($env:HPHE_INSTALL) { $InstallRoot = $env:HPHE_INSTALL }
+  else {
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $InstallRoot = if ($isAdmin) { Join-Path $env:ProgramFiles 'servers\hephaistos2-kit' } else { Join-Path $env:LOCALAPPDATA 'hephaistos2-kit' }
+  }
+}
 $INS  = $InstallRoot
 $SRV  = "$INS\extension\server"
 $DATA = "$INS\data"

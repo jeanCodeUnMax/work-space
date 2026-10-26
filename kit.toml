@@ -22,40 +22,55 @@ sync-agent-layer = "sync-agent-layer.ps1"
 
 # --- cli ---
 [[cli]]
+# devin : installeur standalone (devin.ai) -> %LOCALAPPDATA%devincliin
 name = "devin"
-install = "npm -g devin"
+install = "manual:devin-cli-installer"
 check = "devin --version"
+required = true
 
 [[cli]]
+# agy : installeur Antigravity -> ~/.local/bin + %LOCALAPPDATA%agyin
 name = "agy"
-install = "npm -g agy"
+install = "manual:antigravity-installer"
 check = "agy --version"
 
 [[cli]]
 name = "kilo"
-install = "npm -g kilo"
+install = "npm -g @kilocode/cli"
 check = "kilo --version"
 
 [[cli]]
+# hermes : installeur standalone -> %LOCALAPPDATA%hermesin
 name = "hermes"
-install = "npm -g hermes"
+install = "manual:hermes-installer"
 check = "hermes --version"
 
 [[cli]]
 name = "opencode"
-install = "npm -g opencode"
+install = "npm -g opencode-ai"
 check = "opencode --version"
 
 [[cli]]
+# omniroute : routeur providers, shim .local/bin — paquet interne kit
 name = "omniroute"
-install = "npm -g omniroute"
+install = "kit-local"
 check = "omniroute --version"
 required = true
 
 [[cli]]
 name = "uvx"
-install = "uv tool install uvx"
+install = "uv self install"
 check = "uvx --version"
+
+[[cli]]
+name = "gemini-cli"
+install = "npm -g @google/gemini-cli"
+check = "gemini --version"
+
+[[cli]]
+name = "codex"
+install = "npm -g @openai/codex"
+check = "codex --version"
 
 # --- extensions ---
 [[extensions]]
