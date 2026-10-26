@@ -762,6 +762,19 @@ function loadSchema(root, id) {
     workflow.name = entry.name;
     workflow.activeSchema = entry.name;
     workflow.activeSchemaId = entry.id;
+    // Elagage : ne garder que les membres roster non-hidden (le schema
+    // peut contenir des sessions mortes — elles deviendraient des
+    // fantomes qui flicker au prochain sync).
+    const alive = new Set();
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        for (const member of (roster.core && roster.core[group]) || []) {
+            if (!member.hidden) alive.add(member.sessionId);
+        }
+    }
+    workflow.nodes = workflow.nodes.filter((node) => alive.has(node.sessionId));
+    const nodeIds = new Set(workflow.nodes.map((node) => node.sessionId));
+    workflow.edges = workflow.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
+    if (workflow.entrySessionId && !nodeIds.has(workflow.entrySessionId)) workflow.entrySessionId = null;
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
