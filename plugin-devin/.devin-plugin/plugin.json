@@ -1,5 +1,5 @@
 {
-  "name": "hephaistos-devin",
+  "name": "hephaistos2-kit",
   "version": "0.2.0",
-  "description": "Hephaistos pour Devin : proxy MCP vers hphe-mcp.exe (66 outils NTFS/search/fs/orchestrateur), skills normalisées (jointes, binome, flux, bleubite-dispatch), journal comms.jsonl — commandes /hphe-*."
+  "description": "hephaistos2-kit — proxy MCP vers hphe-mcp.exe (66 outils), skills normalisees, journal comms.jsonl, commandes /hphe-*."
 }

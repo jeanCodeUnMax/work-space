@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T02:43:27.983Z",
+  "updatedAt": "2026-10-26T02:54:20.120Z",
   "core": {
     "devin": [
       {
@@ -126,6 +126,13 @@
         "title": "urban-agent",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "hidden": false
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-mvfj8b4m",
+        "restore": "open-or-reveal",
+        "role": "Testeur",
+        "model": "openai/gpt-oss-20b"
       }
     ]
   },
@@ -191,8 +198,8 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": -840.10708583724,
-          "y": -147.95578042880155
+          "x": -635.5833596674414,
+          "y": -158.51184371498468
         }
       },
       {
@@ -205,8 +212,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": -559.697389183123,
-          "y": -150.98721356182233
+          "x": -354.67884754678465,
+          "y": -149.66770565104943
         }
       },
       {
@@ -264,6 +271,17 @@
           "x": -574.248457237302,
           "y": 55.71165360609663
         }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Testeur: apres chaque livraison du codeur, execute node --check sur chaque .js, lance test-post-install.js, verifie les livrables sur disque (jamais sur parole). Rapport PASS/FAIL dans PRD/implementation/<jalon>-test.md",
+        "skills": [],
+        "title": "zealous-agent",
+        "position": {
+          "x": -887.3855886398095,
+          "y": -142.86300486392304
+        }
       }
     ],
     "edges": [
@@ -271,16 +289,6 @@
         "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmw59wa"
-      },
-      {
-        "id": "edge:chat-mvmw59wa->chat-mvmw5chd",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:chat-mvmw59wa->chat-mvmtldvy",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvmtldvy"
       },
       {
         "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
@@ -306,6 +314,21 @@
         "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
         "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmtldvy"
       }
     ]
   }

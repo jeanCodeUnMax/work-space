@@ -1,6 +1,6 @@
 {
-  "id": "hephaistos-devin",
-  "name": "Hephaistos Devin Plugin",
+  "id": "hephaistos2-kit",
+  "name": "Hephaistos2-Kit",
   "version": "0.1.0",
   "commands": {
     "execute_skill_jointes": {

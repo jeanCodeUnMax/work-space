@@ -1,6 +1,6 @@
 {
-  "id": "hephaistos-devin",
-  "name": "Hephaistos Devin Plugin",
+  "id": "hephaistos2-kit",
+  "name": "Hephaistos2-Kit",
   "version": "0.2.0",
   "description": "Plugin Hephaistos pour Devin : proxy MCP hphe-mcp.exe (66 outils), skills normalisees, journal comms.jsonl, elevation NTFS justifiee.",
   "commands": {
