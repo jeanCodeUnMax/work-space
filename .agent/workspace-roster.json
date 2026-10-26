@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:32:43.756Z",
+  "updatedAt": "2026-10-26T17:44:46.923Z",
   "core": {
     "devin": [
       {
@@ -24,8 +24,8 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
-        "role": "Orchestrateur",
-        "hidden": true,
+        "role": "President-Concil",
+        "hidden": false,
         "title": "ionian-helicopter"
       },
       {
@@ -64,8 +64,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Analyste-Architecture",
-        "hidden": true,
+        "role": "Expert-Architecture",
+        "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -73,8 +73,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Plan-Normalisation",
-        "hidden": true,
+        "role": "Expert-Qualite-Maintenabilite",
+        "hidden": false,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "amber-agent"
       },
@@ -82,8 +82,8 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Analyste-Securite",
-        "hidden": true,
+        "role": "Expert-Securite-Risques",
+        "hidden": false,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "urban-agent"
       },
@@ -128,16 +128,16 @@
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
         "model": "opencode/nemotron-3-ultra-free",
-        "role": "Architecte",
-        "hidden": true,
-        "title": "nemotron-3-ultra-free"
+        "role": "Avocat-du-Diable",
+        "hidden": false,
+        "title": "devil-advocate"
       },
       {
         "providerId": "ollama-cloud",
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
-        "role": "Feedback-Beacon-Knowledge",
-        "hidden": true,
+        "role": "Greffier-Beacon-Memoire",
+        "hidden": false,
         "model": "gpt-oss:120b-cloud",
         "title": "beacon-agent"
       },
@@ -145,10 +145,18 @@
         "providerId": "ollama-cloud",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Analyste-Infra-Perf",
-        "hidden": true,
+        "role": "Expert-Perf-Pragmatisme",
+        "hidden": false,
         "model": "gpt-oss:120b-cloud",
         "title": "steady-agent"
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
+        "hidden": true
       }
     ]
   },
@@ -172,11 +180,140 @@
   },
   "workflow": {
     "version": 1,
-    "name": "Concile",
-    "entrySessionId": null,
-    "nodes": [],
-    "edges": [],
+    "name": "Concil",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "President-Concil",
+        "task": "QUESTION A TRANCHER PAR LE CONCILE : editez ce bloc pour poser votre question. Le president reunit les experts, arbitre les desaccords et rend le verdict final motive.",
+        "skills": [
+          "orchestrator"
+        ],
+        "title": "ionian-helicopter",
+        "position": {
+          "x": 0,
+          "y": -330
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Expert-Architecture",
+        "task": "Vision structurelle et long terme : coherence d'architecture, scalabilite, evolutivite, patterns. Defend la solution la plus propre conceptuellement.",
+        "skills": [
+          "architecture",
+          "api-patterns"
+        ],
+        "title": "keen-agent",
+        "position": {
+          "x": -330,
+          "y": -110
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Expert-Securite-Risques",
+        "task": "Analyse des risques : surface d'attaque, secrets, sandboxing, blast radius, conformite. Challenge toute option fragile.",
+        "skills": [
+          "vulnerability-scanner",
+          "mcp-security-audit"
+        ],
+        "title": "urban-agent",
+        "position": {
+          "x": 0,
+          "y": -110
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Expert-Perf-Pragmatisme",
+        "task": "Pragmatisme operationnel : cout, performance, complexite d'implementation, time-to-market. Defend la solution la plus efficace a court terme.",
+        "skills": [
+          "performance-profiling",
+          "observability-specialist"
+        ],
+        "title": "steady-agent",
+        "position": {
+          "x": 330,
+          "y": -110
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Expert-Qualite-Maintenabilite",
+        "task": "Maintenabilite : lisibilite, dette technique, testabilite, conventions du code. Defend la solution la plus durable.",
+        "skills": [
+          "code-review-checklist",
+          "clean-code"
+        ],
+        "title": "amber-agent",
+        "position": {
+          "x": -330,
+          "y": 110
+        }
+      },
+      {
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "role": "Avocat-du-Diable",
+        "task": "Contre-expertise : challenge systematique de toutes les positions, recherche des angles morts, hypotheses implicites et scenarios d'echec. Ne converge pas par complaisance.",
+        "skills": [
+          "systematic-debugging"
+        ],
+        "title": "devil-advocate",
+        "position": {
+          "x": 0,
+          "y": 110
+        }
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Greffier-Beacon-Memoire",
+        "task": "Memoire institutionnelle : rappelle les echecs et bonnes pratiques deja capitalises dans Hephaistos (memory_search), verifie que la question n'a pas deja ete tranchee, consigne le verdict a la fin.",
+        "skills": [
+          "vault-ingest",
+          "obsidian"
+        ],
+        "title": "beacon-agent",
+        "position": {
+          "x": 330,
+          "y": 110
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:concil->0->chat-mvmw59wa",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:concil->1->chat-mvmtldvy",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:concil->2->chat-mvpfinfra",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:concil->3->chat-mvmw5chd",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:concil->4->chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6"
+      },
+      {
+        "id": "edge:concil->5->chat-mvp0beacon",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvp0beacon"
+      }
+    ],
     "activeSchema": "Concile",
-    "activeSchemaId": "schema-mvpjbchn-ijt6c"
+    "activeSchemaId": "schema-mvpjbchn-ijt6c",
+    "mode": "council"
   }
 }
