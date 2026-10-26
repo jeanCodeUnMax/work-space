@@ -160,7 +160,7 @@ const MAX_TOOL_ROUNDS = 16;
  * sous le préfixe mcp__<serveur>__<outil>, puis on route les tool_calls.
  * Les processus sont tués en fin de tour. */
 const MCP_PREFIX = 'mcp__';
-const MCP_CALL_TIMEOUT_MS = 60_000;
+const MCP_CALL_TIMEOUT_MS = 180_000;
 const MCP_SPAWN_TIMEOUT_MS = 15_000;
 const MAX_MCPS_PER_SESSION = 4;
 
@@ -229,33 +229,60 @@ class McpClient {
     close() { try { this.proc.kill(); } catch { /* déjà mort */ } }
 }
 
-// Attache les serveurs demandés par le bloc : spawn, tools/list, mapping
-// de dispatch. Retourne { tools, run(name,argsJson), closeAll, attached }.
+// Pool par session : les serveurs MCP restent chauds entre les tours
+// (un scan à froid type vault-pepites met des minutes — respawner à chaque
+// tour le paierait à chaque fois). Tués à la dispose de la session.
+const mcpPool = new Map(); // sessionId -> { names, clients: Map(name->client|err) }
+
+async function pooledClient(sessionId, name, def) {
+    let pool = mcpPool.get(sessionId);
+    if (!pool) { pool = { clients: new Map() }; mcpPool.set(sessionId, pool); }
+    if (pool.clients.has(name)) {
+        const c = pool.clients.get(name);
+        return c instanceof Error ? Promise.reject(c) : c;
+    }
+    const client = new McpClient(name, def);
+    const ready = (async () => {
+        await Promise.race([
+            client.request('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'hephaistos-chats', version: '1.0.0' } }),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout init')), MCP_SPAWN_TIMEOUT_MS)),
+        ]);
+        client.notify('notifications/initialized');
+        const listed = await client.request('tools/list');
+        client.tools = (listed?.tools || []).map((t) => ({
+            type: 'function',
+            function: {
+                name: `${MCP_PREFIX}${name}__${t.name}`.slice(0, 64),
+                description: `[${name}] ${String(t.description || '').slice(0, 300)}`,
+                parameters: t.inputSchema || { type: 'object', properties: {} },
+            },
+        }));
+        return client;
+    })();
+    pool.clients.set(name, ready);
+    ready.catch(() => pool.clients.set(name, ready)); // l'erreur reste en cache
+    return ready;
+}
+
+function releaseMcps(sessionId) {
+    const pool = mcpPool.get(sessionId);
+    if (!pool) return;
+    mcpPool.delete(sessionId);
+    for (const c of pool.clients.values()) Promise.resolve(c).then((cl) => cl.close?.()).catch(() => { });
+}
+
+// Attache les serveurs demandés par le bloc : pool chaud, tools/list, mapping
+// de dispatch. Retourne { tools, run(name,argsJson), attached }.
 async function attachMcps(session) {
     const names = sessionMcpNames(session);
     const attached = [];
     for (const name of names) {
         const def = mcpCatalogEntry(name);
         if (!def) { attached.push({ name, error: 'absent du catalogue mcp-mux' }); continue; }
-        const client = new McpClient(name, def);
         try {
-            await Promise.race([
-                client.request('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'hephaistos-chats', version: '1.0.0' } }),
-                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout init')), MCP_SPAWN_TIMEOUT_MS)),
-            ]);
-            client.notify('notifications/initialized');
-            const listed = await client.request('tools/list');
-            const tools = (listed?.tools || []).map((t) => ({
-                type: 'function',
-                function: {
-                    name: `${MCP_PREFIX}${name}__${t.name}`.slice(0, 64),
-                    description: `[${name}] ${String(t.description || '').slice(0, 300)}`,
-                    parameters: t.inputSchema || { type: 'object', properties: {} },
-                },
-            }));
-            attached.push({ name, client, tools });
+            const client = await pooledClient(session.id, name, def);
+            attached.push({ name, client, tools: client.tools || [] });
         } catch (e) {
-            client.close();
             attached.push({ name, error: String(e.message || e) });
         }
     }
@@ -274,8 +301,7 @@ async function attachMcps(session) {
         const text = (res?.content || []).map((c) => c.type === 'text' ? c.text : JSON.stringify(c)).join('\n');
         return text || JSON.stringify(res ?? {});
     };
-    const closeAll = () => { for (const a of attached) a.client?.close(); };
-    return { tools: allTools, run, closeAll, attached };
+    return { tools: allTools, run, attached };
 }
 
 const CHAT_TOOLS = [
@@ -508,10 +534,10 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label, mcps }) {
 
 /* ---------- complétion providers (miroir de runtime.ts) ---------- */
 async function completeTurn(session) {
-    // Puces MCP du bloc workflow : serveurs spawnés pour ce tour, tués après.
+    // Puces MCP du bloc workflow : serveurs du pool par session — chauds
+    // entre les tours, tués uniquement à la fermeture de la session.
     const mcps = await attachMcps(session);
-    try { return await completeTurnWithMcps(session, mcps); }
-    finally { mcps.closeAll(); }
+    return completeTurnWithMcps(session, mcps);
 }
 
 async function completeTurnWithMcps(session, mcps) {
@@ -1038,5 +1064,11 @@ process.stdin.on('data', (d) => {
         // réponses aux requêtes émises par le serveur : ignorées (le serveur n'en émet pas)
     }
 });
-process.stdin.on('end', () => process.exit(0));
-process.on('uncaughtException', () => process.exit(1));
+// Nettoyage du pool MCP à la sortie : les serveurs spawnés ne doivent pas
+// devenir orphelins quand la fenêtre/serveur meurt.
+const releaseAllMcps = () => { for (const id of [...mcpPool.keys()]) releaseMcps(id); };
+process.stdin.on('end', () => { releaseAllMcps(); process.exit(0); });
+process.on('SIGTERM', () => { releaseAllMcps(); process.exit(0); });
+process.on('SIGINT', () => { releaseAllMcps(); process.exit(0); });
+process.on('exit', releaseAllMcps);
+process.on('uncaughtException', () => { releaseAllMcps(); process.exit(1); });
