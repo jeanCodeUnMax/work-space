@@ -100,7 +100,10 @@ function validateWorkflow(input) {
             throw new Error(`connexion invalide: ${source} -> ${target}`);
         }
         edgeKeys.add(key);
-        return { id: String(raw.id || `edge:${source}->${target}`), source, target };
+        const edgeObj = { id: String(raw.id || `edge:${source}->${target}`), source, target };
+        if (raw.sourceHandle) edgeObj.sourceHandle = String(raw.sourceHandle);
+        if (raw.targetHandle) edgeObj.targetHandle = String(raw.targetHandle);
+        return edgeObj;
     });
 
     const indegree = new Map([...nodes.keys()].map((id) => [id, 0]));

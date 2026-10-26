@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T16:49:02.534Z",
+  "updatedAt": "2026-10-26T16:54:48.222Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": false,
+        "hidden": true,
         "title": "sugary-shoemaker"
       },
       {
@@ -65,7 +65,7 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "role": "Codeur",
-        "hidden": false,
+        "hidden": true,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -74,7 +74,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "role": "Reviewer",
-        "hidden": true,
+        "hidden": false,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "amber-agent"
       },
@@ -101,7 +101,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "role": "Verif-Submodules",
-        "hidden": true,
+        "hidden": false,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "xenial-agent"
       },
@@ -110,7 +110,7 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": true,
+        "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "rapid-agent"
       },
@@ -119,7 +119,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": false,
+        "hidden": true,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "zealous-agent"
       },
@@ -137,7 +137,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": false,
+        "hidden": true,
         "model": "gpt-oss:120b-cloud"
       },
       {
@@ -170,139 +170,127 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-fix-rapide",
+    "name": "swat-code-review",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadrage d'urgence : qualifie le bug, isole le composant cible et lance l'intervention immédiate sans étape d'architecture superflue.",
+        "task": "Cadrage de l'inspection : cible la branche, le commit ou les fichiers à auditer, définit le périmètre d'exigence et distribue le travail aux 3 auditeurs parallèles.",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -330,
+          "x": -660,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "Correctif ciblé : applique le patch minimal direct résolvant la cause racine, sans refactoring étendu ni dispersion.",
+        "sessionId": "chat-mvmw5chd",
+        "role": "Reviewer",
+        "task": "Audit Qualité & Lisibilité : analyse le diff pour la maintenabilité, les antipatrons, la clarté algorithmique et la conformité aux conventions clean-code du projet.",
         "skills": [
-          "clean-code",
-          "nodejs-best-practices"
+          "code-review-checklist",
+          "clean-code"
         ],
-        "title": "keen-agent",
+        "title": "amber-agent",
         "position": {
-          "x": 0,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Validation TDD : écrit le test reproduisant le bug, vérifie qu'il passe au vert et valide le build.",
-        "skills": [
-          "testing-patterns",
-          "tdd-workflow"
-        ],
-        "title": "zealous-agent",
-        "position": {
-          "x": 330,
-          "y": 0
+          "x": -220,
+          "y": -220
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Revue et sécurité express : vérifie que le patch n'introduit aucune régression, injection ou effet de bord.",
+        "task": "Audit Sécurité & Injections : analyse statique approfondie des risques OWASP, des injections, des fuites de secrets/tokens et des codepoints bidi/zero-width.",
         "skills": [
           "vulnerability-scanner",
-          "clean-code"
+          "mcp-security-audit"
         ],
         "title": "urban-agent",
         "position": {
-          "x": 660,
+          "x": -220,
           "y": 0
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Feu vert rapide : contrôle la validation du test et de l'audit, donne le GO immédiat pour intégration.",
+        "task": "Arbitrage d'audit central : centralise les conclusions des 3 auditeurs et émet le verdict officiel d'approbation (PASS, WARNINGS ou CRITICAL_REJECT).",
         "skills": [
-          "vulnerability-scanner"
+          "vulnerability-scanner",
+          "code-review-checklist"
         ],
         "title": "keen-agent",
         "position": {
-          "x": 990,
+          "x": 220,
           "y": 0
         }
       },
       {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "Livraison du patch : commit conventionnel fix(...) et double push direct sur origin et personal.",
+        "sessionId": "chat-mvfj773t",
+        "role": "Verif-Submodules",
+        "task": "Audit Git & Sous-modules : contrôle la cohérence des commits, la propreté de l'historique git et l'intégrité des pointeurs de sous-modules.",
         "skills": [
+          "git-history",
           "lint-and-validate"
         ],
-        "title": "sugary-shoemaker",
+        "title": "xenial-agent",
         "position": {
-          "x": 1320,
+          "x": 550,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Feedback-Beacon-Knowledge",
-        "task": "Enregistrement de la solution : consigne l'incident et la recette de résolution dans agentmemory (memory_write) pour l'apprentissage automatique Hephaistos.",
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Rapport d'audit Obsidian : rédige la fiche de synthèse de revue dans le Vault Obsidian avec la liste des points forts, dettes et recommandations.",
         "skills": [
-          "vault-ingest",
-          "obsidian"
+          "obsidian",
+          "vault-ingest"
         ],
-        "title": "beacon-agent",
+        "title": "rapid-agent",
         "position": {
-          "x": 1650,
-          "y": 0
+          "x": 880,
+          "y": -110
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:fix-orchestrateur->codeur",
+        "id": "edge:rev-orch->reviewer",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa"
+        "target": "chat-mvmw5chd"
       },
       {
-        "id": "edge:fix-codeur->testeur",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:fix-testeur->auditeur",
-        "source": "chat-mvfj8b4m",
+        "id": "edge:rev-orch->secu",
+        "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmtldvy"
       },
       {
-        "id": "edge:fix-auditeur->sentinelle",
+        "id": "edge:rev-reviewer->sentinelle",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:rev-secu->sentinelle",
         "source": "chat-mvmtldvy",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:fix-sentinelle->integrateur",
+        "id": "edge:rev-sentinelle->git",
         "source": "chat-mvfqytbz",
-        "target": "acp/devin-cli/sugary-shoemaker"
+        "target": "chat-mvfj773t"
       },
       {
-        "id": "edge:fix-integrateur->feedback-beacon",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvp0beacon"
+        "id": "edge:rev-git->doc",
+        "source": "chat-mvfj773t",
+        "target": "chat-mvflr6cn"
       }
     ],
-    "activeSchema": "swat-fix-rapide",
-    "activeSchemaId": "schema-em9rovwy-4hbfn"
+    "activeSchema": "swat-code-review",
+    "activeSchemaId": "schema-l0xbhhko-gquy3"
   }
 }
