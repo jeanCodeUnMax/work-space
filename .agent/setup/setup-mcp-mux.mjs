@@ -15,6 +15,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2);
 const VERIFY = args.includes('--verify');
@@ -100,8 +101,28 @@ for (const cp of CLIENTS) {
 }
 
 // 2) Mise à jour de mcp-mux.json ---------------------------------------------
+// Serveurs gérés par le kit : enregistrés qu'aucun client ne les déclare.
+// skill-mux = registre central des skills distribué à tous les agents —
+// fait partie de la structure Hephaistos, installé avec le plugin.
+const KIT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const KIT_SERVERS = {
+  'skill-mux': {
+    command: 'node',
+    args: [path.join(KIT_ROOT, '.agent', 'skill-mux', 'server.mjs').replace(/\\/g, '/')],
+    env: {},
+  },
+};
+
 let added = 0, envMerged = 0, removed = 0;
 for (const name of NEVER_MUX) if (mux.servers[name]) { delete mux.servers[name]; removed++; }
+for (const [name, def] of Object.entries(KIT_SERVERS)) {
+  if (!mux.servers[name]) { mux.servers[name] = def; added++; }
+  else {
+    // Le chemin du serveur suit le repo courant (repo déplacé = chemin corrigé).
+    mux.servers[name].command = def.command;
+    mux.servers[name].args = def.args;
+  }
+}
 for (const [name, def] of wanted) {
   if (!mux.servers[name]) { mux.servers[name] = def; added++; }
   else {
