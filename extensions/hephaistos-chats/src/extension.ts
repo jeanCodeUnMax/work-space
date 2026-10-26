@@ -3,12 +3,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
-import { devinAcpConfig, devinAgentPreference } from './devinConfig';
+import { devinAgentPreference } from './devinConfig';
 import { ideAgentSessions, setDevinBridge } from './devinRoute';
 import { FlowWorkspacePanel } from './flowWorkspacePanel';
 import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
-import { callHpheTool, loadProviderFlags, pingModels, setProviderEnabled, setOrchTracker, setRemoteProviders } from './runtime';
+import { callHpheTool, loadProviderFlags, pingModels, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
 import { ACP_PROVIDERS, normalizeIconTheme } from './types';
 import { createWorkflowView, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
@@ -89,17 +89,6 @@ export function activate(context: vscode.ExtensionContext): void {
     orchWs.on('connected', () => {
         orchConnected = true;
         status = 'Connecté à l\'orchestrateur Hephaistos';
-        // Ne publier que les états CONNUS : flags Devin + choix utilisateur local.
-        // Un provider inconnu (Devin illisible/absent) n'est jamais repoussé en
-        // false — sinon une config vide écrirait 'false' partout dans la DB.
-        const devin = devinAcpConfig().enabledAgents;
-        const local = context.workspaceState.get<Record<string, boolean>>('hephaistosChats.providers', {});
-        const known = new Map<string, boolean>();
-        for (const [id, on] of Object.entries(devin)) known.set(id, !!on);
-        for (const [id, on] of Object.entries(local)) known.set(id, !!on);
-        for (const [id, on] of known) {
-            orchWs.toggleProvider(id, on);
-        }
         void paint();
     });
 
@@ -411,14 +400,8 @@ export function activate(context: vscode.ExtensionContext): void {
             await paint();
             return;
         }
-        if (message.type === 'provider' && message.id) {
-            await setProviderEnabled(context, message.id, !!message.enabled);
-            // Synchro directe avec le WebSocket de l'orchestrateur
-            orchWs.toggleProvider(message.id, !!message.enabled);
-            status = message.enabled ? `${message.id} activé` : `${message.id} désactivé`;
-            await paint();
-            return;
-        }
+        // Les toggles provider vivent dans orchestrator-monitor
+        // (provider_prefs) — cette extension ne fait que les lire.
         if (message.type === 'ping') {
             status = 'Interrogation des modèles et de l\'orchestrateur…';
             await paint();
@@ -559,6 +542,30 @@ export function activate(context: vscode.ExtensionContext): void {
                 const refreshed = workflowStore.load(store.list());
                 FlowWorkspacePanel.syncCache(view(refreshed));
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
+        if (message.type === 'schema_create') {
+            try {
+                const name = String((message as { name?: string }).name || '').trim() || 'Nouveau schema';
+                FlowWorkspacePanel.update(view(workflowStore.createSchema(name)), true);
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
+        if (message.type === 'schemas_restore') {
+            try {
+                const restored = workflowStore.restoreStandards();
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+                if (restored.length === 0) {
+                    FlowWorkspacePanel.error('Tous les schémas standards sont déjà présents.');
+                }
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }

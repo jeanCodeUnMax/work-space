@@ -12,9 +12,11 @@ interface RosterWorkflowApi {
     removeChatAgent(root: string, sessionId: string): WorkflowGraph;
     setMemberHidden(root: string, sessionId: string, hidden: boolean): void;
     saveSchema(root: string, name: string, graph: WorkflowGraph): unknown;
-    listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number }>;
+    listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }>;
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
+    createEmptySchema(root: string, name: string): WorkflowGraph;
+    restoreStandardSchemas(root: string): { restored: string[] };
     getWorkflowAgentProfile(root: string, sessionId: string): {
         providerId: string;
         model: string;
@@ -70,8 +72,16 @@ export class WorkflowStore {
         this.api.saveSchema(this.workspaceRoot, name, graph);
     }
 
-    listSchemas(all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number }> {
+    listSchemas(all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }> {
         return this.api.listSchemas(this.workspaceRoot, all);
+    }
+
+    createSchema(name: string): WorkflowGraph {
+        return this.api.createEmptySchema(this.workspaceRoot, name);
+    }
+
+    restoreStandards(): string[] {
+        return this.api.restoreStandardSchemas(this.workspaceRoot).restored;
     }
 
     loadSchema(id: string): WorkflowGraph {

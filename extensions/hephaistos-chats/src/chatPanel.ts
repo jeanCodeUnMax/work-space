@@ -4,7 +4,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { acpDispose } from './acpClient';
 import { chatHtml } from './chatHtml';
-import { completeTurn, loadProviderFlags, logRuntime, pingModels, setProviderEnabled } from './runtime';
+import { completeTurn, loadProviderFlags, logRuntime, pingModels } from './runtime';
 import { SessionStore } from './sessionStore';
 import { AcpProvider, ChatMode, ChatSession, DEFAULT_ICON_THEME, iconThemeFiles, ListedModel, normalizeIconTheme, sessionTitle } from './types';
 
@@ -238,11 +238,6 @@ export class ChatPanel {
             }
             this.isGenerating = false;
             this.push();
-            return;
-        }
-        if (message.type === 'provider' && message.id) {
-            await setProviderEnabled(this.context, message.id, !!message.enabled);
-            await this.reload(false);
             return;
         }
         if (message.type === 'send' && message.text?.trim()) {

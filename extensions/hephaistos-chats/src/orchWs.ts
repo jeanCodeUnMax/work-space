@@ -204,14 +204,6 @@ export class OrchWsClient extends EventEmitter {
         }
     }
 
-    public toggleProvider(provider: string, enabled: boolean): void {
-        this.send({
-            command: 'provider_toggle',
-            provider,
-            enabled,
-        });
-    }
-
     /** Suivi d'une requête de chat auprès de l'orchestrateur (tasks_todo). */
     public trackRequest(payload: Record<string, unknown>): void {
         this.send({ command: 'track_request', ...payload });
