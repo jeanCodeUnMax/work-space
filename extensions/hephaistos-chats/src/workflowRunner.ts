@@ -233,6 +233,27 @@ export class WorkflowRunner {
         let failedSession: string | undefined;
         let failureError: unknown;
 
+        // Transcript live : réécrit après chaque prise de parole — le rapport
+        // concil-live.md permet de suivre le débat en temps réel (preview MD).
+        const reportDir = path.join(this.workspaceRoot, '.agent', 'reports');
+        const liveReport = path.join(reportDir, 'concil-live.md');
+        const writeReport = (): void => {
+            try {
+                fs.mkdirSync(reportDir, { recursive: true });
+                fs.writeFileSync(liveReport, [
+                    `# Concil — ${graph.name}`,
+                    '',
+                    `**Question** : ${question}`,
+                    `**Run** : ${runId}`,
+                    '',
+                    ...transcript.map((turn) => `## ${turn.role} (${turn.round === 0 ? 'verdict' : `tour ${turn.round}`})\n\n${turn.text}\n`),
+                ].join('\n'), 'utf8');
+            } catch (error) {
+                logRuntime(`concil live report write failed: ${String(error)}`);
+            }
+        };
+        writeReport();
+
         const takeTurn = async (node: WorkflowNode, prompt: string): Promise<string> => {
             const task = taskBySession.get(node.sessionId)!;
             this.onProgress({ runId, sessionId: node.sessionId, taskId: task.taskId, state: 'running' });
@@ -257,6 +278,7 @@ export class WorkflowRunner {
                 try {
                     const output = await takeTurn(node, buildCouncilTurnPrompt(node, question, transcript, round, ROUNDS));
                     transcript.push({ role: node.role, sessionId: node.sessionId, round, text: output });
+                    writeReport();
                     const task = taskBySession.get(node.sessionId)!;
                     const lastRound = round === ROUNDS;
                     await callHpheTool('update_task', {
@@ -284,6 +306,7 @@ export class WorkflowRunner {
             try {
                 const verdict = await takeTurn(entry, buildCouncilVerdictPrompt(entry, question, transcript));
                 transcript.push({ role: `Verdict — ${entry.role}`, sessionId: entry.sessionId, round: 0, text: verdict });
+                writeReport();
                 const task = taskBySession.get(entry.sessionId)!;
                 await callHpheTool('update_task', { task_id: task.taskId, status: 'completed', result: verdict.slice(0, 4000) });
                 this.onProgress({ runId, sessionId: entry.sessionId, taskId: task.taskId, state: 'completed', message: verdict.slice(0, 180) });
@@ -294,21 +317,11 @@ export class WorkflowRunner {
             }
         }
 
-        // Artefact : transcript + verdict archivés pour le Vault/Beacon.
+        // Archive horodatée en plus du transcript live concil-live.md.
         try {
-            const reportDir = path.join(this.workspaceRoot, '.agent', 'reports');
-            fs.mkdirSync(reportDir, { recursive: true });
-            const report = [
-                `# Concil — ${graph.name}`,
-                '',
-                `**Question** : ${question}`,
-                `**Run** : ${runId} — ${new Date().toISOString()}`,
-                '',
-                ...transcript.map((turn) => `## ${turn.role} (${turn.round === 0 ? 'verdict' : `tour ${turn.round}`})\n\n${turn.text}\n`),
-            ].join('\n');
-            fs.writeFileSync(path.join(reportDir, `concil-${runId.slice(0, 8)}.md`), report, 'utf8');
+            fs.copyFileSync(liveReport, path.join(reportDir, `concil-${runId.slice(0, 8)}.md`));
         } catch (error) {
-            logRuntime(`concil report write failed: ${String(error)}`);
+            logRuntime(`concil report archive failed: ${String(error)}`);
         }
 
         if (failedSession) {
