@@ -6,7 +6,7 @@ import { acpDispose } from './acpClient';
 import { chatHtml } from './chatHtml';
 import { completeTurn, loadProviderFlags, logRuntime, pingModels, setProviderEnabled } from './runtime';
 import { SessionStore } from './sessionStore';
-import { AcpProvider, ChatMode, ChatSession, ListedModel, sessionTitle } from './types';
+import { AcpProvider, ChatMode, ChatSession, DEFAULT_ICON_THEME, iconThemeFiles, ListedModel, normalizeIconTheme, sessionTitle } from './types';
 
 interface ReadyState {
     type: 'state';
@@ -71,6 +71,38 @@ export class ChatPanel {
         const chat = new ChatPanel(panel, context.extensionUri, context, store, session, onChange);
         ChatPanel.openById.set(sessionId, chat);
         return chat;
+    }
+
+    /** Thème d'icônes persisté (workspaceState) — lu au render et après set_icon_theme. */
+    static iconTheme(context: vscode.ExtensionContext): string {
+        return normalizeIconTheme(context.workspaceState.get('hephaistosChats.iconTheme'));
+    }
+
+    /** Rebascule les URI d'icônes des chats ouverts sans recharger le HTML. */
+    static refreshIcons(context: vscode.ExtensionContext): void {
+        const theme = ChatPanel.iconTheme(context);
+        for (const chat of ChatPanel.openById.values()) {
+            // Thème non peuplé → commando ; la liste des fichiers suit l'URI car
+            // chaque thème nomme ses PNG différemment (pX-cYY vs icon-NN).
+            let dir = theme;
+            let files = iconThemeFiles(chat.extensionUri.fsPath, dir);
+            if (!files.length) {
+                dir = DEFAULT_ICON_THEME;
+                files = iconThemeFiles(chat.extensionUri.fsPath, dir);
+            }
+            const agentsUri = chat.panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(chat.extensionUri, 'media', 'agents', dir));
+            const fallbackUri = chat.panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(chat.extensionUri, 'media', 'agents', DEFAULT_ICON_THEME));
+            void chat.panel.webview.postMessage({
+                type: 'icon_theme',
+                theme,
+                agentsUri: agentsUri.toString(),
+                iconFiles: files,
+                fallbackUri: fallbackUri.toString(),
+                fallbackFiles: iconThemeFiles(chat.extensionUri.fsPath, DEFAULT_ICON_THEME),
+            });
+        }
     }
 
     /** Re-pousse toutes les fenêtres ouvertes après un changement externe du store. */
@@ -361,7 +393,7 @@ export class ChatPanel {
             enableScripts: true,
             localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'media')],
         };
-        this.panel.webview.html = chatHtml(this.panel.webview, this.extensionUri, nonce);
+        this.panel.webview.html = chatHtml(this.panel.webview, this.extensionUri, nonce, ChatPanel.iconTheme(this.context));
     }
 
     private dispose(): void {

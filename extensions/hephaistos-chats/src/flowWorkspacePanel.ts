@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import * as vscode from 'vscode';
+import { DEFAULT_ICON_THEME, iconThemeFiles, normalizeIconTheme } from './types';
 import { WorkflowGraph, WorkflowRunStatus, WorkflowView } from './workflow';
 
 export interface FlowPanelMessage {
@@ -13,6 +14,7 @@ type MessageHandler = (message: FlowPanelMessage) => void;
 
 export class FlowWorkspacePanel {
     private static current: FlowWorkspacePanel | undefined;
+    private static iconTheme: string = DEFAULT_ICON_THEME;
     private workflow: WorkflowView;
     private handler: MessageHandler;
 
@@ -67,6 +69,12 @@ export class FlowWorkspacePanel {
         FlowWorkspacePanel.current?.update(workflow);
     }
 
+    /** Thème d'icônes courant — posé avant open() puis poussé au webview ouvert. */
+    static setIconTheme(theme: string): void {
+        FlowWorkspacePanel.iconTheme = normalizeIconTheme(theme);
+        FlowWorkspacePanel.current?.sendIconTheme();
+    }
+
     /** Dev : recharge le HTML du panneau ouvert après rebuild du bundle webview. */
     static reload(): void {
         const current = FlowWorkspacePanel.current;
@@ -108,6 +116,44 @@ export class FlowWorkspacePanel {
 
     private sendWorkflow(): void {
         void this.panel.webview.postMessage({ type: 'workflow_state', workflow: this.workflow });
+        this.sendIconTheme();
+    }
+
+    /**
+     * Résout le dossier d'icônes effectif : thème non peuplé → commando.
+     * La liste des fichiers accompagne l'URI (chaque thème nomme ses PNG
+     * différemment : pX-cYY.png vs icon-NN.png) — le webview pioche par hash.
+     */
+    private iconThemeAssets(): { dir: string; files: string[]; agentsUri: string; fallbackUri: string; fallbackFiles: string[] } {
+        const theme = FlowWorkspacePanel.iconTheme;
+        let dir = theme;
+        let files = iconThemeFiles(this.extensionUri.fsPath, dir);
+        if (!files.length) {
+            dir = DEFAULT_ICON_THEME;
+            files = iconThemeFiles(this.extensionUri.fsPath, dir);
+        }
+        return {
+            dir,
+            files,
+            agentsUri: this.panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this.extensionUri, 'media', 'agents', dir)).toString(),
+            fallbackUri: this.panel.webview.asWebviewUri(
+                vscode.Uri.joinPath(this.extensionUri, 'media', 'agents', DEFAULT_ICON_THEME)).toString(),
+            fallbackFiles: iconThemeFiles(this.extensionUri.fsPath, DEFAULT_ICON_THEME),
+        };
+    }
+
+    /** Rebascule window.__agentsUri côté webview (media/agents/<theme>/). */
+    private sendIconTheme(): void {
+        const assets = this.iconThemeAssets();
+        void this.panel.webview.postMessage({
+            type: 'icon_theme',
+            theme: FlowWorkspacePanel.iconTheme,
+            agentsUri: assets.agentsUri,
+            iconFiles: assets.files,
+            fallbackUri: assets.fallbackUri,
+            fallbackFiles: assets.fallbackFiles,
+        });
     }
 
     private render(webview: vscode.Webview, extensionUri: vscode.Uri): string {
@@ -117,7 +163,10 @@ export class FlowWorkspacePanel {
         // workspace.js survit aux rebuilds du watcher et le panneau reste noir.
         const bust = { query: `v=${Date.now().toString(36)}` };
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.js')).with(bust);
-        const agentsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents'));
+        // Les icônes vivent dans media/agents/<theme>/ ; le fallback repointe sur commando.
+        const iconAssets = this.iconThemeAssets();
+        const agentsUri = iconAssets.agentsUri;
+        const agentsFallbackUri = iconAssets.fallbackUri;
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(assetsUri, 'workspace.css')).with(bust);
 
         return `<!DOCTYPE html>
@@ -138,6 +187,9 @@ export class FlowWorkspacePanel {
   </div>
   <script nonce="${nonce}">
         window.__agentsUri = "${agentsUri}";
+        window.__agentsFallbackUri = "${agentsFallbackUri}";
+        window.__agentIcons = ${JSON.stringify(iconAssets.files)};
+        window.__agentsFallbackIcons = ${JSON.stringify(iconAssets.fallbackFiles)};
     (() => {
       const showBootError = (detail) => {
         const root = document.getElementById('root');

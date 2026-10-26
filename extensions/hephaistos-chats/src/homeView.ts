@@ -454,7 +454,7 @@ function renderSessions(filter = '') {
   }
 
   container.innerHTML = filtered.map(s => {
-    const timeStr = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const timeStr = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
     return \`
       <div class="session-card" data-id="\${s.id}" title="Ouvrir cette conversation (\${escapeHtml(s.provider || '')})">
         <div class="session-info">

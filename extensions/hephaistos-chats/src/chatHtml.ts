@@ -1,10 +1,22 @@
 import * as vscode from 'vscode';
+import { DEFAULT_ICON_THEME, iconThemeFiles } from './types';
 
-export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonce: string): string {
+export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonce: string, iconTheme: string = DEFAULT_ICON_THEME): string {
     const stamp = Date.now().toString(36);
     const css = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.css')) + `?v=${stamp}`;
     const script = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.js')) + `?v=${stamp}`;
-    const agentsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents'));
+    // Les icônes vivent dans media/agents/<theme>/ ; thème non peuplé → commando.
+    // Chaque thème a sa propre convention de nommage : la liste des fichiers est
+    // injectée (__agentIcons) et le webview pioche par hash % count.
+    let iconDir = iconTheme;
+    let iconFiles = iconThemeFiles(extensionUri.fsPath, iconDir);
+    if (!iconFiles.length) {
+        iconDir = DEFAULT_ICON_THEME;
+        iconFiles = iconThemeFiles(extensionUri.fsPath, iconDir);
+    }
+    const agentsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents', iconDir));
+    const agentsFallbackUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'agents', DEFAULT_ICON_THEME));
+    const agentsFallbackFiles = iconThemeFiles(extensionUri.fsPath, DEFAULT_ICON_THEME);
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -89,7 +101,7 @@ window.addEventListener('error', function (e) {
   }
 }, true);
 </script>
-<script nonce="${nonce}">window.__agentsUri="${agentsUri}";</script>
+<script nonce="${nonce}">window.__agentsUri="${agentsUri}";window.__agentsFallbackUri="${agentsFallbackUri}";window.__agentIcons=${JSON.stringify(iconFiles)};window.__agentsFallbackIcons=${JSON.stringify(agentsFallbackFiles)};</script>
 <script nonce="${nonce}" src="${script}"></script>
 </body>
 </html>`;

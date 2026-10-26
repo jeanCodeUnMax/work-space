@@ -34,6 +34,8 @@ interface AgentData extends Record<string, unknown> {
     skills?: string[];
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
+    /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
+    iconTheme?: string;
     isEntry: boolean;
     tone: 'amber' | 'blue' | 'green';
 }
@@ -86,6 +88,50 @@ interface Progress {
 
 const vscode = acquireVsCodeApi();
 
+// Miroir de ICON_THEMES (src/types.ts) — sous-dossiers de media/agents/.
+const ICON_THEMES = ['commando', 'dwarves', 'starwars', 'scifi-horror', 'hightech'];
+
+/** Hash stable du sessionId → index dans la liste d'icônes du thème. */
+function agentIconHash(sessionId: string): number {
+    let h = 0;
+    for (const c of (sessionId || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return h;
+}
+
+/**
+ * Les thèmes nomment leurs PNG différemment (commando = pX-cYY, dwarves =
+ * icon-NN) : l'host injecte la liste des fichiers (__agentIcons) et le webview
+ * pioche par hash % count. Sans liste → convention historique pX-cYY.
+ */
+function iconUrl(base: string | undefined, files: string[] | undefined, h: number): string {
+    if (!base) return '';
+    const name = files && files.length
+        ? files[h % files.length]
+        : 'p' + (1 + h % 6) + '-c' + String(h % 16).padStart(2, '0') + '.png';
+    return base + '/' + name;
+}
+
+/** URI de l'icône du sessionId dans le thème courant + équivalent commando en secours. */
+function agentIcon(sessionId: string): { src: string; fbk: string } {
+    const h = agentIconHash(sessionId);
+    const w = window as any;
+    return {
+        src: iconUrl(w.__agentsUri, w.__agentIcons, h),
+        fbk: iconUrl(w.__agentsFallbackUri, w.__agentsFallbackIcons, h),
+    };
+}
+
+/** Fallback : icône absente du thème → équivalent commando (data-fbk), sinon masquée. */
+function onAgentIconError(event: React.SyntheticEvent<HTMLImageElement>): void {
+    const img = event.currentTarget;
+    const fbk = img.dataset.fbk;
+    if (fbk && img.src !== fbk) {
+        img.src = fbk;
+        return;
+    }
+    img.style.display = 'none';
+}
+
 function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Element {
     return (
         <div
@@ -109,7 +155,7 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
             </div>
-            {(()=>{let h=0;for(const c of (data.sessionId||""))h=(h*31+c.charCodeAt(0))>>>0;const base=(window as any).__agentsUri;const src=base?base+"/p"+(1+h%6)+"-c"+String(h%16).padStart(2,"0")+".png":"";return src?<img src={src} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
+            {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
             {(data.skills || []).length > 0 && (
@@ -194,6 +240,7 @@ function Workspace(): React.JSX.Element {
     const [runSummary, setRunSummary] = useState('');
     const [catalog, setCatalog] = useState<WorkflowCatalog>({ roles: [], skills: [], providers: [] });
     const [newProvider, setNewProvider] = useState('openrouter');
+    const [iconTheme, setIconTheme] = useState('commando');
     const saveTimer = useRef<number | undefined>(undefined);
 
     const selectedNode = useMemo(
@@ -208,6 +255,18 @@ function Workspace(): React.JSX.Element {
             const message = event.data;
             if (message?.type === 'schemas_state') {
                 setSchemas(message.schemas || []);
+                return;
+            }
+            if (message?.type === 'icon_theme') {
+                // Rebascule des URI media/agents/<theme>/ poussée par l'host —
+                // le theme est propagé dans data pour forcer le re-rendu des blocs.
+                const theme = String(message.theme || 'commando');
+                if (message.agentsUri) (window as any).__agentsUri = message.agentsUri;
+                if (message.fallbackUri) (window as any).__agentsFallbackUri = message.fallbackUri;
+                if (Array.isArray(message.iconFiles)) (window as any).__agentIcons = message.iconFiles;
+                if (Array.isArray(message.fallbackFiles)) (window as any).__agentsFallbackIcons = message.fallbackFiles;
+                setIconTheme(theme);
+                setNodes((current) => current.map((n) => ({ ...n, data: { ...n.data, iconTheme: theme } })));
                 return;
             }
             if (message?.type === 'workflow_state') {
@@ -536,8 +595,21 @@ function Workspace(): React.JSX.Element {
                                     Retirer du schéma
                                 </button>
                             </div>
-                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{(()=>{let h=0;for(const c of (selectedNode.data.sessionId||""))h=(h*31+c.charCodeAt(0))>>>0;const base=(window as any).__agentsUri;const src=base?base+"/p"+(1+h%6)+"-c"+String(h%16).padStart(2,"0")+".png":"";return src?<img src={src} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
+                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{(()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
                             <p className="inspector-provider">{selectedNode.data.provider} · {selectedNode.data.model}</p>
+                            <label className="field-label" htmlFor="icon-theme">Thème d'icônes</label>
+                            <select
+                                id="icon-theme"
+                                className="inspector-input"
+                                title="Jeu d'icônes des agents (media/agents/<thème>)"
+                                value={iconTheme}
+                                onChange={(event) => {
+                                    setIconTheme(event.target.value);
+                                    vscode.postMessage({ type: 'set_icon_theme', theme: event.target.value });
+                                }}
+                            >
+                                {ICON_THEMES.map((theme) => <option key={theme} value={theme}>{theme}</option>)}
+                            </select>
                             <label className="field-label" htmlFor="agent-role">Rôle</label>
                             <select
                                 className="inspector-input"

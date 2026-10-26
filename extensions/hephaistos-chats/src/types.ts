@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 export type ChatMode = 'agent' | 'plan' | 'ask' | 'debug';
 
 export interface ChatTool {
@@ -82,6 +85,30 @@ export const ACP_PROVIDERS: { id: string; label: string }[] = [
     { id: 'huggingface', label: 'Hugging Face' },
     { id: 'omniroute', label: 'OmniRoute' },
 ];
+
+/** Thèmes d'icônes agents — sous-dossiers de media/agents/ (mêmes noms de fichiers dans chaque thème). */
+export const ICON_THEMES = ['commando', 'dwarves', 'starwars', 'scifi-horror', 'hightech'] as const;
+export type IconTheme = typeof ICON_THEMES[number];
+export const DEFAULT_ICON_THEME: IconTheme = 'commando';
+
+/** Normalise une valeur lue (workspaceState / message webview) vers un thème connu. */
+export function normalizeIconTheme(value: unknown): IconTheme {
+    return (ICON_THEMES as readonly string[]).includes(String(value)) ? (value as IconTheme) : DEFAULT_ICON_THEME;
+}
+
+/**
+ * Liste triée des .png d'un thème (media/agents/<theme>) — chaque thème a sa
+ * propre convention de nommage (commando = pX-cYY.png, dwarves = icon-NN.png),
+ * le webview pioche par hash % count. Vide si le dossier est absent ou non peuplé.
+ */
+export function iconThemeFiles(extensionFsPath: string, theme: string): string[] {
+    try {
+        const dir = path.join(extensionFsPath, 'media', 'agents', theme);
+        return fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.png')).sort();
+    } catch {
+        return [];
+    }
+}
 
 const CODENAME_ADJ = ['amber','brave','calm','daring','eager','fair','gentle','hardy','ionic','jolly','keen','lunar','mighty','noble','onyx','proud','quiet','rapid','solar','trusted','urban','vivid','warm','xenial','young','zealous'];
 const CODENAME_NOUN = ['atlas','badger','comet','drift','ember','falcon','grove','harbor','ibis','juniper','kite','lantern','mesa','nova','orbit','pine','quartz','robin','shoemaker','tide','umbra','vault','willow','xylem','yew','zephyr'];
