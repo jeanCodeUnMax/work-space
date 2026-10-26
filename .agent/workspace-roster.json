@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:56:43.614Z",
+  "updatedAt": "2026-10-26T18:10:27.573Z",
   "core": {
     "devin": [
       {
@@ -66,16 +66,16 @@
         "restore": "open-or-reveal",
         "role": "Expert-Architecture",
         "hidden": false,
-        "model": "groq/openai/gpt-oss-20b",
+        "model": "groq/openai/gpt-oss-120b",
         "title": "keen-agent"
       },
       {
-        "providerId": "nim2",
+        "providerId": "omniroute",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "role": "Expert-Qualite-Maintenabilite",
         "hidden": false,
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "model": "groq/openai/gpt-oss-20b",
         "title": "amber-agent"
       },
       {
@@ -84,7 +84,7 @@
         "restore": "open-or-reveal",
         "role": "Expert-Securite-Risques",
         "hidden": false,
-        "model": "nvidia/nemotron-3-super-120b-a12b",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
       },
       {
@@ -124,30 +124,30 @@
         "title": "zealous-agent"
       },
       {
-        "providerId": "openrouter",
+        "providerId": "omniroute",
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
-        "model": "groq/openai/gpt-oss-20b",
+        "model": "auto/best-fast",
         "role": "Avocat-du-Diable",
         "hidden": false,
         "title": "keen-nova"
       },
       {
-        "providerId": "ollama-cloud",
+        "providerId": "omniroute",
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Greffier-Beacon-Memoire",
-        "hidden": false,
-        "model": "groq/openai/gpt-oss-120b",
+        "hidden": true,
+        "model": "z-ai/glm-5.3",
         "title": "beacon-agent"
       },
       {
-        "providerId": "ollama-cloud",
+        "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
         "role": "Expert-Perf-Pragmatisme",
         "hidden": false,
-        "model": "groq/openai/gpt-oss-120b",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "steady-agent"
       },
       {
@@ -156,6 +156,24 @@
         "restore": "open-or-reveal",
         "model": "opencode/nemotron-3-ultra-free",
         "role": "OpenRouter",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "gpt-oss-120b",
+        "hidden": false
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-b8b87e8a-8954-4c29-ae3e-d44e1d132244",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "gpt-oss-120b",
         "hidden": true
       }
     ]
@@ -186,7 +204,7 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "President-Concil",
-        "task": "QUESTION AU CONCILE : Faut-il implémenter des outils n8n dans l'extension Hephaistos Chats ? Si oui, quels outils et comment les intégrer (architecture, providers, UX) ?",
+        "task": "QUESTION AU CONCILE : Faut-il migrer le stockage des sessions de l extension Hephaistos Chats (sessions.json + workspaceState) vers SQLite/hphe ? Tranchez sur la viabilite, le plan de migration et les risques.",
         "skills": [
           "orchestrator"
         ],
@@ -266,17 +284,14 @@
         }
       },
       {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Greffier-Beacon-Memoire",
-        "task": "Memoire institutionnelle : rappelle les echecs et bonnes pratiques deja capitalises dans Hephaistos (memory_search), verifie que la question n'a pas deja ete tranchee, consigne le verdict a la fin.",
-        "skills": [
-          "vault-ingest",
-          "obsidian"
-        ],
-        "title": "beacon-agent",
+        "sessionId": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
+        "role": "OmniRoute",
+        "task": "",
+        "skills": [],
+        "title": "gpt-oss-120b",
         "position": {
           "x": 330,
-          "y": 110
+          "y": 132
         }
       }
     ],
@@ -307,9 +322,11 @@
         "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6"
       },
       {
-        "id": "edge:concil->5->chat-mvp0beacon",
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-chat-d27b8084-7202-4e0e-bff4-45d60f123788target-left",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvp0beacon"
+        "target": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
       }
     ],
     "activeSchema": "Concile",
