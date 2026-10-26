@@ -11,7 +11,7 @@ import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
 import { ACP_PROVIDERS, normalizeIconTheme } from './types';
-import { createWorkflowView, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
+import { createWorkflowView, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
 
@@ -53,6 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('hephaistosChats.newChat', (provider?: string) => openNew(provider)),
         vscode.commands.registerCommand('hephaistosChats.openChat', () => openLatest()),
         vscode.commands.registerCommand('hephaistosChats.openWorkspace', () => openWorkspace()),
+        vscode.commands.registerCommand('hephaistosChats.pointAgent', (sessionId?: string) => pointAgent(sessionId)),
         vscode.window.registerWebviewPanelSerializer(ChatPanel.viewType, {
             async deserializeWebviewPanel(panel, state) {
                 const sessionId = (state as { sessionId?: string } | undefined)?.sessionId;
@@ -363,6 +364,48 @@ export function activate(context: vscode.ExtensionContext): void {
         void paint();
     }
 
+    /**
+     * Puce ⌖ : pointe un agent du flux vers l'agent référent (nœud d'entrée).
+     * Ouvre la fenêtre du référent et pré-remplit sa saisie avec la référence
+     * de l'agent pointé — l'utilisateur n'a plus qu'à dicter sa directive.
+     * Le pointage est aussi journalisé sur .agent/comms.jsonl pour les
+     * référents ACP (Devin/AGY) dont la saisie n'est pas pré-remplissable.
+     */
+    function pointAgent(sessionId?: string): void {
+        if (!sessionId || !workflowStore) return;
+        try {
+            const graph = workflowStore.load(store.list());
+            const referentId = preferredEntrySession(graph, store.list())
+                || graph.nodes.find((node) => node.sessionId !== sessionId)?.sessionId;
+            if (!referentId) return;
+            const pointed = graph.nodes.find((node) => node.sessionId === sessionId);
+            const label = pointed?.title || sessionId;
+            const draft = `[Agent pointé : ${label} (${sessionId})${pointed?.role ? ` — ${pointed.role}` : ''}] `;
+            if (workspaceRoot) {
+                try {
+                    fs.appendFileSync(
+                        path.join(workspaceRoot, '.agent', 'comms.jsonl'),
+                        `${JSON.stringify({ src: 'chats', dst: referentId, kind: 'point', text: `Agent pointé : ${label} (${sessionId})`, at: new Date().toISOString() })}\n`,
+                    );
+                } catch { /* bus indisponible */ }
+            }
+            const refSession = store.get(referentId);
+            if (refSession || referentId.startsWith('chat-')) {
+                openSession(referentId, true);
+                ChatPanel.prefill(referentId, draft);
+                return;
+            }
+            void openAcpSession(referentId);
+            void vscode.env.clipboard.writeText(draft.trim());
+            void vscode.window.showInformationMessage(
+                `Agent pointé : ${label} — référence copiée, colle-la dans le chat du référent.`,
+            );
+        } catch (error) {
+            status = `Pointage impossible : ${String(error)}`;
+            void paint();
+        }
+    }
+
     function openLatest(): void {
         const latest = store.list()[0];
         if (latest) {
@@ -604,6 +647,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'open_agent' && message.sessionId) {
             openSession(message.sessionId, true);
+            return;
+        }
+
+        if (message.type === 'point_agent' && message.sessionId) {
+            pointAgent(message.sessionId);
             return;
         }
 

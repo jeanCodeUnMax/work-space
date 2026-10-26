@@ -247,6 +247,24 @@ textarea {
     white-space: nowrap;
 }
 
+.flow-node-point {
+    margin-left: auto;
+    padding: 0 3px;
+    border: 1px solid var(--vscode-panel-border, #3a3a3a);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--vscode-descriptionForeground, #9a9c98);
+    font-size: 9px;
+    line-height: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.flow-node-point:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.3));
+    color: var(--vscode-editor-foreground, #e8e8e8);
+}
+
 .flow-node-title {
     overflow: hidden;
     font-size: 12px;

@@ -31,6 +31,7 @@ export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonc
     <strong id="providerName">Fournisseur</strong>
   </button>
   <span class="spacer"></span>
+  <button type="button" id="pointBtn" class="point-pill" title="Pointer cet agent vers l'agent référent du flux">⌖</button>
   <button type="button" id="historyBtn" class="history-pill" title="Historique des conversations">
     <span>🕒 Historique</span>
     <span class="chevron">▾</span>

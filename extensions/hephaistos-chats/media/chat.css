@@ -63,6 +63,23 @@ button, input, textarea {
     color: #3fb950 !important;
 }
 
+.point-pill {
+    background: transparent;
+    border: 1px solid var(--vscode-panel-border, #3a3a3a);
+    color: var(--vscode-descriptionForeground, #8c8c8c);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 4px;
+    transition: background 0.12s, color 0.12s;
+}
+
+.point-pill:hover {
+    background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.3));
+    color: var(--vscode-editor-foreground, #cccccc);
+}
+
 .history-pill {
     background: transparent;
     border: 1px solid var(--vscode-panel-border, #3a3a3a);
