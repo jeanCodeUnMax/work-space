@@ -449,6 +449,16 @@ function Workspace(): React.JSX.Element {
         sendSave(nodes, nextEdges);
     }, [edges, nodes, sendSave, setEdges]);
 
+    const onReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
+        const nextEdges = addEdge(
+            { ...connection, type: 'smoothstep' },
+            edges.filter((edge) => edge.id !== oldEdge.id),
+        );
+        setEdges(nextEdges);
+        setSelectedEdgeId(null);
+        sendSave(nodes, nextEdges);
+    }, [edges, nodes, sendSave, setEdges]);
+
     const onEdgeChanges: OnEdgesChange = useCallback((changes) => {
         const nextEdges = applyEdgeChanges(changes, edges);
         setEdges(nextEdges);
@@ -739,6 +749,8 @@ function Workspace(): React.JSX.Element {
                                 onNodesChange={onWorkflowNodesChange}
                                 onEdgesChange={onEdgeChanges}
                                 onConnect={onConnect}
+                                onReconnect={onReconnect}
+                                edgesReconnectable
                                 onNodeClick={(_event, node) => setSelectedId(node.id)}
                                 onNodeDoubleClick={(_event, node) => vscode.postMessage({ type: 'open_agent', sessionId: node.id })}
                                 onEdgeClick={(_event, edge) => {
@@ -768,7 +780,7 @@ function Workspace(): React.JSX.Element {
                                 snapGrid={[22, 22]}
                                 minZoom={0.2}
                                 maxZoom={2}
-                                deleteKeyCode={null}
+                                deleteKeyCode={['Backspace', 'Delete']}
                             >
                                 <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
                                 <Controls />

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T18:11:46.693Z",
+  "updatedAt": "2026-10-26T18:31:57.859Z",
   "core": {
     "devin": [
       {
@@ -164,8 +164,8 @@
         "restore": "open-or-reveal",
         "model": "groq/openai/gpt-oss-120b",
         "role": "OmniRoute",
-        "title": "gpt-oss-120b",
-        "hidden": false
+        "title": "brave-mesa",
+        "hidden": true
       },
       {
         "providerId": "omniroute",
@@ -175,6 +175,15 @@
         "role": "OmniRoute",
         "title": "gpt-oss-120b",
         "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
+        "title": "brave-ibis",
+        "hidden": false
       }
     ]
   },
@@ -211,7 +220,7 @@
         "title": "ionian-helicopter",
         "position": {
           "x": 0,
-          "y": -418
+          "y": -374
         }
       },
       {
@@ -284,13 +293,13 @@
         }
       },
       {
-        "sessionId": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
-        "role": "OmniRoute",
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "role": "OpenRouter",
         "task": "",
         "skills": [],
-        "title": "gpt-oss-120b",
+        "title": "brave-ibis",
         "position": {
-          "x": 330,
+          "x": 308,
           "y": 132
         }
       }
@@ -299,34 +308,44 @@
       {
         "id": "edge:concil->0->chat-mvmw59wa",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa"
+        "target": "chat-mvmw59wa",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
         "id": "edge:concil->1->chat-mvmtldvy",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmtldvy"
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
         "id": "edge:concil->2->chat-mvpfinfra",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvpfinfra"
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
         "id": "edge:concil->3->chat-mvmw5chd",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw5chd"
+        "target": "chat-mvmw5chd",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
         "id": "edge:concil->4->chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6"
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-chat-d27b8084-7202-4e0e-bff4-45d60f123788target-left",
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3target-left",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       }
     ],
     "activeSchema": "Concile",
