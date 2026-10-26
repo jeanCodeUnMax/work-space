@@ -515,21 +515,28 @@ function Workspace(): React.JSX.Element {
                             {schemas.length === 0 && <span className="skill-empty">Aucun schéma enregistré.</span>}
                             {schemas.map((schema) => (
                                 <div className="schema-item" key={schema.id}>
-                                    <button
-                                        type="button"
-                                        className="schema-load"
-                                        title={schema.desc || schema.name}
-                                        onClick={() => loadSchema(schema.id)}
-                                    >{schema.name}</button>
+                                    <div className="schema-row">
+                                        <button
+                                            type="button"
+                                            className="schema-load"
+                                            title={schema.desc || schema.name}
+                                            onClick={() => loadSchema(schema.id)}
+                                        >{schema.name}</button>
+                                        <button
+                                            type="button"
+                                            className="schema-delete"
+                                            title="Supprimer ce schéma"
+                                            aria-label={"Supprimer " + schema.name}
+                                            onClick={() => vscode.postMessage({ type: 'schema_delete', id: schema.id, all: showAllSchemas })}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M9 2h6a1 1 0 0 1 1 1v1h5v2h-2l-.9 15.1A2 2 0 0 1 16.1 23H7.9a2 2 0 0 1-2-1.9L5 6H3V4h5V3a1 1 0 0 1 1-1Zm1 7.5h1.5v8H10v-8Zm3 0h1.5v8H13v-8Z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                     <span className="schema-meta">
                                         {schema.nodes} nœuds{showAllSchemas ? ' · ' + schema.workspace.split(/[\\/]/).pop() : ''}
                                     </span>
-                                    <button
-                                        type="button"
-                                        className="schema-delete"
-                                        title="Supprimer ce schéma"
-                                        onClick={() => vscode.postMessage({ type: 'schema_delete', id: schema.id, all: showAllSchemas })}
-                                    >×</button>
                                 </div>
                             ))}
                         </div>

@@ -793,6 +793,9 @@ textarea {
 }
 
 .schema-load {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: left;
     padding: 6px 8px;
     border: 1px solid rgba(255,255,255,0.12);
@@ -830,3 +833,52 @@ textarea {
 }
 
 .schema-hide-btn:active { transform: translateY(1px); }
+
+.schema-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.schema-row .schema-load {
+    flex: 1;
+    min-width: 0;
+}
+
+.schema-delete {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #e8e2d6;
+    opacity: 0.35;
+    cursor: pointer;
+    transition: opacity 120ms ease, color 120ms ease, background 120ms ease, border-color 120ms ease, transform 80ms ease;
+}
+
+.schema-delete:hover,
+.schema-delete:focus-visible {
+    opacity: 1;
+    color: rgb(200, 133, 64);
+    background: rgba(200, 133, 64, 0.18);
+    border-color: rgba(200, 133, 64, 0.4);
+    outline: none;
+}
+
+.schema-delete:active {
+    opacity: 1;
+    color: #e8d9c0;
+    background: rgba(200, 133, 64, 0.3);
+    transform: translateY(1px);
+}
+
+.schema-delete svg {
+    display: block;
+    flex: none;
+}

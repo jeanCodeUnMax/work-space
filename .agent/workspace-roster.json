@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T04:51:16.860Z",
+  "updatedAt": "2026-10-26T04:56:10.669Z",
   "core": {
     "devin": [
       {
@@ -38,7 +38,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Devin",
-        "hidden": false
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -55,7 +55,7 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Codeur",
+        "role": "Analyste-Architecture",
         "hidden": false
       },
       {
@@ -63,7 +63,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Reviewer",
+        "role": "Analyste-API-Devin",
         "hidden": false
       },
       {
@@ -71,7 +71,7 @@
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Sentinelle",
+        "role": "Synthese-Faisabilite",
         "hidden": false
       },
       {
@@ -87,7 +87,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "model": "openai/gpt-oss-20b",
-        "role": "Verif-Submodules",
+        "role": "Analyste-Secu-Packaging",
         "hidden": false
       },
       {
@@ -132,7 +132,7 @@
         "role": "Auditeur-securite",
         "title": "urban-agent",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -140,7 +140,7 @@
         "restore": "open-or-reveal",
         "role": "Testeur",
         "model": "openai/gpt-oss-20b",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -171,7 +171,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "open-or-reveal",
         "role": "Devin",
-        "hidden": false
+        "hidden": true
       }
     ]
   },
@@ -196,144 +196,84 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-orchestrateur",
+    "name": "swat-faisabilite",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
-        "skills": [
-          "orchestrator",
-          "plan-writing"
-        ],
-        "title": "ionian-helicopter",
+        "task": "Brainstorm final avec l utilisateur sur le bilan faisabilite",
+        "skills": [],
+        "title": "Cash",
         "position": {
-          "x": -2102.313720817999,
-          "y": -910.0109960576054
+          "x": -44,
+          "y": 0
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
-        "skills": [
-          "clean-code",
-          "nodejs-best-practices"
-        ],
+        "role": "Analyste-Architecture",
+        "task": "Faisabilite plugin Devin: cartographier hephaistos2-kit (hphe-mcp, agent-bridge, skills) vs surface plugin Devin. Reference F:\\Promgramation-teste\\CLI-Anything (cli-anything-plugin). Livrable .agent/flux/feas-archi.md",
+        "skills": [],
         "title": "keen-agent",
         "position": {
-          "x": -1785.6755613455734,
-          "y": -907.2453930818415
+          "x": 286,
+          "y": -154
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
-        "role": "Reviewer",
-        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
-        "skills": [
-          "code-review-checklist",
-          "testing-patterns"
-        ],
+        "role": "Analyste-API-Devin",
+        "task": "Faisabilite: mecanismes plugin Devin (.devin/, skills, rules, MCP config, commands) + ce que le kit peut exposer. Livrable .agent/flux/feas-api.md",
+        "skills": [],
         "title": "amber-agent",
         "position": {
-          "x": -1518,
-          "y": -902
-        }
-      },
-      {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Auditeur-securite",
-        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
-        "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
-        ],
-        "title": "urban-agent",
-        "position": {
-          "x": -1232,
-          "y": -902
-        }
-      },
-      {
-        "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
-        "skills": [
-          "vulnerability-scanner",
-          "lint-and-validate"
-        ],
-        "title": "keen-agent",
-        "position": {
-          "x": -2104.5684755083334,
-          "y": -707.5497991478353
+          "x": 308,
+          "y": 66
         }
       },
       {
         "sessionId": "chat-mvfj773t",
-        "role": "Verif-Submodules",
-        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
-        "skills": [
-          "lint-and-validate",
-          "git-history"
-        ],
+        "role": "Analyste-Secu-Packaging",
+        "task": "Faisabilite securite+packaging: secrets/cles dans le kit, borne fs, distribution plugin, risques. Livrable .agent/flux/feas-secu.md",
+        "skills": [],
         "title": "xenial-agent",
         "position": {
-          "x": -1803.356250367542,
-          "y": -704.7841961720712
+          "x": 300,
+          "y": 280
         }
       },
       {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
-        "skills": [
-          "lint-and-validate",
-          "testing-patterns"
-        ],
-        "title": "sugary-shoemaker",
+        "sessionId": "chat-mvfqytbz",
+        "role": "Synthese-Faisabilite",
+        "task": "Consolide les 3 livrables -> bilan faisabilite GO/NO-GO + options. .agent/flux/feas-verdict.md",
+        "skills": [],
+        "title": "keen-agent",
         "position": {
-          "x": -1503.5684755083334,
-          "y": -703.2896126530399
+          "x": 594,
+          "y": 66
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
-        "skills": [
-          "obsidian",
-          "vault-ingest"
-        ],
+        "task": "Note vault de l etude de faisabilite -> .agent/flux/feas-doc.md",
+        "skills": [],
         "title": "rapid-agent",
         "position": {
-          "x": -946.1885119118413,
-          "y": -700.9356769964004
+          "x": 940,
+          "y": 60
         }
       },
       {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Validation technique : syntaxe (node --check), tests unitaires, smoke tests des livrables avant revue.",
-        "skills": [
-          "testing-patterns",
-          "lint-and-validate"
-        ],
-        "title": "zealous-agent",
-        "position": {
-          "x": -445.56847550833345,
-          "y": -899.2896126530399
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "role": "Devin",
-        "task": "Agent Devin auxiliaire — missions paralleles (maintenance infra, diagnostics).",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Commit doc etude si GO",
         "skills": [],
-        "title": "bloom-settee",
+        "title": "shoemaker",
         "position": {
-          "x": -865.5684755083334,
-          "y": -679.2896126530399
+          "x": 940,
+          "y": 280
         }
       }
     ],
@@ -344,50 +284,42 @@
         "target": "chat-mvmw59wa"
       },
       {
+        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw5chd",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvfj773t",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:chat-mvmw59wa->chat-mvfqytbz",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfqytbz"
+      },
+      {
         "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
         "source": "chat-mvmw5chd",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
-        "source": "chat-mvmtldvy",
+        "id": "edge:chat-mvfj773t->chat-mvfqytbz",
+        "source": "chat-mvfj773t",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
+        "id": "edge:chat-mvfqytbz->chat-mvflr6cn",
         "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
-        "source": "chat-mvfj773t",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
-        "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
       },
       {
-        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmtldvy"
-      },
-      {
-        "id": "edge:acp/devin-cli/ionian-helicopter->acp/devin-cli/bloom-settee",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/bloom-settee"
+        "id": "edge:chat-mvflr6cn->acp/devin-cli/sugary-shoemaker",
+        "source": "chat-mvflr6cn",
+        "target": "acp/devin-cli/sugary-shoemaker"
       }
-    ]
+    ],
+    "activeSchema": "swat-faisabilite",
+    "activeSchemaId": "schema-mvol0igy-397oo"
   }
 }
