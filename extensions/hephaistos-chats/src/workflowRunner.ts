@@ -75,45 +75,68 @@ export class WorkflowRunner {
 
         const outputs = new Map<string, string>();
         let failedSession: string | undefined;
-        for (const task of tasks) {
-            const { node, session, taskId } = task;
-            const sid = node.sessionId;
-            try {
-                this.onProgress({ runId, sessionId: sid, taskId, state: 'running' });
-                await callHpheTool('update_task', { task_id: taskId, status: 'in_progress' });
-                const upstream = graph.edges
-                    .filter((edge) => edge.target === sid && outputs.has(edge.source))
-                    .map((edge) => ({
-                        role: this.nodeFor(graph, edge.source).role,
-                        output: outputs.get(edge.source)!,
-                    }));
-                const prompt = buildWorkflowPrompt(node, upstream, graph);
-                const result = session
-                    ? await this.runSessionTurn(session, prompt)
-                    : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' };
-                const output = result.reply.trim().slice(0, MAX_OUTPUT_CHARS);
-                if (!output) throw new Error('L’agent a terminé sans réponse textuelle.');
+        let failureError: unknown;
+        const pending = new Set(tasks);
 
-                outputs.set(sid, output);
-                await callHpheTool('update_task', {
-                    task_id: taskId,
-                    status: 'completed',
-                    result: output.slice(0, 4000),
-                });
-                this.onProgress({
-                    runId,
-                    sessionId: sid,
-                    taskId,
-                    state: 'completed',
-                    message: output.slice(0, 180),
-                });
-            } catch (error) {
-                failedSession = sid;
-                const message = error instanceof Error ? error.message : String(error);
-                await this.updateTaskFailure(taskId, message);
-                this.onProgress({ runId, sessionId: sid, taskId, state: 'failed', message });
+        while (pending.size > 0 && !failedSession) {
+            // Un nœud est prêt si TOUTES ses dépendances amont (parents dans graph.edges) ont produit leur sortie
+            const readyTasks = [...pending].filter((task) => {
+                const parentEdges = graph.edges.filter((e) => e.target === task.node.sessionId);
+                return parentEdges.every((e) => outputs.has(e.source));
+            });
+
+            if (!readyTasks.length) {
+                const stuck = [...pending][0];
+                failedSession = stuck.node.sessionId;
+                failureError = new Error(`Dépendances amont non résolues pour ${failedSession}.`);
                 break;
             }
+
+            // Exécution concurrente de tous les nœuds prêts du niveau topologique courant
+            await Promise.all(readyTasks.map(async (task) => {
+                pending.delete(task);
+                const { node, session, taskId } = task;
+                const sid = node.sessionId;
+                if (failedSession) return;
+                try {
+                    this.onProgress({ runId, sessionId: sid, taskId, state: 'running' });
+                    await callHpheTool('update_task', { task_id: taskId, status: 'in_progress' });
+                    const upstream = graph.edges
+                        .filter((edge) => edge.target === sid && outputs.has(edge.source))
+                        .map((edge) => ({
+                            role: this.nodeFor(graph, edge.source).role,
+                            output: outputs.get(edge.source)!,
+                        }));
+                    const prompt = buildWorkflowPrompt(node, upstream, graph);
+                    const result = session
+                        ? await this.runSessionTurn(session, prompt)
+                        : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' };
+                    const output = result.reply.trim().slice(0, MAX_OUTPUT_CHARS);
+                    if (!output) throw new Error('L’agent a terminé sans réponse textuelle.');
+
+                    outputs.set(sid, output);
+                    await callHpheTool('update_task', {
+                        task_id: taskId,
+                        status: 'completed',
+                        result: output.slice(0, 4000),
+                    });
+                    this.onProgress({
+                        runId,
+                        sessionId: sid,
+                        taskId,
+                        state: 'completed',
+                        message: output.slice(0, 180),
+                    });
+                } catch (error) {
+                    if (!failedSession) {
+                        failedSession = sid;
+                        failureError = error;
+                    }
+                    const message = error instanceof Error ? error.message : String(error);
+                    await this.updateTaskFailure(taskId, message);
+                    this.onProgress({ runId, sessionId: sid, taskId, state: 'failed', message });
+                }
+            }));
         }
 
         if (failedSession) {
@@ -128,7 +151,7 @@ export class WorkflowRunner {
                     message: `Bloqué par l’échec de ${failedSession}.`,
                 });
             }
-            throw new Error(`Le flux s’est arrêté sur ${failedSession}.`);
+            throw (failureError instanceof Error ? failureError : new Error(`Le flux s’est arrêté sur ${failedSession}.`));
         }
     }
 

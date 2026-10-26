@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T16:54:48.222Z",
+  "updatedAt": "2026-10-26T17:05:00.562Z",
   "core": {
     "devin": [
       {
@@ -64,8 +64,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Codeur",
-        "hidden": true,
+        "role": "Analyste-Architecture",
+        "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -73,7 +73,7 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Reviewer",
+        "role": "Analyste-API-Devin",
         "hidden": false,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "amber-agent"
@@ -83,7 +83,7 @@
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
         "role": "Auditeur-securite",
-        "hidden": false,
+        "hidden": true,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "urban-agent"
       },
@@ -91,7 +91,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Sentinelle",
+        "role": "Synthese-Faisabilite",
         "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
@@ -100,8 +100,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Verif-Submodules",
-        "hidden": false,
+        "role": "Analyste-Secu-Packaging",
+        "hidden": true,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "xenial-agent"
       },
@@ -170,127 +170,107 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-code-review",
+    "name": "swat-plan-plugin",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadrage de l'inspection : cible la branche, le commit ou les fichiers à auditer, définit le périmètre d'exigence et distribue le travail aux 3 auditeurs parallèles.",
+        "task": "Cadrage du PRD : définit le scope fonctionnel et distribue les 3 pans de spécifications parallèles.",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -660,
+          "x": -440,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvmw5chd",
-        "role": "Reviewer",
-        "task": "Audit Qualité & Lisibilité : analyse le diff pour la maintenabilité, les antipatrons, la clarté algorithmique et la conformité aux conventions clean-code du projet.",
+        "sessionId": "chat-mvmw59wa",
+        "role": "Plan-Architecture",
+        "task": "Spécification Architecture : découpage des modules, communication IPC/pipe, points d'extension.",
         "skills": [
-          "code-review-checklist",
-          "clean-code"
+          "architecture",
+          "api-patterns"
         ],
-        "title": "amber-agent",
+        "title": "keen-agent",
         "position": {
-          "x": -220,
+          "x": -110,
           "y": -220
         }
       },
       {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Auditeur-securite",
-        "task": "Audit Sécurité & Injections : analyse statique approfondie des risques OWASP, des injections, des fuites de secrets/tokens et des codepoints bidi/zero-width.",
+        "sessionId": "chat-mvmw5chd",
+        "role": "Plan-Normalisation",
+        "task": "Spécification Compétences : normalisation des skills, commandes et formats de prompts.",
         "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
+          "clean-code",
+          "plan-writing"
         ],
-        "title": "urban-agent",
+        "title": "amber-agent",
         "position": {
-          "x": -220,
+          "x": -110,
           "y": 0
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "Arbitrage d'audit central : centralise les conclusions des 3 auditeurs et émet le verdict officiel d'approbation (PASS, WARNINGS ou CRITICAL_REJECT).",
+        "role": "Redacteur-PRD",
+        "task": "Consolidation PRD Maître : fusionne les 3 PRDs en un prd-master.md et plan d'action ordonné.",
         "skills": [
-          "vulnerability-scanner",
-          "code-review-checklist"
+          "plan-writing"
         ],
         "title": "keen-agent",
         "position": {
-          "x": 220,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "chat-mvfj773t",
-        "role": "Verif-Submodules",
-        "task": "Audit Git & Sous-modules : contrôle la cohérence des commits, la propreté de l'historique git et l'intégrité des pointeurs de sous-modules.",
-        "skills": [
-          "git-history",
-          "lint-and-validate"
-        ],
-        "title": "xenial-agent",
-        "position": {
-          "x": 550,
+          "x": 330,
           "y": 0
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Rapport d'audit Obsidian : rédige la fiche de synthèse de revue dans le Vault Obsidian avec la liste des points forts, dettes et recommandations.",
+        "task": "Documentation PRD Obsidian : consigne le plan dans le Vault Obsidian sous docs/plan/.",
         "skills": [
           "obsidian",
           "vault-ingest"
         ],
         "title": "rapid-agent",
         "position": {
-          "x": 880,
-          "y": -110
+          "x": 660,
+          "y": -154
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:rev-orch->reviewer",
+        "id": "edge:plan-orch->archi",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:plan-orch->norm",
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmw5chd"
       },
       {
-        "id": "edge:rev-orch->secu",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmtldvy"
+        "id": "edge:plan-archi->redacteur",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:rev-reviewer->sentinelle",
+        "id": "edge:plan-norm->redacteur",
         "source": "chat-mvmw5chd",
         "target": "chat-mvfqytbz"
       },
       {
-        "id": "edge:rev-secu->sentinelle",
-        "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:rev-sentinelle->git",
+        "id": "edge:plan-redacteur->doc",
         "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:rev-git->doc",
-        "source": "chat-mvfj773t",
         "target": "chat-mvflr6cn"
       }
     ],
-    "activeSchema": "swat-code-review",
-    "activeSchemaId": "schema-l0xbhhko-gquy3"
+    "activeSchema": "swat-plan-plugin",
+    "activeSchemaId": "schema-mvol90md-pqwtv"
   }
 }
