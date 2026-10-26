@@ -37,6 +37,7 @@ interface AgentData extends Record<string, unknown> {
     skills?: string[];
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
+    onPoint?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
     iconTheme?: string;
     isEntry: boolean;
@@ -163,6 +164,12 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
             <div className="flow-node-heading">
                 <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
+                <button
+                    type="button"
+                    className="flow-node-point"
+                    title={`Pointer ${data.title} vers l'agent référent`}
+                    onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
+                >⌖</button>
             </div>
             {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
@@ -310,11 +317,15 @@ function Workspace(): React.JSX.Element {
                             selected: prev?.selected ?? node.selected,
                             dragging: prev?.dragging ?? node.dragging,
                             position: prev?.dragging ? prev.position : node.position,
-                            data: { ...node.data, onSkillDrop: (skill: string) => assignSkill(node.id, skill) },
+                            data: {
+                                ...node.data,
+                                onSkillDrop: (skill: string) => assignSkill(node.id, skill),
+                                onPoint: () => pointAgent(node.id),
+                            },
                         };
                     });
                 });
-                setEdges(view.edges.map(e=>({ ...e, interactionWidth: 1, selectable: false })));
+                setEdges(view.edges.map(e=>({ ...e, selectable: true })));
                 setWorkflowName(view.graph.name);
                 setActiveSchema(view.graph.activeSchema);
                 setActiveSchemaId(view.graph.activeSchemaId);
@@ -441,6 +452,10 @@ function Workspace(): React.JSX.Element {
             return next;
         });
     }, [postWorkflowSave, setNodes]);
+
+    const pointAgent = useCallback((sessionId: string) => {
+        vscode.postMessage({ type: 'point_agent', sessionId });
+    }, []);
 
     const onConnect = useCallback((connection: Connection) => {
         const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, edges);

@@ -78,6 +78,12 @@ export class ChatPanel {
         return normalizeIconTheme(context.workspaceState.get('hephaistosChats.iconTheme'));
     }
 
+    /** Pré-remplit la saisie d'une fenêtre chat ouverte (puce de pointage ⌖). */
+    static prefill(sessionId: string, text: string): void {
+        const chat = ChatPanel.openById.get(sessionId);
+        if (chat) void chat.panel.webview.postMessage({ type: 'prefill', text });
+    }
+
     /** Rebascule les URI d'icônes des chats ouverts sans recharger le HTML. */
     static refreshIcons(context: vscode.ExtensionContext): void {
         const theme = ChatPanel.iconTheme(context);
@@ -159,6 +165,10 @@ export class ChatPanel {
         }
         if (message.type === 'ready' || message.type === 'ping') {
             await this.reload(message.type === 'ping');
+            return;
+        }
+        if (message.type === 'point_agent') {
+            void vscode.commands.executeCommand('hephaistosChats.pointAgent', this.session.id);
             return;
         }
         if (message.type === 'meta' && message.mode && message.provider && message.model) {

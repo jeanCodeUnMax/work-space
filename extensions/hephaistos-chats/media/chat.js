@@ -5,6 +5,10 @@
     const providerBtn = document.getElementById('providerBtn');
     const providerName = document.getElementById('providerName');
     const historyBtn = document.getElementById('historyBtn');
+    const pointBtn = document.getElementById('pointBtn');
+    if (pointBtn) {
+        pointBtn.onclick = () => vscode.postMessage({ type: 'point_agent' });
+    }
     const historyMenu = document.getElementById('historyMenu');
     const historyList = document.getElementById('historyList');
 
@@ -674,6 +678,14 @@
             if (Array.isArray(event.data.iconFiles)) window.__agentIcons = event.data.iconFiles;
             if (Array.isArray(event.data.fallbackFiles)) window.__agentsFallbackIcons = event.data.fallbackFiles;
             if (state.session) render();
+            return;
+        }
+
+        if (event.data && event.data.type === 'prefill') {
+            draft.value = event.data.text || '';
+            autoResizeTextarea();
+            updateComposerState();
+            draft.focus();
             return;
         }
 
