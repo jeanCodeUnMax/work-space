@@ -521,9 +521,24 @@ export function activate(context: vscode.ExtensionContext): void {
         try {
             skills = fs.readdirSync(skillsDir, { withFileTypes: true })
                 .filter((entry) => entry.isDirectory())
-                .map((entry) => entry.name)
-                .sort();
+                .map((entry) => entry.name);
         } catch { /* pas de dossier skills */ }
+        // Union avec les skills réellement portées par les blocs + roster :
+        // les puces d'expertise des cartes (vulnerability-scanner,
+        // database-design...) doivent toutes etre glissables, pas seulement
+        // celles de .agent/skills.
+        const skillSet = new Set(skills);
+        for (const n of graph?.nodes || []) {
+            for (const s of n.skills || []) skillSet.add(String(s));
+        }
+        try {
+            const rosterPath = workspaceRoot ? path.join(workspaceRoot, '.agent', 'workspace-roster.json') : '';
+            const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+            for (const mems of Object.values(roster.core || {}) as { skills?: string[] }[][]) {
+                for (const m of mems) for (const s of m.skills || []) skillSet.add(String(s));
+            }
+        } catch { /* roster absent */ }
+        skills = [...skillSet].sort((a, b) => a.localeCompare(b, 'fr'));
         // Palette AGENTS : le referent (Devin live) + tous les agents connus
         // (noeuds du graphe avec leur role + sessions chat non placees) —
         // glissables sur un bloc pour l'editer ou sur le canvas pour creer.
@@ -563,19 +578,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         // Palette roles = les vrais roles metier du graphe + roster (puces
         // d'expertise des blocs), pas une liste statique.
-        const roleSet = new Set<string>();
-        for (const n of graph?.nodes || []) {
-            if (n.role) roleSet.add(String(n.role));
-        }
-        try {
-            const rosterPath = workspaceRoot ? path.join(workspaceRoot, '.agent', 'workspace-roster.json') : '';
-            const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
-            for (const mems of Object.values(roster.core || {}) as { role?: string }[][]) {
-                for (const m of mems) if (m.role) roleSet.add(String(m.role));
-            }
-        } catch { /* roster absent */ }
-        if (!roleSet.size) ['Devin', 'Orchestrateur', 'Codeur', 'Testeur', 'Reviewer'].forEach((r) => roleSet.add(r));
-        const roles = [...roleSet].sort((a, b) => a.localeCompare(b, 'fr'));
+        const roles = ['Devin', 'Antigravity', 'Codeur', 'Reviewer', 'Documentaliste', 'Testeur', 'Chercheur', 'Architecte', 'DevOps'];
         return {
             roles,
             skills,
