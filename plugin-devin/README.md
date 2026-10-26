@@ -1,31 +1,29 @@
-# Plugin Hephaistos Devin
+# Hephaistos Devin Plugin
 
 ## Installation
 
-1. Placer le dossier `plugin-devin` dans le dossier des plugins de Devin.
-2. S'assurer que `hphe-mcp.exe` est accessible via la variable d'environnement `HPHE_MCP_PATH` ou dans `<workspace>/hphe/target/release/`.
-3. Redémarrage de Devin.
+1. Exécute `.\install.ps1` (PowerShell) en tant qu'utilisateur standard.
+2. Le script vérifie l'accessibilité de `hphe-mcp.exe` (variable `HPHE_MCP_PATH` ou fallback `hphe/target/release`).
+3. Il copie le plugin dans le dossier cible (`%USERPROFILE%\.hephaistos-devin` par défaut).
+4. Test `node --check` sur tous les `.js` du dossier `src`.
+5. Demande le consentement élévation NTFS (lecture seule index $MFT).
+6. Le plugin est prêt à l'emploi.
 
-## Usage
+## Utilisation
 
-- `activity_feed` : affiche les N dernières entrées du journal partagé `.agent/comms.jsonl`.
-- `execute_skill_<nom>` : exécute une skill normalisée (jointes, binome, flux, bleubite-dispatch).
-- Les outils MCP sont exposés via JSON-RPC stdio (initialize, tools/list, tools/call).
+- Commandes `execute_skill_*` dispatchent vers les skills Hephaistos.
+- `activity_feed` affiche le journal partagé `.agent/comms.jsonl`.
+- Les commandes `mcp_<outil>` proxyent vers `hphe-mcp.exe` via JSON-RPC stdio.
+
+## Packaging / Installation complète
+
+Voir `install.ps1` pour les détails de déploiement, vérification des dépendances et consentement NTFS. Le manifeste `manifest.json` declare 65 outils MCP, les compétences et les commandes d'activité.
 
 ## Permissions
 
-- `ntfsElevation` : requis uniquement pour la lecture de l'index NTFS `$MFT` via `everything_search` dans le MCP. Le plugin n'écrit jamais directement en NTFS élevé. Un consentement d'installation est demandé.
+- `ntfsElevation` requis uniquement pour la lecture de l'index NTFS `$MFT` via le MCP ; aucun écriture directe n'est effectuée.
+- `consentRequired` est `true` lors de l'installation.
 
-## Dossiers clés
+---
 
-- `src/comms.js` : lecteur journal partagé (JSONL) avec filtrage sensible.
-- `src/activity-panel.js` : formatage affichage des entrées.
-- `src/index.js` : enregistrement des commandes du plugin.
-- `skills-to-plugin-commands.json` : mapping skill -> commande.
-- `plugin.json` : manifeste plugin.
-
-## Dépannage
-
-- Vérifier que `hphe-mcp.exe` tourne et retourne des outils via `tools/list`.
-- Les logs d'activité apparaissent dans la console du plugin au lancement de `activity_feed`.
-- En cas d'erreur JSON-RPC, vérifier la console pour les détails.
+*Generated 2026-10-25*

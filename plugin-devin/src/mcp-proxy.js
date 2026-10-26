@@ -119,6 +119,19 @@ function handleJsonRpcMessage(parsed) {
   }
 }
 
+// Outils en ecriture : confirm:true dans manifest.json -> exige args.__confirmed
+// Le manifeste nomme les commandes "mcp_<outil>" ; callTool recoit "<outil>".
+const CONFIRM_TOOLS = (() => {
+  try {
+    const manifest = require('../manifest.json');
+    return new Set(
+      Object.keys(manifest.commands || {})
+        .filter((k) => manifest.commands[k].confirm)
+        .map((k) => k.replace(/^mcp_/, ''))
+    );
+  } catch { return new Set(); }
+})();
+
 // Validation d'args : whitelist de types par outil (TOOL_SCHEMAS) minimale
 function validateArgs(toolName, args) {
   const schema = TOOL_SCHEMAS[toolName];
@@ -141,6 +154,14 @@ function validateArgs(toolName, args) {
 
 // Envoie un message JSON-RPC et attend la réponse par id
 function callTool(toolName, args = {}) {
+  // Outil en ecriture sans confirmation explicite -> refus fail-closed
+  if (CONFIRM_TOOLS.has(toolName) && args.__confirmed !== true) {
+    return Promise.reject(new Error('Tool "' + toolName + '" requires confirmation (pass __confirmed:true after user consent)'));
+  }
+  if (args.__confirmed !== undefined) {
+    args = { ...args };
+    delete args.__confirmed;
+  }
   // Validation des args avant d'envoyer
   if (!validateArgs(toolName, args)) {
     return Promise.reject(new Error('Invalid arguments for tool "' + toolName + '": ' + JSON.stringify(args)));

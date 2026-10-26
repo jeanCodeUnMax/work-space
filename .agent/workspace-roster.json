@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T02:30:24.690Z",
+  "updatedAt": "2026-10-26T02:38:39.047Z",
   "core": {
     "devin": [
       {
@@ -170,7 +170,7 @@
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "MISSION J4 — SYNCHRO ETAT extension<->plugin. Lis .agent/comms.jsonl (format {ts,src,dst,kind,text}). Implemente dans plugin-devin/: src/comms.js (reader: tail 20 dernieres entrees, filtre par kind/src/dst selon permissions, parse JSONL robuste ligne par ligne), src/activity-panel.js (formatage affichage: timestamp+src->dst+texte tronque), integration dans src/index.js (commande activity_feed). Filtre permissions: masque kinds sensibles (secrets, wake-acp payloads). Livrable PRD/implementation/j4-codeur.md. Termine: LIVRABLE-CODEUR-J4-OK",
+        "task": "MISSION J5 — PACKAGING plugin-devin: bundle manifest.json (58 outils declarent), install.ps1 (install environnement propre), test-post-install.js (verif plugin.json valide + MCP init + activity_feed), README install. Livrable PRD/implementation/j5-codeur.md",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
@@ -184,7 +184,7 @@
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "MISSION J4 — REVIEW du code J4 plugin-devin/ (src/comms.js, src/activity-panel.js, index.js). Verifie: parse JSONL robuste, tail efficace (pas lecture 89Ko entier), filtrage permissions, pas de crash sur lignes corrompues. Verdict VALIDE/CORRECTIONS dans PRD/implementation/j4-review.md. Termine: LIVRABLE-REVIEW-J4-OK",
+        "task": "MISSION J5 — REVIEW packaging plugin-devin/ (manifest.json, install.ps1, test-post-install.js). Verdict VALIDE/CORRECTIONS dans PRD/implementation/j5-review.md",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
@@ -198,7 +198,7 @@
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "MISSION J4 — AUDIT SECURITE J4 plugin-devin/: lecture comms.jsonl (path traversal?), filtrage permissions (kinds sensibles masques?), pas d'exfiltration du journal, permissions NTFS. Verdict PASS/FAIL dans PRD/implementation/j4-audit.md. Termine: LIVRABLE-AUDIT-J4-OK",
+        "task": "MISSION J5 — AUDIT SECU packaging plugin-devin/: manifeste 58 outils (permissions minima), install.ps1 (pas d'exec aveugle), test script safe. Verdict PASS/FAIL dans PRD/implementation/j5-audit.md",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
@@ -212,7 +212,7 @@
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "MISSION J4 — SENTINELLE: arbitre review+audit J4, GO/GO-conditions/NO-GO dans PRD/implementation/j4-sentinelle.md. Termine: LIVRABLE-SENTINELLE-J4-OK",
+        "task": "MISSION J5 — SENTINELLE arbitrage packaging. GO/GO-conditions/NO-GO dans PRD/implementation/j5-sentinelle.md",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
@@ -226,7 +226,7 @@
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "MISSION J4 — PREFLIGHT git: fichiers a committer (plugin-devin/ J4, PRD/implementation/j4-*.md), exclusions, sous-modules. Rapport PRD/implementation/j4-preflight.md",
+        "task": "MISSION J5 — PREFLIGHT git packaging. Rapport PRD/implementation/j5-preflight.md",
         "skills": [
           "lint-and-validate",
           "git-history"
@@ -254,7 +254,7 @@
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "MISSION J4 — DOC: note vault du jalon J4 dans PRD/implementation/j4-doc.md apres integration",
+        "task": "MISSION J5 — DOC vault J5 dans PRD/implementation/j5-doc.md apres integration",
         "skills": [
           "obsidian",
           "vault-ingest"
