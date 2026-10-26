@@ -38,6 +38,7 @@ interface AgentData extends Record<string, unknown> {
     mcps?: string[];
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
+    onMcpDrop?: (mcp: string) => void;
     onAgentDrop?: (agent: PaletteAgent) => void;
     onRoleDrop?: (role: string) => void;
     onPoint?: () => void;
@@ -91,6 +92,7 @@ interface PaletteAgent {
 interface WorkflowCatalog {
     roles: string[];
     skills: string[];
+    mcps?: string[];
     providers: { id: string; label: string }[];
     agents?: PaletteAgent[];
 }
@@ -163,12 +165,20 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
             onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('application/x-hph-skill')
                     || event.dataTransfer.types.includes('application/x-hph-agent')
+                    || event.dataTransfer.types.includes('application/x-hph-mcp')
                     || event.dataTransfer.types.includes('application/x-hph-role')) {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = 'copy';
                 }
             }}
             onDrop={(event) => {
+                const mcp = event.dataTransfer.getData('application/x-hph-mcp');
+                if (mcp) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    data.onMcpDrop?.(mcp);
+                    return;
+                }
                 const role = event.dataTransfer.getData('application/x-hph-role');
                 if (role) {
                     event.preventDefault();
@@ -296,6 +306,10 @@ function Workspace(): React.JSX.Element {
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
     const [skillQuery, setSkillQuery] = useState('');
     const [roleQuery, setRoleQuery] = useState('');
+    const [mcpQuery, setMcpQuery] = useState('');
+    const [agentQuery, setAgentQuery] = useState('');
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+    const togglePalette = (key: string) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
     const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>>([]);
@@ -356,6 +370,7 @@ function Workspace(): React.JSX.Element {
                             data: {
                                 ...node.data,
                                 onSkillDrop: (skill: string) => assignSkill(node.id, skill),
+                                onMcpDrop: (mcp: string) => assignMcp(node.id, mcp),
                                 onAgentDrop: (agent: PaletteAgent) => {
                                     vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
                                 },
@@ -485,6 +500,18 @@ function Workspace(): React.JSX.Element {
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, skills: [...new Set([...(n.data.skills || []), skill])] } }
+                : n);
+            const s = stateRef.current;
+            stateRef.current = { ...s, nodes: next };
+            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
+            return next;
+        });
+    }, [postWorkflowSave, setNodes]);
+
+    const assignMcp = useCallback((id: string, mcp: string) => {
+        setNodes((current) => {
+            const next = current.map((n) => n.id === id
+                ? { ...n, data: { ...n.data, mcps: [...new Set([...(n.data.mcps || []), mcp])].slice(0, 8) } }
                 : n);
             const s = stateRef.current;
             stateRef.current = { ...s, nodes: next };
@@ -1032,71 +1059,68 @@ function Workspace(): React.JSX.Element {
                         </div>
                     )}
                     {completedCount > 0 && <div className="run-summary">{completedCount} étape{completedCount > 1 ? 's' : ''} terminée{completedCount > 1 ? 's' : ''} dans cette exécution.</div>}
-                    <div className="skill-palette">
-                        <input
-                            className="skill-filter"
-                            type="text"
-                            placeholder="Filtrer les competences..."
-                            value={skillQuery}
-                            onChange={(event) => setSkillQuery(event.target.value)}
-                        />
-                        <span className="inspector-kicker">COMPETENCES — glisser sur un agent</span>
-                        <div className="skill-palette-list">
-                            {catalog.skills.length === 0 && <span className="skill-empty">Aucun skill dans .agent/skills</span>}
-                            {catalog.skills.filter((skill) => !skillQuery || skill.toLowerCase().includes(skillQuery.toLowerCase())).map((skill) => (
-                                <span
-                                    key={skill}
-                                    className="skill-chip draggable"
-                                    draggable
-                                    onDragStart={(event) => {
-                                        event.dataTransfer.setData('application/x-hph-skill', skill);
-                                        event.dataTransfer.effectAllowed = 'copy';
-                                    }}
-                                >{skill}</span>
-                            ))}
+                    {([
+                        { key: 'competences', label: 'COMPÉTENCES — glisser sur un agent', query: skillQuery, setQuery: setSkillQuery, placeholder: 'Filtrer les compétences…' },
+                        { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
+                        { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
+                        { key: 'mcps', label: 'MCPS — glisser sur un bloc pour lui donner les outils du serveur', query: mcpQuery, setQuery: setMcpQuery, placeholder: 'Filtrer les serveurs MCP…' },
+                    ] as const).map((palette) => (
+                        <div className={`skill-palette${collapsed[palette.key] ? ' collapsed' : ''}`} key={palette.key}>
+                            <button
+                                type="button"
+                                className="inspector-kicker palette-toggle"
+                                onClick={() => togglePalette(palette.key)}
+                                title={collapsed[palette.key] ? 'Déployer' : 'Replier'}
+                            >{collapsed[palette.key] ? '▸' : '▾'} {palette.label}</button>
+                            {!collapsed[palette.key] && (
+                                <>
+                                    <input
+                                        className="skill-filter"
+                                        type="text"
+                                        placeholder={palette.placeholder}
+                                        value={palette.query}
+                                        onChange={(event) => palette.setQuery(event.target.value)}
+                                    />
+                                    <div className="skill-palette-list">
+                                        {palette.key === 'competences' && (<>
+                                            {catalog.skills.length === 0 && <span className="skill-empty">Aucun skill dans .agent/skills</span>}
+                                            {catalog.skills.filter((skill) => !palette.query || skill.toLowerCase().includes(palette.query.toLowerCase())).map((skill) => (
+                                                <span key={skill} className="skill-chip draggable" draggable
+                                                    onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-skill', skill); event.dataTransfer.effectAllowed = 'copy'; }}
+                                                >{skill}</span>
+                                            ))}
+                                        </>)}
+                                        {palette.key === 'roles' && (<>
+                                            {catalog.roles.filter((role) => !palette.query || role.toLowerCase().includes(palette.query.toLowerCase())).map((role) => (
+                                                <span key={role} className="skill-chip draggable role-chip" draggable
+                                                    onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-role', role); event.dataTransfer.effectAllowed = 'copy'; }}
+                                                >{role}</span>
+                                            ))}
+                                        </>)}
+                                        {palette.key === 'agents' && (<>
+                                            {(catalog.agents || []).filter((agent) => !palette.query || `${agent.role} ${agent.title} ${agent.provider}`.toLowerCase().includes(palette.query.toLowerCase())).map((agent) => (
+                                                <span key={agent.sessionId}
+                                                    className={`skill-chip draggable role-chip${agent.referent ? ' referent' : ''}${agent.placed ? ' placed' : ''}`}
+                                                    title={`${agent.title} · ${agent.provider}${agent.model ? ' · ' + agent.model : ''}`}
+                                                    draggable
+                                                    onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-agent', JSON.stringify(agent)); event.dataTransfer.effectAllowed = 'copy'; }}
+                                                >{agent.role} · {agent.title}</span>
+                                            ))}
+                                            {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
+                                        </>)}
+                                        {palette.key === 'mcps' && (<>
+                                            {(catalog.mcps || []).filter((mcp) => !palette.query || mcp.toLowerCase().includes(palette.query.toLowerCase())).map((mcp) => (
+                                                <span key={mcp} className="skill-chip draggable mcp-chip" title={`Serveur MCP : ${mcp}`} draggable
+                                                    onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-mcp', mcp); event.dataTransfer.effectAllowed = 'copy'; }}
+                                                >⛁ {mcp}</span>
+                                            ))}
+                                            {(catalog.mcps || []).length === 0 && <span className="skill-empty">Aucun serveur dans le broker mcp-mux.</span>}
+                                        </>)}
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    </div>
-                    <div className="skill-palette role-palette">
-                        <input
-                            className="skill-filter"
-                            type="text"
-                            placeholder="Filtrer les roles..."
-                            value={roleQuery}
-                            onChange={(event) => setRoleQuery(event.target.value)}
-                        />
-                        <span className="inspector-kicker">RÔLES — glisser sur un bloc pour l'éditer, sur le canvas pour créer</span>
-                        <div className="skill-palette-list">
-                            {catalog.roles.filter((role) => !roleQuery || role.toLowerCase().includes(roleQuery.toLowerCase())).map((role) => (
-                                <span
-                                    key={role}
-                                    className="skill-chip draggable role-chip"
-                                    draggable
-                                    onDragStart={(event) => {
-                                        event.dataTransfer.setData('application/x-hph-role', role);
-                                        event.dataTransfer.effectAllowed = 'copy';
-                                    }}
-                                >{role}</span>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="skill-palette agent-palette">
-                        <span className="inspector-kicker">AGENTS — glisser sur un bloc pour l'éditer, sur le canvas pour l'ajouter</span>
-                        <div className="skill-palette-list">
-                            {(catalog.agents || []).map((agent) => (
-                                <span
-                                    key={agent.sessionId}
-                                    className={`skill-chip draggable role-chip${agent.referent ? ' referent' : ''}${agent.placed ? ' placed' : ''}`}
-                                    title={`${agent.title} · ${agent.provider}${agent.model ? ' · ' + agent.model : ''}`}
-                                    draggable
-                                    onDragStart={(event) => {
-                                        event.dataTransfer.setData('application/x-hph-agent', JSON.stringify(agent));
-                                        event.dataTransfer.effectAllowed = 'copy';
-                                    }}
-                                >{agent.role} · {agent.title}</span>
-                            ))}
-                            {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
-                        </div>
-                    </div>
+                    ))}
                 </aside>
                 {inspectorCollapsed && (
                     <button

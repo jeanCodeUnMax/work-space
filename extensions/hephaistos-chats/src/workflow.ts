@@ -29,6 +29,7 @@ export interface PaletteAgent {
 export interface WorkflowCatalog {
     roles: string[];
     skills: string[];
+    mcps?: string[];
     providers: { id: string; label: string }[];
     agents?: PaletteAgent[];
 }
