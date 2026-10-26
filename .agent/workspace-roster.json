@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T01:20:17.707Z",
+  "updatedAt": "2026-10-26T01:44:08.005Z",
   "core": {
     "devin": [
       {
@@ -48,7 +48,7 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Codeur",
+        "role": "Plan-Architecture",
         "hidden": false
       },
       {
@@ -56,7 +56,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Reviewer",
+        "role": "Plan-Normalisation",
         "hidden": false
       },
       {
@@ -64,7 +64,7 @@
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Sentinelle",
+        "role": "Redacteur-PRD",
         "hidden": false
       },
       {
@@ -80,7 +80,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "model": "openai/gpt-oss-20b",
-        "role": "Verif-Submodules",
+        "role": "Plan-Secu-Perms",
         "hidden": false
       },
       {
@@ -156,113 +156,113 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Supervision + rapport final",
+        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -1474.6381594724255,
-          "y": -104.76560297576398
+          "x": -520,
+          "y": -140
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "Analyse du diff (selecteur theme icones + 464 icons + skill flux) -> .agent/flux/analyse.md",
+        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -1178,
-          "y": -104
+          "x": -220,
+          "y": -140
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "Revue qualite du diff -> verdict REVIEW VALIDE/FAIL",
+        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
         ],
         "title": "amber-agent",
         "position": {
-          "x": -878,
-          "y": -104
+          "x": 80,
+          "y": -140
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audit securite du diff -> verdict AUDIT PASS/FAIL",
+        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
         "title": "urban-agent",
         "position": {
-          "x": -566,
-          "y": -90
+          "x": 380,
+          "y": -140
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Arbitrage GO/NO-GO sur verdicts amont",
+        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -1459,
-          "y": 131
+          "x": -520,
+          "y": 180
         }
       },
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "Preflight git : exclusions (.agent/flux/, vsix) + plan staging",
+        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
         "skills": [
           "lint-and-validate",
           "git-history"
         ],
         "title": "xenial-agent",
         "position": {
-          "x": -1173,
-          "y": 129
+          "x": -220,
+          "y": 180
         }
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "Stage+commit+push 2 remotes si GO",
+        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
         "skills": [
           "lint-and-validate",
           "testing-patterns"
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": -888,
-          "y": 129
+          "x": 80,
+          "y": 180
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Note vault du run -> .agent/flux/doc-flux.md",
+        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
         "skills": [
           "obsidian",
           "vault-ingest"
         ],
         "title": "rapid-agent",
         "position": {
-          "x": -573,
-          "y": 129
+          "x": 380,
+          "y": 180
         }
       }
     ],
@@ -307,6 +307,8 @@
         "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
       }
-    ]
+    ],
+    "activeSchema": "swat-orchestrateur",
+    "activeSchemaId": "schema-yy5cfkox-i1t73"
   }
 }
