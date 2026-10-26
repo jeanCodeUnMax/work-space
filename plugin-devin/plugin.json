@@ -1,0 +1,28 @@
+{
+  "id": "hephaistos-devin",
+  "name": "Hephaistos Devin Plugin",
+  "version": "0.1.0",
+  "description": "Plugin Devin wrapping hphe-mcp.exe JSON-RPC tools, with normalized skill commands and NTFS elevation.",
+  "commands": {
+    "execute_skill_jointes": { "desc": "Execute jointes skill" },
+    "execute_skill_binome": { "desc": "Execute binome skill" },
+    "execute_skill_flux": { "desc": "Execute flux skill" },
+    "execute_skill_bleubite-dispatch": { "desc": "Execute bleubite-dispatch skill" },
+    "mcp_call": { "desc": "Generic MCP tool call proxy" }
+  },
+  "permissions": [
+    {
+      "ntfsElevation": {
+        "required": true,
+        "scope": ["read"],
+        "paths": ["<workspace>"],
+        "justification": "Requis pour everything_search (index NTFS $MFT en lecture seule via hphe-mcp.exe); le plugin n'ecrit jamais directement en NTFS elevate"
+      },
+      "consentRequired": true
+    }
+  ],
+  "mcpProxy": {
+    "args": [],
+    "pathEnv": "HPHE_MCP_PATH"
+  }
+}

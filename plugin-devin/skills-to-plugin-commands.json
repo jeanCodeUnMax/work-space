@@ -1,0 +1,18 @@
+{
+  "execute_skill_jointes": {
+    "input": { "agent": "string", "task": "string" },
+    "output": { "result": "string", "status": "string" }
+  },
+  "execute_skill_binome": {
+    "input": { "master": "string", "assistant": "string" },
+    "output": { "result": "string", "status": "string" }
+  },
+  "execute_skill_flux": {
+    "input": { "prompt": "string" },
+    "output": { "result": "string", "status": "string" }
+  },
+  "execute_skill_bleubite-dispatch": {
+    "input": { "session": "string", "prompt": "string" },
+    "output": { "result": "string", "status": "string" }
+  }
+}

@@ -122,7 +122,7 @@ function Get-Field {
 }
 
 function ConvertTo-UtcDateTime {
-  param($Value, [DateTime]$Fallback)
+  param($Value, $Fallback = $null)
   if ($Value -is [DateTime]) { return $Value.ToUniversalTime() }
   $parsed = [DateTimeOffset]::MinValue
   $styles = [System.Globalization.DateTimeStyles]::AssumeUniversal
@@ -547,6 +547,17 @@ function Invoke-Snapshot {
     if ($healthResult.status -eq 'healthy' -and $healthResult.pipe_connected) { $health = 'healthy' }
     else { $health = 'unhealthy' }
   } catch { $health = 'unreachable' }
+  if ($health -ne 'healthy') {
+    try {
+      & schtasks.exe /Run /TN '\hphe-indexd' *> $null
+      Write-Log -Level 'info' -Category 'hphe_indexd_auto_revive' -Details @{}
+      $healthRaw = Invoke-NodeText -ScriptPath $script:McpCall -NodeArgs @(
+        'Hephaistos-everything-search', 'hphe_health', '{}'
+      )
+      $healthResult = $healthRaw | ConvertFrom-Json -AsHashtable
+      if ($healthResult.status -eq 'healthy' -and $healthResult.pipe_connected) { $health = 'healthy' }
+    } catch { }
+  }
   if ($health -in @('unhealthy', 'unreachable')) {
     Set-Alert -Key 'health:hphe' -Code 'hphe_health_failed'
   }

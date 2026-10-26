@@ -4,3 +4,6 @@ status.json
 icon-run.log
 workspace-roster.bak.js
 workspace-roster.fixed.bak.js
+mission-*.txt
+audit-input.txt
+ping-*.txt
