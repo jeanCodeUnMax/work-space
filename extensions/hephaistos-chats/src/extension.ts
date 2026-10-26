@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
 import { devinAgentPreference } from './devinConfig';
-import { ideAgentSessions, setDevinBridge } from './devinRoute';
+import { ideAgentSessions, injectIdeAgentText, setDevinBridge } from './devinRoute';
 import { FlowWorkspacePanel } from './flowWorkspacePanel';
 import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
@@ -53,7 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('hephaistosChats.newChat', (provider?: string) => openNew(provider)),
         vscode.commands.registerCommand('hephaistosChats.openChat', () => openLatest()),
         vscode.commands.registerCommand('hephaistosChats.openWorkspace', () => openWorkspace()),
-        vscode.commands.registerCommand('hephaistosChats.pointAgent', (sessionId?: string) => pointAgent(sessionId)),
+        vscode.commands.registerCommand('hephaistosChats.pointAgent', (sessionId?: string) => void pointAgent(sessionId)),
         vscode.window.registerWebviewPanelSerializer(ChatPanel.viewType, {
             async deserializeWebviewPanel(panel, state) {
                 const sessionId = (state as { sessionId?: string } | undefined)?.sessionId;
@@ -371,7 +371,7 @@ export function activate(context: vscode.ExtensionContext): void {
      * Le pointage est aussi journalisé sur .agent/comms.jsonl pour les
      * référents ACP (Devin/AGY) dont la saisie n'est pas pré-remplissable.
      */
-    function pointAgent(sessionId?: string): void {
+    async function pointAgent(sessionId?: string): Promise<void> {
         if (!sessionId || !workflowStore) return;
         try {
             const graph = workflowStore.load(store.list());
@@ -381,25 +381,61 @@ export function activate(context: vscode.ExtensionContext): void {
             const pointed = graph.nodes.find((node) => node.sessionId === sessionId);
             const label = pointed?.title || sessionId;
             const draft = `[Agent pointé : ${label} (${sessionId})${pointed?.role ? ` — ${pointed.role}` : ''}] `;
-            if (workspaceRoot) {
-                try {
-                    fs.appendFileSync(
-                        path.join(workspaceRoot, '.agent', 'comms.jsonl'),
-                        `${JSON.stringify({ src: 'chats', dst: referentId, kind: 'point', text: `Agent pointé : ${label} (${sessionId})`, at: new Date().toISOString() })}\n`,
-                    );
-                } catch { /* bus indisponible */ }
-            }
             const refSession = store.get(referentId);
             if (refSession || referentId.startsWith('chat-')) {
+                if (workspaceRoot) {
+                    try {
+                        fs.appendFileSync(
+                            path.join(workspaceRoot, '.agent', 'comms.jsonl'),
+                            `${JSON.stringify({ src: 'chats', dst: referentId, kind: 'point', text: `Agent pointé : ${label} (${sessionId})`, at: new Date().toISOString() })}\n`,
+                        );
+                    } catch { /* bus indisponible */ }
+                }
                 openSession(referentId, true);
                 ChatPanel.prefill(referentId, draft);
                 return;
             }
-            void openAcpSession(referentId);
-            void vscode.env.clipboard.writeText(draft.trim());
-            void vscode.window.showInformationMessage(
-                `Agent pointé : ${label} — référence copiée, colle-la dans le chat du référent.`,
-            );
+            // Référent ACP (Devin / AGY) : le nœud du schéma peut être une
+            // session périmée (ex. acp/devin-cli/ionian-helicopter) — on cible
+            // la session IDE LIVE focalisée, où l'utilisateur écrit vraiment.
+            const providerId = referentId.split('/')[1] || 'devin-cli';
+            const wsRoot = workspaceRoot || '';
+            let live: { sessionId: string; focused?: boolean }[] = [];
+            if (wsRoot) {
+                try {
+                    live = await ideAgentSessions(providerId, wsRoot);
+                    if (!live.length && providerId !== 'devin-cli') {
+                        live = await ideAgentSessions('devin-cli', wsRoot);
+                    }
+                    if (!live.length) {
+                        live = await ideAgentSessions('cascade', wsRoot);
+                    }
+                } catch { /* bridge indisponible */ }
+            }
+            const target = live.find((s) => s.focused)?.sessionId || live[0]?.sessionId || referentId;
+            if (workspaceRoot) {
+                try {
+                    fs.appendFileSync(
+                        path.join(workspaceRoot, '.agent', 'comms.jsonl'),
+                        `${JSON.stringify({ src: 'chats', dst: target, kind: 'point', text: `Agent pointé : ${label} (${sessionId})`, at: new Date().toISOString() })}\n`,
+                    );
+                } catch { /* bus indisponible */ }
+            }
+            void openAcpSession(target);
+            const sent = wsRoot ? await injectIdeAgentText(
+                providerId,
+                target,
+                `⌖ ${draft.trim()} — l'utilisateur te désigne cet agent pour une directive `
+                + `(reconstruire, re-prompter, changer sa tâche ou son modèle). `
+                + `Accuse réception en une phrase puis attends sa directive.`,
+                wsRoot,
+            ) : false;
+            if (!sent) {
+                void vscode.env.clipboard.writeText(draft.trim());
+                void vscode.window.showInformationMessage(
+                    `Agent pointé : ${label} — référence copiée, colle-la dans le chat du référent.`,
+                );
+            }
         } catch (error) {
             status = `Pointage impossible : ${String(error)}`;
             void paint();
@@ -651,7 +687,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'point_agent' && message.sessionId) {
-            pointAgent(message.sessionId);
+            void pointAgent(message.sessionId);
             return;
         }
 
