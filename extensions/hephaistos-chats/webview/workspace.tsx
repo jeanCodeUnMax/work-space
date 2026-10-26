@@ -524,6 +524,12 @@ function Workspace(): React.JSX.Element {
                                     <span className="schema-meta">
                                         {schema.nodes} nœuds{showAllSchemas ? ' · ' + schema.workspace.split(/[\\/]/).pop() : ''}
                                     </span>
+                                    <button
+                                        type="button"
+                                        className="schema-delete"
+                                        title="Supprimer ce schéma"
+                                        onClick={() => vscode.postMessage({ type: 'schema_delete', id: schema.id, all: showAllSchemas })}
+                                    >×</button>
                                 </div>
                             ))}
                         </div>
@@ -575,10 +581,14 @@ function Workspace(): React.JSX.Element {
                                     vscode.postMessage({ type: 'add_agent', provider: newProvider, role });
                                 }}
                                 fitView
-                                fitViewOptions={{ padding: 0.24 }}
+                                fitViewOptions={{ padding: 0.24, maxZoom: 0.85 }}
+                                snapToGrid
+                                snapGrid={[22, 22]}
+                                minZoom={0.2}
+                                maxZoom={2}
                                 deleteKeyCode={null}
                             >
-                                <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
+                                <Background variant={BackgroundVariant.Lines} gap={22} size={0.5} />
                                 <Controls />
                                 <MiniMap pannable zoomable />
                             </ReactFlow>

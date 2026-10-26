@@ -14,6 +14,7 @@ interface RosterWorkflowApi {
     saveSchema(root: string, name: string, graph: WorkflowGraph): unknown;
     listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number }>;
     loadSchema(root: string, id: string): WorkflowGraph;
+    deleteSchema(root: string, id: string): unknown;
 }
 
 export class WorkflowStore {
@@ -68,6 +69,10 @@ export class WorkflowStore {
 
     loadSchema(id: string): WorkflowGraph {
         return this.api.loadSchema(this.workspaceRoot, id);
+    }
+
+    deleteSchema(id: string): void {
+        this.api.deleteSchema(this.workspaceRoot, id);
     }
 
     sessionNode(graph: WorkflowGraph, sessionId: string): WorkflowNode | undefined {
