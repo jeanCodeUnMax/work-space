@@ -29,6 +29,8 @@ export interface WorkflowEdge {
 export interface WorkflowGraph {
     version: 1;
     name: string;
+    activeSchema?: string;
+    activeSchemaId?: string;
     entrySessionId: string | null;
     nodes: WorkflowNode[];
     edges: WorkflowEdge[];

@@ -125,13 +125,58 @@ function validateWorkflow(input) {
     if (entrySessionId && !nodes.has(entrySessionId)) {
         throw new Error(`point d'entree absent du workflow: ${entrySessionId}`);
     }
-    return {
+    const out = {
         version: 1,
         name: String(input.name || 'Flux agents').slice(0, 120),
         entrySessionId,
         nodes: [...nodes.values()],
         edges,
     };
+    if (input.activeSchema) out.activeSchema = String(input.activeSchema).slice(0, 120);
+    if (input.activeSchemaId) out.activeSchemaId = String(input.activeSchemaId).slice(0, 120);
+    return out;
+}
+
+function dedupeRosterCore(roster) {
+    roster.core = roster.core || {};
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        roster.core[group] = Array.isArray(roster.core[group]) ? roster.core[group] : [];
+    }
+    const nonBleubites = new Set([
+        ...roster.core.devin.map((m) => m && m.sessionId).filter(Boolean),
+        ...roster.core.cerberos.map((m) => m && m.sessionId).filter(Boolean),
+    ]);
+    roster.core.bleubites = roster.core.bleubites.filter((m) =>
+        m && m.sessionId && !m.sessionId.startsWith('acp/') && !m.sessionId.startsWith('local-') && !nonBleubites.has(m.sessionId));
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        const bySession = new Map();
+        for (const item of roster.core[group]) {
+            if (!item || !item.sessionId) continue;
+            const existing = bySession.get(item.sessionId);
+            if (!existing) {
+                bySession.set(item.sessionId, { ...item });
+            } else {
+                if (item.providerId && (existing.providerId === 'hephaistos' || !existing.providerId)) {
+                    existing.providerId = item.providerId;
+                }
+                if (item.model && !existing.model) existing.model = item.model;
+                if (item.role && (!existing.role || existing.role === 'Agent' || existing.role === 'Devin')) {
+                    existing.role = item.role;
+                }
+                if (item.title && !existing.title) existing.title = item.title;
+                if (typeof item.hidden === 'boolean') existing.hidden = item.hidden;
+            }
+        }
+        roster.core[group] = [...bySession.values()];
+    }
+}
+
+function findCoreMember(roster, sessionId) {
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        const found = (roster.core?.[group] || []).find((item) => item.sessionId === sessionId);
+        if (found) return found;
+    }
+    return undefined;
 }
 
 function writeRoster(root, roster) {
@@ -141,18 +186,27 @@ function writeRoster(root, roster) {
 
 function readWorkflow(root) {
     const roster = loadRoster(root);
-    const savedActiveSchemaId = roster.workflow && roster.workflow.activeSchemaId;
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
-    if (savedActiveSchemaId) { workflow.activeSchemaId = savedActiveSchemaId; workflow.activeSchema = roster.workflow.activeSchema; workflow.name = roster.workflow.name; }
-    if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
-    if (roster.workflow && roster.workflow.activeSchemaId) workflow.activeSchemaId = roster.workflow.activeSchemaId;
+    if (!workflow.activeSchemaId && workflow.name) {
+        const matched = findMatchingSchema(root, workflow);
+        if (matched) {
+            workflow.activeSchemaId = matched.id;
+            workflow.activeSchema = matched.name;
+        }
+    }
     return workflow;
 }
 function syncRosterWorkflow(root, sessions) {
     const roster = loadRoster(root);
-    const savedActiveSchemaId = roster.workflow && roster.workflow.activeSchemaId;
+    dedupeRosterCore(roster);
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
-    if (savedActiveSchemaId) { workflow.activeSchemaId = savedActiveSchemaId; workflow.activeSchema = roster.workflow.activeSchema; workflow.name = roster.workflow.name; }
+    if (!workflow.activeSchemaId && workflow.name) {
+        const matched = findMatchingSchema(root, workflow);
+        if (matched) {
+            workflow.activeSchemaId = matched.id;
+            workflow.activeSchema = matched.name;
+        }
+    }
     const byId = new Map((Array.isArray(sessions) ? sessions : []).map((session) => [session.id, session]));
     let changed = false;
     const members = [];
@@ -165,13 +219,14 @@ function syncRosterWorkflow(root, sessions) {
         seen.add(item.member.sessionId);
         return true;
     });
+    const hiddenIds = new Set(uniqueMembers.filter((item) => item.member.hidden).map((item) => item.member.sessionId));
     const rosterIds = new Set(uniqueMembers.filter((item) => !item.member.hidden).map((item) => item.member.sessionId));
 
     // Schema actif : le graphe sauvegarde fait foi — les noeuds du schema
-    // (meme sessions hors roster) ne sont PAS elagues, sinon le schema
-    // parait casse au premier sync.
+    // (meme sessions hors roster) ne sont PAS elagues sauf s'ils ont ete
+    // explicitement masques (hidden: true).
     const schemaIds = workflow.activeSchemaId ? new Set(workflow.nodes.map((n) => n.sessionId)) : null;
-    const keepNode = (id) => rosterIds.has(id) || (schemaIds && schemaIds.has(id));
+    const keepNode = (id) => !hiddenIds.has(id) && (rosterIds.has(id) || Boolean(schemaIds && schemaIds.has(id)));
 
     const activeNodes = workflow.nodes.filter((node) => keepNode(node.sessionId));
     if (activeNodes.length !== workflow.nodes.length) {
@@ -194,7 +249,7 @@ function syncRosterWorkflow(root, sessions) {
 
     for (const [index, { group, member }] of uniqueMembers.entries()) {
         if (member.hidden) continue;
-        if (member.providerId === 'hephaistos') {
+        if (member.providerId === 'hephaistos' || member.sessionId.startsWith('chat-')) {
             const session = byId.get(member.sessionId);
             if (!session) continue;
             const model = String(session.model || member.model || '').slice(0, 200);
@@ -208,6 +263,11 @@ function syncRosterWorkflow(root, sessions) {
             changed = true;
         }
         if (!nodes.has(member.sessionId)) {
+            if (workflow.activeSchemaId) {
+                member.hidden = true;
+                changed = true;
+                continue;
+            }
             const node = {
                 sessionId: member.sessionId,
                 role: String(member.role || (group === 'devin' ? 'Devin' : 'Agent')).slice(0, 120),
@@ -247,51 +307,64 @@ function upsertChatAgent(root, agent) {
     }
 
     const roster = loadRoster(root);
-    roster.core = roster.core || {};
-    roster.core.bleubites = roster.core.bleubites || [];
-    let member = roster.core.bleubites.find((item) => item.providerId === 'hephaistos' && item.sessionId === sessionId);
+    dedupeRosterCore(roster);
+    let member = roster.core.bleubites.find((item) => item.sessionId === sessionId);
+    const isNewMember = !member;
     if (!member) {
-        member = { providerId: 'hephaistos', sessionId, restore: 'open-or-reveal' };
+        member = { providerId: String(agent.providerId || 'hephaistos'), sessionId, restore: 'open-or-reveal' };
         roster.core.bleubites.push(member);
     }
+    if (agent.providerId) member.providerId = String(agent.providerId).slice(0, 120);
     if (agent.model) member.model = String(agent.model).slice(0, 200);
     if (agent.role && !member.role) member.role = String(agent.role).slice(0, 120);
 
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
-    if (!workflow.nodes.some((node) => node.sessionId === sessionId)) {
+    if (!workflow.nodes.some((node) => node.sessionId === sessionId) && (isNewMember || !member.hidden)) {
         const index = workflow.nodes.length;
         workflow.nodes.push({
             sessionId,
-            role: String(agent.role || 'Agent').slice(0, 120),
+            role: String(agent.role || member.role || 'Agent').slice(0, 120),
             task: '',
             position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
         });
     }
     roster.workflow = validateWorkflow(workflow);
+    syncActiveSchemaSnapshot(root, roster.workflow);
     writeRoster(root, roster);
     return roster.workflow;
 }
 
 function saveWorkflow(root, input) {
     const roster = loadRoster(root);
-    roster.core = roster.core || {};
-    roster.core.bleubites = roster.core.bleubites || [];
+    dedupeRosterCore(roster);
     const workflow = validateWorkflow(input);
-
-    for (const node of workflow.nodes) {
-        let member = roster.core.bleubites.find((item) =>
-            item.providerId === 'hephaistos' && item.sessionId === node.sessionId);
-        if (!member) {
-            member = { providerId: 'hephaistos', sessionId: node.sessionId, restore: 'open-or-reveal' };
-            roster.core.bleubites.push(member);
-        }
-        member.role = node.role;
-    }
 
     if (input.activeSchema) workflow.activeSchema = input.activeSchema;
     else if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
     if (input.activeSchemaId) workflow.activeSchemaId = input.activeSchemaId;
     else if (roster.workflow && roster.workflow.activeSchemaId) workflow.activeSchemaId = roster.workflow.activeSchemaId;
+
+    for (const node of workflow.nodes) {
+        const group = node.sessionId.startsWith('acp/')
+            ? 'devin'
+            : (node.sessionId.startsWith('local-') ? 'cerberos' : 'bleubites');
+        let member = findCoreMember(roster, node.sessionId);
+        if (!member) {
+            member = {
+                providerId: group === 'devin'
+                    ? (node.sessionId.split('/')[1] || 'devin-cli')
+                    : (group === 'cerberos' ? 'cerberos' : 'hephaistos'),
+                sessionId: node.sessionId,
+                restore: group === 'bleubites' ? 'open-or-reveal' : 'existing-only',
+            };
+            roster.core[group].push(member);
+        }
+        member.role = node.role;
+        if (node.title) member.title = node.title;
+        member.hidden = false;
+    }
+
+    syncActiveSchemaSnapshot(root, workflow);
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
@@ -302,29 +375,36 @@ function upsertCoreAgent(root, group, agent) {
     const sessionId = String(agent?.sessionId || '');
     if (!sessionId) throw new Error('sessionId requis');
     const roster = loadRoster(root);
-    roster.core = roster.core || {};
-    roster.core[group] = roster.core[group] || [];
+    dedupeRosterCore(roster);
     let member = roster.core[group].find((item) => item.sessionId === sessionId);
+    const isNewMember = !member;
     if (!member) {
         member = { providerId: agent.providerId, sessionId, restore: agent.restore || 'existing-only' };
         roster.core[group].push(member);
     }
     if (agent.providerId) member.providerId = agent.providerId;
-    if (agent.role) member.role = String(agent.role).slice(0, 120);
+    if (agent.role && !member.role) member.role = String(agent.role).slice(0, 120);
     if (agent.title) member.title = String(agent.title).slice(0, 200);
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
+    const hasExistingWorkflow = Boolean(workflow.activeSchemaId || workflow.nodes.length > 0);
     if (!workflow.nodes.some((node) => node.sessionId === sessionId)) {
-        const index = workflow.nodes.length;
-        workflow.nodes.push({
-            sessionId,
-            role: String(member.role || 'Devin').slice(0, 120),
-            task: '',
-            skills: [],
-            title: String(member.title || '').slice(0, 200),
-            position: { x: 100 + (index % 3) * 280, y: 40 },
-        });
+        if (hasExistingWorkflow && isNewMember) {
+            member.hidden = true;
+        } else if (!member.hidden && !hasExistingWorkflow) {
+            const index = workflow.nodes.length;
+            workflow.nodes.push({
+                sessionId,
+                role: String(member.role || 'Devin').slice(0, 120),
+                task: '',
+                skills: [],
+                title: String(member.title || '').slice(0, 200),
+                position: { x: 100 + (index % 3) * 280, y: 40 },
+            });
+        }
     }
-    if (!workflow.entrySessionId && group === 'devin') workflow.entrySessionId = sessionId;
+    if (!workflow.entrySessionId && group === 'devin' && workflow.nodes.some((node) => node.sessionId === sessionId)) {
+        workflow.entrySessionId = sessionId;
+    }
     roster.workflow = validateWorkflow(workflow);
     writeRoster(root, roster);
     return roster.workflow;
@@ -332,16 +412,17 @@ function upsertCoreAgent(root, group, agent) {
 
 function removeChatAgent(root, sessionId) {
     const roster = loadRoster(root);
+    dedupeRosterCore(roster);
     const id = String(sessionId || '');
     if (roster.core?.bleubites) {
-        roster.core.bleubites = roster.core.bleubites.filter((item) =>
-            !(item.providerId === 'hephaistos' && item.sessionId === id));
+        roster.core.bleubites = roster.core.bleubites.filter((item) => item.sessionId !== id);
     }
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
     workflow.nodes = workflow.nodes.filter((node) => node.sessionId !== id);
     workflow.edges = workflow.edges.filter((edge) => edge.source !== id && edge.target !== id);
     if (workflow.entrySessionId === id) workflow.entrySessionId = null;
     roster.workflow = validateWorkflow(workflow);
+    syncActiveSchemaSnapshot(root, roster.workflow);
     if (roster.verification?.results) delete roster.verification.results[id];
     writeRoster(root, roster);
     return roster.workflow;
@@ -684,11 +765,14 @@ async function main() {
     process.exit(1);
 }
 
-const SCHEMAS_FILE = path.join(os.homedir(), '.hephaistos-workflow-schemas.json');
+function schemasFile() {
+    return process.env.HEPHAISTOS_SCHEMA_FILE
+        || path.join(os.homedir(), '.hephaistos-workflow-schemas.json');
+}
 
 function readSchemas() {
     try {
-        const parsed = JSON.parse(fs.readFileSync(SCHEMAS_FILE, 'utf8'));
+        const parsed = JSON.parse(fs.readFileSync(schemasFile(), 'utf8'));
         return Array.isArray(parsed.schemas) ? parsed.schemas : [];
     } catch {
         return [];
@@ -697,8 +781,8 @@ function readSchemas() {
 
 function writeSchemas(list) {
     try {
-        fs.mkdirSync(path.dirname(SCHEMAS_FILE), { recursive: true });
-        fs.writeFileSync(SCHEMAS_FILE, JSON.stringify({ schemas: list }, null, 2));
+        fs.mkdirSync(path.dirname(schemasFile()), { recursive: true });
+        fs.writeFileSync(schemasFile(), JSON.stringify({ schemas: list }, null, 2));
     } catch { /* silencieux */ }
 }
 
@@ -710,19 +794,80 @@ function schemaDesc(graph) {
     return (head ? 'Entree: ' + (head.title || head.sessionId) + '. ' : '') + base.slice(0, 300);
 }
 
+function sameWorkspace(a, b) {
+    return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+}
+
+function normSchemaName(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function cleanSchemaGraph(graph, nameOverride) {
+    const validated = validateWorkflow(graph);
+    delete validated.activeSchema;
+    delete validated.activeSchemaId;
+    if (nameOverride) validated.name = String(nameOverride).slice(0, 120);
+    return validated;
+}
+
+function findMatchingSchema(root, workflow) {
+    const list = readSchemas();
+    if (!list.length || !workflow) return undefined;
+    const workspace = path.resolve(root);
+    if (workflow.activeSchemaId) {
+        const byId = list.find((item) => item.id === workflow.activeSchemaId);
+        if (byId) return byId;
+    }
+    const targetName = normSchemaName(workflow.activeSchema || workflow.name);
+    if (!targetName || targetName === 'flux agents') return undefined;
+    return list.find((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === targetName);
+}
+
+function syncActiveSchemaSnapshot(root, workflow) {
+    const list = readSchemas();
+    if (!list.length || !workflow) return;
+    const workspace = path.resolve(root);
+    let index = -1;
+    if (workflow.activeSchemaId) {
+        index = list.findIndex((item) => item.id === workflow.activeSchemaId);
+    }
+    if (index < 0) {
+        const targetName = normSchemaName(workflow.activeSchema || workflow.name);
+        if (targetName && targetName !== 'flux agents') {
+            index = list.findIndex((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === targetName);
+        }
+    }
+    if (index < 0) return;
+
+    const current = list[index];
+    workflow.activeSchemaId = current.id;
+    workflow.activeSchema = current.name;
+
+    const snapshot = cleanSchemaGraph(workflow, current.name);
+    list[index] = {
+        ...current,
+        workspace: current.workspace || workspace,
+        graph: snapshot,
+        desc: schemaDesc(snapshot),
+        savedAt: new Date().toISOString(),
+    };
+    writeSchemas(list);
+}
+
 function saveSchema(root, name, graph) {
     const list = readSchemas();
     const workspace = path.resolve(root);
+    const effectiveName = String(name || graph?.activeSchema || graph?.name || 'Schema').trim().slice(0, 120) || 'Schema';
+    const cleanGraph = cleanSchemaGraph(graph, effectiveName);
     const entry = {
         id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-        name: String(name || 'Schema').slice(0, 120),
+        name: effectiveName,
         workspace,
-        graph: validateWorkflow(graph),
-        desc: schemaDesc(graph),
+        graph: cleanGraph,
+        desc: schemaDesc(cleanGraph),
         savedAt: new Date().toISOString(),
     };
-    const norm = (v) => String(v || '').trim().toLowerCase();
-    const index = list.findIndex((item) => norm(item.name) === norm(entry.name) && item.workspace === workspace);
+    const index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(entry.name) && sameWorkspace(item.workspace, workspace));
     if (index >= 0) {
         entry.id = list[index].id;
         list[index] = entry;
@@ -730,13 +875,22 @@ function saveSchema(root, name, graph) {
         list.push(entry);
     }
     writeSchemas(list);
+
+    try {
+        const roster = loadRoster(root);
+        dedupeRosterCore(roster);
+        const workflow = validateWorkflow({ ...cleanGraph, name: entry.name, activeSchema: entry.name, activeSchemaId: entry.id });
+        roster.workflow = workflow;
+        writeRoster(root, roster);
+    } catch { /* ignore si roster absent */ }
+
     return entry;
 }
 
 function listSchemas(root, all) {
     const workspace = path.resolve(root);
     return readSchemas()
-        .filter((item) => all || (item.workspace||'').toLowerCase() === workspace.toLowerCase())
+        .filter((item) => all || sameWorkspace(item.workspace, workspace))
         .map((item) => ({
             id: item.id,
             name: item.name,
@@ -761,32 +915,84 @@ function deleteSchema(root, id) {
 }
 
 function loadSchema(root, id) {
-    const entry = readSchemas().find((item) => item.id === id);
+    const list = readSchemas();
+    const entry = list.find((item) => item.id === id);
     if (!entry) throw new Error(`Schema introuvable: ${id}`);
     const roster = loadRoster(root);
-    const inSchema = new Set((entry.graph.nodes || []).map((node) => node.sessionId));
+    dedupeRosterCore(roster);
+
+    // Sauvegarder l'état courant du schéma précédent avant de basculer
+    if (roster.workflow && roster.workflow.activeSchemaId && roster.workflow.activeSchemaId !== id) {
+        syncActiveSchemaSnapshot(root, roster.workflow);
+    }
+
+    const freshEntry = readSchemas().find((item) => item.id === id) || entry;
+    const inSchema = new Set((freshEntry.graph.nodes || []).map((node) => node.sessionId));
     for (const group of ['devin', 'cerberos', 'bleubites']) {
         for (const member of (roster.core && roster.core[group]) || []) member.hidden = !inSchema.has(member.sessionId);
     }
-    const workflow = validateWorkflow(entry.graph);
-    workflow.name = entry.name;
-    workflow.activeSchema = entry.name;
-    workflow.activeSchemaId = entry.id;
+    const workflow = validateWorkflow({
+        ...freshEntry.graph,
+        name: freshEntry.name,
+        activeSchema: freshEntry.name,
+        activeSchemaId: freshEntry.id,
+    });
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
 }
 function setMemberHidden(root, sessionId, hidden) {
     const roster = loadRoster(root);
+    dedupeRosterCore(roster);
+    let foundMember = null;
     for (const group of ['devin', 'cerberos', 'bleubites']) {
-        const member = (roster.core && roster.core[group] || []).find((item) => item.sessionId === sessionId);
-        if (member) {
-            member.hidden = Boolean(hidden);
-            writeRoster(root, roster);
-            return true;
+        for (const member of (roster.core && roster.core[group] || [])) {
+            if (member.sessionId === sessionId) {
+                member.hidden = Boolean(hidden);
+                foundMember = member;
+            }
         }
     }
+    if (foundMember) {
+        if (roster.workflow && Array.isArray(roster.workflow.nodes)) {
+            if (hidden) {
+                roster.workflow.nodes = roster.workflow.nodes.filter((node) => node.sessionId !== sessionId);
+                roster.workflow.edges = (roster.workflow.edges || []).filter((edge) => edge.source !== sessionId && edge.target !== sessionId);
+                if (roster.workflow.entrySessionId === sessionId) roster.workflow.entrySessionId = null;
+            } else if (!roster.workflow.nodes.some((node) => node.sessionId === sessionId)) {
+                const index = roster.workflow.nodes.length;
+                roster.workflow.nodes.push({
+                    sessionId,
+                    role: String(foundMember.role || 'Agent').slice(0, 120),
+                    task: '',
+                    skills: [],
+                    title: String(foundMember.title || '').slice(0, 200),
+                    position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
+                });
+            }
+            syncActiveSchemaSnapshot(root, roster.workflow);
+        }
+        writeRoster(root, roster);
+        return true;
+    }
     return false;
+}
+
+function getWorkflowAgentProfile(root, sessionId) {
+    const id = String(sessionId || '');
+    const roster = loadRoster(root);
+    for (const group of ['devin', 'cerberos', 'bleubites']) {
+        const member = (roster.core && roster.core[group] || []).find((item) => item.sessionId === id);
+        if (!member) continue;
+        const node = (roster.workflow?.nodes || []).find((item) => item.sessionId === id);
+        return {
+            providerId: String(member.providerId || ''),
+            model: String(member.model || ''),
+            role: String(node?.role || member.role || 'Agent'),
+            title: String(node?.title || member.title || ''),
+        };
+    }
+    return undefined;
 }
 
 function cliSessions(root) {
@@ -812,6 +1018,7 @@ module.exports = {
     listSchemas,
     loadSchema,
     setMemberHidden,
+    getWorkflowAgentProfile,
     validateWorkflow,
 };
 

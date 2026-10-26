@@ -7,7 +7,7 @@ interface RosterWorkflowApi {
     readWorkflow(root: string): WorkflowGraph;
     saveWorkflow(root: string, graph: WorkflowGraph): WorkflowGraph;
     syncRosterWorkflow(root: string, sessions: Pick<ChatSession, 'id' | 'model'>[]): WorkflowGraph;
-    upsertChatAgent(root: string, agent: { sessionId: string; model: string; role: string }): WorkflowGraph;
+    upsertChatAgent(root: string, agent: { sessionId: string; model: string; role: string; providerId?: string }): WorkflowGraph;
     upsertCoreAgent(root: string, group: string, agent: { providerId: string; sessionId: string; role?: string; title?: string; restore?: string }): WorkflowGraph;
     removeChatAgent(root: string, sessionId: string): WorkflowGraph;
     setMemberHidden(root: string, sessionId: string, hidden: boolean): void;
@@ -15,6 +15,12 @@ interface RosterWorkflowApi {
     listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number }>;
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
+    getWorkflowAgentProfile(root: string, sessionId: string): {
+        providerId: string;
+        model: string;
+        role: string;
+        title: string;
+    } | undefined;
 }
 
 export class WorkflowStore {
@@ -39,6 +45,7 @@ export class WorkflowStore {
             sessionId: session.id,
             model: session.model,
             role: defaultRoleForProvider(session.provider),
+            providerId: session.provider,
         });
     }
 
@@ -73,6 +80,15 @@ export class WorkflowStore {
 
     deleteSchema(id: string): void {
         this.api.deleteSchema(this.workspaceRoot, id);
+    }
+
+    getAgentProfile(sessionId: string): {
+        providerId: string;
+        model: string;
+        role: string;
+        title: string;
+    } | undefined {
+        return this.api.getWorkflowAgentProfile(this.workspaceRoot, sessionId);
     }
 
     sessionNode(graph: WorkflowGraph, sessionId: string): WorkflowNode | undefined {

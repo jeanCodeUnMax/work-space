@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T06:23:27.320Z",
+  "updatedAt": "2026-10-26T16:14:40.547Z",
   "core": {
     "devin": [
       {
@@ -16,15 +16,17 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
-        "role": "Devin",
-        "hidden": false
+        "role": "Integrateur-Git",
+        "hidden": false,
+        "title": "sugary-shoemaker"
       },
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
-        "role": "Devin",
-        "hidden": false
+        "role": "Orchestrateur",
+        "hidden": false,
+        "title": "ionian-helicopter"
       },
       {
         "providerId": "devin-cli",
@@ -38,7 +40,15 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Devin",
-        "hidden": false
+        "hidden": false,
+        "title": "bloom-settee"
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/spectacled-dust",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -51,46 +61,67 @@
     ],
     "bleubites": [
       {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Orchestrateur",
-        "hidden": false
+        "role": "Codeur",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "keen-agent"
       },
       {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Integrateur-Git",
-        "hidden": false
+        "role": "Reviewer",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "amber-agent"
       },
       {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/trusted-robin",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": true
+        "role": "Auditeur-securite",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "urban-agent"
       },
       {
-        "providerId": "hephaistos",
-        "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Agent",
-        "hidden": true
+        "role": "Sentinelle",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "keen-agent"
       },
       {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/speckled-enthusiasm",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": true
+        "role": "Verif-Submodules",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "xenial-agent"
       },
       {
-        "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/bloom-settee",
+        "providerId": "openrouter",
+        "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": false
+        "role": "Documentaliste-Vault",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "rapid-agent"
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-mvfj8b4m",
+        "restore": "open-or-reveal",
+        "role": "Testeur",
+        "hidden": false,
+        "model": "liquid/lfm-2.5-2.6b:free",
+        "title": "zealous-agent"
       }
     ]
   },
@@ -114,13 +145,13 @@
   },
   "workflow": {
     "version": 1,
-    "name": "Schema",
+    "name": "swat-orchestrateur",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
+        "task": "Orchestrer le pipeline de validation et livraison v0.3.22 : vérification du correctif de persistance automatique des schémas/positions, tests, revue de code, audit de sécurité, contrôle sentinelle, preflight git, commit conventionnel et double push (origin + personal).",
         "skills": [
           "orchestrator",
           "plan-writing"
@@ -134,7 +165,7 @@
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
+        "task": "Valider l'implémentation de la v0.3.22 : auto-sauvegarde des positions dans ~/.hephaistos-workflow-schemas.json à chaque drag, élimination des écrasements de positions au changement de schéma, conservation de activeSchemaId et restauration des blocs sans historique.",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
@@ -148,7 +179,7 @@
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
+        "task": "Revue détaillée du diff git complet : qualité du code, respect des conventions Hephaistos, absence de régression sur la gestion des sessions ou les flux du roster.",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
@@ -162,7 +193,7 @@
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
+        "task": "Audit de sécurité pré-commit : scan des codepoints bidi/zero-width/invisibles, vérification de l'absence de secrets, tokens ou variables d'environnement exposés dans le diff ou les fichiers de schémas.",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
@@ -176,7 +207,7 @@
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
+        "task": "Arbitrage final pré-intégration : consolider les avis du Reviewer et de l'Auditeur-sécurité, vérifier les critères de qualité et émettre le verdict officiel GO pour le commit et le double push.",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
@@ -190,7 +221,7 @@
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
+        "task": "Contrôle préflight git : inspecter l'arborescence git, vérifier la propreté des sous-modules (extension, extensions/orchestrator-monitor) et l'absence d'artéfacts temporaires parasites.",
         "skills": [
           "lint-and-validate",
           "git-history"
@@ -204,7 +235,7 @@
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
+        "task": "Intégration git sécurisée : stager les modifications de hephaistos-chats et workspace-roster, créer le commit conventionnel fix(chats): auto-sauvegarde n8n des positions et switch de schema (v0.3.22), et pusher sur origin (projet-temporaire) et personal (lascard-m).",
         "skills": [
           "lint-and-validate",
           "testing-patterns"
@@ -218,7 +249,7 @@
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
+        "task": "Documenter la version 0.3.22 : consigner les causes racines du dysfonctionnement de persistance, la solution technique adoptée (double écriture live roster + schemas.json) et la mise à jour des tests de régression.",
         "skills": [
           "obsidian",
           "vault-ingest"
@@ -232,15 +263,15 @@
       {
         "sessionId": "chat-mvfj8b4m",
         "role": "Testeur",
-        "task": "Validation technique : syntaxe (node --check), tests unitaires, smoke tests des livrables avant revue.",
+        "task": "Exécuter et valider la suite de tests automatisés de l'extension hephaistos-chats (8 tests unitaires dont le test de cycle complet de bascule de schéma), vérifier le build esbuild du webview et la compilation tsc.",
         "skills": [
           "testing-patterns",
           "lint-and-validate"
         ],
-        "title": "Testeur",
+        "title": "zealous-agent",
         "position": {
-          "x": 200,
-          "y": -140
+          "x": 66,
+          "y": -418
         }
       },
       {
@@ -250,8 +281,8 @@
         "skills": [],
         "title": "bloom-settee",
         "position": {
-          "x": -220,
-          "y": 80
+          "x": -264,
+          "y": -396
         }
       }
     ],
@@ -307,7 +338,7 @@
         "target": "acp/devin-cli/bloom-settee"
       }
     ],
-    "activeSchema": "Schema",
-    "activeSchemaId": "schema-mvorlm1w-mpevq"
+    "activeSchema": "swat-orchestrateur",
+    "activeSchemaId": "schema-yy5cfkox-i1t73"
   }
 }

@@ -8,6 +8,8 @@ const roster = require('../../../.agent/agent-bridge/workspace-roster.js');
 const { buildWorkflowPrompt, preferredEntrySession, workflowOrder } = require('../out/workflow.js');
 
 const temporaryRoots = [];
+const schemaTempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hephaistos-schemas-'));
+process.env.HEPHAISTOS_SCHEMA_FILE = path.join(schemaTempRoot, 'schemas.json');
 
 function makeRosterRoot() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hephaistos-workflow-'));
@@ -22,6 +24,133 @@ function makeRosterRoot() {
 
 afterEach(() => {
     for (const root of temporaryRoots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('schema load preserves node positions and connections after roster sync', () => {
+    const root = makeRosterRoot();
+    const graph = {
+        version: 1,
+        name: 'Positions',
+        entrySessionId: 'chat-one',
+        nodes: [
+            { sessionId: 'chat-one', role: 'Writer', task: 'write', position: { x: -320, y: 144 } },
+            { sessionId: 'chat-two', role: 'Reviewer', task: 'review', position: { x: 420, y: -88 } },
+        ],
+        edges: [{ id: 'edge:one-two', source: 'chat-one', target: 'chat-two' }],
+    };
+    const entry = roster.saveSchema(root, 'Positions', graph);
+    const loaded = roster.loadSchema(root, entry.id);
+    const synced = roster.syncRosterWorkflow(root, [
+        { id: 'chat-one', model: 'model-a' },
+        { id: 'chat-two', model: 'model-b' },
+    ]);
+
+    assert.deepEqual(loaded.nodes.map((node) => node.position), [
+        { x: -320, y: 144 },
+        { x: 420, y: -88 },
+    ]);
+    assert.deepEqual(synced.nodes.map((node) => node.position), [
+        { x: -320, y: 144 },
+        { x: 420, y: -88 },
+    ]);
+    assert.deepEqual(synced.edges, graph.edges);
+});
+
+test('roster keeps schema nodes and exposes their profile when chat history is empty', () => {
+    const root = makeRosterRoot();
+    roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Codeur', providerId: 'openrouter' });
+    roster.configureWorkflowNode(root, 'chat-one', { position: { x: 712, y: -204 } });
+
+    const graph = roster.syncRosterWorkflow(root, []);
+    const profile = roster.getWorkflowAgentProfile(root, 'chat-one');
+
+    assert.equal(graph.nodes.length, 1);
+    assert.deepEqual(graph.nodes[0].position, { x: 712, y: -204 });
+    assert.deepEqual(profile, {
+        providerId: 'openrouter',
+        model: 'model-a',
+        role: 'Codeur',
+        title: '',
+    });
+});
+
+test('moving nodes on an active schema auto-saves to that schema when switching schemas and returning', () => {
+    const root = makeRosterRoot();
+    const schemaA = roster.saveSchema(root, 'Schema-A', {
+        version: 1,
+        name: 'Schema-A',
+        entrySessionId: 'acp/devin-cli/head-a',
+        nodes: [
+            { sessionId: 'acp/devin-cli/head-a', role: 'Orchestrateur', task: 'a1', position: { x: -500, y: -140 } },
+            { sessionId: 'chat-one', role: 'Codeur', task: 'a2', position: { x: -200, y: -140 } },
+            { sessionId: 'chat-two', role: 'Reviewer', task: 'a3', position: { x: 100, y: -140 } },
+        ],
+        edges: [
+            { id: 'edge:head-one', source: 'acp/devin-cli/head-a', target: 'chat-one' },
+            { id: 'edge:one-two', source: 'chat-one', target: 'chat-two' },
+        ],
+    });
+    const schemaB = roster.saveSchema(root, 'Schema-B', {
+        version: 1,
+        name: 'Schema-B',
+        entrySessionId: 'acp/devin-cli/head-a',
+        nodes: [
+            { sessionId: 'acp/devin-cli/head-a', role: 'Orchestrateur', task: 'b1', position: { x: 0, y: 0 } },
+            { sessionId: 'chat-one', role: 'Codeur', task: 'b2', position: { x: 300, y: 80 } },
+        ],
+        edges: [
+            { id: 'edge:b-head-one', source: 'acp/devin-cli/head-a', target: 'chat-one' },
+        ],
+    });
+
+    // Charge Schema-A et déplace les blocs sans clic manuel sur "Sauvegarder le schéma"
+    const loadedA = roster.loadSchema(root, schemaA.id);
+    loadedA.nodes[0].position = { x: -660, y: -308 };
+    loadedA.nodes[1].position = { x: -176, y: 242 };
+    loadedA.nodes[2].position = { x: 484, y: -88 };
+    roster.saveWorkflow(root, loadedA);
+
+    // Simule l'ouverture du workspace depuis une autre session Devin active
+    roster.upsertCoreAgent(root, 'devin', {
+        providerId: 'devin-cli',
+        sessionId: 'acp/devin-cli/other-tab',
+        role: 'Devin',
+        title: 'other-tab',
+    });
+
+    // Bascule sur Schema-B puis revient sur Schema-A
+    const loadedB = roster.loadSchema(root, schemaB.id);
+    assert.deepEqual(loadedB.nodes.map((n) => n.position), [
+        { x: 0, y: 0 },
+        { x: 300, y: 80 },
+    ]);
+
+    const reloadedA = roster.loadSchema(root, schemaA.id);
+    const syncedA = roster.syncRosterWorkflow(root, []);
+    assert.equal(syncedA.nodes.length, 3);
+    assert.deepEqual(reloadedA.nodes.map((n) => n.position), [
+        { x: -660, y: -308 },
+        { x: -176, y: 242 },
+        { x: 484, y: -88 },
+    ]);
+    assert.deepEqual(syncedA.nodes.map((n) => n.position), [
+        { x: -660, y: -308 },
+        { x: -176, y: 242 },
+        { x: 484, y: -88 },
+    ]);
+    assert.equal(syncedA.edges.length, 2);
+});
+
+test('workflow positions survive a workspace reload without chat history', () => {
+    const root = makeRosterRoot();
+    roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Codeur', providerId: 'openrouter' });
+    const graph = roster.syncRosterWorkflow(root, []);
+    graph.nodes[0].position = { x: 936, y: 312 };
+    roster.saveWorkflow(root, graph);
+
+    const reloaded = roster.readWorkflow(root);
+
+    assert.deepEqual(reloaded.nodes[0].position, { x: 936, y: 312 });
 });
 
 test('a chat agent is added to the roster and workflow once', () => {

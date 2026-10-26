@@ -28,7 +28,7 @@ export class FlowWorkspacePanel {
         this.handler = handler;
         panel.webview.onDidReceiveMessage((message: FlowPanelMessage) => {
             if (message.type === 'ready') {
-                this.sendWorkflow();
+                this.sendWorkflow(true);
                 return;
             }
             this.handler(message);
@@ -65,8 +65,15 @@ export class FlowWorkspacePanel {
         FlowWorkspacePanel.current = new FlowWorkspacePanel(panel, context.extensionUri, workflow, handler);
     }
 
-    static update(workflow: WorkflowView): void {
-        FlowWorkspacePanel.current?.update(workflow);
+    static update(workflow: WorkflowView, force = false): void {
+        FlowWorkspacePanel.current?.update(workflow, force);
+    }
+
+    static syncCache(workflow: WorkflowView): void {
+        const current = FlowWorkspacePanel.current;
+        if (!current) return;
+        current.workflow = workflow;
+        current.lastWorkflowJson = JSON.stringify(workflow);
     }
 
     /** Thème d'icônes courant — posé avant open() puis poussé au webview ouvert. */
@@ -109,18 +116,18 @@ export class FlowWorkspacePanel {
         });
     }
 
-    private update(workflow: WorkflowView): void {
+    private update(workflow: WorkflowView, force = false): void {
         this.workflow = workflow;
-        this.sendWorkflow();
+        this.sendWorkflow(force);
     }
 
     private lastWorkflowJson = '';
 
-    private sendWorkflow(): void {
+    private sendWorkflow(force = false): void {
         const json = JSON.stringify(this.workflow);
         // Dedup : le watcher roster repousse souvent le meme etat — skip
         // pour eviter le flicker et les artefacts au changement de schema.
-        if (json === this.lastWorkflowJson) { this.sendIconTheme(); return; }
+        if (!force && json === this.lastWorkflowJson) { this.sendIconTheme(); return; }
         this.lastWorkflowJson = json;
         void this.panel.webview.postMessage({ type: 'workflow_state', workflow: this.workflow });
         this.sendIconTheme();
