@@ -173,11 +173,12 @@ export async function injectIdeAgentText(
     sessionId: string,
     text: string,
     workspaceRoot: string,
+    opts?: { draft?: boolean },
 ): Promise<boolean> {
     if (!bridge?.isConnected || !sessionId || !text) return false;
     try {
         const res = await bridgeRequest(bridge, 'wake_acp_agent', {
-            text, sessionId, providerId, workspaceRoot,
+            text, sessionId, providerId, workspaceRoot, draft: opts?.draft === true,
         }, 'acp_wake_result', WAKE_TIMEOUT_MS);
         return String(res?.status || 'failed') === 'sent';
     } catch {

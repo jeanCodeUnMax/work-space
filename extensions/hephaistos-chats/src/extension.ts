@@ -429,10 +429,9 @@ export function activate(context: vscode.ExtensionContext): void {
             const sent = wsRoot ? await injectIdeAgentText(
                 providerId,
                 target,
-                `⌖ ${draft.trim()} — l'utilisateur te désigne cet agent pour une directive `
-                + `(reconstruire, re-prompter, changer sa tâche ou son modèle). `
-                + `Accuse réception en une phrase puis attends sa directive.`,
+                `⌖ ${draft.trim()} — directive pour cet agent : `,
                 wsRoot,
+                { draft: true },
             ) : false;
             if (!sent) {
                 void vscode.env.clipboard.writeText(draft.trim());
