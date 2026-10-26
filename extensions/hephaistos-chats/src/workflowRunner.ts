@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { execFile } from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { ChatSession } from './types';
@@ -10,6 +11,42 @@ import { SessionStore } from './sessionStore';
 
 const execFileAsync = promisify(execFile);
 const MAX_OUTPUT_CHARS = 6000;
+
+interface CouncilTurn {
+    role: string;
+    sessionId: string;
+    round: number;
+    text: string;
+}
+
+function formatTranscript(transcript: CouncilTurn[]): string {
+    return transcript
+        .map((turn) => `[${turn.round === 0 ? 'Verdict' : `Tour ${turn.round}`}] ${turn.role}:\n${turn.text}`)
+        .join('\n\n');
+}
+
+function buildCouncilTurnPrompt(
+    node: WorkflowNode,
+    question: string,
+    transcript: CouncilTurn[],
+    round: number,
+    totalRounds: number,
+): string {
+    const skills = (node.skills || []).length ? ` Compétences: ${(node.skills || []).join(', ')}.` : '';
+    const history = transcript.length ? `\n\nTRANSCRIPT DU CONCILE JUSQU'ICI:\n${formatTranscript(transcript)}` : '';
+    const instruction = round === 1
+        ? "Donne ta position argumentée sur la question, en t'appuyant sur ton expertise. Sois concis, tranché et honnête — signale les incertitudes."
+        : "Après lecture des positions de tes pairs : réplique aux désaccords, renforce ou nuance ta position, puis indique si tu converges vers un consensus et lequel.";
+    return `[CONCILE — tour ${round}/${totalRounds}]\nTu es ${node.role}, expert siégeant au concile.${skills}\nTon expertise : ${node.task}\n\nQUESTION À TRANCHER:\n${question}\n${history}\n\n${instruction}`;
+}
+
+function buildCouncilVerdictPrompt(
+    entry: WorkflowNode,
+    question: string,
+    transcript: CouncilTurn[],
+): string {
+    return `[CONCILE — SYNTHÈSE FINALE]\nTu es ${entry.role}, président du concile.\n\nQUESTION SOUMISE AU CONCILE:\n${question}\n\nTRANSCRIPT COMPLET DE LA DÉLIBÉRATION:\n${formatTranscript(transcript)}\n\nRédige le VERDICT du concile : position retenue, arguments déterminants, points de dissensus restants et recommandation d'action. Conclusion claire, motivée et actionnable.`;
+}
 
 interface RosterStatus {
     entries?: { sessionId: string; providerId: string; group: string; status: string }[];
@@ -44,8 +81,13 @@ export class WorkflowRunner {
         this.activeRun = true;
         const runId = randomUUID();
         try {
-            await this.execute(graph, entrySessionId, runId, enabledProviders);
-            this.onFinished(runId, true, 'Flux terminé.');
+            if (graph.mode === 'council') {
+                await this.executeCouncil(graph, entrySessionId, runId, enabledProviders);
+                this.onFinished(runId, true, 'Concile terminé — verdict rendu.');
+            } else {
+                await this.execute(graph, entrySessionId, runId, enabledProviders);
+                this.onFinished(runId, true, 'Flux terminé.');
+            }
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.onFinished(runId, false, message);
@@ -152,6 +194,138 @@ export class WorkflowRunner {
                 });
             }
             throw (failureError instanceof Error ? failureError : new Error(`Le flux s’est arrêté sur ${failedSession}.`));
+        }
+    }
+
+    /**
+     * Mode concile : délibération séquentielle à transcript partagé.
+     * Le nœud d'entrée est le président (sa mission = la question) ; chaque
+     * expert parle à tour de rôle en lisant tout ce qui a été dit, puis le
+     * président rend le verdict. Pas de parallélisme : c'est une discussion.
+     */
+    private async executeCouncil(
+        graph: WorkflowGraph,
+        entrySessionId: string,
+        runId: string,
+        enabledProviders: Set<string>,
+    ): Promise<void> {
+        // En mode concile, toutes les cartes siégent — les arêtes ne portent
+        // pas de sémantique d'exécution (ordre de parole = ordre du graphe).
+        const orderedNodes = graph.nodes;
+        this.validateTasks(orderedNodes, enabledProviders);
+        const entry = this.nodeFor(graph, entrySessionId);
+        const experts = orderedNodes.filter((node) => node.sessionId !== entrySessionId);
+        if (!experts.length) {
+            throw new Error('Un concile exige au moins un expert en plus du président (nœud d’entrée).');
+        }
+        const question = entry.task.trim() || 'Question non précisée par le président du concile.';
+        const liveRoster = await this.getLiveRoster();
+        const rosterIds = new Set(
+            (liveRoster.entries || [])
+                .filter((item) => item.group === 'bleubites'
+                    && item.providerId === 'hephaistos'
+                    && item.status === 'session-present')
+                .map((item) => item.sessionId),
+        );
+        const tasks = await this.createTasks(graph, orderedNodes, rosterIds, runId);
+        const taskBySession = new Map(tasks.map((task) => [task.node.sessionId, task]));
+        const transcript: CouncilTurn[] = [];
+        let failedSession: string | undefined;
+        let failureError: unknown;
+
+        const takeTurn = async (node: WorkflowNode, prompt: string): Promise<string> => {
+            const task = taskBySession.get(node.sessionId)!;
+            this.onProgress({ runId, sessionId: node.sessionId, taskId: task.taskId, state: 'running' });
+            await callHpheTool('update_task', { task_id: task.taskId, status: 'in_progress' });
+            const result = task.session
+                ? await this.runSessionTurn(task.session, prompt)
+                : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' };
+            const output = result.reply.trim().slice(0, MAX_OUTPUT_CHARS);
+            if (!output) throw new Error('L’agent a terminé sans réponse textuelle.');
+            return output;
+        };
+        const failTurn = async (sessionId: string, error: unknown): Promise<void> => {
+            const task = taskBySession.get(sessionId)!;
+            const message = error instanceof Error ? error.message : String(error);
+            await this.updateTaskFailure(task.taskId, message);
+            this.onProgress({ runId, sessionId, taskId: task.taskId, state: 'failed', message });
+        };
+
+        const ROUNDS = 2;
+        for (let round = 1; round <= ROUNDS && !failedSession; round++) {
+            for (const node of experts) {
+                try {
+                    const output = await takeTurn(node, buildCouncilTurnPrompt(node, question, transcript, round, ROUNDS));
+                    transcript.push({ role: node.role, sessionId: node.sessionId, round, text: output });
+                    const task = taskBySession.get(node.sessionId)!;
+                    const lastRound = round === ROUNDS;
+                    await callHpheTool('update_task', {
+                        task_id: task.taskId,
+                        status: lastRound ? 'completed' : 'in_progress',
+                        result: `[Tour ${round}] ${output.slice(0, 3900)}`,
+                    });
+                    this.onProgress({
+                        runId,
+                        sessionId: node.sessionId,
+                        taskId: task.taskId,
+                        state: lastRound ? 'completed' : 'running',
+                        message: `Tour ${round}/${ROUNDS} — ${output.slice(0, 150)}`,
+                    });
+                } catch (error) {
+                    failedSession = node.sessionId;
+                    failureError = error;
+                    await failTurn(node.sessionId, error);
+                    break;
+                }
+            }
+        }
+
+        if (!failedSession) {
+            try {
+                const verdict = await takeTurn(entry, buildCouncilVerdictPrompt(entry, question, transcript));
+                transcript.push({ role: `Verdict — ${entry.role}`, sessionId: entry.sessionId, round: 0, text: verdict });
+                const task = taskBySession.get(entry.sessionId)!;
+                await callHpheTool('update_task', { task_id: task.taskId, status: 'completed', result: verdict.slice(0, 4000) });
+                this.onProgress({ runId, sessionId: entry.sessionId, taskId: task.taskId, state: 'completed', message: verdict.slice(0, 180) });
+            } catch (error) {
+                failedSession = entry.sessionId;
+                failureError = error;
+                await failTurn(entry.sessionId, error);
+            }
+        }
+
+        // Artefact : transcript + verdict archivés pour le Vault/Beacon.
+        try {
+            const reportDir = path.join(this.workspaceRoot, '.agent', 'reports');
+            fs.mkdirSync(reportDir, { recursive: true });
+            const report = [
+                `# Concil — ${graph.name}`,
+                '',
+                `**Question** : ${question}`,
+                `**Run** : ${runId} — ${new Date().toISOString()}`,
+                '',
+                ...transcript.map((turn) => `## ${turn.role} (${turn.round === 0 ? 'verdict' : `tour ${turn.round}`})\n\n${turn.text}\n`),
+            ].join('\n');
+            fs.writeFileSync(path.join(reportDir, `concil-${runId.slice(0, 8)}.md`), report, 'utf8');
+        } catch (error) {
+            logRuntime(`concil report write failed: ${String(error)}`);
+        }
+
+        if (failedSession) {
+            for (const task of tasks) {
+                if (task.node.sessionId === failedSession) continue;
+                const spoke = transcript.some((turn) => turn.sessionId === task.node.sessionId);
+                if (spoke) continue;
+                await this.updateTaskFailure(task.taskId, `Concile interrompu par l’échec de ${failedSession}.`);
+                this.onProgress({
+                    runId,
+                    sessionId: task.node.sessionId,
+                    taskId: task.taskId,
+                    state: 'blocked',
+                    message: `Concile interrompu par l’échec de ${failedSession}.`,
+                });
+            }
+            throw (failureError instanceof Error ? failureError : new Error(`Le concile s’est arrêté sur ${failedSession}.`));
         }
     }
 

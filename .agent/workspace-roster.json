@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:16:26.904Z",
+  "updatedAt": "2026-10-26T17:32:43.756Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": false,
+        "hidden": true,
         "title": "sugary-shoemaker"
       },
       {
@@ -25,7 +25,7 @@
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
         "role": "Orchestrateur",
-        "hidden": false,
+        "hidden": true,
         "title": "ionian-helicopter"
       },
       {
@@ -64,8 +64,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Plan-Architecture",
-        "hidden": false,
+        "role": "Analyste-Architecture",
+        "hidden": true,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -82,8 +82,8 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Auditeur-securite",
-        "hidden": false,
+        "role": "Analyste-Securite",
+        "hidden": true,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "urban-agent"
       },
@@ -91,8 +91,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Redacteur-PRD",
-        "hidden": false,
+        "role": "Synthese-Faisabilite",
+        "hidden": true,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -119,7 +119,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": false,
+        "hidden": true,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "zealous-agent"
       },
@@ -137,16 +137,18 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": false,
-        "model": "gpt-oss:120b-cloud"
+        "hidden": true,
+        "model": "gpt-oss:120b-cloud",
+        "title": "beacon-agent"
       },
       {
         "providerId": "ollama-cloud",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Sentinelle-Infra-Perf",
+        "role": "Analyste-Infra-Perf",
         "hidden": true,
-        "model": "gpt-oss:120b-cloud"
+        "model": "gpt-oss:120b-cloud",
+        "title": "steady-agent"
       }
     ]
   },
@@ -170,143 +172,11 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-fix-rapide",
-    "entrySessionId": "acp/devin-cli/ionian-helicopter",
-    "nodes": [
-      {
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur",
-        "task": "Cadrage d'urgence : qualifie le bug, isole le composant cible et lance l'intervention directe.",
-        "skills": [
-          "orchestrator",
-          "plan-writing"
-        ],
-        "title": "ionian-helicopter",
-        "position": {
-          "x": -330,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "Correctif ciblé : applique le patch minimal direct résolvant la cause racine.",
-        "skills": [
-          "clean-code",
-          "nodejs-best-practices"
-        ],
-        "title": "keen-agent",
-        "position": {
-          "x": 0,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Validation TDD : reproduit le bug par un test, vérifie qu'il passe au vert et valide le build.",
-        "skills": [
-          "testing-patterns",
-          "tdd-workflow"
-        ],
-        "title": "zealous-agent",
-        "position": {
-          "x": 330,
-          "y": -110
-        }
-      },
-      {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Auditeur-securite",
-        "task": "Revue & Sécurité express : vérifie que le patch n'introduit aucune régression ni injection.",
-        "skills": [
-          "vulnerability-scanner",
-          "clean-code"
-        ],
-        "title": "urban-agent",
-        "position": {
-          "x": 330,
-          "y": 110
-        }
-      },
-      {
-        "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "Feu vert rapide : contrôle la validation simultanée des tests et de l'audit, donne le GO intégration.",
-        "skills": [
-          "vulnerability-scanner"
-        ],
-        "title": "keen-agent",
-        "position": {
-          "x": 660,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "Livraison du patch : commit conventionnel fix(...) et double push direct sur origin et personal.",
-        "skills": [
-          "lint-and-validate"
-        ],
-        "title": "sugary-shoemaker",
-        "position": {
-          "x": 990,
-          "y": 0
-        }
-      },
-      {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Feedback-Beacon-Knowledge",
-        "task": "Enregistrement de la solution : consigne l'incident et la recette de résolution dans agentmemory.",
-        "skills": [
-          "vault-ingest"
-        ],
-        "title": "beacon-agent",
-        "position": {
-          "x": 1320,
-          "y": 0
-        }
-      }
-    ],
-    "edges": [
-      {
-        "id": "edge:fix-orch->codeur",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa"
-      },
-      {
-        "id": "edge:fix-codeur->testeur",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:fix-codeur->auditeur",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvmtldvy"
-      },
-      {
-        "id": "edge:fix-testeur->sentinelle",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:fix-auditeur->sentinelle",
-        "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:fix-sentinelle->integrateur",
-        "source": "chat-mvfqytbz",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:fix-integrateur->feedback",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvp0beacon"
-      }
-    ],
-    "activeSchema": "swat-fix-rapide",
-    "activeSchemaId": "schema-em9rovwy-4hbfn"
+    "name": "Concile",
+    "entrySessionId": null,
+    "nodes": [],
+    "edges": [],
+    "activeSchema": "Concile",
+    "activeSchemaId": "schema-mvpjbchn-ijt6c"
   }
 }

@@ -137,6 +137,7 @@ function validateWorkflow(input) {
     };
     if (input.activeSchema) out.activeSchema = String(input.activeSchema).slice(0, 120);
     if (input.activeSchemaId) out.activeSchemaId = String(input.activeSchemaId).slice(0, 120);
+    if (input.mode === 'council' || isCouncilSchemaName(out.name) || isCouncilSchemaName(out.activeSchema)) out.mode = 'council';
     return out;
 }
 
@@ -798,6 +799,21 @@ function isStandardSchemaName(name) {
     return STANDARD_SCHEMA_NAMES.has(normSchemaName(name));
 }
 
+// Mode concile : délibération multi-experts sur transcript partagé (tours de
+// parole séquentiels), pas un DAG parallèle. Détecté par le nom pour rester
+// robuste même si l'entrée n'a pas le champ mode persisté.
+const COUNCIL_SCHEMA_PATTERN = /concil|conclave|council/i;
+
+function isCouncilSchemaName(name) {
+    return COUNCIL_SCHEMA_PATTERN.test(normSchemaName(name));
+}
+
+function schemaModeFor(item) {
+    const mode = String(item?.mode || '').toLowerCase();
+    if (mode === 'council' || isCouncilSchemaName(item?.name)) return 'council';
+    return undefined;
+}
+
 function schemaTemplateDir(root) {
     return process.env.HEPHAISTOS_SCHEMA_TEMPLATE_DIR
         || path.join(root, '.agent', 'templates', 'schemas');
@@ -933,6 +949,7 @@ function saveSchema(root, name, graph) {
         desc: schemaDesc(cleanGraph),
         savedAt: new Date().toISOString(),
         builtin: isStandardSchemaName(effectiveName) || (index >= 0 && list[index].builtin === true) || undefined,
+        mode: isCouncilSchemaName(effectiveName) || (index >= 0 && list[index].mode === 'council') ? 'council' : undefined,
     };
     if (index >= 0) {
         entry.id = list[index].id;
@@ -965,6 +982,7 @@ function listSchemas(root, all) {
             nodes: ((item.graph && item.graph.nodes) || []).length,
             desc: schemaDesc(item.graph || { name: item.name }),
             builtin: item.builtin === true || isStandardSchemaName(item.name),
+            mode: schemaModeFor(item),
         }));
 }
 
@@ -999,6 +1017,7 @@ function createEmptySchema(root, name) {
         desc: "Flux vide : composez votre pipeline agent par agent, puis reliez les blocs.",
         savedAt: new Date().toISOString(),
         builtin: isStandardSchemaName(effectiveName) || undefined,
+        mode: isCouncilSchemaName(effectiveName) ? 'council' : undefined,
     };
     list.push(entry);
     writeSchemas(list);
@@ -1067,6 +1086,7 @@ function loadSchema(root, id) {
         name: freshEntry.name,
         activeSchema: freshEntry.name,
         activeSchemaId: freshEntry.id,
+        ...(schemaModeFor(freshEntry) ? { mode: 'council' } : {}),
     });
     roster.workflow = workflow;
     writeRoster(root, roster);
@@ -1152,6 +1172,7 @@ module.exports = {
     createEmptySchema,
     restoreStandardSchemas,
     isStandardSchemaName,
+    isCouncilSchemaName,
     setMemberHidden,
     getWorkflowAgentProfile,
     validateWorkflow,

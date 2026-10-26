@@ -70,6 +70,7 @@ interface WorkflowGraph {
     entrySessionId: string | null;
     nodes: StoredNode[];
     edges: StoredEdge[];
+    mode?: 'council';
 }
 
 interface WorkflowCatalog {
@@ -256,7 +257,7 @@ function Workspace(): React.JSX.Element {
     const [skillQuery, setSkillQuery] = useState('');
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
-    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }>>([]);
+    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>>([]);
     const [showAllSchemas, setShowAllSchemas] = useState(false);
     const [schemaName, setSchemaName] = useState('');
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -687,6 +688,9 @@ function Workspace(): React.JSX.Element {
                                         >
                                             {schema.builtin && (
                                                 <span className="schema-builtin-badge" title="Schéma standard livré avec le kit Hephaistos — restaurable après suppression">★</span>
+                                            )}
+                                            {schema.mode === 'council' && (
+                                                <span className="schema-council-badge" title="Mode concile : les experts délibèrent sur transcript partagé, puis le président rend le verdict">⚖</span>
                                             )}
                                             {schema.name}
                                         </button>

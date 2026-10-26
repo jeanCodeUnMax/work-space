@@ -291,6 +291,23 @@ test('standard schemas are flagged builtin and restorable from kit templates', (
     assert.equal(roster.listSchemas(root, false).some((s) => s.name === 'flux-perso'), false);
 });
 
+test('council mode is detected from schema name and propagated to the active workflow', () => {
+    const root = makeRosterRoot();
+    const created = roster.createEmptySchema(root, 'concil-experts');
+    assert.equal(created.mode, 'council');
+    const listed = roster.listSchemas(root, false).find((s) => s.name === 'concil-experts');
+    assert.equal(listed.mode, 'council');
+
+    // Le mode survit à un readWorkflow/validateWorkflow round-trip
+    const workflow = roster.readWorkflow(root);
+    assert.equal(workflow.mode, 'council');
+
+    // Les schémas standards restent en mode DAG (pas de mode)
+    const other = roster.createEmptySchema(root, 'flux-classique');
+    assert.equal(other.mode, undefined);
+    assert.equal(roster.listSchemas(root, false).find((s) => s.name === 'flux-classique').mode, undefined);
+});
+
 test('workflow execution starts with Devin, falls back to Antigravity, and follows reachable edges', () => {
     const graph = {
         version: 1,
