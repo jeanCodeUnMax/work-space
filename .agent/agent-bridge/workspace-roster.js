@@ -787,11 +787,27 @@ function writeSchemas(list) {
 }
 
 function schemaDesc(graph) {
+    const name = normSchemaName(graph?.name || '');
+    if (name.includes('orchestrateur')) {
+        return "Flux maître généraliste tout-terrain (12 nœuds) : cadrage, conception architecturale (Devin), production, tests TDD, triple audit parallèle (revue, sécurité, infra/perf), arbitrage Sentinelle, contrôle Git, documentation Vault et capitalisation de l'apprentissage (Beacon/Knowledge).";
+    }
+    if (name.includes('fix-rapide')) {
+        return "Flux d'intervention d'urgence & correctifs ciblés : chaîne resserrée et ultra-rapide (Cadrage -> Code -> Test -> Audit Sécurité & Revue -> Gate Sentinelle -> Commit Git -> Capitalisation Beacon). À utiliser pour les résolutions de bugs ponctuels et patches rapides sans surcharge documentaire.";
+    }
+    if (name.includes('code-review')) {
+        return "Flux d'audit qualité et revue de code : analyse statique, détection d'antipatrons, conformité de code, contrôle de sécurité et vérification git. À utiliser avant toute fusion de branche ou pour une inspection approfondie sans modification de code.";
+    }
+    if (name.includes('faisabilite')) {
+        return "Flux d'étude de faisabilité et d'architecture : exploration de la surface d'attaque, analyse des APIs, évaluation des risques et cadrage technique avant lancement d'un gros chantier ou nouveau composant.";
+    }
+    if (name.includes('plan-plugin')) {
+        return "Flux de cadrage et planification de spécifications (PRD) : découpage des exigences fonctionnelles, normalisation des compétences et matrice de sécurité pour la création d'extensions ou plugins.";
+    }
     const nodes = (graph && graph.nodes) || [];
     const roles = [...new Set(nodes.map((n) => n.role).filter(Boolean))];
     const head = nodes.find((n) => graph.entrySessionId && n.sessionId === graph.entrySessionId);
     const base = nodes.length + ' agents — ' + roles.join(', ');
-    return (head ? 'Entree: ' + (head.title || head.sessionId) + '. ' : '') + base.slice(0, 300);
+    return (head ? 'Entrée: ' + (head.title || head.sessionId) + '. ' : '') + base.slice(0, 300);
 }
 
 function sameWorkspace(a, b) {
@@ -897,7 +913,7 @@ function listSchemas(root, all) {
             workspace: item.workspace,
             savedAt: item.savedAt,
             nodes: ((item.graph && item.graph.nodes) || []).length,
-            desc: item.desc || schemaDesc(item.graph),
+            desc: schemaDesc(item.graph || { name: item.name }),
         }));
 }
 
