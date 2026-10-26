@@ -81,11 +81,15 @@ function validateWorkflow(input) {
         const skills = Array.isArray(raw.skills)
             ? raw.skills.map((item) => String(item || '').slice(0, 120)).filter(Boolean).slice(0, 24)
             : [];
+        const mcps = Array.isArray(raw.mcps)
+            ? raw.mcps.map((item) => String(item || '').slice(0, 120)).filter(Boolean).slice(0, 8)
+            : [];
         nodes.set(sessionId, {
             sessionId,
             role: String(raw.role || 'Agent').slice(0, 120),
             task: String(raw.task || '').slice(0, 6000),
             skills,
+            mcps,
             title: String(raw.title || '').slice(0, 200),
             position: { x, y },
         });
@@ -451,6 +455,7 @@ function configureWorkflowNode(root, sessionId, updates) {
     if (updates.role != null) node.role = String(updates.role).slice(0, 120);
     if (updates.task != null) node.task = String(updates.task).slice(0, 6000);
     if (updates.skills != null) node.skills = (Array.isArray(updates.skills) ? updates.skills : [updates.skills]).map((s) => String(s).slice(0, 120)).filter(Boolean).slice(0, 24);
+    if (updates.mcps != null) node.mcps = (Array.isArray(updates.mcps) ? updates.mcps : [updates.mcps]).map((s) => String(s).slice(0, 120)).filter(Boolean).slice(0, 8);
     if (updates.position != null) node.position = updates.position;
     if (updates.entry === true) workflow.entrySessionId = sessionId;
     if (updates.entry === false && workflow.entrySessionId === sessionId) workflow.entrySessionId = null;
@@ -473,6 +478,7 @@ function cmdWorkflow(root, args) {
             role: option('--role'),
             task: option('--task'),
             skills: option('--skills') ? String(option('--skills')).split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+            mcps: option('--mcps') ? String(option('--mcps')).split(',').map((s) => s.trim()).filter(Boolean) : undefined,
             entry: args.includes('--entry') ? true : (args.includes('--no-entry') ? false : undefined),
         });
     }

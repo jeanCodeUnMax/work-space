@@ -152,6 +152,132 @@ function buildSystemPrompt(mode, session) {
  * chat completions — sans boucle tool_calls ils décrivent des actions au lieu
  * de les exécuter. On expose ici le minimum FS, confiné au workspace. */
 const MAX_TOOL_ROUNDS = 16;
+
+/* ---------- MCP distribués aux Bleubites (puces node.mcps du workflow) ----------
+ * Le roster déclare par bloc les serveurs MCP autorisés (noms = entrées du
+ * broker ~/.config/mcp-mux/mcp-mux.json). Au tour, on spawn chaque serveur
+ * en stdio, on liste ses outils, on les expose au modèle en function-calling
+ * sous le préfixe mcp__<serveur>__<outil>, puis on route les tool_calls.
+ * Les processus sont tués en fin de tour. */
+const MCP_PREFIX = 'mcp__';
+const MCP_CALL_TIMEOUT_MS = 60_000;
+const MCP_SPAWN_TIMEOUT_MS = 15_000;
+const MAX_MCPS_PER_SESSION = 4;
+
+function sessionMcpNames(session) {
+    try {
+        const rosterPath = path.join(workspace, '.agent', 'workspace-roster.json');
+        const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+        const node = (roster?.workflow?.nodes || []).find((n) => n.sessionId === session?.id);
+        return (Array.isArray(node?.mcps) ? node.mcps : []).slice(0, MAX_MCPS_PER_SESSION);
+    } catch { return []; }
+}
+
+function mcpCatalogEntry(name) {
+    const home = process.env.USERPROFILE || process.env.HOME || '';
+    try {
+        const cfg = JSON.parse(fs.readFileSync(path.join(home, '.config', 'mcp-mux', 'mcp-mux.json'), 'utf8'));
+        const def = cfg?.servers?.[name];
+        if (!def || def.disabled || typeof def.command !== 'string' || !def.command) return null;
+        return def;
+    } catch { return null; }
+}
+
+// Client MCP stdio minimal : spawn + JSON-RPC ligne par ligne.
+class McpClient {
+    constructor(name, def) {
+        this.name = name;
+        this.nextId = 1;
+        this.pending = new Map();
+        this.proc = spawn(def.command, def.args || [], {
+            env: { ...process.env, ...(def.env || {}) },
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        this.buf = '';
+        this.proc.stdout.setEncoding('utf8');
+        this.proc.stdout.on('data', (chunk) => this.onData(chunk));
+        this.proc.stderr.on('data', () => { /* logs serveur ignorés */ });
+        this.proc.on('exit', () => { for (const p of this.pending.values()) p.reject(new Error(`mcp ${this.name}: processus terminé`)); this.pending.clear(); });
+        this.proc.on('error', (e) => { for (const p of this.pending.values()) p.reject(e); this.pending.clear(); });
+    }
+    onData(chunk) {
+        this.buf += chunk;
+        for (;;) {
+            const nl = this.buf.indexOf('\n');
+            if (nl < 0) break;
+            const line = this.buf.slice(0, nl).trim();
+            this.buf = this.buf.slice(nl + 1);
+            if (!line) continue;
+            let msg;
+            try { msg = JSON.parse(line); } catch { continue; }
+            if (msg.id == null || !this.pending.has(msg.id)) continue;
+            const p = this.pending.get(msg.id);
+            this.pending.delete(msg.id);
+            if (msg.error) p.reject(new Error(msg.error.message || 'mcp error'));
+            else p.resolve(msg.result);
+        }
+    }
+    request(method, params) {
+        const id = this.nextId++;
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => { this.pending.delete(id); reject(new Error(`mcp ${this.name}: timeout ${method}`)); }, MCP_CALL_TIMEOUT_MS);
+            this.pending.set(id, { resolve: (v) => { clearTimeout(timer); resolve(v); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+            this.proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params: params || {} }) + '\n');
+        });
+    }
+    notify(method) { try { this.proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', method }) + '\n'); } catch { /* best effort */ } }
+    close() { try { this.proc.kill(); } catch { /* déjà mort */ } }
+}
+
+// Attache les serveurs demandés par le bloc : spawn, tools/list, mapping
+// de dispatch. Retourne { tools, run(name,argsJson), closeAll, attached }.
+async function attachMcps(session) {
+    const names = sessionMcpNames(session);
+    const attached = [];
+    for (const name of names) {
+        const def = mcpCatalogEntry(name);
+        if (!def) { attached.push({ name, error: 'absent du catalogue mcp-mux' }); continue; }
+        const client = new McpClient(name, def);
+        try {
+            await Promise.race([
+                client.request('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'hephaistos-chats', version: '1.0.0' } }),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout init')), MCP_SPAWN_TIMEOUT_MS)),
+            ]);
+            client.notify('notifications/initialized');
+            const listed = await client.request('tools/list');
+            const tools = (listed?.tools || []).map((t) => ({
+                type: 'function',
+                function: {
+                    name: `${MCP_PREFIX}${name}__${t.name}`.slice(0, 64),
+                    description: `[${name}] ${String(t.description || '').slice(0, 300)}`,
+                    parameters: t.inputSchema || { type: 'object', properties: {} },
+                },
+            }));
+            attached.push({ name, client, tools });
+        } catch (e) {
+            client.close();
+            attached.push({ name, error: String(e.message || e) });
+        }
+    }
+    const allTools = attached.flatMap((a) => a.tools || []);
+    const run = async (fname, argsJson) => {
+        const rest = fname.slice(MCP_PREFIX.length);
+        const sep = rest.indexOf('__');
+        const server = rest.slice(0, sep);
+        const tool = rest.slice(sep + 2);
+        const att = attached.find((a) => a.name === server && a.client);
+        if (!att) return `mcp indisponible: ${server}`;
+        let args = {};
+        try { args = typeof argsJson === 'string' ? JSON.parse(argsJson || '{}') : (argsJson || {}); }
+        catch { try { args = JSON.parse(escapeRawControlsInJsonStrings(argsJson || '{}')); } catch { /* args illisibles → {} */ } }
+        const res = await att.client.request('tools/call', { name: tool, arguments: args });
+        const text = (res?.content || []).map((c) => c.type === 'text' ? c.text : JSON.stringify(c)).join('\n');
+        return text || JSON.stringify(res ?? {});
+    };
+    const closeAll = () => { for (const a of attached) a.client?.close(); };
+    return { tools: allTools, run, closeAll, attached };
+}
+
 const CHAT_TOOLS = [
     {
         type: 'function',
@@ -292,14 +418,15 @@ async function fetchWithRetry(url, opts, label, attempts = 5) {
  * on l'exécute localement et on renvoie le résultat en message `tool`.
  * Retourne { msg, trace } — trace = une ligne par appel d'outil pour la transparence.
  */
-async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
+async function openAiToolsCompletion({ url, headers, body, cwd, label, mcps }) {
     const trace = [];
     const messages = body.messages;
+    const allTools = mcps?.tools?.length ? [...CHAT_TOOLS, ...mcps.tools] : CHAT_TOOLS;
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
         const res = await fetchWithRetry(url, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ ...body, messages, tools: CHAT_TOOLS, tool_choice: 'auto' }),
+            body: JSON.stringify({ ...body, messages, tools: allTools, tool_choice: 'auto' }),
         }, label);
         if (!res.ok) {
             const errText = await res.text().catch(() => '');
@@ -314,7 +441,7 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
                         const gen = JSON.parse(escapeRawControlsInJsonStrings(String(genText)));
                         if (gen?.name) {
                             const argsJson = typeof gen.arguments === 'string' ? gen.arguments : JSON.stringify(gen.arguments || {});
-                            const result = runLocalTool(gen.name, argsJson, cwd);
+                            const result = gen.name.startsWith(MCP_PREFIX) && mcps ? await mcps.run(gen.name, argsJson) : runLocalTool(gen.name, argsJson, cwd);
                             trace.push(`${gen.name}(réparé) → ${String(result).split('\n')[0].slice(0, 120)}`);
                             const callId = `salvage_${round}`;
                             messages.push({ role: 'assistant', content: null, tool_calls: [{ id: callId, type: 'function', function: { name: gen.name, arguments: argsJson } }] });
@@ -335,7 +462,9 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
             const fname = call?.function?.name || '';
             let result;
             try {
-                result = runLocalTool(fname, call?.function?.arguments, cwd);
+                result = fname.startsWith(MCP_PREFIX) && mcps
+                    ? await mcps.run(fname, call?.function?.arguments)
+                    : runLocalTool(fname, call?.function?.arguments, cwd);
             } catch (e) {
                 result = `erreur outil: ${e.message}`;
             }
@@ -379,6 +508,13 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
 
 /* ---------- complétion providers (miroir de runtime.ts) ---------- */
 async function completeTurn(session) {
+    // Puces MCP du bloc workflow : serveurs spawnés pour ce tour, tués après.
+    const mcps = await attachMcps(session);
+    try { return await completeTurnWithMcps(session, mcps); }
+    finally { mcps.closeAll(); }
+}
+
+async function completeTurnWithMcps(session, mcps) {
     const system = buildSystemPrompt(session.mode || 'agent', session);
     const chatMessages = [
         { role: 'system', content: system },
@@ -403,6 +539,7 @@ async function completeTurn(session) {
             body: { model, messages: chatMessages, stream: false },
             cwd: toolCwd,
             label: 'OpenRouter',
+            mcps,
         });
         return {
             content: (orMsg.content || '').trim(),
@@ -420,6 +557,7 @@ async function completeTurn(session) {
             body: { model, messages: chatMessages, stream: false },
             cwd: toolCwd,
             label: 'HuggingFace',
+            mcps,
         });
         return {
             content: (hfMsg.content || '').trim(),
@@ -459,6 +597,7 @@ async function completeTurn(session) {
             body: { model, messages: chatMessages, max_tokens: 1500, stream: false },
             cwd: toolCwd,
             label: 'OmniRoute',
+            mcps,
         });
         return {
             content: (omMsg.content || '').trim(),
@@ -481,6 +620,7 @@ async function completeTurn(session) {
             body: { model, messages: chatMessages, max_tokens: 16384, stream: false },
             cwd: toolCwd,
             label: 'NVIDIA NIM',
+            mcps,
         });
         // modèles à raisonnement : content peut être null si tout part en reasoning_content
         return {

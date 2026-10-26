@@ -35,6 +35,7 @@ interface AgentData extends Record<string, unknown> {
     role: string;
     task: string;
     skills?: string[];
+    mcps?: string[];
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
     onAgentDrop?: (agent: PaletteAgent) => void;
@@ -54,6 +55,7 @@ interface StoredNode {
     role: string;
     task: string;
     skills?: string[];
+    mcps?: string[];
     position: { x: number; y: number };
 }
 
@@ -203,9 +205,10 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
             {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
-            {(data.skills || []).length > 0 && (
+            {((data.skills || []).length + (data.mcps || []).length) > 0 && (
                 <div className="flow-node-skills">
                     {(data.skills || []).map((skill) => <span className="flow-node-skill" key={skill}>{skill}</span>)}
+                    {(data.mcps || []).map((mcp) => <span className="flow-node-skill flow-node-mcp" key={mcp} title={`MCP: ${mcp}`}>⛁ {mcp}</span>)}
                 </div>
             )}
             <Handle type="source" position={Position.Right} id="source-right" title="Sortie latérale" />
@@ -263,6 +266,7 @@ function toStoredGraph(
             role: node.data.role,
             task: node.data.task,
             skills: node.data.skills || [],
+            mcps: node.data.mcps || [],
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
         })),
         edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
@@ -980,6 +984,17 @@ function Workspace(): React.JSX.Element {
                                     >{skill} ×</button>
                                 ))}
                             </div>
+                            <label className="field-label" htmlFor="agent-mcps">Serveurs MCP — noms du broker, séparés par des virgules</label>
+                            <input
+                                id="agent-mcps"
+                                className="inspector-input"
+                                value={(selectedNode.data.mcps || []).join(', ')}
+                                onChange={(event) => updateNode(selectedNode.id, {
+                                    mcps: event.target.value.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 8),
+                                })}
+                                placeholder="vault-pepites, sqlite-node…"
+                                maxLength={600}
+                            />
                             <label className="field-label" htmlFor="agent-task">Mission de cet agent</label>
                             <textarea
                                 id="agent-task"
