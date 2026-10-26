@@ -24,6 +24,16 @@ Utiliser ce skill quand : l'utilisateur dit « orchestrateur », « dispatche »
 5. **INTERDICTION DU SLEEP PASSIF :**
    Interdiction formelle d'exécuter des `sleep` passifs ou des boucles d'attente bloquantes dans PowerShell / Bash. L'orchestrateur émet des notifications réactives `[WAKE]` dans `.agent/comms.jsonl` et via WebSocket (:7477).
 
+## Prise en compte du schéma actif (OBLIGATOIRE)
+
+Avant tout dispatch, lire `.agent/workspace-roster.json` → `workflow.activeSchema` / `activeSchemaId` :
+
+1. **Le schéma actif fait foi.** Les nœuds du graphe React Flow (rôles, tasks, skills par `sessionId`) définissent la chaîne de travail — ne pas router hors schéma.
+2. **Cibler par rôle du schéma** : `task_type` → nœud correspondant (code→Codeur, test→Testeur, review→Reviewer/Auditeur-securite, docs→Documentaliste-Vault, explore→Chercheur/Analyste). La `task` du nœud est la mission écrite par l'utilisateur — l'inclure dans `context`.
+3. **Ordre des edges** : dispatcher dans l'ordre du graphe (entrée → sortie) ; un hop en aval attend la fin de l'amont.
+4. **`agent_name` = sessionId du nœud** (chat-* pour Bleubites, acp/<provider>/<session> pour agents IDE) — jamais de worker spawné hors du graphe.
+5. **Fallback** : aucun schéma actif → routing classique par skills ; schéma présent mais nœud absent → warn + fallback skills pour CE hop seulement.
+
 ## Procédure de délégation
 
 ```
