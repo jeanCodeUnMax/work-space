@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T18:49:21.127Z",
+  "updatedAt": "2026-10-26T19:40:01.801Z",
   "core": {
     "devin": [
       {
@@ -180,7 +180,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         "role": "OpenRouter",
         "title": "brave-ibis",
         "hidden": false
@@ -229,7 +229,7 @@
         "title": "ionian-helicopter",
         "position": {
           "x": 0,
-          "y": -396
+          "y": -440
         }
       },
       {
@@ -303,13 +303,16 @@
       },
       {
         "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
-        "role": "OpenRouter",
-        "task": "",
-        "skills": [],
+        "role": "Expert-Faisabilite-Implementation",
+        "task": "Faisabilite concrete : effort reel de migration, compatibilite descendante, plan de transition et risques d'implementation. Defend la solution la plus realiste a executer — ni la plus elegante ni la plus rapide sur le papier.",
+        "skills": [
+          "database-design",
+          "plan-writing"
+        ],
         "title": "brave-ibis",
         "position": {
-          "x": 308,
-          "y": 132
+          "x": 330,
+          "y": 110
         }
       }
     ],
