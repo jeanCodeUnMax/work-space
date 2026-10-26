@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T05:54:12.399Z",
+  "updatedAt": "2026-10-26T06:23:27.320Z",
   "core": {
     "devin": [
       {
@@ -127,8 +127,78 @@
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -572,
-          "y": -154
+          "x": -520,
+          "y": -140
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Codeur",
+        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
+        "skills": [
+          "clean-code",
+          "nodejs-best-practices"
+        ],
+        "title": "keen-agent",
+        "position": {
+          "x": -220,
+          "y": -140
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Reviewer",
+        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
+        "skills": [
+          "code-review-checklist",
+          "testing-patterns"
+        ],
+        "title": "amber-agent",
+        "position": {
+          "x": 80,
+          "y": -140
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Auditeur-securite",
+        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
+        "skills": [
+          "vulnerability-scanner",
+          "mcp-security-audit"
+        ],
+        "title": "urban-agent",
+        "position": {
+          "x": 380,
+          "y": -140
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle",
+        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
+        "skills": [
+          "vulnerability-scanner",
+          "lint-and-validate"
+        ],
+        "title": "keen-agent",
+        "position": {
+          "x": -520,
+          "y": 180
+        }
+      },
+      {
+        "sessionId": "chat-mvfj773t",
+        "role": "Verif-Submodules",
+        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
+        "skills": [
+          "lint-and-validate",
+          "git-history"
+        ],
+        "title": "xenial-agent",
+        "position": {
+          "x": -220,
+          "y": 180
         }
       },
       {
@@ -146,18 +216,91 @@
         }
       },
       {
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
+        "skills": [
+          "obsidian",
+          "vault-ingest"
+        ],
+        "title": "rapid-agent",
+        "position": {
+          "x": 380,
+          "y": 180
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation technique : syntaxe (node --check), tests unitaires, smoke tests des livrables avant revue.",
+        "skills": [
+          "testing-patterns",
+          "lint-and-validate"
+        ],
+        "title": "Testeur",
+        "position": {
+          "x": 200,
+          "y": -140
+        }
+      },
+      {
         "sessionId": "acp/devin-cli/bloom-settee",
         "role": "Devin",
         "task": "Agent Devin auxiliaire — missions paralleles (maintenance infra, diagnostics).",
         "skills": [],
         "title": "bloom-settee",
         "position": {
-          "x": -308,
-          "y": -352
+          "x": -220,
+          "y": 80
         }
       }
     ],
     "edges": [
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmtldvy"
+      },
       {
         "id": "edge:acp/devin-cli/ionian-helicopter->acp/devin-cli/bloom-settee",
         "source": "acp/devin-cli/ionian-helicopter",

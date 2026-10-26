@@ -490,11 +490,14 @@ export function activate(context: vscode.ExtensionContext): void {
                 const sessionsById = new Map(store.list().map((session) => [session.id, session]));
                 for (const node of message.graph.nodes) {
                     const session = sessionsById.get(node.sessionId);
+                    // Ne pas throw : une session morte dans le graphe ne doit
+                    // pas faire echouer la sauvegarde entiere (positions
+                    // perdues). On logue et on continue.
                     if (!session && !node.sessionId.startsWith('acp/') && !node.sessionId.startsWith('local-')) {
-                        throw new Error(`Session absente du workspace: ${node.sessionId}`);
+                        console.warn('[workflow] session absente du store, noeud conserve:', node.sessionId);
                     }
                     if (session && session.workspace && workspaceRoot && session.workspace !== workspaceRoot) {
-                        throw new Error(`Session hors workspace refusée: ${node.sessionId}`);
+                        console.warn('[workflow] session hors workspace, noeud conserve:', node.sessionId);
                     }
                 }
                 const graph = workflowStore.save(message.graph);
