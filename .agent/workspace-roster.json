@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T19:40:01.801Z",
+  "updatedAt": "2026-10-26T21:51:00.432Z",
   "core": {
     "devin": [
       {
@@ -17,14 +17,14 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": true,
+        "hidden": false,
         "title": "sugary-shoemaker"
       },
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
-        "role": "President-Concil",
+        "role": "Orchestrateur",
         "hidden": false,
         "title": "ionian-helicopter"
       },
@@ -39,8 +39,8 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
-        "role": "Devin",
-        "hidden": true,
+        "role": "Architecte",
+        "hidden": false,
         "title": "bloom-settee"
       },
       {
@@ -64,7 +64,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Expert-Architecture",
+        "role": "Codeur",
         "hidden": false,
         "model": "groq/openai/gpt-oss-120b",
         "title": "keen-agent"
@@ -73,7 +73,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Expert-Qualite-Maintenabilite",
+        "role": "Reviewer",
         "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "amber-agent"
@@ -82,7 +82,7 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Expert-Securite-Risques",
+        "role": "Auditeur-securite",
         "hidden": false,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
@@ -91,8 +91,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Synthese-Faisabilite",
-        "hidden": true,
+        "role": "Sentinelle",
+        "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -100,8 +100,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Analyste-Secu-Packaging",
-        "hidden": true,
+        "role": "Verif-Submodules",
+        "hidden": false,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "xenial-agent"
       },
@@ -110,7 +110,7 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": true,
+        "hidden": false,
         "model": "groq/openai/gpt-oss-20b",
         "title": "rapid-agent"
       },
@@ -119,7 +119,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": true,
+        "hidden": false,
         "model": "meta/llama-3.3-70b-instruct",
         "title": "zealous-agent"
       },
@@ -129,15 +129,15 @@
         "restore": "open-or-reveal",
         "model": "auto/best-fast",
         "role": "Avocat-du-Diable",
-        "hidden": false,
+        "hidden": true,
         "title": "keen-nova"
       },
       {
-        "providerId": "omniroute",
+        "providerId": "nim",
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
-        "role": "Greffier-Beacon-Memoire",
-        "hidden": true,
+        "role": "Feedback-Beacon-Knowledge",
+        "hidden": false,
         "model": "z-ai/glm-5.3",
         "title": "beacon-agent"
       },
@@ -145,7 +145,7 @@
         "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Expert-Perf-Pragmatisme",
+        "role": "Sentinelle-Infra-Perf",
         "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "steady-agent"
@@ -177,13 +177,13 @@
         "hidden": true
       },
       {
-        "providerId": "openrouter",
+        "providerId": "omniroute",
         "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
         "restore": "open-or-reveal",
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
-        "role": "OpenRouter",
+        "role": "Expert-Faisabilite-Implementation",
         "title": "brave-ibis",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "openrouter",
@@ -216,152 +216,247 @@
   },
   "workflow": {
     "version": 1,
-    "name": "Concile",
+    "name": "swat-orchestrateur",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "President-Concil",
-        "task": "QUESTION AU CONCILE : Faut-il migrer le stockage des sessions de l extension Hephaistos Chats (sessions.json + workspaceState) vers SQLite/hphe ? Tranchez sur la viabilite, le plan de migration et les risques.",
+        "role": "Orchestrateur",
+        "task": "Cadrage & Supervision : analyse le besoin, découpe les étapes, supervise le déroulement global.",
         "skills": [
-          "orchestrator"
+          "orchestrator",
+          "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": 0,
-          "y": -440
+          "x": -660,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "role": "Architecte",
+        "task": "Conception & Spécification technique : architecture, contrats d'interfaces, sélection des patterns.",
+        "skills": [
+          "architecture",
+          "api-patterns",
+          "plan-writing"
+        ],
+        "title": "bloom-settee",
+        "position": {
+          "x": -330,
+          "y": -220
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
-        "role": "Expert-Architecture",
-        "task": "Vision structurelle et long terme : coherence d'architecture, scalabilite, evolutivite, patterns. Defend la solution la plus propre conceptuellement.",
+        "role": "Codeur",
+        "task": "Production de code : implémente la solution technique conformément aux spécifications.",
         "skills": [
-          "architecture",
-          "api-patterns"
+          "clean-code",
+          "nodejs-best-practices"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -330,
-          "y": -110
-        }
-      },
-      {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Expert-Securite-Risques",
-        "task": "Analyse des risques : surface d'attaque, secrets, sandboxing, blast radius, conformite. Challenge toute option fragile.",
-        "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
-        ],
-        "title": "urban-agent",
-        "position": {
           "x": 0,
-          "y": -110
+          "y": -220
         }
       },
       {
-        "sessionId": "chat-mvpfinfra",
-        "role": "Expert-Perf-Pragmatisme",
-        "task": "Pragmatisme operationnel : cout, performance, complexite d'implementation, time-to-market. Defend la solution la plus efficace a court terme.",
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation technique : tests unitaires TDD, build et compilation avant audit.",
         "skills": [
-          "performance-profiling",
-          "observability-specialist"
+          "testing-patterns",
+          "tdd-workflow"
         ],
-        "title": "steady-agent",
+        "title": "zealous-agent",
         "position": {
           "x": 330,
-          "y": -110
+          "y": -220
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
-        "role": "Expert-Qualite-Maintenabilite",
-        "task": "Maintenabilite : lisibilite, dette technique, testabilite, conventions du code. Defend la solution la plus durable.",
+        "role": "Reviewer",
+        "task": "Revue Qualité : analyse le diff pour la maintenabilité, lisibilité et respect des standards.",
         "skills": [
           "code-review-checklist",
           "clean-code"
         ],
         "title": "amber-agent",
         "position": {
-          "x": -330,
-          "y": 110
+          "x": 682,
+          "y": -440
         }
       },
       {
-        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
-        "role": "Avocat-du-Diable",
-        "task": "Contre-expertise : challenge systematique de toutes les positions, recherche des angles morts, hypotheses implicites et scenarios d'echec. Ne converge pas par complaisance.",
+        "sessionId": "chat-mvmtldvy",
+        "role": "Auditeur-securite",
+        "task": "Audit Sécurité : scanne vulnérabilités, failles d'injection, secrets et codepoints suspects.",
         "skills": [
-          "systematic-debugging"
+          "vulnerability-scanner",
+          "mcp-security-audit"
         ],
-        "title": "keen-nova",
+        "title": "urban-agent",
         "position": {
-          "x": 0,
-          "y": 110
+          "x": 682,
+          "y": -220
         }
       },
       {
-        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
-        "role": "Expert-Faisabilite-Implementation",
-        "task": "Faisabilite concrete : effort reel de migration, compatibilite descendante, plan de transition et risques d'implementation. Defend la solution la plus realiste a executer — ni la plus elegante ni la plus rapide sur le papier.",
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sentinelle-Infra-Perf",
+        "task": "Audit Infra & Performance : consommation ressources, dépendances, latence MCP et rate-limits.",
         "skills": [
-          "database-design",
-          "plan-writing"
+          "performance-profiling",
+          "observability-specialist"
         ],
-        "title": "brave-ibis",
+        "title": "steady-agent",
         "position": {
-          "x": 330,
-          "y": 110
+          "x": 682,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle",
+        "task": "Arbitrage central GO/NO-GO : consolide les 3 rapports d'audit (Qualité, Sécu, Infra) et tranche.",
+        "skills": [
+          "vulnerability-scanner",
+          "code-review-checklist"
+        ],
+        "title": "keen-agent",
+        "position": {
+          "x": 1012,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvfj773t",
+        "role": "Verif-Submodules",
+        "task": "Contrôle Git : arborescence, sous-modules et propreté du working tree.",
+        "skills": [
+          "git-history",
+          "lint-and-validate"
+        ],
+        "title": "xenial-agent",
+        "position": {
+          "x": 1342,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Livraison Git : commit conventionnel et double push vers origin et personal.",
+        "skills": [
+          "testing-patterns",
+          "lint-and-validate"
+        ],
+        "title": "sugary-shoemaker",
+        "position": {
+          "x": 1672,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Documentation Vault : consigne la note technique dans le Vault Obsidian.",
+        "skills": [
+          "obsidian",
+          "vault-ingest"
+        ],
+        "title": "rapid-agent",
+        "position": {
+          "x": 2002,
+          "y": -308
+        }
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Feedback-Beacon-Knowledge",
+        "task": "Capitalisation Hephaistos : consigne les enseignements et patterns dans agentmemory.",
+        "skills": [
+          "vault-ingest",
+          "obsidian"
+        ],
+        "title": "beacon-agent",
+        "position": {
+          "x": 2002,
+          "y": -132
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:concil->1->chat-mvmtldvy",
+        "id": "edge:orchestrateur->architecte",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmtldvy",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "target": "acp/devin-cli/bloom-settee"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-mvpfinfratarget-top",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvpfinfra",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:architecte->codeur",
+        "source": "acp/devin-cli/bloom-settee",
+        "target": "chat-mvmw59wa"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-mvmw59watarget-top",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:codeur->testeur",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-mvmw5chdtarget-top",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw5chd",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:testeur->reviewer",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmw5chd"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3target-top",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:testeur->auditeur-secu",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmtldvy"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-chat-de8acfde-0423-4480-ad11-aa4519daeee6target-top",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:testeur->infra-perf",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:reviewer->sentinelle",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:auditeur-secu->sentinelle",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:infra-perf->sentinelle",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:sentinelle->verif-submodules",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:verif-submodules->integrateur",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:integrateur->documentaliste",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:integrateur->feedback-beacon",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvp0beacon"
       }
     ],
-    "activeSchema": "Concile",
-    "activeSchemaId": "schema-mvpjbchn-ijt6c",
-    "mode": "council"
+    "activeSchema": "swat-orchestrateur",
+    "activeSchemaId": "schema-yy5cfkox-i1t73"
   }
 }
