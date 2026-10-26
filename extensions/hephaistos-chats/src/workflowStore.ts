@@ -12,7 +12,7 @@ interface RosterWorkflowApi {
     removeChatAgent(root: string, sessionId: string): WorkflowGraph;
     setMemberHidden(root: string, sessionId: string, hidden: boolean): void;
     saveSchema(root: string, name: string, graph: WorkflowGraph): unknown;
-    listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }>;
+    listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>;
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
     createEmptySchema(root: string, name: string): WorkflowGraph;
@@ -72,7 +72,7 @@ export class WorkflowStore {
         this.api.saveSchema(this.workspaceRoot, name, graph);
     }
 
-    listSchemas(all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean }> {
+    listSchemas(all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }> {
         return this.api.listSchemas(this.workspaceRoot, all);
     }
 

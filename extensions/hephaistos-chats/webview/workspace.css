@@ -805,6 +805,12 @@ textarea {
     font-size: 10px;
 }
 
+.schema-council-badge {
+    color: #7db3d9;
+    margin-right: 5px;
+    font-size: 10px;
+}
+
 .schema-delete-confirm {
     opacity: 1 !important;
     border-color: rgba(220,80,80,0.8) !important;

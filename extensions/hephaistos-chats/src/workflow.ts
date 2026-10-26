@@ -36,6 +36,8 @@ export interface WorkflowGraph {
     entrySessionId: string | null;
     nodes: WorkflowNode[];
     edges: WorkflowEdge[];
+    /** 'council' = délibération multi-experts sur transcript partagé (tours séquentiels). */
+    mode?: 'council';
 }
 
 export interface WorkflowViewNode extends WorkflowNode {
