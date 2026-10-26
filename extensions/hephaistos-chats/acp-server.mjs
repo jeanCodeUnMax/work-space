@@ -109,7 +109,7 @@ function buildSystemPrompt(mode) {
  * Les providers HTTP (nim/nim2/omniroute/openrouter/huggingface) répondent en
  * chat completions — sans boucle tool_calls ils décrivent des actions au lieu
  * de les exécuter. On expose ici le minimum FS, confiné au workspace. */
-const MAX_TOOL_ROUNDS = 8;
+const MAX_TOOL_ROUNDS = 16;
 const CHAT_TOOLS = [
     {
         type: 'function',
@@ -310,6 +310,28 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
             }
         }
     }
+    // Rounds épuisés : le travail a été fait via les outils mais aucun texte
+    // final n'a été émis → "Réponse vide" alors que les livrables existent.
+    // Dernier appel SANS outils pour récupérer la synthèse du tour.
+    try {
+        const res = await fetchWithRetry(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                ...body,
+                messages: [...messages, {
+                    role: 'user',
+                    content: 'Synthèse finale : indique en quelques lignes ce qui a été produit (fichiers écrits, actions faites, verdict). Ne lance plus aucun outil.',
+                }],
+                tool_choice: 'none',
+            }),
+        }, label);
+        if (res.ok) {
+            const json = await res.json();
+            const msg = json.choices?.[0]?.message || {};
+            if ((msg.content || '').trim()) return { msg, trace };
+        }
+    } catch { /* la synthèse est best-effort — le trace suffit */ }
     return { msg: { content: '' }, trace };
 }
 
@@ -411,7 +433,10 @@ async function completeTurn(session) {
         const { msg, trace } = await openAiToolsCompletion({
             url: 'https://integrate.api.nvidia.com/v1/chat/completions',
             headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: { model, messages: chatMessages, max_tokens: 4096, stream: false },
+            // Les modèles à raisonnement (nemotron-*) consomment le budget en
+            // reasoning_content avant d'émettre content — 4096 suffisait pour
+            // l'outil mais vidait la réponse finale. 16384 laisse de la marge.
+            body: { model, messages: chatMessages, max_tokens: 16384, stream: false },
             cwd: toolCwd,
             label: 'NVIDIA NIM',
         });
