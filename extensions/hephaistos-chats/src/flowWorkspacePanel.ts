@@ -114,7 +114,14 @@ export class FlowWorkspacePanel {
         this.sendWorkflow();
     }
 
+    private lastWorkflowJson = '';
+
     private sendWorkflow(): void {
+        const json = JSON.stringify(this.workflow);
+        // Dedup : le watcher roster repousse souvent le meme etat — skip
+        // pour eviter le flicker et les artefacts au changement de schema.
+        if (json === this.lastWorkflowJson) { this.sendIconTheme(); return; }
+        this.lastWorkflowJson = json;
         void this.panel.webview.postMessage({ type: 'workflow_state', workflow: this.workflow });
         this.sendIconTheme();
     }
