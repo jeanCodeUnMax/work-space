@@ -552,6 +552,10 @@ async function main() {
             return;
         }
         if (sub === 'load') {
+            if (args[1] === 'delete') {
+                console.log(JSON.stringify({ command: 'schema delete', ...deleteSchema(root, args[2]) }, null, 1));
+                return;
+            }
             const w = loadSchema(root, args[2]);
             console.log(JSON.stringify({ command: 'schema load', nodes: w.nodes.length, edges: w.edges.length }, null, 1));
             return;
@@ -698,7 +702,8 @@ function saveSchema(root, name, graph) {
         graph: validateWorkflow(graph),
         savedAt: new Date().toISOString(),
     };
-    const index = list.findIndex((item) => item.name === entry.name && item.workspace === workspace);
+    const norm = (v) => String(v || '').trim().toLowerCase();
+    const index = list.findIndex((item) => norm(item.name) === norm(entry.name) && item.workspace === workspace);
     if (index >= 0) {
         entry.id = list[index].id;
         list[index] = entry;
@@ -720,6 +725,19 @@ function listSchemas(root, all) {
             savedAt: item.savedAt,
             nodes: ((item.graph && item.graph.nodes) || []).length,
         }));
+}
+
+function deleteSchema(root, id) {
+    const list = readSchemas();
+    const next = list.filter((item) => item.id !== id);
+    writeSchemas(next);
+    const roster = loadRoster(root);
+    if (roster.workflow && roster.workflow.activeSchemaId === id) {
+        delete roster.workflow.activeSchema;
+        delete roster.workflow.activeSchemaId;
+        writeRoster(root, roster);
+    }
+    return { deleted: list.length - next.length };
 }
 
 function loadSchema(root, id) {

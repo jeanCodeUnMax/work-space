@@ -542,6 +542,17 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'schema_delete') {
+            try {
+                workflowStore.deleteSchema(String((message as { id?: string }).id || ''));
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+                FlowWorkspacePanel.update(view(workflowStore.load(store.list())));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
         // Thème d'icônes : persisté en workspaceState puis repoussé aux
         // webviews (canvas + chats ouverts) pour rebaser les URI media.
         if (message.type === 'set_icon_theme') {
