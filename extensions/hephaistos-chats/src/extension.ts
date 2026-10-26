@@ -791,6 +791,22 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'schema_update_standard') {
+            try {
+                const result = workflowStore.updateStandardSchema(
+                    String((message as { id?: string }).id || ''),
+                    workflowStore.load(store.list()),
+                );
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+                if (result?.updated === false) {
+                    FlowWorkspacePanel.error(`Promotion impossible : ${result.error || 'inconnu'}`);
+                }
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
         if (message.type === 'schema_delete') {
             try {
                 workflowStore.deleteSchema(String((message as { id?: string }).id || ''));

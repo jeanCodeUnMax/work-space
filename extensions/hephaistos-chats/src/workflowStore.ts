@@ -16,6 +16,7 @@ interface RosterWorkflowApi {
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
     renameSchema(root: string, id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string };
+    updateStandardSchema(root: string, id: string, graph: WorkflowGraph): { updated?: boolean; name?: string; error?: string };
     createEmptySchema(root: string, name: string): WorkflowGraph;
     restoreStandardSchemas(root: string): { restored: string[] };
     getWorkflowAgentProfile(root: string, sessionId: string): {
@@ -95,6 +96,10 @@ export class WorkflowStore {
 
     renameSchema(id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string } {
         return this.api.renameSchema(this.workspaceRoot, id, name);
+    }
+
+    updateStandardSchema(id: string, graph: WorkflowGraph): { updated?: boolean; name?: string; error?: string } {
+        return this.api.updateStandardSchema(this.workspaceRoot, id, graph);
     }
 
     getAgentProfile(sessionId: string): {

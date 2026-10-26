@@ -1126,6 +1126,33 @@ function restoreStandardSchemas(root) {
     return { restored };
 }
 
+function updateStandardSchema(root, id, graph) {
+    // Promotion officielle d'un schéma standard : écrit le gabarit canonique
+    // .agent/templates/schemas/<name>.json ET resynchronise l'entrée banque.
+    // C'est l'« ordre contraire » : modification volontaire du modèle gravé.
+    const list = readSchemas();
+    const workspace = path.resolve(root);
+    const entry = list.find((item) => item.id === id);
+    if (!entry) return { updated: false, error: 'schema introuvable' };
+    if (!(entry.builtin === true || isStandardSchemaName(entry.name))) {
+        return { updated: false, error: 'pas un schema standard' };
+    }
+    const name = entry.name;
+    const cleanGraph = cleanSchemaGraph(graph, name);
+    const dir = schemaTemplateDir(root);
+    const file = path.join(dir, `${name}.json`);
+    try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(file, JSON.stringify({ name, graph: cleanGraph, mode: entry.mode }, null, 2));
+    } catch (error) {
+        return { updated: false, error: String(error && error.message || error) };
+    }
+    const index = list.findIndex((item) => item.id === id);
+    list[index] = { ...entry, graph: cleanGraph, desc: schemaDesc(cleanGraph), savedAt: new Date().toISOString(), builtin: true };
+    writeSchemas(list);
+    return { updated: true, name, template: file };
+}
+
 function loadSchema(root, id) {
     const list = readSchemas();
     const entry = list.find((item) => item.id === id);
@@ -1232,6 +1259,7 @@ module.exports = {
     loadSchema,
     deleteSchema,
     renameSchema,
+    updateStandardSchema,
     createEmptySchema,
     restoreStandardSchemas,
     isStandardSchemaName,
