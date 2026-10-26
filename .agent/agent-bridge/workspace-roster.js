@@ -141,14 +141,18 @@ function writeRoster(root, roster) {
 
 function readWorkflow(root) {
     const roster = loadRoster(root);
+    const savedActiveSchemaId = roster.workflow && roster.workflow.activeSchemaId;
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
+    if (savedActiveSchemaId) { workflow.activeSchemaId = savedActiveSchemaId; workflow.activeSchema = roster.workflow.activeSchema; workflow.name = roster.workflow.name; }
     if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
     if (roster.workflow && roster.workflow.activeSchemaId) workflow.activeSchemaId = roster.workflow.activeSchemaId;
     return workflow;
 }
 function syncRosterWorkflow(root, sessions) {
     const roster = loadRoster(root);
+    const savedActiveSchemaId = roster.workflow && roster.workflow.activeSchemaId;
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());
+    if (savedActiveSchemaId) { workflow.activeSchemaId = savedActiveSchemaId; workflow.activeSchema = roster.workflow.activeSchema; workflow.name = roster.workflow.name; }
     const byId = new Map((Array.isArray(sessions) ? sessions : []).map((session) => [session.id, session]));
     let changed = false;
     const members = [];
@@ -163,7 +167,13 @@ function syncRosterWorkflow(root, sessions) {
     });
     const rosterIds = new Set(uniqueMembers.filter((item) => !item.member.hidden).map((item) => item.member.sessionId));
 
-    const activeNodes = workflow.nodes.filter((node) => rosterIds.has(node.sessionId));
+    // Schema actif : le graphe sauvegarde fait foi — les noeuds du schema
+    // (meme sessions hors roster) ne sont PAS elagues, sinon le schema
+    // parait casse au premier sync.
+    const schemaIds = workflow.activeSchemaId ? new Set(workflow.nodes.map((n) => n.sessionId)) : null;
+    const keepNode = (id) => rosterIds.has(id) || (schemaIds && schemaIds.has(id));
+
+    const activeNodes = workflow.nodes.filter((node) => keepNode(node.sessionId));
     if (activeNodes.length !== workflow.nodes.length) {
         workflow.nodes = activeNodes;
         changed = true;
@@ -762,19 +772,6 @@ function loadSchema(root, id) {
     workflow.name = entry.name;
     workflow.activeSchema = entry.name;
     workflow.activeSchemaId = entry.id;
-    // Elagage : ne garder que les membres roster non-hidden (le schema
-    // peut contenir des sessions mortes — elles deviendraient des
-    // fantomes qui flicker au prochain sync).
-    const alive = new Set();
-    for (const group of ['devin', 'cerberos', 'bleubites']) {
-        for (const member of (roster.core && roster.core[group]) || []) {
-            if (!member.hidden) alive.add(member.sessionId);
-        }
-    }
-    workflow.nodes = workflow.nodes.filter((node) => alive.has(node.sessionId));
-    const nodeIds = new Set(workflow.nodes.map((node) => node.sessionId));
-    workflow.edges = workflow.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
-    if (workflow.entrySessionId && !nodeIds.has(workflow.entrySessionId)) workflow.entrySessionId = null;
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
