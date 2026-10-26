@@ -692,6 +692,14 @@ function writeSchemas(list) {
     } catch { /* silencieux */ }
 }
 
+function schemaDesc(graph) {
+    const nodes = (graph && graph.nodes) || [];
+    const roles = [...new Set(nodes.map((n) => n.role).filter(Boolean))];
+    const head = nodes.find((n) => graph.entrySessionId && n.sessionId === graph.entrySessionId);
+    const base = nodes.length + ' agents — ' + roles.join(', ');
+    return (head ? 'Entree: ' + (head.title || head.sessionId) + '. ' : '') + base.slice(0, 300);
+}
+
 function saveSchema(root, name, graph) {
     const list = readSchemas();
     const workspace = path.resolve(root);
@@ -700,6 +708,7 @@ function saveSchema(root, name, graph) {
         name: String(name || 'Schema').slice(0, 120),
         workspace,
         graph: validateWorkflow(graph),
+        desc: schemaDesc(graph),
         savedAt: new Date().toISOString(),
     };
     const norm = (v) => String(v || '').trim().toLowerCase();
@@ -724,6 +733,7 @@ function listSchemas(root, all) {
             workspace: item.workspace,
             savedAt: item.savedAt,
             nodes: ((item.graph && item.graph.nodes) || []).length,
+            desc: item.desc || schemaDesc(item.graph),
         }));
 }
 

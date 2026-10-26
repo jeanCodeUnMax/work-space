@@ -233,7 +233,7 @@ function Workspace(): React.JSX.Element {
     const [skillQuery, setSkillQuery] = useState('');
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
-    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number }>>([]);
+    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string }>>([]);
     const [showAllSchemas, setShowAllSchemas] = useState(false);
     const [schemaName, setSchemaName] = useState('');
     const [progress, setProgress] = useState<Record<string, Progress>>({});
@@ -518,7 +518,7 @@ function Workspace(): React.JSX.Element {
                                     <button
                                         type="button"
                                         className="schema-load"
-                                        title={schema.workspace}
+                                        title={schema.desc || schema.name}
                                         onClick={() => loadSchema(schema.id)}
                                     >{schema.name}</button>
                                     <span className="schema-meta">
