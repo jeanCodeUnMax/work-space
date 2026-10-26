@@ -1,0 +1,115 @@
+# kit.toml — manifeste déclaratif du kit Hephaistos2
+# emplacement : racine du workspace C:\Program Files\Projet-complet\hephaistos2-kit
+
+# --- prerequis ---
+[prerequis]
+node = ">=20.0.0"
+pwsh = ">=7.0.0"
+git = ">=2.30.0"
+winget = "installed"
+uv = ">=0.1.0"
+
+# --- engine ---
+[engine]
+# appelle le script install.ps1 existant
+install = "install.ps1"
+
+# --- agent-layer ---
+[agent-layer]
+# initialise le scaffold .agent et synchro
+init-project = "init-project.ps1"
+sync-agent-layer = "sync-agent-layer.ps1"
+
+# --- cli ---
+[[cli]]
+name = "devin"
+install = "npm -g devin"
+check = "devin --version"
+
+[[cli]]
+name = "agy"
+install = "npm -g agy"
+check = "agy --version"
+
+[[cli]]
+name = "kilo"
+install = "npm -g kilo"
+check = "kilo --version"
+
+[[cli]]
+name = "hermes"
+install = "npm -g hermes"
+check = "hermes --version"
+
+[[cli]]
+name = "opencode"
+install = "npm -g opencode"
+check = "opencode --version"
+
+[[cli]]
+name = "omniroute"
+install = "npm -g omniroute"
+check = "omniroute --version"
+required = true
+
+[[cli]]
+name = "uvx"
+install = "uv tool install uvx"
+check = "uvx --version"
+
+# --- extensions ---
+[[extensions]]
+name = "hephaistos-chats"
+install = "install-extension-hub.ps1"
+check = "code --list-extensions | grep hephaistos-chats"
+
+[[extensions]]
+name = "orchestrator-monitor"
+install = "install-extension-hub.ps1"
+check = "code --list-extensions | grep orchestrator-monitor"
+
+[[extensions]]
+name = "kit-search"
+install = "install-extension-hub.ps1"
+check = "code --list-extensions | grep kit-search"
+
+[[extensions]]
+name = "postdev"
+install = "install-extension-hub.ps1"
+check = "code --list-extensions | grep postdev"
+
+# --- plugin ---
+[plugin]
+# installation locale du plugin Devin
+install = "devin plugins install --local plugin-devin"
+
+# --- config ---
+[config]
+# fichiers de configuration existants + mcp.json + skills/rules
+mcp-json = "mcp.json"
+skills-dir = ".agent/skills"
+rules-dir = ".agent/rules"
+setup-config-mjs = "setup-config.mjs"
+setup-devin-acp-mjs = "setup-devin-acp.mjs"
+setup-devin-binome-ps1 = "setup-devin-binome.ps1"
+setup-agent-surfaces-ps1 = "setup-agent-surfaces.ps1"
+setup-mcp-mux-mjs = "setup-mcp-mux.mjs"
+
+# --- services ---
+[services]
+# hphe-indexd task, hphe-taskwatch, bridge :7477, startup Rest
+hphe-indexd = "mcp_autostart.ps1"
+taskwatch = "start-workspace.ps1"
+bridge-port = 7477
+
+# --- secrets ---
+[secrets]
+# clés via env vars ou prompt interactif (JAMAIS en dur)
+NVIDIA_API_KEY = "%NVIDIA_API_KEY%"
+NVIDIA_API_KEY_2 = "%NVIDIA_API_KEY_2%"
+GEMINI_API_KEY = "%GEMINI_API_KEY%"
+
+# --- health ---
+[health]
+# checks executés par kit-health.ps1
+checks = ["initialize", "daemon", "extensions", "roster", "comms", "port7477"]
