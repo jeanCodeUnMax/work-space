@@ -413,6 +413,8 @@ export function activate(context: vscode.ExtensionContext): void {
                 } catch { /* bridge indisponible */ }
             }
             const target = live.find((s) => s.focused)?.sessionId || live[0]?.sessionId || referentId;
+            // Ne rouvrir l'onglet cascade QUE si la session n'etait pas
+            // deja live : sinon vscode.open cree un doublon du chat.
             if (workspaceRoot) {
                 try {
                     fs.appendFileSync(
@@ -421,7 +423,9 @@ export function activate(context: vscode.ExtensionContext): void {
                     );
                 } catch { /* bus indisponible */ }
             }
-            void openAcpSession(target);
+            // Pas d'openAcpSession ici : la session cible est deja live
+            // (l'utilisateur ecrit dedans) — vscode.open sur son URI cascade
+            // ouvrirait le meme chat en doublon.
             const sent = wsRoot ? await injectIdeAgentText(
                 providerId,
                 target,
