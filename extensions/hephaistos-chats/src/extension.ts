@@ -525,6 +525,14 @@ export function activate(context: vscode.ExtensionContext): void {
                 .map((entry) => entry.name);
         } catch { /* pas de dossier skills */ }
         const skillSet = new Set(skills);
+        // Registre central skill-mux : tous les skills de la machine,
+        // dedupliques (canonical > user > packs externes). Rafraichi par
+        // .agent/skill-mux/registry-builder.mjs.
+        try {
+            const regPath = workspaceRoot ? path.join(workspaceRoot, '.agent', 'skill-registry.json') : '';
+            const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+            for (const s of reg.skills || []) skillSet.add(String(s.name));
+        } catch { /* registre absent : sources directes ci-dessous */ }
         // Enrichit aussi depuis les catalogues de skills utilisateur et les
         // schemas sauvegardes : toutes les competences disponibles.
         for (const dir of [
