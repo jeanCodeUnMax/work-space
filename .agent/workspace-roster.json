@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T04:45:10.111Z",
+  "updatedAt": "2026-10-26T04:51:16.860Z",
   "core": {
     "devin": [
       {
@@ -237,8 +237,8 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": -1504.5161532708075,
-          "y": -891.7196793980661
+          "x": -1518,
+          "y": -902
         }
       },
       {
@@ -251,8 +251,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": -1307.5684755083334,
-          "y": -1159.28961265304
+          "x": -1232,
+          "y": -902
         }
       },
       {
@@ -388,8 +388,6 @@
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "acp/devin-cli/bloom-settee"
       }
-    ],
-    "activeSchema": "swat-orchestrateur",
-    "activeSchemaId": "schema-yy5cfkox-i1t73"
+    ]
   }
 }
