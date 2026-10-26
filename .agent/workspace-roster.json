@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T03:48:19.636Z",
+  "updatedAt": "2026-10-26T04:35:24.656Z",
   "core": {
     "devin": [
       {
@@ -38,7 +38,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Devin",
-        "hidden": true
+        "hidden": false
       }
     ],
     "cerberos": [
@@ -144,18 +144,33 @@
       },
       {
         "providerId": "hephaistos",
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "restore": "open-or-reveal",
-        "role": "Devin",
-        "hidden": true
-      },
-      {
-        "providerId": "hephaistos",
         "sessionId": "chat-9bbf1552-79d4-4bd8-a9ab-53daead49408",
         "restore": "open-or-reveal",
         "model": "opencode/nemotron-3-ultra-free",
         "role": "Antigravity",
         "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-d1bdaa4d-aae8-48b3-b1b7-a4f9165b91ed",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-dee69c04-e6e2-4976-9720-3845e29beb96",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Codeur",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "restore": "open-or-reveal",
+        "role": "Devin"
       }
     ]
   },
@@ -235,8 +250,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": -570,
-          "y": -128
+          "x": -554.9713049800371,
+          "y": -146.964404506369
         }
       },
       {
@@ -277,7 +292,7 @@
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": -520,
+          "x": -522,
           "y": 72
         }
       },
@@ -305,8 +320,19 @@
         ],
         "title": "zealous-agent",
         "position": {
-          "x": -842.9195748287565,
-          "y": -326.29782054537054
+          "x": -950.2149317550038,
+          "y": -364.60204533039996
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "role": "Devin",
+        "task": "Agent Devin auxiliaire — missions paralleles (maintenance infra, diagnostics).",
+        "skills": [],
+        "title": "bloom-settee",
+        "position": {
+          "x": -1210,
+          "y": -626
         }
       }
     ],
@@ -355,6 +381,11 @@
         "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
         "source": "chat-mvfj8b4m",
         "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->acp/devin-cli/bloom-settee",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/devin-cli/bloom-settee"
       }
     ],
     "activeSchema": "swat-orchestrateur",
