@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T16:24:18.752Z",
+  "updatedAt": "2026-10-26T16:34:48.262Z",
   "core": {
     "devin": [
       {
@@ -160,191 +160,219 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Orchestrer le pipeline de validation et livraison v0.3.22 : vérification du correctif de persistance automatique des schémas/positions, tests, revue de code, audit de sécurité, contrôle sentinelle, preflight git, commit conventionnel et double push (origin + personal).",
+        "task": "Cadrage et supervision générale : analyse le besoin utilisateur, découpe la stratégie, configure les agents et supervise le déroulement global du pipeline.",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -520,
-          "y": -140
+          "x": -660,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "role": "Architecte",
+        "task": "Conception & Spécification technique : établit l'architecture, définit les contrats d'interfaces, sélectionne les bibliothèques et prépare la structure des fichiers cibles.",
+        "skills": [
+          "architecture",
+          "api-patterns",
+          "plan-writing"
+        ],
+        "title": "bloom-settee",
+        "position": {
+          "x": -330,
+          "y": -220
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "Valider l'implémentation de la v0.3.22 : auto-sauvegarde des positions dans ~/.hephaistos-workflow-schemas.json à chaque drag, élimination des écrasements de positions au changement de schéma, conservation de activeSchemaId et restauration des blocs sans historique.",
+        "task": "Production de code : implémente la solution technique conformément aux spécifications de l'Architecte, en appliquant les patterns du projet et les standards clean-code.",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -220,
-          "y": -140
+          "x": 0,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation technique immédiate : exécute la suite de tests (npm test, tsc), écrit les tests unitaires de non-régression et valide le build avant distribution.",
+        "skills": [
+          "testing-patterns",
+          "tdd-workflow"
+        ],
+        "title": "zealous-agent",
+        "position": {
+          "x": 330,
+          "y": -220
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "Revue détaillée du diff git complet : qualité du code, respect des conventions Hephaistos, absence de régression sur la gestion des sessions ou les flux du roster.",
+        "task": "Revue de code & Maintenabilité : examine le diff git pour la lisibilité, le respect des conventions Hephaistos, l'absence d'effets de bord et la robustesse.",
         "skills": [
           "code-review-checklist",
-          "testing-patterns"
+          "clean-code"
         ],
         "title": "amber-agent",
         "position": {
-          "x": 80,
-          "y": -140
+          "x": 660,
+          "y": -352
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audit de sécurité pré-commit : scan des codepoints bidi/zero-width/invisibles, vérification de l'absence de secrets, tokens ou variables d'environnement exposés dans le diff ou les fichiers de schémas.",
+        "task": "Audit de sécurité & Résilience : scanne les vulnérabilités, l'absence de secrets/tokens, l'injection de code et les codepoints invisibles/bidi/zero-width.",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
         "title": "urban-agent",
         "position": {
-          "x": 380,
-          "y": -140
+          "x": 660,
+          "y": -132
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sentinelle-Infra-Perf",
+        "task": "Audit Infrastructure & Performance : analyse la consommation des ressources, la latence des appels MCP/réseau, le respect des rate-limits et la stabilité runtime.",
+        "skills": [
+          "performance-profiling",
+          "observability-specialist"
+        ],
+        "title": "steady-agent",
+        "position": {
+          "x": 660,
+          "y": 88
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Arbitrage final pré-intégration : consolider les avis du Reviewer et de l'Auditeur-sécurité, vérifier les critères de qualité et émettre le verdict officiel GO pour le commit et le double push.",
+        "task": "Arbitrage central GO/NO-GO : consolide les verdicts des 3 analyses parallèles (Revue + Sécurité + Infra) et émet le feu vert impératif pour l'intégration.",
         "skills": [
           "vulnerability-scanner",
-          "lint-and-validate"
+          "code-review-checklist"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -520,
-          "y": 180
+          "x": 990,
+          "y": -132
         }
       },
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "Contrôle préflight git : inspecter l'arborescence git, vérifier la propreté des sous-modules (extension, extensions/orchestrator-monitor) et l'absence d'artéfacts temporaires parasites.",
+        "task": "Contrôle preflight Git : inspecte l'arborescence git, vérifie que les sous-modules sont propres et qu'aucun fichier parasite ou non versionné n'est embarqué.",
         "skills": [
-          "lint-and-validate",
-          "git-history"
+          "git-history",
+          "lint-and-validate"
         ],
         "title": "xenial-agent",
         "position": {
-          "x": -220,
-          "y": 180
+          "x": 1320,
+          "y": -132
         }
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "Intégration git sécurisée : stager les modifications de hephaistos-chats et workspace-roster, créer le commit conventionnel fix(chats): auto-sauvegarde n8n des positions et switch de schema (v0.3.22), et pusher sur origin (projet-temporaire) et personal (lascard-m).",
+        "task": "Livraison & Intégration Git : prépare le commit conventionnel, vérifie l'absence de données sensibles et pousse sur les dépôts distants autorisés (origin + personal).",
         "skills": [
-          "lint-and-validate",
-          "testing-patterns"
+          "testing-patterns",
+          "lint-and-validate"
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": 80,
-          "y": 180
+          "x": 1650,
+          "y": -132
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Documenter la version 0.3.22 : consigner les causes racines du dysfonctionnement de persistance, la solution technique adoptée (double écriture live roster + schemas.json) et la mise à jour des tests de régression.",
+        "task": "Documentation & Traçabilité : consigne les notes techniques dans le Vault Obsidian, rédige les rapports de dysfonctionnement et met à jour l'historique du projet.",
         "skills": [
           "obsidian",
           "vault-ingest"
         ],
         "title": "rapid-agent",
         "position": {
-          "x": 380,
-          "y": 180
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Exécuter et valider la suite de tests automatisés de l'extension hephaistos-chats (8 tests unitaires dont le test de cycle complet de bascule de schéma), vérifier le build esbuild du webview et la compilation tsc.",
-        "skills": [
-          "testing-patterns",
-          "lint-and-validate"
-        ],
-        "title": "zealous-agent",
-        "position": {
-          "x": 66,
-          "y": -418
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "role": "Devin",
-        "task": "Agent Devin auxiliaire — missions paralleles (maintenance infra, diagnostics).",
-        "skills": [],
-        "title": "bloom-settee",
-        "position": {
-          "x": -264,
-          "y": -396
+          "x": 1980,
+          "y": -132
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:acp/devin-cli/ionian-helicopter->chat-mvmw59wa",
+        "id": "edge:orchestrateur->architecte",
         "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/devin-cli/bloom-settee"
+      },
+      {
+        "id": "edge:architecte->codeur",
+        "source": "acp/devin-cli/bloom-settee",
         "target": "chat-mvmw59wa"
       },
       {
-        "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
-        "source": "chat-mvmw5chd",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
-        "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
-        "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
-        "source": "chat-mvfj773t",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvflr6cn"
-      },
-      {
-        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
+        "id": "edge:codeur->testeur",
         "source": "chat-mvmw59wa",
         "target": "chat-mvfj8b4m"
       },
       {
-        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
+        "id": "edge:testeur->reviewer",
         "source": "chat-mvfj8b4m",
         "target": "chat-mvmw5chd"
       },
       {
-        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
+        "id": "edge:testeur->auditeur-secu",
         "source": "chat-mvfj8b4m",
         "target": "chat-mvmtldvy"
       },
       {
-        "id": "edge:acp/devin-cli/ionian-helicopter->acp/devin-cli/bloom-settee",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/bloom-settee"
+        "id": "edge:testeur->infra-perf",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:reviewer->sentinelle",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:auditeur-secu->sentinelle",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:infra-perf->sentinelle",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:sentinelle->verif-submodules",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:verif-submodules->integrateur",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:integrateur->documentaliste",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvflr6cn"
       }
     ],
     "activeSchema": "swat-orchestrateur",
