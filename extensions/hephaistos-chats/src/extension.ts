@@ -301,9 +301,29 @@ export function activate(context: vscode.ExtensionContext): void {
     // Rouvrir une session existante la réintègre au roster : sinon un agent
     // retiré du workspace n'a aucun chemin de retour (la session existe
     // toujours dans sessions.json, seule l'appartenance manque).
+    // Sessions ACP (acp/devin-cli/<slug>, acp/<provider>/<id>) : pas de
+    // sessions.json, elles vivent dans les conversations de l'IDE. On révèle
+    // l'onglet cascade existant — même URI = même onglet, jamais de doublon.
+    async function openAcpSession(sessionId: string): Promise<void> {
+        const cascadeUri = `vscode-cascade-editor:///cascade-${sessionId}`;
+        try {
+            await vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(cascadeUri), { preview: false });
+            return;
+        } catch { /* onglet absent → panneau chat */ }
+        try {
+            await vscode.commands.executeCommand('devin.sendChatActionMessage', JSON.stringify({
+                actionType: 'openCascadeIdInChatPanel',
+                payload: [Buffer.from(sessionId, 'utf8').toString('base64')],
+            }));
+        } catch { /* session introuvable côté IDE */ }
+    }
+
     function openSession(sessionId: string): void {
         const session = store.get(sessionId);
-        if (!session) return;
+        if (!session) {
+            if (sessionId.startsWith('acp/')) void openAcpSession(sessionId);
+            return;
+        }
         try {
             workflowStore?.upsertSession(session);
         } catch (error) {

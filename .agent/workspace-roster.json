@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T01:44:08.005Z",
+  "updatedAt": "2026-10-26T02:09:53.433Z",
   "core": {
     "devin": [
       {
@@ -48,7 +48,7 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Plan-Architecture",
+        "role": "Codeur",
         "hidden": false
       },
       {
@@ -56,7 +56,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Plan-Normalisation",
+        "role": "Reviewer",
         "hidden": false
       },
       {
@@ -64,7 +64,7 @@
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "Redacteur-PRD",
+        "role": "Sentinelle",
         "hidden": false
       },
       {
@@ -80,7 +80,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "model": "openai/gpt-oss-20b",
-        "role": "Plan-Secu-Perms",
+        "role": "Verif-Submodules",
         "hidden": false
       },
       {
@@ -156,113 +156,113 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Orchestre le pipeline J1-J3 du tracker PRD/tracker.md: codeur implemente plugin-devin/, reviewer+auditeur en parallele, sentinelle arbitre, preflight, integrateur commit/push, documentaliste note. Supervise via comms.jsonl, fallback nim-worker si un chat-session gele",
         "skills": [
           "orchestrator",
           "plan-writing"
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -520,
-          "y": -140
+          "x": -1436.7452453096655,
+          "y": -148.72138340456553
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Implemente le plugin squelette: cree plugin-devin/ a la racine (plugin.json, manifest.json, src/), genere skills-to-plugin-commands.json en normalisant .agent/skills (jointes, binome, flux, bleubite-dispatch), implemente execute_skill_<nom> et le proxy JSON-RPC stdio vers hphe-mcp.exe. Reference format: PRD/prd-master.md + PRD/prd-normalisation.md + F:/CLI-Anything (plugin de reference). Livrable: code sur disque + resume dans PRD/implementation/j1-j3-codeur.md",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -220,
-          "y": -140
+          "x": -1140.10708583724,
+          "y": -147.95578042880155
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Relis la production du codeur: plugin-devin/ (plugin.json, manifest.json, skills-to-plugin-commands.json, proxy MCP, execute_skill_*). Verifie conformite PRD/prd-master.md et PRD/prd-normalisation.md, qualite, cas limites. Verdict VALIDE/CORRECTIONS dans PRD/implementation/j1-j3-review.md",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
         ],
         "title": "amber-agent",
         "position": {
-          "x": 80,
-          "y": -140
+          "x": -840.10708583724,
+          "y": -147.95578042880155
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Audite plugin-devin/: manifeste NTFS (elevation, liste des outils), secrets, permissions, surface d'attaque du proxy JSON-RPC. Verdict PASS/FAIL motive dans PRD/implementation/j1-j3-audit.md",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
         "title": "urban-agent",
         "position": {
-          "x": 380,
-          "y": -140
+          "x": -559.697389183123,
+          "y": -150.98721356182233
         }
       },
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Controle final avant integration: verifie verdicts reviewer+auditeur, scanne le diff pour secrets, tranche GO/NO-GO dans PRD/implementation/j1-j3-sentinelle.md",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
         ],
         "title": "keen-agent",
         "position": {
-          "x": -520,
-          "y": 180
+          "x": -1423.390350995092,
+          "y": 60.92940034518088
         }
       },
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Preflight git: etat des sous-modules, fichiers a committer (plugin-devin/, PRD/implementation/, extension 0.3.10), exclusions, derives. Rapport PRD/implementation/j1-j3-preflight.md",
         "skills": [
           "lint-and-validate",
           "git-history"
         ],
         "title": "xenial-agent",
         "position": {
-          "x": -220,
-          "y": 180
+          "x": -1142.854696244247,
+          "y": 60.24890825595378
         }
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Integration git finale: relis le diff (plugin-devin/, PRD/implementation/, extensions/hephaistos-chats 0.3.10), verifie absence de secrets, commit conventionnel + push UNIQUEMENT si Sentinelle=GO",
         "skills": [
           "lint-and-validate",
           "testing-patterns"
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": 80,
-          "y": 180
+          "x": -866.3315953847684,
+          "y": 58.01783948757782
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
+        "task": "MISSION J1-J3 PLUGIN DEVIN — Apres integration: note de documentation du jalon J1-J3 (ce qui a ete livre, decisions, suite J4) dans PRD/implementation/j1-j3-doc.md",
         "skills": [
           "obsidian",
           "vault-ingest"
         ],
         "title": "rapid-agent",
         "position": {
-          "x": 380,
-          "y": 180
+          "x": -574.248457237302,
+          "y": 55.71165360609663
         }
       }
     ],
@@ -307,8 +307,6 @@
         "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
       }
-    ],
-    "activeSchema": "swat-orchestrateur",
-    "activeSchemaId": "schema-yy5cfkox-i1t73"
+    ]
   }
 }
