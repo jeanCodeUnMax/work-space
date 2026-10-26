@@ -27,3 +27,17 @@ Voir `install.ps1` pour les détails de déploiement, vérification des dépenda
 ---
 
 *Generated 2026-10-25*
+## Composition du kit Hephaistos2
+
+Le plugin est une couche du kit — pas un produit isole :
+
+| Composant | Type | Rôle |
+|---|---|---|
+| `hphe-mcp.exe` | moteur | MCP unifié, 66 outils, client du pipe hphe-index |
+| `hephaistos-chats` | extension | canvas React Flow, fenêtres agents, thèmes |
+| `orchestrator-monitor` | extension | bridge :7477, tâches, wakes ACP, providers |
+| `hephaistos-kit-search` | extension | recherche NTFS/sémantique dans l'IDE |
+| `postdev` | extension | post-dev du kit |
+| `hephaistos2-kit` (ce plugin) | plugin | surface agent-side : commandes, skills, proxy MCP |
+
+Le kit sans les extensions n'est pas le kit : le plugin les complète, il ne les remplace pas.
