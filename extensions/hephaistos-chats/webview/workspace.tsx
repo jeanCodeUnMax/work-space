@@ -443,7 +443,7 @@ function Workspace(): React.JSX.Element {
     }, [postWorkflowSave, setNodes]);
 
     const onConnect = useCallback((connection: Connection) => {
-        const nextEdges = addEdge({ ...connection, type: 'smoothstep', interactionWidth: 1, selectable: false }, edges);
+        const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, edges);
         setEdges(nextEdges);
         setSelectedEdgeId(null);
         sendSave(nodes, nextEdges);
@@ -732,7 +732,7 @@ function Workspace(): React.JSX.Element {
                                 selectionMode={SelectionMode.Partial}
                                 selectNodesOnDrag
                                 elementsSelectable
-                                edgesFocusable={false}
+                                edgesFocusable
                                 nodes={nodes}
                                 edges={edges}
                                 nodeTypes={nodeTypes}

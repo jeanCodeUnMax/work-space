@@ -633,6 +633,14 @@ export function activate(context: vscode.ExtensionContext): void {
                         .filter((provider) => provider.enabled)
                         .map((provider) => provider.id),
                 );
+                // Mode concile : ouvrir le transcript live (.agent/reports/concil-live.md)
+                // dans un aperçu Markdown pour suivre la délibération en direct.
+                if (graph.mode === 'council' && workspaceRoot) {
+                    const liveReport = vscode.Uri.file(
+                        path.join(workspaceRoot, '.agent', 'reports', 'concil-live.md'));
+                    void vscode.commands.executeCommand('markdown.showPreviewToSide', liveReport)
+                        .then(undefined, () => undefined);
+                }
                 await workflowRunner.run(graph, message.sessionId, enabledProviders);
             } catch (error) {
                 FlowWorkspacePanel.error(error instanceof Error ? error.message : String(error));

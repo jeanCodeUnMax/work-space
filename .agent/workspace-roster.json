@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:44:46.923Z",
+  "updatedAt": "2026-10-26T17:44:59.069Z",
   "core": {
     "devin": [
       {
@@ -130,7 +130,7 @@
         "model": "opencode/nemotron-3-ultra-free",
         "role": "Avocat-du-Diable",
         "hidden": false,
-        "title": "devil-advocate"
+        "title": "keen-nova"
       },
       {
         "providerId": "ollama-cloud",
@@ -193,7 +193,7 @@
         "title": "ionian-helicopter",
         "position": {
           "x": 0,
-          "y": -330
+          "y": -418
         }
       },
       {
@@ -259,7 +259,7 @@
         "skills": [
           "systematic-debugging"
         ],
-        "title": "devil-advocate",
+        "title": "keen-nova",
         "position": {
           "x": 0,
           "y": 110
