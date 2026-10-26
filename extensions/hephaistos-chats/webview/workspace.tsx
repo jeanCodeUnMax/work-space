@@ -58,6 +58,8 @@ interface StoredEdge {
     id: string;
     source: string;
     target: string;
+    sourceHandle?: string | null;
+    targetHandle?: string | null;
 }
 
 interface WorkflowGraph {
@@ -155,7 +157,8 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 data.onSkillDrop?.(skill);
             }}
         >
-            <Handle type="target" position={Position.Left} />
+            <Handle type="target" position={Position.Left} id="target-left" title="Entrée latérale" />
+            <Handle type="target" position={Position.Top} id="target-top" title="Entrée haute" />
             <div className="flow-node-heading">
                 <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
@@ -168,7 +171,8 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                     {(data.skills || []).map((skill) => <span className="flow-node-skill" key={skill}>{skill}</span>)}
                 </div>
             )}
-            <Handle type="source" position={Position.Right} />
+            <Handle type="source" position={Position.Right} id="source-right" title="Sortie latérale" />
+            <Handle type="source" position={Position.Bottom} id="source-bottom" title="Sortie basse" />
         </div>
     );
 }
@@ -224,7 +228,13 @@ function toStoredGraph(
             skills: node.data.skills || [],
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
         })),
-        edges: edges.map(({ id, source, target }) => ({ id, source, target })),
+        edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
+            id,
+            source,
+            target,
+            ...(sourceHandle ? { sourceHandle } : {}),
+            ...(targetHandle ? { targetHandle } : {}),
+        })),
     };
     if (activeSchema) graph.activeSchema = activeSchema;
     if (activeSchemaId) graph.activeSchemaId = activeSchemaId;
