@@ -291,6 +291,7 @@ function Workspace(): React.JSX.Element {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
     const [skillQuery, setSkillQuery] = useState('');
+    const [roleQuery, setRoleQuery] = useState('');
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
     const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>>([]);
@@ -1029,9 +1030,16 @@ function Workspace(): React.JSX.Element {
                         </div>
                     </div>
                     <div className="skill-palette role-palette">
+                        <input
+                            className="skill-filter"
+                            type="text"
+                            placeholder="Filtrer les roles..."
+                            value={roleQuery}
+                            onChange={(event) => setRoleQuery(event.target.value)}
+                        />
                         <span className="inspector-kicker">RÔLES — glisser sur un bloc pour l'éditer, sur le canvas pour créer</span>
                         <div className="skill-palette-list">
-                            {catalog.roles.map((role) => (
+                            {catalog.roles.filter((role) => !roleQuery || role.toLowerCase().includes(roleQuery.toLowerCase())).map((role) => (
                                 <span
                                     key={role}
                                     className="skill-chip draggable role-chip"

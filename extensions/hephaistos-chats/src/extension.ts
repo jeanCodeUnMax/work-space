@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
@@ -523,11 +524,31 @@ export function activate(context: vscode.ExtensionContext): void {
                 .filter((entry) => entry.isDirectory())
                 .map((entry) => entry.name);
         } catch { /* pas de dossier skills */ }
+        const skillSet = new Set(skills);
+        // Enrichit aussi depuis les catalogues de skills utilisateur et les
+        // schemas sauvegardes : toutes les competences disponibles.
+        for (const dir of [
+            path.join(os.homedir(), '.agents', 'skills'),
+            path.join(os.homedir(), '.claude', 'skills'),
+        ]) {
+            try {
+                for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+                    if (e.isDirectory()) skillSet.add(e.name);
+                }
+            } catch { /* absent */ }
+        }
+        try {
+            const schemasRaw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.hephaistos-workflow-schemas.json'), 'utf8'));
+            for (const sch of schemasRaw.schemas || []) {
+                for (const n of sch?.graph?.nodes || []) {
+                    for (const s of n.skills || []) skillSet.add(String(s));
+                }
+            }
+        } catch { /* banque absente */ }
         // Union avec les skills réellement portées par les blocs + roster :
         // les puces d'expertise des cartes (vulnerability-scanner,
         // database-design...) doivent toutes etre glissables, pas seulement
         // celles de .agent/skills.
-        const skillSet = new Set(skills);
         for (const n of graph?.nodes || []) {
             for (const s of n.skills || []) skillSet.add(String(s));
         }
@@ -578,18 +599,25 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         // Palette roles = les vrais roles metier du graphe + roster (puces
         // d'expertise des blocs), pas une liste statique.
-        // Palette roles = les vraies specialisations des blocs (graphe + roster).
+        // Palette roles = les vraies specialisations des blocs (graphe +
+        // roster + tous les schemas sauvegardes), providers exclus.
+        const ROLE_JUNK = /^(openrouter|omniroute|devin-cli|antigravity-acp|opencode|hermes|kilo|kilo-code|nim2?|ollama|gemini|cli|local|cerberos|agent|unknown|cascade)$/i;
         const roleSet = new Set<string>();
-        for (const n of graph?.nodes || []) {
-            if (n.role) roleSet.add(String(n.role));
-        }
+        const pushRole = (r?: string) => { if (r && !ROLE_JUNK.test(r.trim())) roleSet.add(r.trim()); };
+        for (const n of graph?.nodes || []) pushRole(n.role);
         try {
             const rosterPath = workspaceRoot ? path.join(workspaceRoot, '.agent', 'workspace-roster.json') : '';
             const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
             for (const mems of Object.values(roster.core || {}) as { role?: string }[][]) {
-                for (const m of mems) if (m.role) roleSet.add(String(m.role));
+                for (const m of mems) pushRole(m.role);
             }
         } catch { /* roster absent */ }
+        try {
+            const schemasRaw = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.hephaistos-workflow-schemas.json'), 'utf8'));
+            for (const sch of schemasRaw.schemas || []) {
+                for (const n of sch?.graph?.nodes || []) pushRole(n.role);
+            }
+        } catch { /* banque absente */ }
         if (!roleSet.size) ['Devin', 'Orchestrateur', 'Codeur', 'Testeur', 'Reviewer'].forEach((r) => roleSet.add(r));
         const roles = [...roleSet].sort((a, b) => a.localeCompare(b, 'fr'));
         return {
