@@ -1,15 +1,15 @@
 // Squelette du plugin Hephaistos pour Devin
-// Enregistre les commandes execute_skill_* et proxy MCP via mcp-proxy.js
-
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+// Enregistre les commandes execute_skill_* + activity_feed, proxy MCP via mcp-proxy.js
 
 // Chargement du mapping skill -> commande
 const skillsMapper = require('./skills');
 
 // Initialisation du proxy MCP (singleton)
 const { initialize: mcpInit, callTool, stopMcp } = require('./mcp-proxy');
+
+// J4 — synchro etat : journal partage comms.jsonl
+const { getLastEntries } = require('./comms');
+const { renderFeed } = require('./activity-panel');
 
 // Enregistre toutes les commandes execute_skill_* dans la contexte Devin/CLI
 function registerCommands() {
@@ -26,15 +26,31 @@ function registerCommands() {
       }
     };
   }
+  commands.activity_feed = activityFeed;
   return commands;
+}
+
+/**
+ * Commande activity_feed : recupere les dernieres entrees du journal partage
+ * et les affiche dans l'activity panel du plugin Devin.
+ */
+async function activityFeed(n = 20, filters = {}) {
+  try {
+    const entries = await getLastEntries(n, filters);
+    console.log('=== Activity Feed (last', entries.length, 'entries) ===');
+    console.log(renderFeed(entries));
+    console.log('========================================');
+    return entries;
+  } catch (err) {
+    console.error('Erreur activity_feed :', err.message);
+    return [];
+  }
 }
 
 // Point d'entree: initialisation une fois au chargement
 async function startPlugin() {
   await mcpInit(); // initialise le processus hphe-mcp unique
   const commands = registerCommands();
-  // Exposer les commandes au contexte global (ex: globalThis, ou via API Devin)
-  // Ici on les attache global pour le demo; adapter selon l'environnement d'execution
   globalThis.hephaistosCommands = commands;
   console.log('[hephaistos-devin] plugin started, commands:', Object.keys(commands));
 }
@@ -48,5 +64,6 @@ function stopPlugin() {
 module.exports = {
   startPlugin,
   stopPlugin,
+  activityFeed,
   getCommands: registerCommands
 };

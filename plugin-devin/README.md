@@ -2,43 +2,30 @@
 
 ## Installation
 
-1. Placer le dossier `plugin-devin` dans le répertoire des plugins Devin (ou le charger manuellement).
-2. S'assurer que `hphe-mcp.exe` est accessible via la variable d'environnement `HPHE_MCP_PATH` ou au même niveau que ce plugin.
-3. Lancer Devin et activer le plugin via la commande `devin plugin enable hephaistos-devin`.
+1. Placer le dossier `plugin-devin` dans le dossier des plugins de Devin.
+2. S'assurer que `hphe-mcp.exe` est accessible via la variable d'environnement `HPHE_MCP_PATH` ou dans `<workspace>/hphe/target/release/`.
+3. Redémarrage de Devin.
 
-## Utilisation
+## Usage
 
-Le plugin expose les commandes `execute_skill_<nom>` pour chaque skill normalisé (jointes, binome, flux, bleubite-dispatch).
+- `activity_feed` : affiche les N dernières entrées du journal partagé `.agent/comms.jsonl`.
+- `execute_skill_<nom>` : exécute une skill normalisée (jointes, binome, flux, bleubite-dispatch).
+- Les outils MCP sont exposés via JSON-RPC stdio (initialize, tools/list, tools/call).
 
-Exemple d'appel via l'interface Devin :
+## Permissions
 
-```
-execute_skill_jointes {"agent": "some-agent"}
-```
+- `ntfsElevation` : requis uniquement pour la lecture de l'index NTFS `$MFT` via `everything_search` dans le MCP. Le plugin n'écrit jamais directement en NTFS élevé. Un consentement d'installation est demandé.
 
-Le plugin :
+## Dossiers clés
 
-- Lance `hphe-mcp.exe` une seule fois (mcp-proxy.js) et réutilise le processus stdio JSON-RPC.
-- Proxie les calls `tools/call` vers les outils RPC exposés par hphe-mcp.
-- Gère le timeout, les erreurs JSON-RPC et le cleanup des promesses en attente.
+- `src/comms.js` : lecteur journal partagé (JSONL) avec filtrage sensible.
+- `src/activity-panel.js` : formatage affichage des entrées.
+- `src/index.js` : enregistrement des commandes du plugin.
+- `skills-to-plugin-commands.json` : mapping skill -> commande.
+- `plugin.json` : manifeste plugin.
 
-## Permissions et élévation NTFS
+## Dépannage
 
-Le manifeste `plugin.json` déclare une élévation NTFS avec justification limitée à la lecture seule de l'index `$MFT` via le serveur MCP. Aucun droit d'écriture directe n'est requis ; l'élévation n'est justifiée que pour l'indexation `everything_search`. Un consentement utilisateur est demandé au premier lancement.
-
-- **Portée** : lecture seule (`read`)
-- **Chemins** : racine du workspace `C:\Program Files\Projet-complet\hephaistos2-kit`
-- **Justification** : index NTFS `$MFT en lecture seule via hphe-mcp.exe` ; le plugin n'écrit jamais directement en NTFS élève.
-
-## Développement
-
-- `src/mcp-proxy.js` : gestionnaire singleton du processus stdio JSON-RPC. Voir les commentaires pour les timeouts, pendingCalls, buffer robuste et validation args.
-- `src/index.js` : enregistre les commandes `execute_skill_*` et appelle `mcp-proxy.callTool`.
-- `src/skills.js` : loader dynamique de `skills-to-plugin-commands.json` + fonctions `executeSkill`/`listSkills`.
-- `validateArgs` : vérifie la whitelist d'outils connue et les types avant d'appeler le MCP.
-
-## Points ouverts
-
-- Persistance du choix thème icône (voir theme-switcher-spec.md).
-- Compléter les handlers `execute_skill_*` dans `src/index.js` via `mcp-proxy.callTool`.
-- Générer/populer les dossiers de thèmes alternatifs (dwarves, starwars, etc.).
+- Vérifier que `hphe-mcp.exe` tourne et retourne des outils via `tools/list`.
+- Les logs d'activité apparaissent dans la console du plugin au lancement de `activity_feed`.
+- En cas d'erreur JSON-RPC, vérifier la console pour les détails.
