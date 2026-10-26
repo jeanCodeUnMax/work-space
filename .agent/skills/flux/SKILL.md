@@ -109,3 +109,13 @@ Tout agent/worker qui recoit une fin de non-recevoir (refus provider, blocage IP
 L'orchestrateur surveille `comms.jsonl` pour `kind:"blocked"` : c'est LE canal d'alerte. Des qu'un blocked arrive, l'orchestrateur avise : reformuler, re-router, remplacer l'agent, ou decider avec l'utilisateur.
 
 Interdit : boucle muette, retry infini, declaration de succes sans artefact verifie sur disque.
+
+## 9. Retour d'expérience — pieges rencontres et regles definitives
+
+- **Plugin Devin = repertoire** `.devin-plugin/plugin.json` + `commands/*.md` + `skills/<nom>/SKILL.md` + `rules/*.md`. Enregistrement : `plugins/lock.json` (requirements + resolved, source local). Nom canonique : **hephaistos2-kit**, jamais hephaistos-devin.
+- **Prompts workers : chemins ABSOLUS obligatoires** — un fs_write relatif peut rapporter "ok" et ecrire hors workspace (perdu silencieusement).
+- **Verifier les findings d'audit sur disque** — les agents peuvent lire des versions perimees ; un FAIL sur fichier stale se verifie avant arbitrage.
+- **Synchro canvas** : le roster change via CLI n'atteint le graphe que si le watcher pousse `workflow_state` (corrige 0.3.12). Toute modif workflow doit etre visible sans reload.
+- **Commandes .md ≠ code** : les slash commands du plugin decrivent l'appel a `bin/hphe.js` — l'executable fait le travail.
+- **hphe-mcp.exe = client du pipe hphe-index** : instances multiples OK, pas de "--stdio" a passer, methodes MCP `tools/call` + `protocolVersion`.
+- Un livrable par prompt worker ; verifier chaque artefact sur disque avant le hop suivant.

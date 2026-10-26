@@ -151,7 +151,15 @@ export function activate(context: vscode.ExtensionContext): void {
             let rosterTimer: NodeJS.Timeout | undefined;
             const rosterWatcher = fs.watch(rosterFile, () => {
                 if (rosterTimer) clearTimeout(rosterTimer);
-                rosterTimer = setTimeout(() => { void paint(); }, 250);
+                rosterTimer = setTimeout(() => {
+                    void paint();
+                    // Roster modifié en dehors de l'UI (CLI workspace-roster.js,
+                    // agent externe) : repousser l'état au canvas — sinon le
+                    // graphe affiché diverge de la vérité jusqu'au prochain reload.
+                    try {
+                        FlowWorkspacePanel.update(view(workflowStore.load(store.list())));
+                    } catch { /* store pas prêt */ }
+                }, 250);
             });
             context.subscriptions.push({ dispose: () => rosterWatcher.close() });
     if (workflowStore) {
