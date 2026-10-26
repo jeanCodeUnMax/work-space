@@ -1064,6 +1064,24 @@ function Workspace(): React.JSX.Element {
                             ))}
                         </div>
                     </div>
+                    <div className="skill-palette agent-palette">
+                        <span className="inspector-kicker">AGENTS — glisser sur un bloc pour l'éditer, sur le canvas pour l'ajouter</span>
+                        <div className="skill-palette-list">
+                            {(catalog.agents || []).map((agent) => (
+                                <span
+                                    key={agent.sessionId}
+                                    className={`skill-chip draggable role-chip${agent.referent ? ' referent' : ''}${agent.placed ? ' placed' : ''}`}
+                                    title={`${agent.title} · ${agent.provider}${agent.model ? ' · ' + agent.model : ''}`}
+                                    draggable
+                                    onDragStart={(event) => {
+                                        event.dataTransfer.setData('application/x-hph-agent', JSON.stringify(agent));
+                                        event.dataTransfer.effectAllowed = 'copy';
+                                    }}
+                                >{agent.role} · {agent.title}</span>
+                            ))}
+                            {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
+                        </div>
+                    </div>
                 </aside>
                 {inspectorCollapsed && (
                     <button
