@@ -227,6 +227,45 @@
     "mcp_hephaistos_update": {
       "description": "Hephaistos update via MCP",
       "confirm": true
+    },
+    "execute_skill_orchestrator": {
+      "description": "Skill orchestrator"
+    },
+    "execute_skill_reactive_orchestrator": {
+      "description": "Skill reactive-orchestrator"
+    },
+    "execute_skill_chat_id": {
+      "description": "Skill chat-id"
+    },
+    "execute_skill_chat_id_project": {
+      "description": "Skill chat-id-project"
+    },
+    "execute_skill_jointes_project": {
+      "description": "Skill jointes-project"
+    },
+    "execute_skill_obsidian": {
+      "description": "Skill obsidian"
+    },
+    "execute_skill_antigravity_obsidian": {
+      "description": "Skill antigravity-obsidian"
+    },
+    "execute_skill_vault_ingest": {
+      "description": "Skill vault-ingest"
+    },
+    "execute_skill_hephaistos_everything": {
+      "description": "Skill hephaistos-everything"
+    },
+    "execute_skill_hephaistos2_kit": {
+      "description": "Skill hephaistos2-kit"
+    },
+    "execute_skill_cursor_ide_docs": {
+      "description": "Skill cursor-ide-docs"
+    },
+    "execute_skill_boost": {
+      "description": "Skill boost"
+    },
+    "execute_skill_session_id": {
+      "description": "Skill session-id"
     }
   },
   "permissions": {
