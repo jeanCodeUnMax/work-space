@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T17:44:59.069Z",
+  "updatedAt": "2026-10-26T17:56:43.614Z",
   "core": {
     "devin": [
       {
@@ -75,7 +75,7 @@
         "restore": "open-or-reveal",
         "role": "Expert-Qualite-Maintenabilite",
         "hidden": false,
-        "model": "meta/llama-3.1-8b-instruct",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "amber-agent"
       },
       {
@@ -84,7 +84,7 @@
         "restore": "open-or-reveal",
         "role": "Expert-Securite-Risques",
         "hidden": false,
-        "model": "meta/llama-3.3-70b-instruct",
+        "model": "nvidia/nemotron-3-super-120b-a12b",
         "title": "urban-agent"
       },
       {
@@ -127,7 +127,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "groq/openai/gpt-oss-20b",
         "role": "Avocat-du-Diable",
         "hidden": false,
         "title": "keen-nova"
@@ -138,7 +138,7 @@
         "restore": "open-or-reveal",
         "role": "Greffier-Beacon-Memoire",
         "hidden": false,
-        "model": "gpt-oss:120b-cloud",
+        "model": "groq/openai/gpt-oss-120b",
         "title": "beacon-agent"
       },
       {
@@ -147,7 +147,7 @@
         "restore": "open-or-reveal",
         "role": "Expert-Perf-Pragmatisme",
         "hidden": false,
-        "model": "gpt-oss:120b-cloud",
+        "model": "groq/openai/gpt-oss-120b",
         "title": "steady-agent"
       },
       {
@@ -180,13 +180,13 @@
   },
   "workflow": {
     "version": 1,
-    "name": "Concil",
+    "name": "Concile",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "President-Concil",
-        "task": "QUESTION A TRANCHER PAR LE CONCILE : editez ce bloc pour poser votre question. Le president reunit les experts, arbitre les desaccords et rend le verdict final motive.",
+        "task": "QUESTION AU CONCILE : Faut-il implémenter des outils n8n dans l'extension Hephaistos Chats ? Si oui, quels outils et comment les intégrer (architecture, providers, UX) ?",
         "skills": [
           "orchestrator"
         ],
