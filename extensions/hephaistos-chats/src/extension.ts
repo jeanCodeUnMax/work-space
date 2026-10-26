@@ -426,13 +426,36 @@ export function activate(context: vscode.ExtensionContext): void {
             // Pas d'openAcpSession ici : la session cible est deja live
             // (l'utilisateur ecrit dedans) — vscode.open sur son URI cascade
             // ouvrirait le meme chat en doublon.
-            const sent = wsRoot ? await injectIdeAgentText(
-                providerId,
-                target,
-                `⌖ ${draft.trim()} — directive pour cet agent : `,
-                wsRoot,
-                { draft: true },
-            ) : false;
+            // Draft direct dans le composer de CETTE fenetre : addCascadeInput
+            // pose le texte en saisie, editable, jamais soumis. Pas de passage
+            // par le bridge : wake_acp_agent est broadcaste a tous les IDE et
+            // un monitor ancien repondrait en soumettant le message.
+            const draftText = `⌖ ${draft.trim()} — directive pour cet agent : `;
+            let sent = false;
+            try {
+                const encVarint = (n: number): number[] => {
+                    const o: number[] = [];
+                    while (n > 0x7f) { o.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); }
+                    o.push(n);
+                    return o;
+                };
+                const lenField = (no: number, d: Buffer) => Buffer.concat([
+                    Buffer.from([(no << 3) | 2]), Buffer.from(encVarint(d.length)), d,
+                ]);
+                const payload = lenField(1, lenField(1, Buffer.from(draftText, 'utf8'))).toString('base64');
+                await vscode.commands.executeCommand('devin.sendChatActionMessage',
+                    JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
+                sent = true;
+            } catch { /* commande indisponible -> fallback */ }
+            if (!sent) {
+                sent = wsRoot ? await injectIdeAgentText(
+                    providerId,
+                    target,
+                    draftText,
+                    wsRoot,
+                    { draft: true },
+                ) : false;
+            }
             if (!sent) {
                 void vscode.env.clipboard.writeText(draft.trim());
                 void vscode.window.showInformationMessage(
