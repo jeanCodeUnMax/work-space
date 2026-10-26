@@ -264,5 +264,40 @@
       "mcp_memory_update",
       "mcp_hephaistos_update"
     ]
+  },
+  "kit": {
+    "components": [
+      {
+        "id": "hphe-mcp",
+        "type": "engine",
+        "desc": "Moteur MCP unifie (66 outils Rust) — client du pipe hphe-index"
+      },
+      {
+        "id": "hephaistos-chats",
+        "type": "extension",
+        "desc": "UI React Flow canvas + fenetres Bleubites + themes icones"
+      },
+      {
+        "id": "orchestrator-monitor",
+        "type": "extension",
+        "desc": "Bridge ws :7477, dispatch_task, wakes ACP, provider_prefs"
+      },
+      {
+        "id": "hephaistos-kit-search",
+        "type": "extension",
+        "desc": "Recherche index NTFS/semantique integree IDE"
+      },
+      {
+        "id": "postdev",
+        "type": "extension",
+        "desc": "Extension post-dev du kit"
+      },
+      {
+        "id": "hephaistos2-kit-plugin",
+        "type": "plugin",
+        "desc": "Ce plugin — surface agent-side (commandes, skills, MCP proxy)"
+      }
+    ],
+    "principle": "hephaistos2-kit = infrastructure complete; le plugin expose la couche agent, les extensions la couche IDE, hphe-mcp le moteur."
   }
 }
