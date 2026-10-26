@@ -38,6 +38,7 @@ interface AgentData extends Record<string, unknown> {
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
     onAgentDrop?: (agent: PaletteAgent) => void;
+    onRoleDrop?: (role: string) => void;
     onPoint?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
     iconTheme?: string;
@@ -159,12 +160,20 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
             className={'flow-node ' + data.tone + (selected ? ' selected' : '')}
             onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('application/x-hph-skill')
-                    || event.dataTransfer.types.includes('application/x-hph-agent')) {
+                    || event.dataTransfer.types.includes('application/x-hph-agent')
+                    || event.dataTransfer.types.includes('application/x-hph-role')) {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = 'copy';
                 }
             }}
             onDrop={(event) => {
+                const role = event.dataTransfer.getData('application/x-hph-role');
+                if (role) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    data.onRoleDrop?.(role);
+                    return;
+                }
                 const agentRaw = event.dataTransfer.getData('application/x-hph-agent');
                 if (agentRaw) {
                     event.preventDefault();
@@ -345,6 +354,7 @@ function Workspace(): React.JSX.Element {
                                 onAgentDrop: (agent: PaletteAgent) => {
                                     vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
                                 },
+                                onRoleDrop: (role: string) => updateNode(node.id, { role }),
                                 onPoint: () => pointAgent(node.id),
                             },
                         };
@@ -1019,21 +1029,19 @@ function Workspace(): React.JSX.Element {
                         </div>
                     </div>
                     <div className="skill-palette role-palette">
-                        <span className="inspector-kicker">AGENTS — glisser sur un bloc pour l'éditer, sur le canvas pour l'ajouter</span>
+                        <span className="inspector-kicker">RÔLES — glisser sur un bloc pour l'éditer, sur le canvas pour créer</span>
                         <div className="skill-palette-list">
-                            {(catalog.agents || []).map((agent) => (
+                            {catalog.roles.map((role) => (
                                 <span
-                                    key={agent.sessionId}
-                                    className={`skill-chip draggable role-chip${agent.referent ? ' referent' : ''}${agent.placed ? ' placed' : ''}`}
-                                    title={`${agent.title} · ${agent.provider}${agent.model ? ' · ' + agent.model : ''}`}
+                                    key={role}
+                                    className="skill-chip draggable role-chip"
                                     draggable
                                     onDragStart={(event) => {
-                                        event.dataTransfer.setData('application/x-hph-agent', JSON.stringify(agent));
+                                        event.dataTransfer.setData('application/x-hph-role', role);
                                         event.dataTransfer.effectAllowed = 'copy';
                                     }}
-                                >{agent.role} · {agent.title}</span>
+                                >{role}</span>
                             ))}
-                            {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
                         </div>
                     </div>
                 </aside>
