@@ -5,6 +5,7 @@
 
 param(
   [string]$Phase,
+  [string]$Sandbox,
   [switch]$WhatIf,
   [switch]$Skip,
   [switch]$Only
@@ -12,6 +13,23 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $today = Get-Date -Format 'yyyyMMdd_HHmmss'
+
+# --- Mode sandbox : redirection de l env utilisateur vers un sous-dossier ---
+$global:SandboxMode = $false
+if ($Sandbox) {
+  $global:SandboxMode = $true
+  if (-not (Test-Path $Sandbox)) { New-Item -ItemType Directory -Path $Sandbox -Force | Out-Null }
+  $sandboxRoot = (Resolve-Path $Sandbox).Path
+  foreach ($d in @('userprofile', 'appdata/Roaming', 'appdata/Local', 'install')) {
+    New-Item -ItemType Directory -Path (Join-Path $sandboxRoot $d) -Force | Out-Null
+  }
+  $env:USERPROFILE = Join-Path $sandboxRoot 'userprofile'
+  $env:HOME = $env:USERPROFILE
+  $env:APPDATA = Join-Path $sandboxRoot 'appdata/Roaming'
+  $env:LOCALAPPDATA = Join-Path $sandboxRoot 'appdata/Local'
+  $env:HPHE_INSTALL = Join-Path $sandboxRoot 'install'
+  Write-Host "[SANDBOX] env redirige vers $sandboxRoot" -ForegroundColor Cyan
+}
 
 function Write-Phase {
   param([string]$Name, [string]$Result, [string]$Message)
@@ -130,6 +148,7 @@ function Phase-Config {
 # --- Phase 7 : services ---
 function Phase-Services {
   Write-Phase "Services" "START" "hphe-indexd, taskwatch, bridge :7477"
+  if ($global:SandboxMode) { Write-Phase "Services" "SKIP" "non sandboxable (taches planifiees)"; return $true }
   if ($WhatIf) { Write-Phase "Services" "SKIP" "-WhatIf"; return $true }
   if (Test-Path .\mcp_autostart.ps1) { & .\mcp_autostart.ps1 @PSSetSeverityInfo 'SilentlyContinue' }
   if (Test-Path .\start-workspace.ps1) { & .\start-workspace.ps1 @PSSetSeverityInfo 'SilentlyContinue' }
@@ -140,6 +159,7 @@ function Phase-Services {
 # --- Phase 8 : secrets ---
 function Phase-Secrets {
   Write-Phase "Secrets" "START" "Prompt interactif pour NVIDIA/Gemini clés (JAMAIS en dur)"
+  if ($global:SandboxMode) { Write-Phase "Secrets" "SKIP" "pas de prompt en sandbox"; return $true }
   if ($WhatIf) { Write-Phase "Secrets" "SKIP" "-WhatIf"; return $true }
   # Invite interactive ; aucune valeur n'est écrite en dur
   Write-Host "Configurez vos clés API (entrez vide pour sauter) :"
