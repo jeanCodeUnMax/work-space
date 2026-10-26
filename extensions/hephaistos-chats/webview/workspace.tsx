@@ -588,7 +588,7 @@ function Workspace(): React.JSX.Element {
                                 maxZoom={2}
                                 deleteKeyCode={null}
                             >
-                                <Background variant={BackgroundVariant.Lines} gap={22} size={0.5} />
+                                <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
                                 <Controls />
                                 <MiniMap pannable zoomable />
                             </ReactFlow>
