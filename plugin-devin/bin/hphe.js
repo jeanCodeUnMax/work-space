@@ -13,6 +13,7 @@ const path = require('path');
 const { initialize, callTool, stopMcp } = require('../src/mcp-proxy');
 const { activityFeed } = require('../src/index');
 const manifest = require('../manifest.json');
+const { callViaDaemon } = require('../src/mcp-client');
 
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -26,15 +27,35 @@ async function main() {
       const entries = await activityFeed(Number.isFinite(n) ? n : 20, {});
       return entries;
     }
+    if (cmd === 'daemon') {
+      // Statut du demon persistant (spawn hphe-mcp.exe unique partage)
+      try {
+        const res = await callViaDaemon({ method: 'daemon/ping' });
+        console.log(JSON.stringify({ running: true, ...(res.result || res) }));
+      } catch (e) {
+        console.log(JSON.stringify({ running: false, reason: e.message }));
+      }
+      return;
+    }
     if (cmd === 'mcp' || cmd === 'skill') {
       const name = rest[0];
       if (!name) throw new Error('nom de tool/skill requis');
       const args = rest[1] ? JSON.parse(rest[1]) : {};
       const toolName = cmd === 'skill' ? `execute_skill_${name}` : name;
-      await initialize();
-      const result = await callTool(toolName, args);
-      console.log(JSON.stringify(result, null, 2));
-      return;
+      // Chemin 1 : demon persistant (un seul hphe-mcp.exe partage).
+      // Chemin 2 (fallback) : spawn-per-call historique. Dans les deux cas
+      // la validation TOOL_SCHEMAS + blocage __confirmed passe par mcp-proxy.
+      try {
+        const res = await callViaDaemon({ method: 'tools/call', params: { name: toolName, arguments: args } });
+        if (res && res.error) throw new Error(res.error);
+        console.log(JSON.stringify(res.result, null, 2));
+        return;
+      } catch {
+        await initialize();
+        const result = await callTool(toolName, args);
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
     }
     console.error('usage: hphe mcp|skill <name> [jsonArgs] | activity-feed [n] | commands');
     process.exitCode = 2;
