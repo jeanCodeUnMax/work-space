@@ -10,8 +10,8 @@ import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
-import { ACP_PROVIDERS, normalizeIconTheme } from './types';
-import { createWorkflowView, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
+import { ACP_PROVIDERS, ChatSession, normalizeIconTheme, sessionTitle } from './types';
+import { createWorkflowView, defaultRoleForProvider, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
 
@@ -515,7 +515,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
-    function workflowCatalog(): WorkflowCatalog {
+    function workflowCatalog(graph?: WorkflowGraph, sessions?: ChatSession[]): WorkflowCatalog {
         const skillsDir = workspaceRoot ? path.join(workspaceRoot, '.agent', 'skills') : '';
         let skills: string[] = [];
         try {
@@ -524,15 +524,54 @@ export function activate(context: vscode.ExtensionContext): void {
                 .map((entry) => entry.name)
                 .sort();
         } catch { /* pas de dossier skills */ }
+        // Palette AGENTS : le referent (Devin live) + tous les agents connus
+        // (noeuds du graphe avec leur role + sessions chat non placees) —
+        // glissables sur un bloc pour l'editer ou sur le canvas pour creer.
+        const nodeById = new Map((graph?.nodes || []).map((n) => [n.sessionId, n]));
+        const agents: PaletteAgent[] = [];
+        const entry = graph?.nodes.find((n) => n.sessionId === graph?.entrySessionId)
+            || graph?.nodes.find((n) => n.sessionId.startsWith('acp/devin-cli/'));
+        agents.push({
+            sessionId: entry?.sessionId || 'acp/devin-cli/referent',
+            title: entry?.title || 'Agent référent',
+            role: entry?.role || 'Devin',
+            provider: 'devin-cli',
+            referent: true,
+            placed: Boolean(entry),
+        });
+        for (const [sessionId, node] of nodeById) {
+            if (agents.some((a) => a.sessionId === sessionId)) continue;
+            const s = sessions?.find((item) => item.id === sessionId);
+            agents.push({
+                sessionId,
+                title: node.title || (s ? sessionTitle(s) : sessionId.split('/').pop() || 'agent'),
+                role: node.role || defaultRoleForProvider(s?.provider || ''),
+                provider: s?.provider || (sessionId.startsWith('acp/') ? sessionId.split('/')[1] : 'unknown'),
+                model: s?.model,
+                placed: true,
+            });
+        }
+        for (const s of sessions || []) {
+            if (nodeById.has(s.id) || agents.some((a) => a.sessionId === s.id)) continue;
+            agents.push({
+                sessionId: s.id,
+                title: sessionTitle(s),
+                role: defaultRoleForProvider(s.provider),
+                provider: s.provider,
+                model: s.model,
+            });
+        }
         return {
             roles: ['Devin', 'Antigravity', 'Codeur', 'Reviewer', 'Documentaliste', 'Testeur', 'Chercheur', 'Architecte', 'DevOps'],
             skills,
             providers: ACP_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label })),
+            agents,
         };
     }
 
     function view(graph: WorkflowGraph): WorkflowView {
-        return { ...createWorkflowView(graph, store.list()), catalog: workflowCatalog() };
+        const sessions = store.list();
+        return { ...createWorkflowView(graph, sessions), catalog: workflowCatalog(graph, sessions) };
     }
 
     async function openWorkspace(): Promise<void> {
@@ -613,7 +652,55 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
+            const agent = (message as { agent?: PaletteAgent }).agent;
+            if (agent?.sessionId) {
+                // Puce agent de la palette : ajoute le vrai agent (session
+                // existante ou referent) au graphe, pas une session neuve.
+                try {
+                    const graph = workflowStore.load(store.list());
+                    if (!graph.nodes.some((n) => n.sessionId === agent.sessionId)) {
+                        const idx = graph.nodes.length;
+                        graph.nodes.push({
+                            sessionId: agent.sessionId,
+                            role: agent.role || defaultRoleForProvider(agent.provider),
+                            task: '',
+                            skills: [],
+                            title: agent.title,
+                            position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                        });
+                    }
+                    FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+                } catch (error) {
+                    FlowWorkspacePanel.error(String(error));
+                }
+                return;
+            }
             openNew((message as { provider?: string }).provider, (message as { role?: string }).role);
+            return;
+        }
+
+        if (message.type === 'assign_agent' && message.sessionId) {
+            // Drop d'une puce agent sur un bloc : remplace l'identite du bloc
+            // (session/titre/role), conserve tache + skills, remap les edges.
+            try {
+                const agent = (message as { agent?: PaletteAgent }).agent;
+                if (!agent?.sessionId) return;
+                const oldId = String(message.sessionId);
+                const graph = workflowStore.load(store.list());
+                const node = graph.nodes.find((n) => n.sessionId === oldId);
+                if (!node || oldId === agent.sessionId) return;
+                node.sessionId = agent.sessionId;
+                node.title = agent.title;
+                node.role = agent.role || node.role;
+                for (const edge of graph.edges) {
+                    if (edge.source === oldId) edge.source = agent.sessionId;
+                    if (edge.target === oldId) edge.target = agent.sessionId;
+                }
+                if (graph.entrySessionId === oldId) graph.entrySessionId = agent.sessionId;
+                FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
             return;
         }
 

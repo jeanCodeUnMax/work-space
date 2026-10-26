@@ -14,10 +14,21 @@ export interface WorkflowNode {
     position: WorkflowPosition;
 }
 
+export interface PaletteAgent {
+    sessionId: string;
+    title: string;
+    role: string;
+    provider: string;
+    model?: string;
+    referent?: boolean;
+    placed?: boolean;
+}
+
 export interface WorkflowCatalog {
     roles: string[];
     skills: string[];
     providers: { id: string; label: string }[];
+    agents?: PaletteAgent[];
 }
 
 export interface WorkflowEdge {

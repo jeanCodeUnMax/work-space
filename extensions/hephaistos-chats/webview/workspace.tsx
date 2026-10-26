@@ -37,6 +37,7 @@ interface AgentData extends Record<string, unknown> {
     skills?: string[];
     external?: boolean;
     onSkillDrop?: (skill: string) => void;
+    onAgentDrop?: (agent: PaletteAgent) => void;
     onPoint?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
     iconTheme?: string;
@@ -74,10 +75,21 @@ interface WorkflowGraph {
     mode?: 'council';
 }
 
+interface PaletteAgent {
+    sessionId: string;
+    title: string;
+    role: string;
+    provider: string;
+    model?: string;
+    referent?: boolean;
+    placed?: boolean;
+}
+
 interface WorkflowCatalog {
     roles: string[];
     skills: string[];
     providers: { id: string; label: string }[];
+    agents?: PaletteAgent[];
 }
 
 interface WorkflowView {
@@ -146,12 +158,20 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
         <div
             className={'flow-node ' + data.tone + (selected ? ' selected' : '')}
             onDragOver={(event) => {
-                if (event.dataTransfer.types.includes('application/x-hph-skill')) {
+                if (event.dataTransfer.types.includes('application/x-hph-skill')
+                    || event.dataTransfer.types.includes('application/x-hph-agent')) {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = 'copy';
                 }
             }}
             onDrop={(event) => {
+                const agentRaw = event.dataTransfer.getData('application/x-hph-agent');
+                if (agentRaw) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    try { data.onAgentDrop?.(JSON.parse(agentRaw)); } catch { /* payload invalide */ }
+                    return;
+                }
                 const skill = event.dataTransfer.getData('application/x-hph-skill');
                 if (!skill) return;
                 event.preventDefault();
@@ -320,6 +340,9 @@ function Workspace(): React.JSX.Element {
                             data: {
                                 ...node.data,
                                 onSkillDrop: (skill: string) => assignSkill(node.id, skill),
+                                onAgentDrop: (agent: PaletteAgent) => {
+                                    vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
+                                },
                                 onPoint: () => pointAgent(node.id),
                             },
                         };
@@ -778,12 +801,22 @@ function Workspace(): React.JSX.Element {
                                 }}
                                 onNodeDragStop={onNodeDragStop}
                                 onDragOver={(event) => {
-                                    if (event.dataTransfer.types.includes('application/x-hph-role')) {
+                                    if (event.dataTransfer.types.includes('application/x-hph-role')
+                                        || event.dataTransfer.types.includes('application/x-hph-agent')) {
                                         event.preventDefault();
                                         event.dataTransfer.dropEffect = 'copy';
                                     }
                                 }}
                                 onDrop={(event) => {
+                                    const agentRaw = event.dataTransfer.getData('application/x-hph-agent');
+                                    if (agentRaw) {
+                                        event.preventDefault();
+                                        try {
+                                            const agent = JSON.parse(agentRaw) as PaletteAgent;
+                                            vscode.postMessage({ type: 'add_agent', provider: agent.provider || newProvider, agent });
+                                        } catch { /* payload invalide */ }
+                                        return;
+                                    }
                                     const role = event.dataTransfer.getData('application/x-hph-role');
                                     if (!role) return;
                                     event.preventDefault();
@@ -939,19 +972,21 @@ function Workspace(): React.JSX.Element {
                         </div>
                     </div>
                     <div className="skill-palette role-palette">
-                        <span className="inspector-kicker">RÔLES — glisser sur le canvas pour créer un agent</span>
+                        <span className="inspector-kicker">AGENTS — glisser sur un bloc pour l'éditer, sur le canvas pour l'ajouter</span>
                         <div className="skill-palette-list">
-                            {catalog.roles.map((role) => (
+                            {(catalog.agents || []).map((agent) => (
                                 <span
-                                    key={role}
-                                    className="skill-chip draggable role-chip"
+                                    key={agent.sessionId}
+                                    className={`skill-chip draggable role-chip${agent.referent ? ' referent' : ''}${agent.placed ? ' placed' : ''}`}
+                                    title={`${agent.title} · ${agent.provider}${agent.model ? ' · ' + agent.model : ''}`}
                                     draggable
                                     onDragStart={(event) => {
-                                        event.dataTransfer.setData('application/x-hph-role', role);
+                                        event.dataTransfer.setData('application/x-hph-agent', JSON.stringify(agent));
                                         event.dataTransfer.effectAllowed = 'copy';
                                     }}
-                                >{role}</span>
+                                >{agent.role} · {agent.title}</span>
                             ))}
+                            {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
                         </div>
                     </div>
                 </aside>
