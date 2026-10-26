@@ -81,8 +81,50 @@ function providerEnv(providerId, name) {
 // Ce sont des workers à tâches ciblées : œillères, pas de priming AGENTS.md /
 // global_rules (~2900 tokens économisés par round — vital pour les upstreams
 // à TPM serré type Groq on_demand 7-8k). Le contexte reste accessible via les
-// outils si la tâche l'exige. Les casquettes/skills se brancheront ici plus tard.
-function buildSystemPrompt(mode) {
+// outils si la tâche l'exige. Les casquettes/skills sont injectées ci-dessous
+// depuis les puces du bloc workflow (node.skills dans le roster), résolues via
+// le registre central skill-mux (.agent/skill-registry.json).
+
+/* ---------- casquettes skills : puces du bloc -> contenu SKILL.md ---------- */
+const SKILLS_TOTAL_CAP = 6000;   // chars, budget borne pour les TPM serres
+const SKILLS_PER_CAP = 3000;     // chars par SKILL.md
+
+function sessionSkillNames(session) {
+    try {
+        const rosterPath = path.join(workspace, '.agent', 'workspace-roster.json');
+        const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+        const node = (roster?.workflow?.nodes || []).find((n) => n.sessionId === session?.id);
+        return Array.isArray(node?.skills) ? node.skills : [];
+    } catch { return []; }
+}
+
+function skillsBlock(session) {
+    const names = sessionSkillNames(session);
+    if (!names.length) return '';
+    let registry;
+    try {
+        registry = JSON.parse(fs.readFileSync(path.join(workspace, '.agent', 'skill-registry.json'), 'utf8'));
+    } catch { return ''; }
+    const byName = new Map((registry.skills || []).map((s) => [s.name, s]));
+    const parts = [];
+    let budget = SKILLS_TOTAL_CAP;
+    const missing = [];
+    for (const name of names) {
+        const entry = byName.get(name) || byName.get(String(name).toLowerCase());
+        if (!entry?.file) { missing.push(name); continue; }
+        let content = '';
+        try { content = fs.readFileSync(entry.file, 'utf8').slice(0, SKILLS_PER_CAP); } catch { missing.push(name); continue; }
+        const block = `### Skill: ${name}\n${content}`;
+        if (block.length > budget) break;
+        budget -= block.length;
+        parts.push(block);
+    }
+    if (!parts.length) return '';
+    const tail = missing.length ? `\n(skills introuvables dans le registre: ${missing.join(', ')})` : '';
+    return `\n\n[CASQUETTES — SKILLS ASSIGNEES]\n${parts.join('\n\n')}${tail}`;
+}
+
+function buildSystemPrompt(mode, session) {
     const root = workspace;
     const lines = [
         'Tu es un agent Bleubite de Hephaistos2-Kit : un worker qui exécute des tâches précises dans l\'IDE, sous la supervision de l\'utilisateur et des agents chefs.',
@@ -102,7 +144,7 @@ function buildSystemPrompt(mode) {
         debug: '\n\n[MODE DEBUG] Diagnostic causal : cause racine à partir des faits, hypothèses testables, correctif minimal.',
         agent: '\n\n[MODE AGENT] Exécution directe : code complet, prêt pour la production.',
     };
-    return lines.join('\n') + (suffix[mode] || suffix.agent);
+    return lines.join('\n') + (suffix[mode] || suffix.agent) + skillsBlock(session);
 }
 
 /* ---------- outils locaux pour les providers API (chat texte) ----------
@@ -337,7 +379,7 @@ async function openAiToolsCompletion({ url, headers, body, cwd, label }) {
 
 /* ---------- complétion providers (miroir de runtime.ts) ---------- */
 async function completeTurn(session) {
-    const system = buildSystemPrompt(session.mode || 'agent');
+    const system = buildSystemPrompt(session.mode || 'agent', session);
     const chatMessages = [
         { role: 'system', content: system },
         ...session.messages.map((m) => ({ role: m.role, content: m.text })),
