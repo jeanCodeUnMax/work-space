@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T00:23:15.487Z",
+  "updatedAt": "2026-10-26T01:20:17.707Z",
   "core": {
     "devin": [
       {
@@ -156,7 +156,7 @@
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "EXERCICE DE TEST — fais produire par l'equipe un script hello.sh minimal qui affiche 'SWAT ok'. Tu decomposes : spec pour l'analyste, puis tu transmets. Livrable attendu en fin de chaine : script + revue + verdict securite + commit.",
+        "task": "Supervision + rapport final",
         "skills": [
           "orchestrator",
           "plan-writing"
@@ -170,7 +170,7 @@
       {
         "sessionId": "chat-mvmw59wa",
         "role": "Codeur",
-        "task": "Implémente la solution selon les spécifications de l'analyste. Code propre, compact, commenté si nécessaire.",
+        "task": "Analyse du diff (selecteur theme icones + 464 icons + skill flux) -> .agent/flux/analyse.md",
         "skills": [
           "clean-code",
           "nodejs-best-practices"
@@ -184,7 +184,7 @@
       {
         "sessionId": "chat-mvmw5chd",
         "role": "Reviewer",
-        "task": "Relis la production du codeur : qualité, bugs potentiels, cas limites. Propose corrections et tests de validation.",
+        "task": "Revue qualite du diff -> verdict REVIEW VALIDE/FAIL",
         "skills": [
           "code-review-checklist",
           "testing-patterns"
@@ -198,7 +198,7 @@
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audite le code produit : injection, secrets, deps risquees, surface d'attaque. Verdict PASS/FAIL motive.",
+        "task": "Audit securite du diff -> verdict AUDIT PASS/FAIL",
         "skills": [
           "vulnerability-scanner",
           "mcp-security-audit"
@@ -212,7 +212,7 @@
       {
         "sessionId": "chat-mvfqytbz",
         "role": "Sentinelle",
-        "task": "Dernier controle avant integration : verifie le verdict de l'auditeur, scanne le diff pour secrets, bloque si FAIL.",
+        "task": "Arbitrage GO/NO-GO sur verdicts amont",
         "skills": [
           "vulnerability-scanner",
           "lint-and-validate"
@@ -226,7 +226,7 @@
       {
         "sessionId": "chat-mvfj773t",
         "role": "Verif-Submodules",
-        "task": "Preflight git : etat des sous-modules (modifies/propres), ce qui doit etre committe/pushe, alerte sur les derives.",
+        "task": "Preflight git : exclusions (.agent/flux/, vsix) + plan staging",
         "skills": [
           "lint-and-validate",
           "git-history"
@@ -240,7 +240,7 @@
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "role": "Integrateur-Git",
-        "task": "Intégration sécurisée : relit le diff final, vérifie l'absence de secrets, commit conventionnel puis push UNIQUEMENT si le Reviewer et la Sentinelle ont validé.",
+        "task": "Stage+commit+push 2 remotes si GO",
         "skills": [
           "lint-and-validate",
           "testing-patterns"
@@ -254,7 +254,7 @@
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Apres integration : redige/maj la doc concordante (repo local + Vault Obsidian), resume ce qui a ete livre.",
+        "task": "Note vault du run -> .agent/flux/doc-flux.md",
         "skills": [
           "obsidian",
           "vault-ingest"

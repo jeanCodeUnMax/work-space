@@ -180,6 +180,37 @@
         }
     };
 
+    // Les thèmes nomment leurs PNG différemment (commando = pX-cYY, dwarves =
+    // icon-NN) : l'host injecte __agentIcons / __agentsFallbackIcons et le webview
+    // pioche par hash % count. Sans liste -> convention historique pX-cYY.
+    function iconUrl(base, files, h) {
+        if (!base) return '';
+        const name = files && files.length
+            ? files[h % files.length]
+            : 'p' + (1 + h % 6) + '-c' + String(h % 16).padStart(2, '0') + '.png';
+        return base + '/' + name;
+    }
+
+    function agentIconUrls(id) {
+        let h = 0;
+        for (const ch of (id || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+        return {
+            src: iconUrl(window.__agentsUri, window.__agentIcons, h),
+            fbk: iconUrl(window.__agentsFallbackUri, window.__agentsFallbackIcons, h),
+        };
+    }
+
+    // Fallback icône : fichier absent du thème -> équivalent commando (data-fbk), sinon masqué.
+    function agentIconFallback() {
+        const img = this;
+        const fbk = img.dataset.fbk;
+        if (fbk && img.src !== fbk) {
+            img.src = fbk;
+            return;
+        }
+        img.style.display = 'none';
+    }
+
     function closeMenus() {
         modeMenu.hidden = true;
         modelMenu.hidden = true;
@@ -212,14 +243,14 @@
             const isAssistant = msg.role === 'assistant';
             const avatar = document.createElement('div');
             avatar.className = `avatar ${isAssistant ? 'assistant-avatar' : 'user-avatar'}`;
-            if (isAssistant && window.__agentsUri && session && session.id) { let hh=0; for(const ch of session.id) hh=(hh*31+ch.charCodeAt(0))>>>0; const ai=document.createElement('img'); ai.src=window.__agentsUri+"/p"+(1+hh%6)+"-c"+String(hh%16).padStart(2,"0")+".png"; ai.alt=''; ai.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit;'; avatar.textContent=''; avatar.appendChild(ai); } else { avatar.textContent = isAssistant ? '⚡' : 'U'; }
+            if (isAssistant && window.__agentsUri && session && session.id) { const iu=agentIconUrls(session.id); const ai=document.createElement('img'); ai.src=iu.src; ai.dataset.fbk=iu.fbk; ai.alt=''; ai.onerror=agentIconFallback; ai.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:inherit;'; avatar.textContent=''; avatar.appendChild(ai); } else { avatar.textContent = isAssistant ? '⚡' : 'U'; }
 
             const wrap = document.createElement('div');
             wrap.className = 'message-content-wrap';
 
             const meta = document.createElement('div');
             meta.className = 'message-meta';
-            const timeStr = msg.at ? new Date(msg.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const timeStr = msg.at ? new Date(msg.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
             meta.innerHTML = `<span>${isAssistant ? escapeHtml(shortModel(session.model)) : 'Vous'}</span> · <span>${timeStr}</span>`;
 
             const body = document.createElement('div');
@@ -311,7 +342,7 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = `history-item ${s.id === state.session?.id ? 'active' : ''}`;
-            const timeStr = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const timeStr = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
             btn.innerHTML = `
                 <span class="history-item-title">${escapeHtml(s.title || s.model)}</span>
                 <span class="history-item-meta">${escapeHtml(s.provider)} · ${timeStr}</span>
@@ -510,9 +541,8 @@
         const provObj = state.providers.find((p) => p.id === session.provider);
         const provLabel = provObj ? provObj.label : session.provider;
         providerName.textContent = session.codename || provLabel;
-        let hash=0; for(const ch of (session.id||"")) hash=(hash*31+ch.charCodeAt(0))>>>0;
-        const ic=(window.__agentsUri?window.__agentsUri+"/":"")+"p"+(1+hash%6)+"-c"+String(hash%16).padStart(2,"0")+".png";
-        let img=document.getElementById("agentIcon"); if(!img){img=document.createElement("img");img.id="agentIcon";img.style.cssText="width:28px;height:28px;border-radius:6px;object-fit:cover;margin-right:6px;";providerBtn.insertBefore(img,providerName);} img.src=ic;
+        const iu=agentIconUrls(session.id);
+        let img=document.getElementById("agentIcon"); if(!img){img=document.createElement("img");img.id="agentIcon";img.onerror=agentIconFallback;img.style.cssText="width:28px;height:28px;border-radius:6px;object-fit:cover;margin-right:6px;";providerBtn.insertBefore(img,providerName);} img.dataset.fbk=iu.fbk;img.style.display='';img.src=iu.src;
         providerBtn.title = `Fournisseur : ${provLabel}\nModèle : ${session.model}\nChat ID : ${session.id}\n(Cliquer pour copier l'identifiant pour le protocole Binôme)`;
 
         // Composer labels
@@ -637,6 +667,16 @@
     });
 
     window.addEventListener('message', (event) => {
+        // Rebascule des URI media/agents/<theme>/ poussée par l'host après set_icon_theme.
+        if (event.data && event.data.type === 'icon_theme') {
+            if (event.data.agentsUri) window.__agentsUri = event.data.agentsUri;
+            if (event.data.fallbackUri) window.__agentsFallbackUri = event.data.fallbackUri;
+            if (Array.isArray(event.data.iconFiles)) window.__agentIcons = event.data.iconFiles;
+            if (Array.isArray(event.data.fallbackFiles)) window.__agentsFallbackIcons = event.data.fallbackFiles;
+            if (state.session) render();
+            return;
+        }
+
         if (event.data && event.data.type === 'state') {
             state = event.data;
             render();

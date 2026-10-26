@@ -10,7 +10,7 @@ import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setProviderEnabled, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
-import { ACP_PROVIDERS } from './types';
+import { ACP_PROVIDERS, normalizeIconTheme } from './types';
 import { createWorkflowView, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
@@ -414,6 +414,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const sessions = store.list();
         try {
             const graph = workflowStore.load(sessions);
+            FlowWorkspacePanel.setIconTheme(normalizeIconTheme(context.workspaceState.get('hephaistosChats.iconTheme')));
             FlowWorkspacePanel.open(context, view(graph), (message) => {
                 void onWorkflowMessage(message);
             });
@@ -500,6 +501,16 @@ export function activate(context: vscode.ExtensionContext): void {
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }
+            return;
+        }
+
+        // Thème d'icônes : persisté en workspaceState puis repoussé aux
+        // webviews (canvas + chats ouverts) pour rebaser les URI media.
+        if (message.type === 'set_icon_theme') {
+            const theme = normalizeIconTheme((message as { theme?: string }).theme);
+            await context.workspaceState.update('hephaistosChats.iconTheme', theme);
+            FlowWorkspacePanel.setIconTheme(theme);
+            ChatPanel.refreshIcons(context);
             return;
         }
 

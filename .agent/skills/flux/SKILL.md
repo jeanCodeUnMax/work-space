@@ -95,3 +95,17 @@ entree (Devin, orchestrateur)
 - Toute creation/rename/load/delete de schema passe par le bridge (`saveSchema`, `renameSchema`, `loadSchema`, `listSchemas`) — jamais d'edit direct du fichier schemas.
 - Ne jamais exposer cles, tokens CSRF ou secrets dans les prompts injectes.
 - Missions finies → rapporter a l'utilisateur : verdict de chaque hop + artefacts produits (commit hash, chemin de la note vault).
+
+## 8. Protocole d'escalade (anti-blocage muet)
+
+Tout agent/worker qui recoit une fin de non-recevoir (refus provider, blocage IP/copyright, timeout repete, modele mort, outil indisponible) DOIT :
+
+1. Ecrire immediatement un evenement dans `.agent/comms.jsonl` :
+   `{src:"<sessionId|worker>", dst:"orchestrateur", kind:"blocked", text:"<raison exacte + prompt/etape>"}` — append JSONL, jamais d'edit.
+2. Logger la meme ligne dans son fichier de statut/rapport.
+3. Reformuler UNE fois si le blocage est un refus de contenu (prompt trop proche d'une IP : reformuler en archetypes generiques, retirer tout nom de marque/personne) ; si le blocage est technique, ne PAS boucler.
+4. Passer a l'etape suivante du run et noter l'echec dans le rapport final.
+
+L'orchestrateur surveille `comms.jsonl` pour `kind:"blocked"` : c'est LE canal d'alerte. Des qu'un blocked arrive, l'orchestrateur avise : reformuler, re-router, remplacer l'agent, ou decider avec l'utilisateur.
+
+Interdit : boucle muette, retry infini, declaration de succes sans artefact verifie sur disque.
