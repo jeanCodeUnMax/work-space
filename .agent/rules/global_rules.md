@@ -273,6 +273,12 @@ L'orchestrateur (dans hphe-mcp) est le système nerveux central qui :
 
 Toute dérogation à cette règle constitue une violation de l'architecture et peut causer des incohérences graves dans le système.
 
+### ⛩️ CANON — SCHÉMA ACTIF & DISPATCHING SWAT OBLIGATOIRE (2026-10-26)
+
+1. **Détection du schéma actif** : tout agent débutant une mission d'orchestration ou multi-étapes DOIT lire `.agent/workspace-roster.json` (`roster.workflow.activeSchema` et `roster.workflow.activeSchemaId`). Le schéma actif actuellement visualisé dans l'espace de travail React Flow de l'extension Hephaistos Chats est la **vérité obligatoire**. L'agent doit obligatoirement aligner son plan d'exécution sur ce graphe.
+2. **Sélection par défaut** : si aucun schéma n'est actif, l'agent interroge `~/.hephaistos-workflow-schemas.json` et charge automatiquement le schéma le plus adapté pour le workspace (`swat-orchestrateur`, `swat-fix-rapide`, etc.).
+3. **Dispatch MCP formel** : chaque étape déléguée d'un nœud SWAT doit impérativement être créée via `create_task` ou `dispatch_task` et mise à jour via `update_task` sur le serveur MCP `Hephaistos-everything-search`. Interdiction stricte de simuler les étapes de workflow en simple texte ou commandes shell orphelines.
+
 ---
 
 ## 🔀 ROUTAGE GLOBAL DES FOURNISSEURS ET MODÈLES GRATUITS

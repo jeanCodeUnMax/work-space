@@ -89,7 +89,8 @@ entree (Devin, orchestrateur)
 
 ## 7. Regles dures
 
-- Le schema actif = la verite. Ne jamais orchestrer sur un autre graphe que `activeSchema`.
+- Le schema actif = la verite. Ne jamais orchestrer sur un autre graphe que `activeSchema` (lu dans `.agent/workspace-roster.json`). Si aucun schéma n'est actif, charger le schéma de workspace le plus pertinent via `listSchemas`/`loadSchema`.
+- Dispatch formel obligatoire : en orchestration manuelle ou automatique, chaque hop/tâche confié à un nœud doit obligatoirement être créé (`create_task` ou `dispatch_task`) et mis à jour (`update_task`) sur l'orchestrateur MCP `Hephaistos-everything-search`. Interdiction de simuler le pipeline en texte seul.
 - `schema load` masque les membres hors-schema (`hidden`) — ne pas les reactiver.
 - Un node sans `sessionId` valide, sans task, ou orphelin = anomalie a reparer avant lancement.
 - Toute creation/rename/load/delete de schema passe par le bridge (`saveSchema`, `renameSchema`, `loadSchema`, `listSchemas`) — jamais d'edit direct du fichier schemas.
