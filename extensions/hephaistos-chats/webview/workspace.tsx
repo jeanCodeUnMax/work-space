@@ -763,6 +763,19 @@ function Workspace(): React.JSX.Element {
                                             {schema.name}
                                         </button>
                                         )}
+                                        {schema.builtin && renamingId !== schema.id && (
+                                        <button
+                                            type="button"
+                                            className="schema-rename"
+                                            title="Promouvoir le canvas actuel comme version officielle de ce standard (gabarit canonique)"
+                                            aria-label={"Mettre à jour " + schema.name}
+                                            onClick={() => vscode.postMessage({ type: 'schema_update_standard', id: schema.id, all: showAllSchemas })}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path fill="currentColor" d="M12 2.5 15 9l6.7.6-5 4.4 1.5 6.5L12 16.9 5.8 20.5l1.5-6.5-5-4.4L9 9l3-6.5Z"/>
+                                            </svg>
+                                        </button>
+                                        )}
                                         {!schema.builtin && renamingId !== schema.id && (
                                         <button
                                             type="button"
