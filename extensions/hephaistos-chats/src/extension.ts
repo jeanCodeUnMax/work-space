@@ -583,13 +583,21 @@ export function activate(context: vscode.ExtensionContext): void {
             referent: true,
             placed: Boolean(entry),
         });
+        // Palette AGENTS = vrais agents (fenêtres/sessions), jamais les
+        // routeurs : un provider (nim, omniroute...) est un transport, pas un
+        // agent. Le rôle affiché = rôle métier du bloc, sinon codename/Bleubite.
+        const ROLE_JUNK = /^(openrouter|omniroute|devin-cli|antigravity-acp|opencode|hermes|kilo|kilo-code|nim2?|ollama|gemini|cli|local|cerberos|agent|unknown|cascade)$/i;
+        const agentRole = (nodeRole: string | undefined, s?: ChatSession): string => {
+            if (nodeRole && !ROLE_JUNK.test(nodeRole.trim())) return nodeRole;
+            return (s?.codename && String(s.codename).trim()) || 'Bleubite';
+        };
         for (const [sessionId, node] of nodeById) {
             if (agents.some((a) => a.sessionId === sessionId)) continue;
             const s = sessions?.find((item) => item.id === sessionId);
             agents.push({
                 sessionId,
                 title: node.title || (s ? sessionTitle(s) : sessionId.split('/').pop() || 'agent'),
-                role: node.role || defaultRoleForProvider(s?.provider || ''),
+                role: agentRole(node.role, s),
                 provider: s?.provider || (sessionId.startsWith('acp/') ? sessionId.split('/')[1] : 'unknown'),
                 model: s?.model,
                 placed: true,
@@ -600,7 +608,7 @@ export function activate(context: vscode.ExtensionContext): void {
             agents.push({
                 sessionId: s.id,
                 title: sessionTitle(s),
-                role: defaultRoleForProvider(s.provider),
+                role: agentRole(undefined, s),
                 provider: s.provider,
                 model: s.model,
             });
@@ -609,7 +617,6 @@ export function activate(context: vscode.ExtensionContext): void {
         // d'expertise des blocs), pas une liste statique.
         // Palette roles = les vraies specialisations des blocs (graphe +
         // roster + tous les schemas sauvegardes), providers exclus.
-        const ROLE_JUNK = /^(openrouter|omniroute|devin-cli|antigravity-acp|opencode|hermes|kilo|kilo-code|nim2?|ollama|gemini|cli|local|cerberos|agent|unknown|cascade)$/i;
         const roleSet = new Set<string>();
         const pushRole = (r?: string) => { if (r && !ROLE_JUNK.test(r.trim())) roleSet.add(r.trim()); };
         for (const n of graph?.nodes || []) pushRole(n.role);
