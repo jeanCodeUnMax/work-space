@@ -288,6 +288,8 @@ function Workspace(): React.JSX.Element {
     const [showAllSchemas, setShowAllSchemas] = useState(false);
     const [schemaName, setSchemaName] = useState('');
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [renamingId, setRenamingId] = useState<string | null>(null);
+    const [renameValue, setRenameValue] = useState('');
     const [progress, setProgress] = useState<Record<string, Progress>>({});
     const [isRunning, setIsRunning] = useState(false);
     const [runSummary, setRunSummary] = useState('');
@@ -606,6 +608,11 @@ function Workspace(): React.JSX.Element {
     const restoreStandards = (): void => {
         vscode.postMessage({ type: 'schemas_restore', all: showAllSchemas });
     };
+    const submitRename = (id: string): void => {
+        const name = renameValue.trim();
+        setRenamingId(null);
+        if (name) vscode.postMessage({ type: 'schema_rename', id, name, all: showAllSchemas });
+    };
     const requestDeleteSchema = (id: string): void => {
         if (confirmDeleteId === id) {
             setConfirmDeleteId(null);
@@ -728,6 +735,19 @@ function Workspace(): React.JSX.Element {
                             {schemas.map((schema) => (
                                 <div className="schema-item" key={schema.id}>
                                     <div className="schema-row">
+                                        {renamingId === schema.id ? (
+                                            <input
+                                                className="schema-rename-input"
+                                                autoFocus
+                                                value={renameValue}
+                                                onChange={(event) => setRenameValue(event.target.value)}
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') submitRename(schema.id);
+                                                    if (event.key === 'Escape') setRenamingId(null);
+                                                }}
+                                                onBlur={() => submitRename(schema.id)}
+                                            />
+                                        ) : (
                                         <button
                                             type="button"
                                             className={"schema-load" + (schema.builtin ? " schema-load-builtin" : "")}
@@ -742,6 +762,20 @@ function Workspace(): React.JSX.Element {
                                             )}
                                             {schema.name}
                                         </button>
+                                        )}
+                                        {!schema.builtin && renamingId !== schema.id && (
+                                        <button
+                                            type="button"
+                                            className="schema-rename"
+                                            title="Renommer ce schéma"
+                                            aria-label={"Renommer " + schema.name}
+                                            onClick={() => { setRenamingId(schema.id); setRenameValue(schema.name); }}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path fill="currentColor" d="M16.7 3.3a2.6 2.6 0 0 1 3.7 0l.3.3a2.6 2.6 0 0 1 0 3.7l-9.9 9.9-4.6 1 .9-4.7 9.6-9.5Zm2.2 1.5a.9.9 0 0 0-1.3 0l-.7.7 2.2 2.2.7-.7a.9.9 0 0 0 0-1.3l-.9-.9Z"/>
+                                            </svg>
+                                        </button>
+                                        )}
                                         <button
                                             type="button"
                                             className={"schema-delete" + (confirmDeleteId === schema.id ? " schema-delete-confirm" : "")}

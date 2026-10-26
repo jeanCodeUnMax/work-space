@@ -1000,6 +1000,40 @@ function listSchemas(root, all) {
         }));
 }
 
+function renameSchema(root, id, newName) {
+    const list = readSchemas();
+    const workspace = path.resolve(root);
+    const index = list.findIndex((item) => item.id === id);
+    if (index < 0) return { renamed: false, error: 'schema introuvable' };
+    const entry = list[index];
+    if (entry.builtin === true || isStandardSchemaName(entry.name)) {
+        return { renamed: false, protected: true, name: entry.name };
+    }
+    let effectiveName = String(newName || '').trim().slice(0, 120);
+    if (!effectiveName) return { renamed: false, error: 'nom vide' };
+    if (isStandardSchemaName(effectiveName)) effectiveName = `${effectiveName} (copie)`;
+    if (list.some((item, i) => i !== index && sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(effectiveName))) {
+        let suffix = 2;
+        while (list.some((item, i) => i !== index && sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(`${effectiveName} ${suffix}`))) suffix++;
+        effectiveName = `${effectiveName} ${suffix}`;
+    }
+    const oldName = entry.name;
+    entry.name = effectiveName;
+    if (entry.graph && typeof entry.graph === 'object') entry.graph.name = effectiveName;
+    entry.savedAt = new Date().toISOString();
+    writeSchemas(list);
+    // Répercute le nouveau nom sur le workflow actif si ce schéma est chargé.
+    try {
+        const roster = loadRoster(root);
+        if (roster.workflow && roster.workflow.activeSchemaId === id) {
+            roster.workflow.activeSchema = effectiveName;
+            roster.workflow.name = effectiveName;
+            writeRoster(root, roster);
+        }
+    } catch { /* ignore */ }
+    return { renamed: true, oldName, name: effectiveName };
+}
+
 function deleteSchema(root, id) {
     const list = readSchemas();
     const target = list.find((item) => item.id === id);
@@ -1197,6 +1231,7 @@ module.exports = {
     listSchemas,
     loadSchema,
     deleteSchema,
+    renameSchema,
     createEmptySchema,
     restoreStandardSchemas,
     isStandardSchemaName,

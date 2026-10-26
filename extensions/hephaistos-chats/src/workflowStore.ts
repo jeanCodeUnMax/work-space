@@ -15,6 +15,7 @@ interface RosterWorkflowApi {
     listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>;
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
+    renameSchema(root: string, id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string };
     createEmptySchema(root: string, name: string): WorkflowGraph;
     restoreStandardSchemas(root: string): { restored: string[] };
     getWorkflowAgentProfile(root: string, sessionId: string): {
@@ -90,6 +91,10 @@ export class WorkflowStore {
 
     deleteSchema(id: string): void {
         this.api.deleteSchema(this.workspaceRoot, id);
+    }
+
+    renameSchema(id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string } {
+        return this.api.renameSchema(this.workspaceRoot, id, name);
     }
 
     getAgentProfile(sessionId: string): {

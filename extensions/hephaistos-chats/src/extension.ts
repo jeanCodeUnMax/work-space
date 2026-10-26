@@ -773,6 +773,24 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'schema_rename') {
+            try {
+                const result = workflowStore.renameSchema(
+                    String((message as { id?: string }).id || ''),
+                    String((message as { name?: string }).name || ''),
+                );
+                if (result?.protected) {
+                    FlowWorkspacePanel.error('Schéma standard — renommage refusé (gabarit canonique).');
+                } else if (result?.renamed === false) {
+                    FlowWorkspacePanel.error(`Renommage impossible : ${result.error || 'inconnu'}`);
+                }
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
+            return;
+        }
+
         if (message.type === 'schema_delete') {
             try {
                 workflowStore.deleteSchema(String((message as { id?: string }).id || ''));
