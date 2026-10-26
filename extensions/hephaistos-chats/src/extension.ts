@@ -635,9 +635,21 @@ export function activate(context: vscode.ExtensionContext): void {
         } catch { /* banque absente */ }
         if (!roleSet.size) ['Devin', 'Orchestrateur', 'Codeur', 'Testeur', 'Reviewer'].forEach((r) => roleSet.add(r));
         const roles = [...roleSet].sort((a, b) => a.localeCompare(b, 'fr'));
+        // Palette MCPS : les serveurs déclarés dans le broker mcp-mux —
+        // glissables sur un bloc pour lui distribuer les outils du serveur.
+        const mcps: string[] = [];
+        try {
+            const muxPath = path.join(os.homedir(), '.config', 'mcp-mux', 'mcp-mux.json');
+            const mux = JSON.parse(fs.readFileSync(muxPath, 'utf8'));
+            for (const [name, def] of Object.entries(mux.servers || {}) as [string, { disabled?: boolean }][]) {
+                if (!def.disabled && name !== 'mcp-mux') mcps.push(name);
+            }
+        } catch { /* broker absent */ }
+        mcps.sort((a, b) => a.localeCompare(b, 'fr'));
         return {
             roles,
             skills,
+            mcps,
             providers: ACP_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label })),
             agents,
         };
