@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T05:21:57.765Z",
+  "updatedAt": "2026-10-26T05:40:03.268Z",
   "core": {
     "devin": [
       {
@@ -38,7 +38,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Devin",
-        "hidden": true
+        "hidden": false
       }
     ],
     "cerberos": [
@@ -140,7 +140,7 @@
         "restore": "open-or-reveal",
         "role": "Testeur",
         "model": "openai/gpt-oss-20b",
-        "hidden": true
+        "hidden": false
       },
       {
         "providerId": "hephaistos",
@@ -171,6 +171,14 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "open-or-reveal",
         "role": "Devin",
+        "hidden": false
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-59564a6e-900c-4b93-97b5-03d8e5549e14",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
         "hidden": true
       }
     ]
@@ -196,7 +204,7 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-fix-rapide",
+    "name": "swat-orchestrateur",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
@@ -209,8 +217,8 @@
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -660,
-          "y": -154
+          "x": -520,
+          "y": -140
         }
       },
       {
@@ -223,8 +231,8 @@
         ],
         "title": "keen-agent",
         "position": {
-          "x": -360,
-          "y": -154
+          "x": -220,
+          "y": -140
         }
       },
       {
@@ -237,8 +245,8 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": -60,
-          "y": -154
+          "x": 80,
+          "y": -140
         }
       },
       {
@@ -251,8 +259,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": 240,
-          "y": -154
+          "x": 374,
+          "y": -132
         }
       },
       {
@@ -310,6 +318,31 @@
           "x": 380,
           "y": 180
         }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation technique : syntaxe (node --check), tests unitaires, smoke tests des livrables avant revue.",
+        "skills": [
+          "testing-patterns",
+          "lint-and-validate"
+        ],
+        "title": "zealous-agent",
+        "position": {
+          "x": 132,
+          "y": -440
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "role": "Devin",
+        "task": "Agent Devin auxiliaire — missions paralleles (maintenance infra, diagnostics).",
+        "skills": [],
+        "title": "bloom-settee",
+        "position": {
+          "x": -264,
+          "y": -396
+        }
       }
     ],
     "edges": [
@@ -319,24 +352,24 @@
         "target": "chat-mvmw59wa"
       },
       {
-        "id": "edge:chat-mvmw59wa->chat-mvmw5chd",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:chat-mvmw5chd->acp/devin-cli/sugary-shoemaker",
+        "id": "edge:chat-mvmw5chd->chat-mvfqytbz",
         "source": "chat-mvmw5chd",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvmtldvy",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvmtldvy"
-      },
-      {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvfqytbz",
-        "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:chat-mvmtldvy->chat-mvfqytbz",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:chat-mvfqytbz->chat-mvfj773t",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:chat-mvfj773t->acp/devin-cli/sugary-shoemaker",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
       },
       {
         "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvflr6cn",
@@ -344,12 +377,25 @@
         "target": "chat-mvflr6cn"
       },
       {
-        "id": "edge:acp/devin-cli/sugary-shoemaker->chat-mvfj773t",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvfj773t"
+        "id": "edge:chat-mvmw59wa->chat-mvfj8b4m",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmw5chd",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:chat-mvfj8b4m->chat-mvmtldvy",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:acp/devin-cli/ionian-helicopter->acp/devin-cli/bloom-settee",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/devin-cli/bloom-settee"
       }
-    ],
-    "activeSchema": "swat-fix-rapide",
-    "activeSchemaId": "schema-em9rovwy-4hbfn"
+    ]
   }
 }

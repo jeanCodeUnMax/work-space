@@ -149,9 +149,19 @@ export function activate(context: vscode.ExtensionContext): void {
         const rosterFile = path.join(workspaceRoot, '.agent', 'workspace-roster.json');
         if (fs.existsSync(rosterFile)) {
             let rosterTimer: NodeJS.Timeout | undefined;
+            let lastRosterHash = '';
             const rosterWatcher = fs.watch(rosterFile, () => {
                 if (rosterTimer) clearTimeout(rosterTimer);
                 rosterTimer = setTimeout(() => {
+                    // Dedup contenu : syncRosterWorkflow reecrit parfois le
+                    // roster de facon identique -> sans hash, watch->load->
+                    // write->watch boucle en CPU et ralentit l'IDE.
+                    try {
+                        const content = fs.readFileSync(rosterFile, 'utf8');
+                        const hash = require('crypto').createHash('sha1').update(content).digest('hex');
+                        if (hash === lastRosterHash) return;
+                        lastRosterHash = hash;
+                    } catch { return; }
                     void paint();
                     // Roster modifié en dehors de l'UI (CLI workspace-roster.js,
                     // agent externe) : repousser l'état au canvas — sinon le
