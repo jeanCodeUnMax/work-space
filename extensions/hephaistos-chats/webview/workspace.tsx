@@ -355,7 +355,7 @@ function Workspace(): React.JSX.Element {
                                 onAgentDrop: (agent: PaletteAgent) => {
                                     vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
                                 },
-                                onRoleDrop: (role: string) => updateNode(node.id, { role }),
+                                onRoleDrop: (role: string) => assignRole(node.id, role),
                                 onPoint: () => pointAgent(node.id),
                             },
                         };
@@ -481,6 +481,18 @@ function Workspace(): React.JSX.Element {
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, skills: [...new Set([...(n.data.skills || []), skill])] } }
+                : n);
+            const s = stateRef.current;
+            stateRef.current = { ...s, nodes: next };
+            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
+            return next;
+        });
+    }, [postWorkflowSave, setNodes]);
+
+    const assignRole = useCallback((id: string, role: string) => {
+        setNodes((current) => {
+            const next = current.map((n) => n.id === id
+                ? { ...n, data: { ...n.data, role } }
                 : n);
             const s = stateRef.current;
             stateRef.current = { ...s, nodes: next };
