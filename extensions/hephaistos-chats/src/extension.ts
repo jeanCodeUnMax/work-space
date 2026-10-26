@@ -578,7 +578,20 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         // Palette roles = les vrais roles metier du graphe + roster (puces
         // d'expertise des blocs), pas une liste statique.
-        const roles = ['Devin', 'Antigravity', 'Codeur', 'Reviewer', 'Documentaliste', 'Testeur', 'Chercheur', 'Architecte', 'DevOps'];
+        // Palette roles = les vraies specialisations des blocs (graphe + roster).
+        const roleSet = new Set<string>();
+        for (const n of graph?.nodes || []) {
+            if (n.role) roleSet.add(String(n.role));
+        }
+        try {
+            const rosterPath = workspaceRoot ? path.join(workspaceRoot, '.agent', 'workspace-roster.json') : '';
+            const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+            for (const mems of Object.values(roster.core || {}) as { role?: string }[][]) {
+                for (const m of mems) if (m.role) roleSet.add(String(m.role));
+            }
+        } catch { /* roster absent */ }
+        if (!roleSet.size) ['Devin', 'Orchestrateur', 'Codeur', 'Testeur', 'Reviewer'].forEach((r) => roleSet.add(r));
+        const roles = [...roleSet].sort((a, b) => a.localeCompare(b, 'fr'));
         return {
             roles,
             skills,
