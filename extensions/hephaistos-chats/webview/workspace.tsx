@@ -558,6 +558,18 @@ function Workspace(): React.JSX.Element {
                                     setSelectedEdgeId(null);
                                 }}
                                 onNodeDragStop={onNodeDragStop}
+                                onDragOver={(event) => {
+                                    if (event.dataTransfer.types.includes('application/x-hph-role')) {
+                                        event.preventDefault();
+                                        event.dataTransfer.dropEffect = 'copy';
+                                    }
+                                }}
+                                onDrop={(event) => {
+                                    const role = event.dataTransfer.getData('application/x-hph-role');
+                                    if (!role) return;
+                                    event.preventDefault();
+                                    vscode.postMessage({ type: 'add_agent', provider: newProvider, role });
+                                }}
                                 fitView
                                 fitViewOptions={{ padding: 0.24 }}
                                 deleteKeyCode={null}
@@ -700,6 +712,22 @@ function Workspace(): React.JSX.Element {
                                         event.dataTransfer.effectAllowed = 'copy';
                                     }}
                                 >{skill}</span>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="skill-palette role-palette">
+                        <span className="inspector-kicker">RÔLES — glisser sur le canvas pour créer un agent</span>
+                        <div className="skill-palette-list">
+                            {catalog.roles.map((role) => (
+                                <span
+                                    key={role}
+                                    className="skill-chip draggable role-chip"
+                                    draggable
+                                    onDragStart={(event) => {
+                                        event.dataTransfer.setData('application/x-hph-role', role);
+                                        event.dataTransfer.effectAllowed = 'copy';
+                                    }}
+                                >{role}</span>
                             ))}
                         </div>
                     </div>
