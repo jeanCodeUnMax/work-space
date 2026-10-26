@@ -13,6 +13,33 @@ const AGENT_DIR = resolve(HERE, '..');
 const REPO = resolve(AGENT_DIR, '..');
 const HOME = homedir();
 
+// Racines configurables : .agent/skill-mux/roots.json (versionné, portable)
+// + roots.local.json (extras machine, gitignoré). Placeholders supportés :
+// ~ (home), %VAR% et ${VAR} (env), <repo> (racine du repo). Si aucun fichier
+// n'existe, repli sur les défauts codés ci-dessous.
+function expandPath(p) {
+    return resolve(String(p)
+        .replace(/^~(?=[/\\]|$)/, HOME)
+        .replace(/<repo>/g, REPO)
+        .replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (m, v) => process.env[v] || m)
+        .replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (m, v) => process.env[v] || m));
+}
+
+function loadRoots() {
+    const roots = [];
+    for (const f of ['roots.json', 'roots.local.json']) {
+        const fp = join(HERE, f);
+        if (!existsSync(fp)) continue;
+        try {
+            const list = JSON.parse(readFileSync(fp, 'utf8'));
+            for (const r of Array.isArray(list) ? list : list.roots || []) {
+                if (r?.path) roots.push({ path: expandPath(r.path), label: r.label || f, priority: roots.length });
+            }
+        } catch { /* fichier illisible : on ignore */ }
+    }
+    return roots.length ? roots : DEFAULT_ROOTS;
+}
+
 // Ordre = priorité de déduplication : le premier trouvé gagne le nom.
 const DEFAULT_ROOTS = [
     { path: join(AGENT_DIR, 'skills'), label: 'canonical', priority: 0 },
@@ -101,7 +128,7 @@ function scanRoot(rootPath, label, priority, found) {
 }
 
 export function buildRegistry(extraRoots = []) {
-    const roots = [...extraRoots.map((p, i) => ({ path: resolve(p), label: 'extra', priority: -1 - i })), ...DEFAULT_ROOTS];
+    const roots = [...extraRoots.map((p, i) => ({ path: resolve(p), label: 'extra', priority: -1 - i })), ...loadRoots()];
     const found = new Map();
     const perSource = {};
     for (const r of roots) {

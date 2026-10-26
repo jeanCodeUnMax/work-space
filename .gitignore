@@ -95,3 +95,4 @@ orchestration-ping-*.md
 devin-crash-logs-*/
 devin-crash-logs-*.zip
 .agent/skill-registry.json
+.agent/skill-mux/roots.local.json
