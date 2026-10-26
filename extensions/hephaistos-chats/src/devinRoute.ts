@@ -164,6 +164,28 @@ export async function runIdeAgentTurn(
 }
 
 /**
+ * Injection « fire-and-forget » dans une fenêtre IDE live (pointage ⌖) :
+ * même wake_acp_agent que runIdeAgentTurn mais sans attendre de réponse
+ * comms — le texte arrive comme message utilisateur dans la session cible.
+ */
+export async function injectIdeAgentText(
+    providerId: string,
+    sessionId: string,
+    text: string,
+    workspaceRoot: string,
+): Promise<boolean> {
+    if (!bridge?.isConnected || !sessionId || !text) return false;
+    try {
+        const res = await bridgeRequest(bridge, 'wake_acp_agent', {
+            text, sessionId, providerId, workspaceRoot,
+        }, 'acp_wake_result', WAKE_TIMEOUT_MS);
+        return String(res?.status || 'failed') === 'sent';
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Liste les sessions IDE d'un provider (devin-cli / antigravity-acp) via le
  * bridge. Retourne la session focalisée en priorité.
  */

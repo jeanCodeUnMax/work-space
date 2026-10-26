@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T18:44:31.443Z",
+  "updatedAt": "2026-10-26T18:49:21.127Z",
   "core": {
     "devin": [
       {
@@ -192,7 +192,7 @@
         "model": "opencode/nemotron-3-ultra-free",
         "role": "OpenRouter",
         "title": "xenial-yew",
-        "hidden": false
+        "hidden": true
       }
     ]
   },
@@ -310,17 +310,6 @@
         "position": {
           "x": 308,
           "y": 132
-        }
-      },
-      {
-        "sessionId": "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3",
-        "role": "OpenRouter",
-        "task": "",
-        "skills": [],
-        "title": "xenial-yew",
-        "position": {
-          "x": 380,
-          "y": 460
         }
       }
     ],
