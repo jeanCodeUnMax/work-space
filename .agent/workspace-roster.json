@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T22:09:13.929Z",
+  "updatedAt": "2026-10-26T23:07:30.268Z",
   "core": {
     "devin": [
       {
@@ -225,8 +225,10 @@
         "task": "Cadrage & Supervision : analyse le besoin, découpe les étapes, supervise le déroulement global.",
         "skills": [
           "orchestrator",
-          "plan-writing"
+          "plan-writing",
+          "hephaistos2-kit"
         ],
+        "mcps": [],
         "title": "ionian-helicopter",
         "position": {
           "x": -660,
@@ -242,6 +244,7 @@
           "api-patterns",
           "plan-writing"
         ],
+        "mcps": [],
         "title": "bloom-settee",
         "position": {
           "x": -330,
@@ -255,6 +258,9 @@
         "skills": [
           "clean-code",
           "nodejs-best-practices"
+        ],
+        "mcps": [
+          "sqlite-node"
         ],
         "title": "keen-agent",
         "position": {
@@ -270,6 +276,7 @@
           "testing-patterns",
           "tdd-workflow"
         ],
+        "mcps": [],
         "title": "zealous-agent",
         "position": {
           "x": 330,
@@ -284,10 +291,11 @@
           "code-review-checklist",
           "clean-code"
         ],
+        "mcps": [],
         "title": "amber-agent",
         "position": {
-          "x": 682,
-          "y": -440
+          "x": 660,
+          "y": -352
         }
       },
       {
@@ -298,10 +306,11 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
-          "x": 682,
-          "y": -220
+          "x": 660,
+          "y": -132
         }
       },
       {
@@ -312,10 +321,11 @@
           "performance-profiling",
           "observability-specialist"
         ],
+        "mcps": [],
         "title": "steady-agent",
         "position": {
-          "x": 682,
-          "y": 0
+          "x": 660,
+          "y": 88
         }
       },
       {
@@ -326,10 +336,11 @@
           "vulnerability-scanner",
           "code-review-checklist"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
-          "x": 1012,
-          "y": -220
+          "x": 990,
+          "y": -132
         }
       },
       {
@@ -340,10 +351,11 @@
           "git-history",
           "lint-and-validate"
         ],
+        "mcps": [],
         "title": "xenial-agent",
         "position": {
-          "x": 1342,
-          "y": -220
+          "x": 1320,
+          "y": -132
         }
       },
       {
@@ -354,10 +366,11 @@
           "testing-patterns",
           "lint-and-validate"
         ],
+        "mcps": [],
         "title": "sugary-shoemaker",
         "position": {
-          "x": 1672,
-          "y": -220
+          "x": 1650,
+          "y": -132
         }
       },
       {
@@ -368,10 +381,11 @@
           "obsidian",
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
-          "x": 2002,
-          "y": -308
+          "x": 1980,
+          "y": -220
         }
       },
       {
@@ -382,10 +396,11 @@
           "vault-ingest",
           "obsidian"
         ],
+        "mcps": [],
         "title": "beacon-agent",
         "position": {
-          "x": 2002,
-          "y": -132
+          "x": 1980,
+          "y": -44
         }
       }
     ],
