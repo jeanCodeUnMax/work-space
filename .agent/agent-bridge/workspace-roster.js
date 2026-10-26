@@ -793,6 +793,7 @@ const STANDARD_SCHEMA_NAMES = new Set([
     'swat-code-review',
     'swat-faisabilite',
     'swat-plan-plugin',
+    'concile',
 ]);
 
 function isStandardSchemaName(name) {
@@ -924,6 +925,11 @@ function syncActiveSchemaSnapshot(root, workflow) {
     workflow.activeSchemaId = current.id;
     workflow.activeSchema = current.name;
 
+    // Schémas standards = immuables : ne JAMAIS réécrire leur graphe depuis
+    // l'état live. C'est ce canal qui a propagé un graphe élagué dans le
+    // schéma sauvegardé (corruption swat-orchestrateur).
+    if (isStandardSchemaName(current.name) || current.builtin === true) return;
+
     const snapshot = cleanSchemaGraph(workflow, current.name);
     list[index] = {
         ...current,
@@ -938,7 +944,12 @@ function syncActiveSchemaSnapshot(root, workflow) {
 function saveSchema(root, name, graph) {
     const list = readSchemas();
     const workspace = path.resolve(root);
-    const effectiveName = String(name || graph?.activeSchema || graph?.name || 'Schema').trim().slice(0, 120) || 'Schema';
+    let effectiveName = String(name || graph?.activeSchema || graph?.name || 'Schema').trim().slice(0, 120) || 'Schema';
+    // Schéma standard protégé : une sauvegarde sous son nom crée une copie
+    // utilisateur — le gabarit canonique n'est jamais écrasé.
+    if (isStandardSchemaName(effectiveName)) {
+        effectiveName = `${effectiveName} (copie)`;
+    }
     const cleanGraph = cleanSchemaGraph(graph, effectiveName);
     const index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(effectiveName) && sameWorkspace(item.workspace, workspace));
     const entry = {
@@ -972,6 +983,9 @@ function saveSchema(root, name, graph) {
 
 function listSchemas(root, all) {
     const workspace = path.resolve(root);
+    // Auto-guérison à chaque listage : gabarits standards absents ou divergents
+    // sont restaurés depuis .agent/templates/schemas/ avant tout affichage.
+    try { restoreStandardSchemas(root); } catch { /* best-effort */ }
     return readSchemas()
         .filter((item) => all || sameWorkspace(item.workspace, workspace))
         .map((item) => ({
@@ -988,6 +1002,11 @@ function listSchemas(root, all) {
 
 function deleteSchema(root, id) {
     const list = readSchemas();
+    const target = list.find((item) => item.id === id);
+    // Schéma standard protégé : suppression refusée (gabarit canonique).
+    if (target && (target.builtin === true || isStandardSchemaName(target.name))) {
+        return { deleted: 0, protected: true, name: target.name };
+    }
     const next = list.filter((item) => item.id !== id);
     writeSchemas(next);
     const roster = loadRoster(root);
@@ -1046,9 +1065,18 @@ function restoreStandardSchemas(root) {
     const list = readSchemas();
     const restored = [];
     for (const tpl of templates) {
-        const exists = list.some((item) =>
+        const index = list.findIndex((item) =>
             sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(tpl.name));
-        if (exists) continue;
+        // Auto-réparation : un schéma standard divergent du gabarit canonique
+        // est rétabli tel quel (corruption évitée — ex. swat-orchestrateur).
+        if (index >= 0) {
+            const current = list[index];
+            if (JSON.stringify(current.graph) !== JSON.stringify(tpl.graph)) {
+                list[index] = { ...current, graph: tpl.graph, builtin: true, desc: schemaDesc(tpl.graph) };
+                restored.push(`${tpl.name} (repare)`);
+            }
+            continue;
+        }
         list.push({
             id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
             name: tpl.name,
