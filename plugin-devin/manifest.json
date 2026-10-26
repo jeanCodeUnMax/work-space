@@ -257,15 +257,6 @@
     },
     "execute_skill_hephaistos2_kit": {
       "description": "Skill hephaistos2-kit"
-    },
-    "execute_skill_cursor_ide_docs": {
-      "description": "Skill cursor-ide-docs"
-    },
-    "execute_skill_boost": {
-      "description": "Skill boost"
-    },
-    "execute_skill_session_id": {
-      "description": "Skill session-id"
     }
   },
   "permissions": {
