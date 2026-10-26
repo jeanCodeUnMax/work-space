@@ -223,6 +223,7 @@ function toStoredGraph(
 
 function Workspace(): React.JSX.Element {
     const [nodes, setNodes, onNodesChange] = useNodesState<AgentNode>([]);
+    const schemaLoadPending = useRef(false);
     const [edges, setEdges] = useEdgesState<Edge>([]);
     const [workflowName, setWorkflowName] = useState('Flux agents');
     const [entrySessionId, setEntrySessionId] = useState<string | null>(null);
@@ -272,6 +273,8 @@ function Workspace(): React.JSX.Element {
             if (message?.type === 'workflow_state') {
                 vscode.postMessage({ type: 'schemas_list', all: showAllSchemas });
                 const view = message.workflow as WorkflowView;
+                const schemaLoaded = schemaLoadPending.current;
+                schemaLoadPending.current = false;
                 setNodes((current) => {
                     const byId = new Map(current.map((n) => [n.id, n]));
                     return view.nodes.map((node) => {
@@ -280,7 +283,7 @@ function Workspace(): React.JSX.Element {
                             ...node,
                             selected: prev?.selected ?? node.selected,
                             dragging: prev?.dragging ?? node.dragging,
-                            position: prev?.position || node.position,
+                            position: schemaLoaded ? node.position : (prev?.position || node.position),
                             data: { ...node.data, onSkillDrop: (skill: string) => assignSkill(node.id, skill) },
                         };
                     });
@@ -421,6 +424,7 @@ function Workspace(): React.JSX.Element {
         setSchemaName('');
     };
     const loadSchema = (id: string): void => {
+        schemaLoadPending.current = true;
         vscode.postMessage({ type: 'schema_load', id });
     };
     const openSchemas = (): void => {
