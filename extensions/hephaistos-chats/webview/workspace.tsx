@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client';
 import {
     addEdge,
+    applyNodeChanges,
     applyEdgeChanges,
     Background,
     BackgroundVariant,
@@ -17,7 +18,9 @@ import {
     type Edge,
     type Node,
     type NodeProps,
+    type OnNodesChange,
     type OnEdgesChange,
+    type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './workspace.css';
@@ -60,6 +63,8 @@ interface StoredEdge {
 interface WorkflowGraph {
     version: 1;
     name: string;
+    activeSchema?: string;
+    activeSchemaId?: string;
     entrySessionId: string | null;
     nodes: StoredNode[];
     edges: StoredEdge[];
@@ -204,8 +209,10 @@ function toStoredGraph(
     name: string,
     entrySessionId: string | null,
     entryIsExplicit: boolean,
+    activeSchema?: string,
+    activeSchemaId?: string,
 ): WorkflowGraph {
-    return {
+    const graph: WorkflowGraph = {
         version: 1,
         name,
         entrySessionId: entryIsExplicit ? entrySessionId : null,
@@ -215,17 +222,23 @@ function toStoredGraph(
             role: node.data.role,
             task: node.data.task,
             skills: node.data.skills || [],
-            position: node.position,
+            position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
         })),
         edges: edges.map(({ id, source, target }) => ({ id, source, target })),
     };
+    if (activeSchema) graph.activeSchema = activeSchema;
+    if (activeSchemaId) graph.activeSchemaId = activeSchemaId;
+    return graph;
 }
 
 function Workspace(): React.JSX.Element {
-    const [nodes, setNodes, onNodesChange] = useNodesState<AgentNode>([]);
-    const schemaLoadPending = useRef(false);
+    const [nodes, setNodes] = useNodesState<AgentNode>([]);
+    const schemaLoadPending = useRef(true);
+    const reactFlowRef = useRef<ReactFlowInstance<AgentNode, Edge> | null>(null);
     const [edges, setEdges] = useEdgesState<Edge>([]);
     const [workflowName, setWorkflowName] = useState('Flux agents');
+    const [activeSchema, setActiveSchema] = useState<string | undefined>(undefined);
+    const [activeSchemaId, setActiveSchemaId] = useState<string | undefined>(undefined);
     const [entrySessionId, setEntrySessionId] = useState<string | null>(null);
     const [entryIsExplicit, setEntryIsExplicit] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -273,7 +286,7 @@ function Workspace(): React.JSX.Element {
             if (message?.type === 'workflow_state') {
                 vscode.postMessage({ type: 'schemas_list', all: showAllSchemas });
                 const view = message.workflow as WorkflowView;
-                const schemaLoaded = schemaLoadPending.current;
+                const shouldFitView = schemaLoadPending.current;
                 schemaLoadPending.current = false;
                 setNodes((current) => {
                     const byId = new Map(current.map((n) => [n.id, n]));
@@ -283,17 +296,26 @@ function Workspace(): React.JSX.Element {
                             ...node,
                             selected: prev?.selected ?? node.selected,
                             dragging: prev?.dragging ?? node.dragging,
-                            position: schemaLoaded ? node.position : (prev?.position || node.position),
+                            position: prev?.dragging ? prev.position : node.position,
                             data: { ...node.data, onSkillDrop: (skill: string) => assignSkill(node.id, skill) },
                         };
                     });
                 });
                 setEdges(view.edges.map(e=>({ ...e, interactionWidth: 1, selectable: false })));
                 setWorkflowName(view.graph.name);
+                setActiveSchema(view.graph.activeSchema);
+                setActiveSchemaId(view.graph.activeSchemaId);
                 setEntrySessionId(view.entrySessionId);
                 setEntryIsExplicit(!!view.graph.entrySessionId);
                 setCatalog(view.catalog || { roles: [], skills: [], providers: [] });
                 setSelectedId((current) => view.nodes.some((node) => node.id === current) ? current : null);
+                if (shouldFitView) {
+                    window.requestAnimationFrame(() => {
+                        window.requestAnimationFrame(() => {
+                            void reactFlowRef.current?.fitView({ padding: 0.24, maxZoom: 0.85 });
+                        });
+                    });
+                }
                 return;
             }
             if (message?.type === 'workflow_run_finished') {
@@ -317,6 +339,23 @@ function Workspace(): React.JSX.Element {
         return () => window.removeEventListener('message', onMessage);
     }, [setEdges, setNodes]);
 
+    const stateRef = useRef({ nodes, edges, entrySessionId, workflowName, entryIsExplicit, activeSchema, activeSchemaId });
+    stateRef.current = { nodes, edges, entrySessionId, workflowName, entryIsExplicit, activeSchema, activeSchemaId };
+
+    const postWorkflowSave = useCallback((
+        nextNodes: AgentNode[],
+        nextEdges: Edge[],
+        nextEntry: string | null,
+        nextName: string,
+        nextEntryIsExplicit: boolean,
+    ) => {
+        const s = stateRef.current;
+        vscode.postMessage({
+            type: 'workflow_change',
+            graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit, s.activeSchema, s.activeSchemaId),
+        });
+    }, []);
+
     const sendSave = useCallback((
         nextNodes: AgentNode[] = nodes,
         nextEdges: Edge[] = edges,
@@ -326,15 +365,57 @@ function Workspace(): React.JSX.Element {
     ) => {
         if (saveTimer.current !== undefined) window.clearTimeout(saveTimer.current);
         saveTimer.current = window.setTimeout(() => {
-            vscode.postMessage({
-                type: 'workflow_change',
-                graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit),
-            });
+            saveTimer.current = undefined;
+            postWorkflowSave(nextNodes, nextEdges, nextEntry, nextName, nextEntryIsExplicit);
         }, 300);
-    }, [edges, entryIsExplicit, entrySessionId, nodes, workflowName]);
+    }, [edges, entryIsExplicit, entrySessionId, nodes, postWorkflowSave, workflowName]);
 
-    const stateRef = useRef({ nodes, edges, entrySessionId, workflowName, entryIsExplicit });
-    stateRef.current = { nodes, edges, entrySessionId, workflowName, entryIsExplicit };
+    const flushSave = useCallback(() => {
+        if (saveTimer.current !== undefined) {
+            window.clearTimeout(saveTimer.current);
+            saveTimer.current = undefined;
+        }
+        const current = stateRef.current;
+        if (!current.nodes.length) return;
+        postWorkflowSave(
+            current.nodes,
+            current.edges,
+            current.entrySessionId,
+            current.workflowName,
+            current.entryIsExplicit,
+        );
+    }, [postWorkflowSave]);
+
+    useEffect(() => {
+        const persistBeforeExit = (): void => {
+            if (saveTimer.current !== undefined) flushSave();
+        };
+        window.addEventListener('beforeunload', persistBeforeExit);
+        window.addEventListener('pagehide', persistBeforeExit);
+        return () => {
+            window.removeEventListener('beforeunload', persistBeforeExit);
+            window.removeEventListener('pagehide', persistBeforeExit);
+        };
+    }, [flushSave]);
+
+    const onWorkflowNodesChange: OnNodesChange<AgentNode> = useCallback((changes) => {
+        setNodes((current) => {
+            const nextNodes = applyNodeChanges(changes, current) as AgentNode[];
+            const state = stateRef.current;
+            stateRef.current = { ...state, nodes: nextNodes };
+            const hasPositionEnd = changes.some(
+                (change) => change.type === 'position' && change.dragging === false && change.position != null,
+            );
+            if (hasPositionEnd) {
+                if (saveTimer.current !== undefined) {
+                    window.clearTimeout(saveTimer.current);
+                    saveTimer.current = undefined;
+                }
+                postWorkflowSave(nextNodes, state.edges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
+            }
+            return nextNodes;
+        });
+    }, [postWorkflowSave, setNodes]);
 
     const assignSkill = useCallback((id: string, skill: string) => {
         setNodes((current) => {
@@ -342,13 +423,11 @@ function Workspace(): React.JSX.Element {
                 ? { ...n, data: { ...n.data, skills: [...new Set([...(n.data.skills || []), skill])] } }
                 : n);
             const s = stateRef.current;
-            vscode.postMessage({
-                type: 'workflow_change',
-                graph: toStoredGraph(next, s.edges, s.workflowName, s.entrySessionId, s.entryIsExplicit),
-            });
+            stateRef.current = { ...s, nodes: next };
+            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
             return next;
         });
-    }, [setNodes]);
+    }, [postWorkflowSave, setNodes]);
 
     const onConnect = useCallback((connection: Connection) => {
         const nextEdges = addEdge({ ...connection, type: 'smoothstep', interactionWidth: 1, selectable: false }, edges);
@@ -388,9 +467,19 @@ function Workspace(): React.JSX.Element {
     };
 
     const onNodeDragStop = (_event: MouseEvent | TouchEvent, moved: AgentNode): void => {
-        const nextNodes = nodes.map((node) => node.id === moved.id ? moved : node);
-        setNodes(nextNodes);
-        sendSave(nextNodes);
+        setNodes((current) => {
+            const nextNodes = current.map((node) => node.id === moved.id ? moved : node);
+            const state = stateRef.current;
+            stateRef.current = { ...state, nodes: nextNodes };
+            // Une sortie de workspace peut arriver avant le debounce de 300 ms.
+            // Le dernier déplacement est donc écrit immédiatement.
+            if (saveTimer.current !== undefined) {
+                window.clearTimeout(saveTimer.current);
+                saveTimer.current = undefined;
+            }
+            postWorkflowSave(nextNodes, state.edges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
+            return nextNodes;
+        });
     };
 
     const runWorkflow = (): void => {
@@ -420,10 +509,24 @@ function Workspace(): React.JSX.Element {
         vscode.postMessage({ type: 'schemas_list', all });
     };
     const saveSchema = (): void => {
-        vscode.postMessage({ type: 'schema_save', name: schemaName.trim() || 'Schema', all: showAllSchemas });
+        const s = stateRef.current;
+        const targetName = schemaName.trim() || s.activeSchema || s.workflowName.trim() || 'Schema';
+        if (saveTimer.current !== undefined) {
+            window.clearTimeout(saveTimer.current);
+            saveTimer.current = undefined;
+        }
+        vscode.postMessage({
+            type: 'schema_save',
+            name: targetName,
+            all: showAllSchemas,
+            graph: toStoredGraph(s.nodes, s.edges, targetName, s.entrySessionId, s.entryIsExplicit, s.activeSchema, s.activeSchemaId),
+        });
         setSchemaName('');
     };
     const loadSchema = (id: string): void => {
+        if (saveTimer.current !== undefined) {
+            flushSave();
+        }
         schemaLoadPending.current = true;
         vscode.postMessage({ type: 'schema_load', id });
     };
@@ -552,6 +655,7 @@ function Workspace(): React.JSX.Element {
                     ) : (
                         <>
                             <ReactFlow
+                                onInit={(instance) => { reactFlowRef.current = instance; }}
                                 selectionOnDrag
                                 panOnDrag={[2]}
                                 selectionMode={SelectionMode.Partial}
@@ -561,7 +665,7 @@ function Workspace(): React.JSX.Element {
                                 nodes={nodes}
                                 edges={edges}
                                 nodeTypes={nodeTypes}
-                                onNodesChange={onNodesChange}
+                                onNodesChange={onWorkflowNodesChange}
                                 onEdgesChange={onEdgeChanges}
                                 onConnect={onConnect}
                                 onNodeClick={(_event, node) => setSelectedId(node.id)}

@@ -346,8 +346,21 @@ export function activate(context: vscode.ExtensionContext): void {
         } catch { /* session introuvable côté IDE */ }
     }
 
-    function openSession(sessionId: string): void {
-        const session = store.get(sessionId);
+    function openSession(sessionId: string, restoreIfMissing = false): void {
+        let session = store.get(sessionId);
+        if (!session && restoreIfMissing && sessionId.startsWith('chat-') && workflowStore) {
+            const profile = workflowStore.getAgentProfile(sessionId);
+            if (profile) {
+                // L'historique est un cache de conversation, pas l'identite du
+                // bloc. Recréer une session vide conserve l'ID du schéma.
+                session = store.restore(
+                    sessionId,
+                    profile.providerId === 'hephaistos' ? 'openrouter' : profile.providerId,
+                    profile.model,
+                    profile.title || profile.role,
+                );
+            }
+        }
         if (!session) {
             if (sessionId.startsWith('acp/')) void openAcpSession(sessionId);
             return;
@@ -501,7 +514,10 @@ export function activate(context: vscode.ExtensionContext): void {
                     }
                 }
                 const graph = workflowStore.save(message.graph);
-                FlowWorkspacePanel.update(view(graph));
+                // Ne pas repousser workflow_state vers le webview émetteur :
+                // le canvas possède déjà cet état exact et un écho asynchrone
+                // écraserait un drag ou une saisie en cours.
+                FlowWorkspacePanel.syncCache(view(graph));
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }
@@ -538,7 +554,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'schema_save') {
             try {
-                workflowStore.saveSchema(String((message as { name?: string }).name || 'Schema'), workflowStore.load(store.list()));
+                const graphToSave = message.graph ? workflowStore.save(message.graph) : workflowStore.load(store.list());
+                workflowStore.saveSchema(String((message as { name?: string }).name || graphToSave.name || 'Schema'), graphToSave);
+                const refreshed = workflowStore.load(store.list());
+                FlowWorkspacePanel.syncCache(view(refreshed));
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
@@ -548,7 +567,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'schema_load') {
             try {
-                FlowWorkspacePanel.update(view(workflowStore.loadSchema(String((message as { id?: string }).id || ''))));
+                FlowWorkspacePanel.update(view(workflowStore.loadSchema(String((message as { id?: string }).id || ''))), true);
             } catch (error) {
                 FlowWorkspacePanel.error(String(error));
             }
@@ -577,7 +596,7 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'open_agent' && message.sessionId) {
-            openSession(message.sessionId);
+            openSession(message.sessionId, true);
             return;
         }
 

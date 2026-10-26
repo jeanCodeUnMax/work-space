@@ -126,6 +126,21 @@ export class SessionStore {
         return session;
     }
 
+    restore(id: string, provider: string, model: string, title?: string): ChatSession {
+        const session: ChatSession = {
+            id,
+            title: title || undefined,
+            mode: 'agent',
+            provider: provider || 'openrouter',
+            model: model || 'liquid/lfm-2.5-2.6b:free',
+            messages: [],
+            updatedAt: new Date().toISOString(),
+            workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+        };
+        this.save(session);
+        return session;
+    }
+
     save(session: ChatSession): void {
         const stored = { ...session, updatedAt: new Date().toISOString() };
         this.sessions = this.sessions.filter((item) => item.id !== stored.id);
