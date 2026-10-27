@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-27T00:13:02.977Z",
+  "updatedAt": "2026-10-27T17:54:18.821Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": true,
+        "hidden": false,
         "title": "sugary-shoemaker"
       },
       {
@@ -49,6 +49,13 @@
         "restore": "existing-only",
         "role": "Devin",
         "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/plain-bite",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -64,9 +71,9 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Analyste-Architecture",
+        "role": "Codeur",
         "hidden": false,
-        "model": "groq/openai/gpt-oss-120b",
+        "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
         "title": "keen-agent"
       },
       {
@@ -74,15 +81,15 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "role": "Reviewer",
-        "hidden": false,
-        "model": "groq/openai/gpt-oss-20b",
+        "hidden": true,
+        "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
         "title": "amber-agent"
       },
       {
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Analyste-Securite",
+        "role": "Auditeur-securite",
         "hidden": false,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
@@ -91,9 +98,9 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Synthese-Faisabilite",
-        "hidden": true,
-        "model": "groq/openai/gpt-oss-20b",
+        "role": "Sentinelle",
+        "hidden": false,
+        "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         "title": "keen-agent"
       },
       {
@@ -110,17 +117,17 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": false,
-        "model": "groq/openai/gpt-oss-20b",
+        "hidden": true,
+        "model": "openrouter/google/gemma-4-31b-it:free",
         "title": "rapid-agent"
       },
       {
-        "providerId": "nim",
+        "providerId": "nim2",
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
         "hidden": false,
-        "model": "meta/llama-3.3-70b-instruct",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "zealous-agent"
       },
       {
@@ -133,19 +140,19 @@
         "title": "keen-nova"
       },
       {
-        "providerId": "nim",
+        "providerId": "nim2",
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": true,
-        "model": "z-ai/glm-5.3",
+        "hidden": false,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "beacon-agent"
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Analyste-Infra-Perf",
+        "role": "Sentinelle-Infra-Perf",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "steady-agent"
@@ -261,13 +268,13 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-cli-anything",
+    "name": "swat-fix-rapide",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadre la mission : dispatch des tâches CLI-Anything aux workers (mails, telegram, contacts), collecte leurs sorties et valide le lot avant audit.",
+        "task": "Cadrage d'urgence : qualifie le bug, isole le composant cible et lance l'intervention directe.",
         "skills": [
           "orchestrator",
           "plan-writing"
@@ -275,127 +282,137 @@
         "mcps": [],
         "title": "ionian-helicopter",
         "position": {
-          "x": -660,
+          "x": -330,
           "y": 0
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
-        "role": "Facteur",
-        "task": "Tire les mails via le harness cli-anything-mail : boîte, derniers messages, expéditeurs. Produit un résumé exploitable, aucune écriture côté compte.",
+        "role": "Codeur",
+        "task": "Correctif ciblé : applique le patch minimal direct résolvant la cause racine.",
         "skills": [
-          "cli-anything-mail"
+          "clean-code",
+          "nodejs-best-practices"
         ],
-        "mcps": [
-          "cli-anything"
-        ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
-          "x": -220,
-          "y": -160
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Telegraphiste",
-        "task": "Prépare une publication Telegram via cli-anything-telegram (canal de test, brouillon relu avant envoi) et liste les membres du canal.",
-        "skills": [
-          "cli-anything-telegram"
-        ],
-        "mcps": [
-          "cli-anything"
-        ],
-        "title": "zealous-agent",
-        "position": {
-          "x": -220,
+          "x": 0,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvmw5chd",
-        "role": "Annuaire",
-        "task": "Liste les contacts disponibles via les harness cli-anything (mail contacts + telegram contacts) et consolide la liste en JSON dans .agent/chats/contacts-demo.json.",
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation TDD : reproduit le bug par un test, vérifie qu'il passe au vert et valide le build.",
         "skills": [
-          "cli-anything-mail",
-          "cli-anything-telegram"
+          "testing-patterns",
+          "tdd-workflow"
         ],
-        "mcps": [
-          "cli-anything"
-        ],
-        "title": "amber-agent",
+        "mcps": [],
+        "title": "zealous-agent",
         "position": {
-          "x": -220,
-          "y": 160
+          "x": 330,
+          "y": -110
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Contrôle sécurité : vérifie qu'aucun secret/token n'est exposé dans les sorties des workers, que rien n'a été envoyé sans validation, rapport PASS/FAIL.",
+        "task": "Revue & Sécurité express : vérifie que le patch n'introduit aucune régression ni injection.",
         "skills": [
           "vulnerability-scanner",
-          "code-review-checklist"
+          "clean-code"
         ],
         "mcps": [],
         "title": "urban-agent",
         "position": {
-          "x": 220,
+          "x": 330,
+          "y": 110
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle",
+        "task": "Feu vert rapide : contrôle la validation simultanée des tests et de l'audit, donne le GO intégration.",
+        "skills": [
+          "vulnerability-scanner"
+        ],
+        "mcps": [],
+        "title": "keen-agent",
+        "position": {
+          "x": 660,
           "y": 0
         }
       },
       {
-        "sessionId": "chat-mvflr6cn",
-        "role": "Documentaliste-Vault",
-        "task": "Capitalise : rédige la note de session dans le vault (résultats, incidents, leçons) et met à jour l'index si le contrôle sécurité est PASS.",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Livraison du patch : commit conventionnel fix(...) et double push direct sur origin et personal.",
+        "skills": [
+          "lint-and-validate"
+        ],
+        "mcps": [],
+        "title": "sugary-shoemaker",
+        "position": {
+          "x": 990,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Feedback-Beacon-Knowledge",
+        "task": "Enregistrement de la solution : consigne l'incident et la recette de résolution dans agentmemory.",
         "skills": [
           "vault-ingest"
         ],
         "mcps": [],
-        "title": "rapid-agent",
+        "title": "beacon-agent",
         "position": {
-          "x": 660,
+          "x": 1320,
           "y": 0
         }
       }
     ],
     "edges": [
       {
-        "id": "e-orch-facteur",
+        "id": "edge:fix-orch->codeur",
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmw59wa"
       },
       {
-        "id": "e-orch-telegraphiste",
-        "source": "acp/devin-cli/ionian-helicopter",
+        "id": "edge:fix-codeur->testeur",
+        "source": "chat-mvmw59wa",
         "target": "chat-mvfj8b4m"
       },
       {
-        "id": "e-orch-annuaire",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "e-facteur-audit",
+        "id": "edge:fix-codeur->auditeur",
         "source": "chat-mvmw59wa",
         "target": "chat-mvmtldvy"
       },
       {
-        "id": "e-telegraphiste-audit",
+        "id": "edge:fix-testeur->sentinelle",
         "source": "chat-mvfj8b4m",
-        "target": "chat-mvmtldvy"
+        "target": "chat-mvfqytbz"
       },
       {
-        "id": "e-annuaire-audit",
-        "source": "chat-mvmw5chd",
-        "target": "chat-mvmtldvy"
-      },
-      {
-        "id": "e-audit-doc",
+        "id": "edge:fix-auditeur->sentinelle",
         "source": "chat-mvmtldvy",
-        "target": "chat-mvflr6cn"
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:fix-sentinelle->integrateur",
+        "source": "chat-mvfqytbz",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:fix-integrateur->feedback",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvp0beacon"
       }
     ],
-    "activeSchema": "swat-cli-anything",
-    "activeSchemaId": "schema-mvpxm6uv-ut7a8"
-  }
+    "activeSchema": "swat-fix-rapide",
+    "activeSchemaId": "schema-em9rovwy-4hbfn"
+  },
+  "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

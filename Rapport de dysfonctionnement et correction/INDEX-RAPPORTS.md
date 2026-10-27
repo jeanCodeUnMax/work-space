@@ -23,6 +23,9 @@ Periode couverte : nuit 18-19/10/2026.
 | 15 | devin-hub : attribution sourceAgent='agy' par defaut, confusion d'identite sessions + protocole PING/PONG canonique | transverse | agent-bridge/devin-hub.js, comms.jsonl, protocole-binome | Moyenne | Corrige (defaut honnete + --as + doc 9) |
 | 16 | wake_acp_agent : prompt livre dans la mauvaise fenetre (redux focusedSessionId != panneau chat) | transverse | extension.ts wakeAcpAgent, matchesWorkspace | Haute (perte silencieuse de prompts) | Corrige (openCascadeIdInChatPanel systematique + fallback FIFO + post-verif) |
 | 17 | Herald OS : chaine VPN Delirium non persistante au reboot + perte LAN lors du `up` | transverse | deliriuum-direct/lanfix/cerber-canal, bootc timer, groupe deliriuum | Haute (fenetres privees hors service, acces distant perdu) | Corrige (services enables, deliriuum-autoup cree, timer bootc desactive, ordre direct->lanfix->up->canal) |
+| 18 | persistance positions React Flow schemas | transverse | webview workspace.tsx, workflowStore | Moyenne | Documente |
+| 19 | Herald OS : canal prive tunnel SSH absent | transverse | canal prive herald-os | Moyenne | Documente |
+| 20 | Run SWAT analyse : bug parsing `devin-hub send` (filtre --as avale args[0]), `ping` global sur cascades ACP (focus hijack + ping d'agent occupe), `fs_write` Bleubite backslashes doubles hors workspace, NIM 503, statut `acp-missing` trompeur | #735-#740 | agent-bridge/devin-hub.js, workspace-roster.js ping, acp-inject, fs_write worker | Moyenne (bug livraison reel + pieges d'usage) | Partiellement corrige (devin-hub fixe) + documente |
 
 ### Verification de cloture C - 2026-10-19
 

@@ -48,6 +48,27 @@ deny: <USER_PROFILE>/AppData/**
 # écriture : jamais
 deny-write: **
 
+# Bleubites (fenetres chat-* hephaistos-chats) : lecture+écriture sur les zones
+# de travail déclarées. En dev brut les tokens ne matchent rien → workspace
+# seul (fail-closed). install.ps1 substitue les tokens → portabilité garantie.
+[bleubite]
+allow: <PROJECT_ROOT>/**
+allow: <INGEST_SCAN_ROOT>/**
+allow: <INSTALL_ROOT>/**
+deny: **/.ssh/**
+deny: **/.gnupg/**
+deny: **/.aws/**
+deny: **/.azure/**
+deny: **/.env
+deny: **/.env.**
+deny: **/*.pem
+deny: **/*.key
+deny: **/*credential*
+deny: **/id_rsa*
+deny: **/token*.json
+deny: **/secrets.*
+deny: <USER_PROFILE>/AppData/**
+
 # hphe-rest (passerelle HTTP locale) : lecture bornée aux zones utiles,
 # écriture uniquement dans les données hphe. Secrets refusés EN DERNIER
 # (dernier match gagne) — prioritaires même sur les grants data ci-dessus.

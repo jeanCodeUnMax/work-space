@@ -1,4 +1,4 @@
-# Registre nim — 2026-10-20T16:40:34.659Z
+# Registre nim — 2026-10-27T16:30:34.177Z
 
 État = dernier ping réel (model_health). `OK`=répond, `KO`=mort/indispo, `—`=pas de latence mesurée.
 Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/agent en bas, section préservée.
@@ -9,27 +9,28 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 | OK | `nvidia/riva-translate-4b-instruct-v2` | nvidia-nim | 300ms | 2026-10-13 19:14:27 |
 | OK | `nvidia/nemotron-3.5-lightning-30b-a3b` | nvidia-nim | 300ms | 2026-10-13 19:49:49 |
 | OK | `nvidia/nemotron-3.5-content-safety` | nvidia-nim | 508ms | 2026-10-13 19:14:25 |
-| OK | `nvidia/nemotron-3-ultra-550b-a55b` | nvidia-nim | 781ms | 2026-10-20 16:40:33 |
 | OK | `meta/muse-glimmer-30b` | nvidia-nim | 867ms | 2026-10-13 19:13:17 |
+| OK | `nvidia/nemotron-3-ultra-550b-a55b` | nvidia-nim | 906ms | 2026-10-27 16:30:29 |
 | OK | `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` | nvidia-nim | 3265ms | 2026-10-13 19:14:23 |
+| OK | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | nvidia-nim | 4368ms | 2026-10-27 16:30:33 |
 | OK | `openai/gpt-oss-20b` | nvidia-nim | 13983ms | 2026-10-13 19:14:41 |
 | OK | `meta/llama-3.2-11b-vision-instruct` | nvidia-nim | 14584ms | 2026-10-13 19:12:36 |
-| KO | `nvidia-nim/nvidia/nemotron-3-super-120b-a12b` | nvidia-nim | 66ms | 2026-10-20 16:38:40 |
+| KO | `nvidia/nvclip` | nvidia-nim | 64ms | 2026-10-24 01:50:48 |
 | KO | `nvidia/embed-qa-4` | nvidia-nim | 67ms | 2026-10-13 19:13:39 |
 | KO | `nvidia/llama-nemotron-embed-vl-1b-v2` | nvidia-nim | 68ms | 2026-10-13 19:14:23 |
+| KO | `bigcode/starcoder2-15b` | nvidia-nim | 68ms | 2026-10-22 09:27:45 |
+| KO | `nvidia-nim/nvidia/nemotron-3-super-120b-a12b` | nvidia-nim | 68ms | 2026-10-23 15:20:56 |
 | KO | `nvidia/nemotron-3-super-120b-a12b:free` | nvidia-nim | 69ms | 2026-10-11 18:46:29 |
 | KO | `nvidia/llama-3.2-nemoretriever-1b-vlm-embed-v1` | nvidia-nim | 69ms | 2026-10-13 19:14:23 |
 | KO | `nvidia/llama-3.2-nv-embedqa-1b-v1` | nvidia-nim | 70ms | 2026-10-13 19:14:23 |
 | KO | `nvidia/nemotron-3-embed-1b` | nvidia-nim | 70ms | 2026-10-13 19:14:24 |
 | KO | `nvidia/nv-embedqa-mistral-7b-v2` | nvidia-nim | 70ms | 2026-10-13 19:14:27 |
-| KO | `nvidia/nvclip` | nvidia-nim | 70ms | 2026-10-13 19:14:27 |
 | KO | `snowflake/arctic-embed-l` | nvidia-nim | 74ms | 2026-10-13 19:15:01 |
 | KO | `nvidia/nemotron-parse` | nvidia-nim | 101ms | 2026-10-13 19:14:26 |
 | KO | `databricks/dbrx-instruct` | nvidia-nim | 105ms | 2026-10-13 19:11:19 |
 | KO | `deepseek-ai/deepseek-coder-6.7b-instruct` | nvidia-nim | 108ms | 2026-10-13 19:11:19 |
 | KO | `nvidia/ai-synthetic-video-detector` | nvidia-nim | 121ms | 2026-10-13 19:13:39 |
 | KO | `adept/fuyu-8b` | nvidia-nim | 122ms | 2026-10-13 19:11:18 |
-| KO | `nvidia/nemotron-3-super-120b-a12b` | nvidia-nim | 131ms | 2026-10-20 16:36:55 |
 | KO | `aisingapore/sea-lion-7b-instruct` | nvidia-nim | 137ms | 2026-10-13 19:11:19 |
 | KO | `nvidia/llama-3.1-nemoguard-8b-topic-control` | nvidia-nim | 141ms | 2026-10-13 19:14:19 |
 | KO | `ai21labs/jamba-1.5-large-instruct` | nvidia-nim | 146ms | 2026-10-13 19:11:18 |
@@ -70,13 +71,12 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 | KO | `zyphra/zamba2-7b-instruct` | nvidia-nim | 184ms | 2026-10-13 19:15:42 |
 | KO | `google/codegemma-1.1-7b` | nvidia-nim | 185ms | 2026-10-13 19:11:39 |
 | KO | `ibm/granite-3.0-8b-instruct` | nvidia-nim | 185ms | 2026-10-13 19:12:21 |
+| KO | `nvidia/nemotron-3-super-120b-a12b` | nvidia-nim | 185ms | 2026-10-27 16:26:42 |
 | KO | `poolside/laguna-xs-2.1` | nvidia-nim | 187ms | 2026-10-19 04:36:10 |
-| KO | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | nvidia-nim | 193ms | 2026-10-20 16:40:34 |
 | KO | `nvidia/llama-3.1-nemotron-70b-instruct` | nvidia-nim | 195ms | 2026-10-13 19:14:20 |
 | KO | `google/recurrentgemma-2b` | nvidia-nim | 196ms | 2026-10-13 19:12:20 |
 | KO | `nvidia/cosmos-reason2-8b` | nvidia-nim | 200ms | 2026-10-13 19:13:39 |
 | KO | `mistralai/mistral-7b-instruct-v0.3` | nvidia-nim | 202ms | 2026-10-13 19:13:18 |
-| KO | `bigcode/starcoder2-15b` | nvidia-nim | 331ms | 2026-10-20 16:39:41 |
 | KO | `nvidia/ising-calibration-1.5-31b` | nvidia-nim | 20000ms | 2026-10-13 19:13:59 |
 | KO | `moonshotai/kimi-k3` | nvidia-nim | 20003ms | 2026-10-13 19:13:38 |
 | KO | `nvidia/llama-3.1-nemoguard-8b-content-safety` | nvidia-nim | 20005ms | 2026-10-13 19:14:19 |
@@ -94,6 +94,7 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 - `openai/gpt-oss-20b` : OK mais ~14s au ping — lent.
 - `meta/llama-3.2-11b-vision-instruct` : OK ~14.5s — lent, vision only.
 - KOs dominants = 404 "Function not found" : modèles listés au catalogue `/models` mais non servis en chat/completions. Réalité servie ≈ 10 modèles sur 80.
+
 
 
 
