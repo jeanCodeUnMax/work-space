@@ -353,7 +353,21 @@ export function activate(context: vscode.ExtensionContext): void {
             }
         }
         if (!session) {
-            if (sessionId.startsWith('acp/')) void openAcpSession(sessionId);
+            if (sessionId.startsWith('acp/')) {
+                // Le sessionId du schéma est souvent périmé : on résout la
+                // session IDE live du provider (la fenêtre active, où
+                // l'utilisateur écrit vraiment) avant d'ouvrir quoi que ce soit.
+                void (async () => {
+                    const providerId = sessionId.split('/')[1] || 'devin-cli';
+                    let target = sessionId;
+                    try {
+                        const live = await ideAgentSessions(providerId, workspaceRoot || '');
+                        const focused = live.find((s) => s.focused) || live[0];
+                        if (focused?.sessionId) target = `acp/${providerId}/${focused.sessionId}`;
+                    } catch { /* bridge indisponible : on tente l'ID brut */ }
+                    void openAcpSession(target);
+                })();
+            }
             return;
         }
         try {
