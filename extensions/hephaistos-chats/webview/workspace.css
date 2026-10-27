@@ -1061,3 +1061,5 @@ textarea {
     border: 0;
     background: #1b1e1d;
 }
+
+.tool-page-hidden { display: none !important; }
