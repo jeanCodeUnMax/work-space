@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-27T22:21:49.385Z",
+  "updatedAt": "2026-10-27T22:59:25.619Z",
   "core": {
     "devin": [
       {
@@ -251,8 +251,9 @@
         "sessionId": "chat-82eefc00",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "OmniRoute",
-        "hidden": true
+        "role": "Posteur-Telegram",
+        "hidden": false,
+        "title": "calm-harbor"
       },
       {
         "providerId": "nim2",
@@ -261,7 +262,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Architecte",
         "title": "n8n-Architecte",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -270,7 +271,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Operate",
         "title": "n8n-Operate",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -279,7 +280,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Verificateur",
         "title": "n8n-Verificateur",
-        "hidden": false
+        "hidden": true
       }
     ]
   },
@@ -303,13 +304,13 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-n8n",
+    "name": "flux-telegram",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Recoit la demande n8n/Telegram, dispatche via le schema",
+        "task": "Recoit la demande de post Telegram, prepare le message/fichier",
         "skills": [
           "orchestrator"
         ],
@@ -317,76 +318,37 @@
         "title": "ionian-helicopter",
         "position": {
           "x": -22,
-          "y": -110
+          "y": 0
         }
       },
       {
-        "sessionId": "chat-n8narchi",
-        "role": "N8N-Architecte",
-        "task": "Concoit les workflows n8n (nodes/connections) au format REST /ctl. DONE:<task_id>",
+        "sessionId": "chat-82eefc00",
+        "role": "Posteur-Telegram",
+        "task": "Posteur Telegram : cli-anything-telegram (send/send-file/pin/unpin/poll/edit/delete/admins/members/stats/topics/history, --chat <id|alias>, --as-user). Contacts via vault-pepites. DONE:<tache>.",
         "skills": [
-          "cli-anything-n8n"
+          "cli-anything-telegram",
+          "antigravity-obsidian"
         ],
         "mcps": [
           "cli-anything",
-          "Hephaistos-everything-search"
+          "vault-pepites"
         ],
-        "title": "n8n-Architecte",
+        "title": "calm-harbor",
         "position": {
-          "x": 280,
-          "y": -120
-        }
-      },
-      {
-        "sessionId": "chat-n8nops",
-        "role": "N8N-Operate",
-        "task": "Applique les workflows via http://127.0.0.1:5680/ctl/* (create/activate/archive/delete), teste les webhooks. DONE:<task_id>",
-        "skills": [
-          "cli-anything-n8n"
-        ],
-        "mcps": [
-          "cli-anything"
-        ],
-        "title": "n8n-Operate",
-        "position": {
-          "x": 550,
-          "y": -110
-        }
-      },
-      {
-        "sessionId": "chat-n8nverif",
-        "role": "N8N-Verificateur",
-        "task": "Verifie executions/logs des workflows via /ctl/workflows/:id/executions, rapporte les echecs. DONE:<task_id>",
-        "skills": [],
-        "mcps": [
-          "cli-anything"
-        ],
-        "title": "n8n-Verificateur",
-        "position": {
-          "x": 836,
-          "y": -110
+          "x": 360,
+          "y": 0
         }
       }
     ],
     "edges": [
       {
-        "id": "e1",
+        "id": "edge:tg-orch->posteur",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-n8narchi"
-      },
-      {
-        "id": "e2",
-        "source": "chat-n8narchi",
-        "target": "chat-n8nops"
-      },
-      {
-        "id": "e3",
-        "source": "chat-n8nops",
-        "target": "chat-n8nverif"
+        "target": "chat-82eefc00"
       }
     ],
-    "activeSchema": "swat-n8n",
-    "activeSchemaId": "schema-swat-n8n"
+    "activeSchema": "flux-telegram",
+    "activeSchemaId": "schema-mvr09niq-8yor8"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }
