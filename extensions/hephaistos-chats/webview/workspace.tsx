@@ -323,6 +323,13 @@ function Workspace(): React.JSX.Element {
     const [runSummary, setRunSummary] = useState('');
     const [catalog, setCatalog] = useState<WorkflowCatalog>({ roles: [], skills: [], providers: [] });
     const [pageView, setPageView] = useState<'flow' | 'comfyui' | 'n8n'>('flow');
+    // Outils chargés une fois à la 1re ouverture, puis gardés montés (sinon
+    // l'iframe est recréée à chaque bascule et la session de l'outil est perdue).
+    const [toolLoaded, setToolLoaded] = useState({ comfyui: false, n8n: false });
+    const switchPage = (v: 'flow' | 'comfyui' | 'n8n') => {
+        setPageView(v);
+        if (v !== 'flow' && !toolLoaded[v]) setToolLoaded((s) => ({ ...s, [v]: true }));
+    };
     const [newProvider, setNewProvider] = useState('openrouter');
     const [iconTheme, setIconTheme] = useState('commando');
     const saveTimer = useRef<number | undefined>(undefined);
@@ -722,19 +729,19 @@ function Workspace(): React.JSX.Element {
                         type="button"
                         className={"tool-page-btn" + (pageView === 'flow' ? " active" : "")}
                         title="Éditeur de flux (React Flow)"
-                        onClick={() => setPageView('flow')}
+                        onClick={() => switchPage('flow')}
                     >⌘ Flux</button>
                     <button
                         type="button"
                         className={"tool-page-btn" + (pageView === 'comfyui' ? " active" : "")}
                         title="ComfyUI — génération image/vidéo locale (dans la page)"
-                        onClick={() => setPageView('comfyui')}
+                        onClick={() => switchPage('comfyui')}
                     >◆ ComfyUI</button>
                     <button
                         type="button"
                         className={"tool-page-btn" + (pageView === 'n8n' ? " active" : "")}
                         title="n8n — automatisation de workflows (dans la page)"
-                        onClick={() => setPageView('n8n')}
+                        onClick={() => switchPage('n8n')}
                     >⚙ n8n</button>
                 </div>
                 <div className="workspace-actions">
@@ -885,14 +892,21 @@ function Workspace(): React.JSX.Element {
                         </div>
                     </aside>
                 )}
-                {pageView !== 'flow' ? (
+                {(pageView === 'comfyui' || toolLoaded.comfyui) && (
                     <iframe
-                        className="tool-page"
-                        title={pageView === 'comfyui' ? 'ComfyUI' : 'n8n'}
-                        src={pageView === 'comfyui' ? 'http://127.0.0.1:8188' : 'http://127.0.0.1:5678'}
+                        className={"tool-page" + (pageView !== 'comfyui' ? " tool-page-hidden" : "")}
+                        title="ComfyUI"
+                        src="http://127.0.0.1:8188"
                     />
-                ) : (
-                <section className="flow-canvas" aria-label="Éditeur visuel React Flow">
+                )}
+                {(pageView === 'n8n' || toolLoaded.n8n) && (
+                    <iframe
+                        className={"tool-page" + (pageView !== 'n8n' ? " tool-page-hidden" : "")}
+                        title="n8n"
+                        src="http://127.0.0.1:5678"
+                    />
+                )}
+                <section className={"flow-canvas" + (pageView !== 'flow' ? " tool-page-hidden" : "")} aria-label="Éditeur visuel React Flow">
                     {nodes.length === 0 ? (
                         <div className="canvas-empty">
                             <span className="empty-kicker">ROSTER DU WORKSPACE</span>
@@ -969,7 +983,6 @@ function Workspace(): React.JSX.Element {
                     )}
                     {runSummary && <div className="run-summary-toast">{runSummary}</div>}
                 </section>
-                )}
                 <aside className={inspectorCollapsed ? 'node-inspector collapsed' : 'node-inspector'}>
                     {!inspectorCollapsed && (
                     <button
