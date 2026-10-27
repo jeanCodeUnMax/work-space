@@ -461,6 +461,13 @@ export function activate(context: vscode.ExtensionContext): void {
                 await vscode.commands.executeCommand('devin.sendChatActionMessage',
                     JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
                 sent = true;
+                // Focaliser la fenêtre du référent : openCascadeIdInChatPanel
+                // révèle le panneau live — pas de doublon (le doublon venait
+                // de l'URI vscode-cascade-editor, pas de cette commande).
+                try {
+                    await vscode.commands.executeCommand('devin.sendChatActionMessage',
+                        JSON.stringify({ actionType: 'openCascadeIdInChatPanel', payload: [Buffer.from(target, 'utf8').toString('base64')] }));
+                } catch { /* fenêtre déjà visible ou commande absente */ }
             } catch { /* commande indisponible -> fallback */ }
             if (!sent) {
                 sent = wsRoot ? await injectIdeAgentText(
