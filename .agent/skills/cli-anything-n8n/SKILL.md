@@ -1,13 +1,17 @@
-# cli-anything-n8n — controle n8n via le proxy auth
+# cli-anything-n8n — piloter n8n via le harness installe
 
-Base :  — cookie de session injecte cote proxy, aucune auth a gerer.
+Exe : `cli-anything-n8n` (harness `n8n` du MCP cli-anything : `harness_run {harness:'n8n', args:[...]}`).
+Config deja posee : base_url `http://127.0.0.1:5680` (le proxy injecte la cle API — pas besoin de cle cote agent).
 
-- GET  /ctl/workflows                        liste
-- GET  /ctl/workflows/:id                    detail
-- POST /ctl/workflows                        creer {name,nodes,connections,settings}
-- POST /ctl/workflows/:id/activate|deactivate|archive
-- DELETE /ctl/workflows/:id                  archive+delete auto
-- GET  /ctl/workflows/:id/executions         historique exec
-- Webhook node: URL live =  une fois le workflow ACTIVE (test URL /webhook-test/ sinon).
+Commandes utiles (`cli-anything-n8n <cmd>`) :
+- `workflow list | get <id> | import <file.json> | create --json <wf> | update <id> | activate <id> | deactivate <id> | delete <id>`
+- `workflow validate <id>`, `workflow test <id>` (tire le webhook), `workflow autofix <id>`
+- `execution list --workflow <id> | get <id>` — verifier les runs
+- `status`, `health`, `config test`
 
-Format workflow n8n 2.x : nodes[] {parameters,id,name,type,typeVersion,position[,webhookId]}, connections {nom:{main:[[{node,type:'main',index:0}]]}}.
+Regles n8n 2.x :
+- `connections` : cles = NOM des noeuds (`"Webhook"`), jamais les ids.
+- Activer un workflow rend son webhook live : `POST http://127.0.0.1:5680/webhook/<path>`.
+- Pas de noeud ExecuteCommand (bloque) : pour executer une commande locale, HTTP Request vers `POST http://127.0.0.1:5680/x-run` `{command,args[]}` — whitelist cli-anything-*.
+
+Format workflow : `nodes[] {parameters,id,name,type,typeVersion,position[,webhookId]}`, `connections {nom:{main:[[{node,type:'main',index:0}]]}}`, `settings{}`.
