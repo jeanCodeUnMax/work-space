@@ -6,6 +6,7 @@ import { acpDispose, acpDisposeAll, acpProfileModel } from './acpClient';
 import { ChatPanel } from './chatPanel';
 import { devinAgentPreference } from './devinConfig';
 import { ideAgentSessions, injectIdeAgentText, setDevinBridge } from './devinRoute';
+import { ComfyUIPanel } from './comfyuiPanel';
 import { FlowWorkspacePanel } from './flowWorkspacePanel';
 import { HomeView } from './homeView';
 import { OrchWsClient } from './orchWs';
@@ -54,6 +55,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('hephaistosChats.newChat', (provider?: string) => openNew(provider)),
         vscode.commands.registerCommand('hephaistosChats.openChat', () => openLatest()),
         vscode.commands.registerCommand('hephaistosChats.openWorkspace', () => openWorkspace()),
+        vscode.commands.registerCommand('hephaistosChats.openComfyUI', () => ComfyUIPanel.open(context)),
         vscode.commands.registerCommand('hephaistosChats.pointAgent', (sessionId?: string) => void pointAgent(sessionId)),
         vscode.window.registerWebviewPanelSerializer(ChatPanel.viewType, {
             async deserializeWebviewPanel(panel, state) {
