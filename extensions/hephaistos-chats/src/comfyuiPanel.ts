@@ -45,8 +45,9 @@ iframe{width:100%;height:calc(100% - 34px);border:0}</style></head>
 <iframe id="f" src="${url}"></iframe>
 <script>
 const f=document.getElementById('f'),u=document.getElementById('u');
-document.getElementById('go').onclick=()=>{f.src=u.value.trim()};
-document.getElementById('rel').onclick=()=>{f.src=f.src};
+const nav=(v)=>{f.src=v+(v.includes('?')?'&':'?')+'_r='+Date.now()};
+document.getElementById('go').onclick=()=>nav(u.value.trim());
+document.getElementById('rel').onclick=()=>{const s=u.value.trim();nav(s.replace(/[?&]_r=\d+/,''))};
 </script>
 </body></html>`;
     }
