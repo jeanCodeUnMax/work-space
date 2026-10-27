@@ -1055,6 +1055,18 @@ const handlers = {
         session.updatedAt = new Date().toISOString();
         try { writeSessions(cwd, all); } catch { /* best-effort */ }
 
+        // Notification bus : chaque réponse Bleubite (et chaque erreur) est
+        // poussée sur comms.jsonl — watchdog/orchestrateur voient l'activité.
+        try {
+            const bus = path.join(cwd, '.agent', 'comms.jsonl');
+            const isErr = reply.startsWith('⚠️');
+            fs.appendFileSync(bus, JSON.stringify({
+                ts: new Date().toISOString(), src: sessionId, dst: 'orchestrator',
+                kind: isErr ? 'agent-error' : 'agent-reply',
+                text: reply.slice(0, 500),
+            }) + '\n');
+        } catch { /* bus indisponible */ }
+
         // Clôture orchestrateur : le mot-clé DONE:<task_id> dans la réponse
         // marque la tâche — le worker n'a pas besoin de connaître les outils MCP.
         for (const m of reply.matchAll(/DONE:(\d+)/g)) {
