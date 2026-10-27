@@ -1129,6 +1129,12 @@ process.stdin.on('data', (d) => {
 // Nettoyage du pool MCP à la sortie : les serveurs spawnés ne doivent pas
 // devenir orphelins quand la fenêtre/serveur meurt.
 const releaseAllMcps = () => { for (const id of [...mcpPool.keys()]) releaseMcps(id); };
+// Suicide si un ancêtre meurt : stdin ne se ferme pas toujours quand l'IDE
+// est tué — sans garde, le serveur ACP devient orphelin avec son pool MCP.
+try {
+    const { guardAncestors } = await import('../../.agent/agent-bridge/parent-guard.mjs');
+    guardAncestors({ onExit: () => releaseAllMcps() });
+} catch { /* garde indisponible : on vit sans */ }
 process.stdin.on('end', () => { releaseAllMcps(); process.exit(0); });
 process.on('SIGTERM', () => { releaseAllMcps(); process.exit(0); });
 process.on('SIGINT', () => { releaseAllMcps(); process.exit(0); });
