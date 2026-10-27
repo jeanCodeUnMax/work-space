@@ -323,18 +323,29 @@ export function activate(context: vscode.ExtensionContext): void {
     // retiré du workspace n'a aucun chemin de retour (la session existe
     // toujours dans sessions.json, seule l'appartenance manque).
     // Sessions ACP (acp/devin-cli/<slug>, acp/<provider>/<id>) : pas de
-    // sessions.json, elles vivent dans les conversations de l'IDE. On révèle
-    // l'onglet cascade existant — même URI = même onglet, jamais de doublon.
-    async function openAcpSession(sessionId: string): Promise<void> {
-        const cascadeUri = `vscode-cascade-editor:///cascade-${sessionId}`;
-        try {
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.parse(cascadeUri), { preview: false });
-            return;
-        } catch { /* onglet absent → panneau chat */ }
+    // sessions.json, elles vivent dans les conversations de l'IDE.
+    // openCascadeIdInChatPanel révèle la conversation existante — jamais
+    // vscode.open sur vscode-cascade-editor (onglet vide + crash IDE).
+    // Le nœud d'entrée est résolu vers la session live du provider : le
+    // référent du schéma = l'agent Devin actif, pas un ID persisté périmé.
+    async function openAcpSession(sessionId: string, opts?: { isEntry?: boolean }): Promise<void> {
+        let target = sessionId;
+        if (opts?.isEntry && workspaceRoot) {
+            const providerId = sessionId.split('/')[1] || 'devin-cli';
+            try {
+                const live = await ideAgentSessions(providerId, workspaceRoot);
+                const stillLive = live.some((s) => s.sessionId === sessionId
+                    || s.sessionId === sessionId.split('/').pop());
+                if (!stillLive && live.length) {
+                    const focused = live.find((s) => s.focused) || live[0];
+                    target = focused.sessionId;
+                }
+            } catch { /* bridge indisponible : cible inchangée */ }
+        }
         try {
             await vscode.commands.executeCommand('devin.sendChatActionMessage', JSON.stringify({
                 actionType: 'openCascadeIdInChatPanel',
-                payload: [Buffer.from(sessionId, 'utf8').toString('base64')],
+                payload: [Buffer.from(target, 'utf8').toString('base64')],
             }));
         } catch { /* session introuvable côté IDE */ }
     }
@@ -356,18 +367,9 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         if (!session) {
             if (sessionId.startsWith('acp/')) {
-                // Le sessionId du schéma est souvent périmé : on résout la
-                // session IDE live du provider (la fenêtre active, où
-                // l'utilisateur écrit vraiment) avant d'ouvrir quoi que ce soit.
                 void (async () => {
-                    const providerId = sessionId.split('/')[1] || 'devin-cli';
-                    let target = sessionId;
-                    try {
-                        const live = await ideAgentSessions(providerId, workspaceRoot || '');
-                        const focused = live.find((s) => s.focused) || live[0];
-                        if (focused?.sessionId) target = `acp/${providerId}/${focused.sessionId}`;
-                    } catch { /* bridge indisponible : on tente l'ID brut */ }
-                    void openAcpSession(target);
+                    const isEntry = workflowStore?.load(store.list()).entrySessionId === sessionId;
+                    void openAcpSession(sessionId, { isEntry });
                 })();
             }
             return;
