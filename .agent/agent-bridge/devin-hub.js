@@ -226,8 +226,12 @@ async function sendToAcpAgent(text, sessionId, providerId, port = 7477, workspac
         typeof providerId !== 'string' || !providerId || typeof workspaceRoot !== 'string' || !workspaceRoot) {
         throw new Error('ACP send requires explicit text, sessionId, providerId and workspace');
     }
-    const result = await bridgeRequest('wake_acp_agent', { text, sessionId, providerId, workspaceRoot }, 'acp_wake_result', port, 120000);
-    return { status: result.status, sessionId, providerId };
+    // Normalisation : le roster et les schémas stockent parfois le slug nu
+    // ('sugary-shoemaker') alors que redux acp.sessions indexe par l'id complet
+    // ('acp/devin-cli/sugary-shoemaker'). Sans ça : wake-acp-unknown + FIFO.
+    const fullId = sessionId.includes('/') ? sessionId : `acp/${providerId}/${sessionId}`;
+    const result = await bridgeRequest('wake_acp_agent', { text, sessionId: fullId, providerId, workspaceRoot }, 'acp_wake_result', port, 120000);
+    return { status: result.status, sessionId: fullId, providerId };
 }
 
 /**
@@ -305,7 +309,7 @@ if (require.main === module) {
     if (cmd === 'send') {
         const asIdx = args.indexOf('--as');
         const asAgent = asIdx !== -1 ? args[asIdx + 1] : null;
-        const pos = args.filter((a, i) => i !== asIdx && i !== asIdx + 1);
+        const pos = asIdx === -1 ? args : args.filter((a, i) => i !== asIdx && i !== asIdx + 1);
         const text = pos[0];
         if (!text) {
             console.error('Erreur: texte requis. Usage: node devin-hub.js send "<texte>" [cascadeId] [--as <agent>]');
