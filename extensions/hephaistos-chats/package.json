@@ -52,6 +52,11 @@
                 "command": "hephaistosChats.openWorkspace",
                 "title": "Hephaistos : Ouvrir l\u00e2\u20ac\u2122espace de travail",
                 "icon": "$(type-hierarchy)"
+            },
+            {
+                "command": "hephaistosChats.openComfyUI",
+                "title": "Hephaistos : Studio ComfyUI",
+                "icon": "$(device-camera)"
             }
         ],
         "keybindings": [
