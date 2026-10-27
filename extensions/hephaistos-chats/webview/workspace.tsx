@@ -903,7 +903,7 @@ function Workspace(): React.JSX.Element {
                     <iframe
                         className={"tool-page" + (pageView !== 'n8n' ? " tool-page-hidden" : "")}
                         title="n8n"
-                        src="http://127.0.0.1:5678"
+                        src="http://127.0.0.1:5680"
                     />
                 )}
                 <section className={"flow-canvas" + (pageView !== 'flow' ? " tool-page-hidden" : "")} aria-label="Éditeur visuel React Flow">
