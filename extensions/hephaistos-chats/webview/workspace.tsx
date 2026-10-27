@@ -322,6 +322,7 @@ function Workspace(): React.JSX.Element {
     const [isRunning, setIsRunning] = useState(false);
     const [runSummary, setRunSummary] = useState('');
     const [catalog, setCatalog] = useState<WorkflowCatalog>({ roles: [], skills: [], providers: [] });
+    const [pageView, setPageView] = useState<'flow' | 'comfyui' | 'n8n'>('flow');
     const [newProvider, setNewProvider] = useState('openrouter');
     const [iconTheme, setIconTheme] = useState('commando');
     const saveTimer = useRef<number | undefined>(undefined);
@@ -716,6 +717,26 @@ function Workspace(): React.JSX.Element {
                         <p>Les connexions transmettent le résultat d’un agent au suivant.</p>
                     </div>
                 </div>
+                <div className="workspace-tools">
+                    <button
+                        type="button"
+                        className={"tool-page-btn" + (pageView === 'flow' ? " active" : "")}
+                        title="Éditeur de flux (React Flow)"
+                        onClick={() => setPageView('flow')}
+                    >⌘ Flux</button>
+                    <button
+                        type="button"
+                        className={"tool-page-btn" + (pageView === 'comfyui' ? " active" : "")}
+                        title="ComfyUI — génération image/vidéo locale (dans la page)"
+                        onClick={() => setPageView('comfyui')}
+                    >◆ ComfyUI</button>
+                    <button
+                        type="button"
+                        className={"tool-page-btn" + (pageView === 'n8n' ? " active" : "")}
+                        title="n8n — automatisation de workflows (dans la page)"
+                        onClick={() => setPageView('n8n')}
+                    >⚙ n8n</button>
+                </div>
                 <div className="workspace-actions">
                     <span className="node-count">{nodes.length} agents</span>
                     {selectedEdgeId && <button type="button" className="remove-edge" onClick={removeSelectedEdge}>Retirer le lien</button>}
@@ -728,8 +749,6 @@ function Workspace(): React.JSX.Element {
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
                     </select>
                     <button type="button" className="add-agent" onClick={addAgent}>+ Agent</button>
-                    <button type="button" className="add-agent" title="Studio ComfyUI (génération image/vidéo locale)" onClick={() => vscode.postMessage({ type: 'open_comfyui' })}>◆ ComfyUI</button>
-                    
                 </div>
             </header>
             <div className="workspace-content">
@@ -866,6 +885,14 @@ function Workspace(): React.JSX.Element {
                         </div>
                     </aside>
                 )}
+                {pageView !== 'flow' ? (
+                    <iframe
+                        className="tool-page"
+                        title={pageView === 'comfyui' ? 'ComfyUI' : 'n8n'}
+                        src={pageView === 'comfyui' ? 'http://127.0.0.1:8188' : 'http://127.0.0.1:5678'}
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
+                    />
+                ) : (
                 <section className="flow-canvas" aria-label="Éditeur visuel React Flow">
                     {nodes.length === 0 ? (
                         <div className="canvas-empty">
@@ -943,6 +970,7 @@ function Workspace(): React.JSX.Element {
                     )}
                     {runSummary && <div className="run-summary-toast">{runSummary}</div>}
                 </section>
+                )}
                 <aside className={inspectorCollapsed ? 'node-inspector collapsed' : 'node-inspector'}>
                     {!inspectorCollapsed && (
                     <button
