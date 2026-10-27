@@ -51,6 +51,7 @@ function loadEnv(file) {
 const env = { ...loadEnv(path.join(WORKSPACE, '.env')), ...process.env };
 const EMAIL = env.N8N_EMAIL || '';
 const PASSWORD = env.N8N_PASSWORD || '';
+const API_KEY = env.N8N_API_KEY || process.env.N8N_API_KEY || '';
 
 let sessionCookie = '';
 
@@ -85,6 +86,35 @@ function runWhitelisted(command, args, timeoutMs) {
 
 const server = http.createServer(async (req, res) => {
     try {
+        // /x-send-file : telecharge une image distante puis l'envoie via
+        // cli-anything-telegram (contourne les restrictions disque de n8n)
+        if (req.url === '/x-send-file' && req.method === 'POST') {
+            const chunks = [];
+            req.on('data', (c) => chunks.push(c));
+            req.on('end', async () => {
+                try {
+                    const body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+                    const url = new URL(body.imageUrl);
+                    if (!['http:', 'https:'].includes(url.protocol)) throw new Error('protocole refuse');
+                    const img = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'Mozilla/5.0 (n8n-SWAT)' } });
+                    if (!img.ok) throw new Error(`fetch image ${img.status}`);
+                    const tmp = `${process.env.TEMP || '/tmp'}/n8n-img-${Date.now()}.jpg`;
+                    fs.writeFileSync(tmp, Buffer.from(await img.arrayBuffer()));
+                    const out = await runWhitelisted('cli-anything-telegram', [
+                        '--chat', String(body.chat || '7361415944'), 'send-file',
+                        '--path', tmp, '--caption', String(body.caption || ''),
+                        '--kind', 'photo', '--as-user',
+                    ], 60000);
+                    try { fs.unlinkSync(tmp); } catch { /* best-effort */ }
+                    res.writeHead(out.ok ? 200 : 500, { 'content-type': 'application/json' });
+                    res.end(JSON.stringify(out));
+                } catch (e) {
+                    res.writeHead(400, { 'content-type': 'application/json' });
+                    res.end(JSON.stringify({ ok: false, error: e.message }));
+                }
+            });
+            return;
+        }
         if (req.url === '/x-run' && req.method === 'POST') {
             const chunks = [];
             req.on('data', (c) => chunks.push(c));
@@ -116,6 +146,9 @@ const server = http.createServer(async (req, res) => {
         const target = `${TARGET}${forwardPath}`;
 
         const headers = { ...req.headers, host: new URL(TARGET).host, cookie: sessionCookie };
+        // /api/* = API publique n8n : on ecrase la cle entrante par la cle maitre
+        // (le proxy est le broker d'auth — les clients n'ont jamais la vraie cle)
+        if (forwardPath.startsWith('/api/') && API_KEY) headers['x-n8n-api-key'] = API_KEY;
         delete headers['content-length'];
         const upstream = await fetch(target, {
             method: req.method,
