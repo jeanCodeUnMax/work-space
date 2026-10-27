@@ -1022,3 +1022,42 @@ textarea {
     display: block;
     flex: none;
 }
+
+/* Pages outils embarquées (ComfyUI, n8n) dans le workspace */
+.workspace-tools {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.tool-page-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.14));
+    border-radius: 8px;
+    color: var(--vscode-foreground, #d8d4cc);
+    background: transparent;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+}
+
+.tool-page-btn:hover {
+    background: rgba(231, 165, 86, 0.12);
+    border-color: rgba(231, 165, 86, 0.5);
+}
+
+.tool-page-btn.active {
+    color: #f1bd78;
+    background: rgba(231, 165, 86, 0.16);
+    border-color: rgba(231, 165, 86, 0.6);
+}
+
+.tool-page {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    background: #1b1e1d;
+}
