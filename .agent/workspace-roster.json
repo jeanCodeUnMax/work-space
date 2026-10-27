@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-26T23:07:30.268Z",
+  "updatedAt": "2026-10-27T00:13:02.977Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": false,
+        "hidden": true,
         "title": "sugary-shoemaker"
       },
       {
@@ -40,7 +40,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Architecte",
-        "hidden": false,
+        "hidden": true,
         "title": "bloom-settee"
       },
       {
@@ -64,7 +64,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Codeur",
+        "role": "Analyste-Architecture",
         "hidden": false,
         "model": "groq/openai/gpt-oss-120b",
         "title": "keen-agent"
@@ -82,7 +82,7 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Auditeur-securite",
+        "role": "Analyste-Securite",
         "hidden": false,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
@@ -91,8 +91,8 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Sentinelle",
-        "hidden": false,
+        "role": "Synthese-Faisabilite",
+        "hidden": true,
         "model": "groq/openai/gpt-oss-20b",
         "title": "keen-agent"
       },
@@ -101,7 +101,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "role": "Verif-Submodules",
-        "hidden": false,
+        "hidden": true,
         "model": "meta/llama-3.1-8b-instruct",
         "title": "xenial-agent"
       },
@@ -137,7 +137,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": false,
+        "hidden": true,
         "model": "z-ai/glm-5.3",
         "title": "beacon-agent"
       },
@@ -145,8 +145,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Sentinelle-Infra-Perf",
-        "hidden": false,
+        "role": "Analyste-Infra-Perf",
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "steady-agent"
       },
@@ -193,6 +193,51 @@
         "role": "OpenRouter",
         "title": "xenial-yew",
         "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-fabb4d20-ebda-4e32-8da7-07392590dabe",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Codeur",
+        "title": "brave-willow",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
+        "title": "young-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
+        "title": "amber-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Codeur",
+        "title": "quiet-vault",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "OpenRouter",
+        "title": "hardy-agent",
+        "hidden": true
       }
     ]
   },
@@ -216,262 +261,141 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-orchestrateur",
+    "name": "swat-cli-anything",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadrage & Supervision : analyse le besoin, découpe les étapes, supervise le déroulement global.",
+        "task": "Cadre la mission : dispatch des tâches CLI-Anything aux workers (mails, telegram, contacts), collecte leurs sorties et valide le lot avant audit.",
         "skills": [
           "orchestrator",
-          "plan-writing",
-          "hephaistos2-kit"
+          "plan-writing"
         ],
         "mcps": [],
         "title": "ionian-helicopter",
         "position": {
           "x": -660,
-          "y": -220
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "role": "Architecte",
-        "task": "Conception & Spécification technique : architecture, contrats d'interfaces, sélection des patterns.",
-        "skills": [
-          "architecture",
-          "api-patterns",
-          "plan-writing"
-        ],
-        "mcps": [],
-        "title": "bloom-settee",
-        "position": {
-          "x": -330,
-          "y": -220
+          "y": 0
         }
       },
       {
         "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "Production de code : implémente la solution technique conformément aux spécifications.",
+        "role": "Facteur",
+        "task": "Tire les mails via le harness cli-anything-mail : boîte, derniers messages, expéditeurs. Produit un résumé exploitable, aucune écriture côté compte.",
         "skills": [
-          "clean-code",
-          "nodejs-best-practices"
+          "cli-anything-mail"
         ],
         "mcps": [
-          "sqlite-node"
+          "cli-anything"
         ],
         "title": "keen-agent",
         "position": {
-          "x": 0,
-          "y": -220
+          "x": -220,
+          "y": -160
         }
       },
       {
         "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Validation technique : tests unitaires TDD, build et compilation avant audit.",
+        "role": "Telegraphiste",
+        "task": "Prépare une publication Telegram via cli-anything-telegram (canal de test, brouillon relu avant envoi) et liste les membres du canal.",
         "skills": [
-          "testing-patterns",
-          "tdd-workflow"
+          "cli-anything-telegram"
         ],
-        "mcps": [],
+        "mcps": [
+          "cli-anything"
+        ],
         "title": "zealous-agent",
         "position": {
-          "x": 330,
-          "y": -220
+          "x": -220,
+          "y": 0
         }
       },
       {
         "sessionId": "chat-mvmw5chd",
-        "role": "Reviewer",
-        "task": "Revue Qualité : analyse le diff pour la maintenabilité, lisibilité et respect des standards.",
+        "role": "Annuaire",
+        "task": "Liste les contacts disponibles via les harness cli-anything (mail contacts + telegram contacts) et consolide la liste en JSON dans .agent/chats/contacts-demo.json.",
         "skills": [
-          "code-review-checklist",
-          "clean-code"
+          "cli-anything-mail",
+          "cli-anything-telegram"
         ],
-        "mcps": [],
+        "mcps": [
+          "cli-anything"
+        ],
         "title": "amber-agent",
         "position": {
-          "x": 660,
-          "y": -352
+          "x": -220,
+          "y": 160
         }
       },
       {
         "sessionId": "chat-mvmtldvy",
         "role": "Auditeur-securite",
-        "task": "Audit Sécurité : scanne vulnérabilités, failles d'injection, secrets et codepoints suspects.",
-        "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
-        ],
-        "mcps": [],
-        "title": "urban-agent",
-        "position": {
-          "x": 660,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "chat-mvpfinfra",
-        "role": "Sentinelle-Infra-Perf",
-        "task": "Audit Infra & Performance : consommation ressources, dépendances, latence MCP et rate-limits.",
-        "skills": [
-          "performance-profiling",
-          "observability-specialist"
-        ],
-        "mcps": [],
-        "title": "steady-agent",
-        "position": {
-          "x": 660,
-          "y": 88
-        }
-      },
-      {
-        "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "Arbitrage central GO/NO-GO : consolide les 3 rapports d'audit (Qualité, Sécu, Infra) et tranche.",
+        "task": "Contrôle sécurité : vérifie qu'aucun secret/token n'est exposé dans les sorties des workers, que rien n'a été envoyé sans validation, rapport PASS/FAIL.",
         "skills": [
           "vulnerability-scanner",
           "code-review-checklist"
         ],
         "mcps": [],
-        "title": "keen-agent",
+        "title": "urban-agent",
         "position": {
-          "x": 990,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "chat-mvfj773t",
-        "role": "Verif-Submodules",
-        "task": "Contrôle Git : arborescence, sous-modules et propreté du working tree.",
-        "skills": [
-          "git-history",
-          "lint-and-validate"
-        ],
-        "mcps": [],
-        "title": "xenial-agent",
-        "position": {
-          "x": 1320,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "Livraison Git : commit conventionnel et double push vers origin et personal.",
-        "skills": [
-          "testing-patterns",
-          "lint-and-validate"
-        ],
-        "mcps": [],
-        "title": "sugary-shoemaker",
-        "position": {
-          "x": 1650,
-          "y": -132
+          "x": 220,
+          "y": 0
         }
       },
       {
         "sessionId": "chat-mvflr6cn",
         "role": "Documentaliste-Vault",
-        "task": "Documentation Vault : consigne la note technique dans le Vault Obsidian.",
+        "task": "Capitalise : rédige la note de session dans le vault (résultats, incidents, leçons) et met à jour l'index si le contrôle sécurité est PASS.",
         "skills": [
-          "obsidian",
           "vault-ingest"
         ],
         "mcps": [],
         "title": "rapid-agent",
         "position": {
-          "x": 1980,
-          "y": -220
-        }
-      },
-      {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Feedback-Beacon-Knowledge",
-        "task": "Capitalisation Hephaistos : consigne les enseignements et patterns dans agentmemory.",
-        "skills": [
-          "vault-ingest",
-          "obsidian"
-        ],
-        "mcps": [],
-        "title": "beacon-agent",
-        "position": {
-          "x": 1980,
-          "y": -44
+          "x": 660,
+          "y": 0
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:orchestrateur->architecte",
+        "id": "e-orch-facteur",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/bloom-settee"
-      },
-      {
-        "id": "edge:architecte->codeur",
-        "source": "acp/devin-cli/bloom-settee",
         "target": "chat-mvmw59wa"
       },
       {
-        "id": "edge:codeur->testeur",
-        "source": "chat-mvmw59wa",
+        "id": "e-orch-telegraphiste",
+        "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvfj8b4m"
       },
       {
-        "id": "edge:testeur->reviewer",
-        "source": "chat-mvfj8b4m",
+        "id": "e-orch-annuaire",
+        "source": "acp/devin-cli/ionian-helicopter",
         "target": "chat-mvmw5chd"
       },
       {
-        "id": "edge:testeur->auditeur-secu",
+        "id": "e-facteur-audit",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "e-telegraphiste-audit",
         "source": "chat-mvfj8b4m",
         "target": "chat-mvmtldvy"
       },
       {
-        "id": "edge:testeur->infra-perf",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvpfinfra"
-      },
-      {
-        "id": "edge:reviewer->sentinelle",
+        "id": "e-annuaire-audit",
         "source": "chat-mvmw5chd",
-        "target": "chat-mvfqytbz"
+        "target": "chat-mvmtldvy"
       },
       {
-        "id": "edge:auditeur-secu->sentinelle",
+        "id": "e-audit-doc",
         "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:infra-perf->sentinelle",
-        "source": "chat-mvpfinfra",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:sentinelle->verif-submodules",
-        "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:verif-submodules->integrateur",
-        "source": "chat-mvfj773t",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:integrateur->documentaliste",
-        "source": "acp/devin-cli/sugary-shoemaker",
         "target": "chat-mvflr6cn"
-      },
-      {
-        "id": "edge:integrateur->feedback-beacon",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvp0beacon"
       }
     ],
-    "activeSchema": "swat-orchestrateur",
-    "activeSchemaId": "schema-yy5cfkox-i1t73"
+    "activeSchema": "swat-cli-anything",
+    "activeSchemaId": "schema-mvpxm6uv-ut7a8"
   }
 }
