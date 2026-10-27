@@ -606,7 +606,7 @@ async function cmdRestore(root, roster) {
     const results = {};
     for (const e of entries(roster)) {
         if (e.restore !== 'open-or-reveal') { results[e.sessionId] = 'existing-only'; continue; }
-        if (e.providerId === 'hephaistos') {
+        if (e.providerId === 'hephaistos' || e.sessionId.startsWith('chat-')) {
             const r = await bridgeSend(root, { command: 'open_chat', sessionId: e.sessionId });
             results[e.sessionId] = r.sent ? 'open-requested' : `open-failed:${r.error}`;
         } else {
@@ -689,7 +689,17 @@ async function main() {
     }
 
     if (cmd === 'restore') {
-        const results = await cmdRestore(root, roster);
+        const results = {};
+        const list = entries(roster).filter(pick);
+        for (const e of list) {
+            if (e.restore !== 'open-or-reveal') { results[e.sessionId] = 'existing-only'; continue; }
+            if (e.providerId === 'hephaistos' || e.sessionId.startsWith('chat-')) {
+                const r = await bridgeSend(root, { command: 'open_chat', sessionId: e.sessionId });
+                results[e.sessionId] = r.sent ? 'open-requested' : `open-failed:${r.error}`;
+            } else {
+                results[e.sessionId] = 'no-restore-path';
+            }
+        }
         console.log(JSON.stringify({ command: 'restore', workspace: roster.workspace, results }, null, 1));
         return;
     }
