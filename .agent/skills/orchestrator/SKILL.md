@@ -34,6 +34,14 @@ Avant tout dispatch, lire `.agent/workspace-roster.json` → `workflow.activeSch
 4. **`agent_name` = sessionId du nœud** (chat-* pour Bleubites, acp/<provider>/<session> pour agents IDE) — jamais de worker spawné hors du graphe.
 5. **Fallback** : aucun schéma actif → routing classique par skills ; schéma présent mais nœud absent → warn + fallback skills pour CE hop seulement.
 
+## Clôture automatique des tâches (mot-clé DONE)
+
+Convention obligatoire : **chaque mission dispatchée doit exiger dans son prompt que le worker termine sa réponse par `DONE:<task_id>`**. La fenêtre hephaistos-chats détecte ce mot-clé dans la réponse finale (`acp-server.mjs`) et appelle `update_task` avec `status: done` — plus besoin que l'agent connaisse les outils MCP ni que l'orchestrateur surveille la fenêtre.
+
+- Prompt de mission : terminer par `... puis termine ta réponse par DONE:<id>` (ex. `DONE:744`).
+- Ne jamais clore une tâche à la place du worker : laisser `pending` jusqu'au DONE, sauf annulation explicite (`delete_task`).
+- `status: done` (pas `completed`) : la porte `expected_artifact` rejette `completed` quand l'artefact n'est pas un fichier existant.
+
 ## Procédure de délégation
 
 ```

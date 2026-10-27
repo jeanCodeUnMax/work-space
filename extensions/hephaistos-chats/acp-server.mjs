@@ -130,11 +130,11 @@ function buildSystemPrompt(mode, session) {
         'Tu es un agent Bleubite de Hephaistos2-Kit : un worker qui exécute des tâches précises dans l\'IDE, sous la supervision de l\'utilisateur et des agents chefs.',
         `- Workspace Root : ${root} | Windows (win32) | ${new Date().toISOString().slice(0, 10)}`,
         '',
-        'Outils disponibles (function-calling, confinés au workspace) : fs_write_text_file, fs_read_text_file, fs_list_directory.',
+        'Outils disponibles (function-calling, confinés aux zones autorisées : workspace + bleubiteRoots) : fs_write_text_file, fs_read_text_file, fs_list_directory.',
         '',
         'Règles :',
         '- APPELLE les outils pour agir — ne raconte jamais une action que tu n\'as pas réellement exécutée.',
-        '- Reste strictement dans la tâche demandée : pas d\'initiative hors périmètre, pas de fichier en dehors du workspace.',
+        '- Reste strictement dans la tâche demandée : pas d\'initiative hors périmètre, pas de fichier en dehors des zones autorisées.',
         '- Si un contexte projet est nécessaire (AGENTS.md, règles, docs), lis-le via fs_read_text_file — rien n\'est pré-chargé.',
         '- Réponses en français, concises, directes.',
     ];
@@ -350,14 +350,52 @@ const CHAT_TOOLS = [
     },
 ];
 
-function resolveWorkspacePath(p, cwd) {
-    const root = cwd || workspace;
-    const abs = path.resolve(root, String(p || ''));
-    const rel = path.relative(root, abs);
-    if (rel.startsWith('..') || path.isAbsolute(rel)) {
-        throw new Error(`chemin hors workspace refusé: ${p}`);
+/* Racines autorisées des Bleubites : déclarées dans .mcp-access profil
+ * [bleubite] (même fichier que les droits fs_* hphe — portabilité via les
+ * tokens <INSTALL_ROOT>, <INGEST_SCAN_ROOT>, <PROJECT_ROOT>, <MEMORY_ROOT>,
+ * <USER_PROFILE> substitués par install.ps1 ; en dev brut, les tokens ne
+ * matchent rien → fail-closed workspace seul, c'est voulu).
+ * HEPHAISTOS_EXTRA_ROOTS reste un appoint local (pas de chemin en dur). */
+function mcpAccessRoots() {
+    const file = path.join(workspace, '.mcp-access');
+    if (!fs.existsSync(file)) return [];
+    const tokens = {
+        '<INGEST_SCAN_ROOT>': process.env.HPHE_INGEST_ROOTS || '',
+        '<INSTALL_ROOT>': process.env.HPHE_INSTALL || '',
+        '<PROJECT_ROOT>': workspace,
+        '<USER_PROFILE>': process.env.USERPROFILE || process.env.HOME || '',
+        '<MEMORY_ROOT>': process.env.HPHE_MEMORY_ROOT || '',
+    };
+    const roots = [];
+    let profile = null;
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+        const m = line.trim().match(/^\[(.+)\]$/);
+        if (m) { profile = m[1]; continue; }
+        const rule = line.trim().match(/^(allow|write|read)\s*:\s*(.+)$/);
+        if (!rule || profile !== 'bleubite') continue;
+        let pat = rule[2].trim();
+        for (const [k, v] of Object.entries(tokens)) pat = pat.split(k).join(v);
+        pat = pat.replace(/\/\*\*.*$/, '');
+        if (pat && !pat.includes('*')) roots.push(pat);
     }
-    return abs;
+    return roots;
+}
+
+function bleubiteRoots(cwd) {
+    const roots = new Set([path.resolve(cwd || workspace)]);
+    const extra = (process.env.HEPHAISTOS_EXTRA_ROOTS || '').split(/[;|]/).map(s => s.trim()).filter(Boolean);
+    for (const r of [...mcpAccessRoots(), ...extra]) roots.add(path.resolve(r));
+    return [...roots];
+}
+
+function resolveWorkspacePath(p, cwd) {
+    const raw = String(p || '');
+    const abs = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(cwd || workspace, raw);
+    for (const root of bleubiteRoots(cwd)) {
+        const rel = path.relative(root, abs);
+        if (!rel.startsWith('..') && !path.isAbsolute(rel)) return abs;
+    }
+    throw new Error(`chemin hors zones autorisées refusé: ${p}`);
 }
 
 // Groq/gpt-oss émet parfois des sauts de ligne BRUTS dans les strings JSON
@@ -1016,6 +1054,18 @@ const handlers = {
         session.messages.push(assistantMsg);
         session.updatedAt = new Date().toISOString();
         try { writeSessions(cwd, all); } catch { /* best-effort */ }
+
+        // Clôture orchestrateur : le mot-clé DONE:<task_id> dans la réponse
+        // marque la tâche — le worker n'a pas besoin de connaître les outils MCP.
+        for (const m of reply.matchAll(/DONE:(\d+)/g)) {
+            try {
+                spawn(process.execPath, [
+                    process.env.HOME + '/.config/devin/scripts/mcp-call.mjs',
+                    'Hephaistos-everything-search', 'update_task',
+                    JSON.stringify({ task_id: Number(m[1]), status: 'done', result: `done-signal from ${sessionId}` }),
+                ], { detached: true, stdio: 'ignore' }).unref();
+            } catch { /* best-effort */ }
+        }
 
         // stream ACP : raisonnement en agent_thought_chunk, réponse en agent_message_chunk
         const CHUNK = 400;
