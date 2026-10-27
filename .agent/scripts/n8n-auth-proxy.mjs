@@ -41,7 +41,7 @@ async function login() {
     const res = await fetch(`${TARGET}/rest/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+        body: JSON.stringify({ emailOrLdapLoginId: EMAIL, password: PASSWORD }),
     });
     const setCookie = res.headers.get('set-cookie') || '';
     const m = /n8n-auth=[^;]+/.exec(setCookie);
@@ -68,7 +68,11 @@ const server = http.createServer(async (req, res) => {
         });
         // Le cookie reste cote proxy : on strip set-cookie pour eviter les fuites
         const outHeaders = {};
-        upstream.headers.forEach((v, k) => { if (k.toLowerCase() !== 'set-cookie') outHeaders[k] = v; });
+        upstream.headers.forEach((v, k) => {
+            // fetch() a deja decompresse : content-encoding/length deviendraient mensongers
+            if (['set-cookie', 'content-encoding', 'content-length'].includes(k.toLowerCase())) return;
+            outHeaders[k] = v;
+        });
         res.writeHead(upstream.status, outHeaders);
         res.end(Buffer.from(await upstream.arrayBuffer()));
     } catch (e) {
