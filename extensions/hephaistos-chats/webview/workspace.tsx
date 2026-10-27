@@ -890,7 +890,6 @@ function Workspace(): React.JSX.Element {
                         className="tool-page"
                         title={pageView === 'comfyui' ? 'ComfyUI' : 'n8n'}
                         src={pageView === 'comfyui' ? 'http://127.0.0.1:8188' : 'http://127.0.0.1:5678'}
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
                     />
                 ) : (
                 <section className="flow-canvas" aria-label="Éditeur visuel React Flow">
