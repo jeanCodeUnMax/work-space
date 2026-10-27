@@ -873,6 +873,11 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'open_comfyui') {
+            await vscode.commands.executeCommand('hephaistosChats.openComfyUI');
+            return;
+        }
+
         if (message.type === 'schema_load') {
             try {
                 FlowWorkspacePanel.update(view(workflowStore.loadSchema(String((message as { id?: string }).id || ''))), true);

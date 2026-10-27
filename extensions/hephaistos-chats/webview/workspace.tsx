@@ -728,6 +728,7 @@ function Workspace(): React.JSX.Element {
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
                     </select>
                     <button type="button" className="add-agent" onClick={addAgent}>+ Agent</button>
+                    <button type="button" className="add-agent" title="Studio ComfyUI (génération image/vidéo locale)" onClick={() => vscode.postMessage({ type: 'open_comfyui' })}>◆ ComfyUI</button>
                     
                 </div>
             </header>
