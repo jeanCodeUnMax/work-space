@@ -1,3 +1,8 @@
+---
+name: cli-anything-n8n
+description: Piloter n8n via le harness installe cli-anything (workflows, webhooks, executions et tests). Use when managing, validating, testing, or running n8n automation workflows.
+---
+
 # cli-anything-n8n — piloter n8n via le harness installe
 
 Exe : `cli-anything-n8n` (harness `n8n` du MCP cli-anything : `harness_run {harness:'n8n', args:[...]}`).

@@ -35,7 +35,7 @@ const WAIT_TIMEOUT_MS = 10 * 60 * 1000; // waitIdle peut bloquer longtemps
 
 /* ---------- Découverte du hub (cmdline agy.exe) ---------- */
 
-function discoverHub(preferDir) {
+function listHubs() {
     // Pas de guillemets doubles à l'intérieur : la commande est wrappée par -Command "..."
     const ps = `Get-CimInstance Win32_Process | ` +
         `Where-Object { $_.Name -eq 'agy.exe' -and $_.CommandLine -match '--hub-port' } | ` +
@@ -62,6 +62,11 @@ function discoverHub(preferDir) {
         }
     }
     if (!hubs.length) throw new Error('aucun hub agy trouvé (extension Antigravity non active ?)');
+    return hubs;
+}
+
+function discoverHub(preferDir) {
+    const hubs = listHubs();
     // Plusieurs hubs possibles (extension Devin `AppData/Local/agy` vs desktop
     // Antigravity `.gemini/bin`). L'extension partage les conversations avec le
     // panneau → on la préfère ; le hub desktop est ignoré si les deux tournent.
@@ -73,6 +78,19 @@ function discoverHub(preferDir) {
         if (hit) return hit;
     }
     return pool[0];
+}
+
+/** Plusieurs hubs : retient celui qui porte les conversations (sinon le hub vide est choisi). */
+async function pickHub(preferDir) {
+    const hubs = listHubs();
+    if (hubs.length < 2) return discoverHub(preferDir);
+    let best = null;
+    let bestCount = -1;
+    for (const h of hubs) {
+        const n = await listConversations(h).then((l) => l.length).catch(() => -1);
+        if (n > bestCount) { best = h; bestCount = n; }
+    }
+    return bestCount > 0 ? best : discoverHub(preferDir);
 }
 
 /* ---------- RPC Connect ---------- */
@@ -262,7 +280,7 @@ function conversationOf(cascadeId) { return cascadeId; }
 
 async function main() {
     const [cmd, ...args] = process.argv.slice(2);
-    const hub = discoverHub(process.env.AGY_WORKSPACE || process.cwd());
+    const hub = await pickHub(process.env.AGY_WORKSPACE || process.cwd());
     const j = (x) => console.log(JSON.stringify(x, null, 1));
     const takeOption = (values, name) => {
         const index = values.indexOf(name);
@@ -345,6 +363,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-    discoverHub, rpc, listConversations, resolvePlanModelFromConfig, resolvePlanModel,
+    discoverHub, pickHub, rpc, listConversations, resolvePlanModelFromConfig, resolvePlanModel,
     buildSendBody, sendMessage, waitIdle, stepCount, readReplies, ask
 };

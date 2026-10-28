@@ -326,9 +326,20 @@ function Workspace(): React.JSX.Element {
     // Outils chargés une fois à la 1re ouverture, puis gardés montés (sinon
     // l'iframe est recréée à chaque bascule et la session de l'outil est perdue).
     const [toolLoaded, setToolLoaded] = useState({ comfyui: false, n8n: false });
+    const [toolReload, setToolReload] = useState({ comfyui: 0, n8n: 0 });
+    const [svcState, setSvcState] = useState<Record<string, 'checking' | 'up' | 'down'>>({});
     const switchPage = (v: 'flow' | 'comfyui' | 'n8n') => {
         setPageView(v);
         if (v !== 'flow' && !toolLoaded[v]) setToolLoaded((s) => ({ ...s, [v]: true }));
+        if (v !== 'flow') {
+            setSvcState((s) => ({ ...s, [v]: 'checking' }));
+            vscode.postMessage({ type: 'ensure_service', service: v });
+        }
+    };
+    const reloadTool = (v: 'flow' | 'comfyui' | 'n8n') => {
+        if (v === 'flow') { vscode.postMessage({ type: 'refresh_state' }); return; }
+        setSvcState((s) => ({ ...s, [v]: 'checking' }));
+        vscode.postMessage({ type: 'restart_service', service: v });
     };
     const [newProvider, setNewProvider] = useState('openrouter');
     const [iconTheme, setIconTheme] = useState('commando');
@@ -345,6 +356,16 @@ function Workspace(): React.JSX.Element {
     useEffect(() => {
         const onMessage = (event: MessageEvent): void => {
             const message = event.data;
+            if (message?.type === 'service_state') {
+                const svc = (message as { service?: string }).service || '';
+                const ok = Boolean((message as { ok?: boolean }).ok);
+                const checking = Boolean((message as { checking?: boolean }).checking);
+                if (checking) { setSvcState((s) => ({ ...s, [svc]: 'checking' })); return; }
+                setSvcState((s) => ({ ...s, [svc]: ok ? 'up' : 'down' }));
+                if (ok && (svc === 'comfyui' || svc === 'n8n')) {
+                    setToolReload((s) => ({ ...s, [svc]: s[svc] + 1 }));
+                }
+            }
             if (message?.type === 'schemas_state') {
                 setSchemas(message.schemas || []);
                 return;
@@ -734,15 +755,21 @@ function Workspace(): React.JSX.Element {
                     <button
                         type="button"
                         className={"tool-page-btn" + (pageView === 'comfyui' ? " active" : "")}
-                        title="ComfyUI — génération image/vidéo locale (dans la page)"
+                        title={"ComfyUI — génération image/vidéo locale" + (svcState.comfyui === 'checking' ? " (démarrage…)" : svcState.comfyui === 'down' ? " (injoignable)" : "")}
                         onClick={() => switchPage('comfyui')}
-                    >◆ ComfyUI</button>
+                    >◆ ComfyUI{svcState.comfyui === 'checking' ? " ⏳" : svcState.comfyui === 'down' ? " ⛔" : svcState.comfyui === 'up' ? " 🟢" : ""}</button>
                     <button
                         type="button"
                         className={"tool-page-btn" + (pageView === 'n8n' ? " active" : "")}
-                        title="n8n — automatisation de workflows (dans la page)"
+                        title={"n8n — automatisation de workflows" + (svcState.n8n === 'checking' ? " (démarrage…)" : svcState.n8n === 'down' ? " (injoignable)" : "")}
                         onClick={() => switchPage('n8n')}
-                    >⚙ n8n</button>
+                    >⚙ n8n{svcState.n8n === 'checking' ? " ⏳" : svcState.n8n === 'down' ? " ⛔" : svcState.n8n === 'up' ? " 🟢" : ""}</button>
+                    <button
+                        type="button"
+                        className={"tool-page-btn" + (svcState[pageView] === 'checking' ? " tool-loading" : "")}
+                        title={"Recharger la page courante" + (svcState[pageView] === 'checking' ? " (démarrage…)" : "")}
+                        onClick={() => reloadTool(pageView)}
+                    >{svcState[pageView] === 'checking' ? "⏳" : "⟳"}</button>
                 </div>
                 <div className="workspace-actions">
                     <span className="node-count">{nodes.length} agents</span>
@@ -894,6 +921,7 @@ function Workspace(): React.JSX.Element {
                 )}
                 {(pageView === 'comfyui' || toolLoaded.comfyui) && (
                     <iframe
+                        key={"comfyui-" + toolReload.comfyui}
                         className={"tool-page" + (pageView !== 'comfyui' ? " tool-page-hidden" : "")}
                         title="ComfyUI"
                         src="http://127.0.0.1:8188"
@@ -901,6 +929,7 @@ function Workspace(): React.JSX.Element {
                 )}
                 {(pageView === 'n8n' || toolLoaded.n8n) && (
                     <iframe
+                        key={"n8n-" + toolReload.n8n}
                         className={"tool-page" + (pageView !== 'n8n' ? " tool-page-hidden" : "")}
                         title="n8n"
                         src="http://127.0.0.1:5680"

@@ -1,3 +1,4 @@
+import * as child_process from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -16,6 +17,104 @@ import { ACP_PROVIDERS, ChatSession, normalizeIconTheme, sessionTitle } from './
 import { createWorkflowView, defaultRoleForProvider, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
+
+/** Health-check court sur un port HTTP local. */
+async function portUp(url: string, ms = 2500): Promise<boolean> {
+    try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), ms);
+        const r = await fetch(url, { signal: ctl.signal });
+        clearTimeout(t);
+        return r.status > 0;
+    } catch { return false; }
+}
+
+function spawnDetached(cmd: string, args: string[], cwd?: string, extraEnv?: NodeJS.ProcessEnv): void {
+    const child = child_process.spawn(cmd, args, {
+        cwd,
+        detached: true,
+        stdio: 'ignore',
+        env: { ...process.env, ...extraEnv },
+        windowsHide: true,
+        shell: cmd.toLowerCase().endsWith('.bat'),
+    });
+    child.unref();
+}
+
+async function waitPort(url: string, tries = 40): Promise<boolean> {
+    for (let i = 0; i < tries; i++) {
+        if (await portUp(url)) return true;
+        await new Promise((r) => setTimeout(r, 2000));
+    }
+    return false;
+}
+
+/**
+ * Auto-launch des services embarqués quand l'onglet est ouvert/rechargé :
+ * comfyui → :8188 (run_nvidia_gpu.bat), n8n → :5678 (node 24) + proxy :5680.
+ */
+async function ensureService(workspaceRoot: string, svc: string): Promise<boolean> {
+    if (svc === 'comfyui') {
+        if (await portUp('http://127.0.0.1:8188')) return true;
+        spawnDetached('F:\\ComfyUI_windows_portable\\run_nvidia_gpu.bat', [], 'F:\\ComfyUI_windows_portable', {
+            ...process.env,
+            PYTHONUTF8: '1',
+        });
+        return waitPort('http://127.0.0.1:8188', 60);
+    }
+    if (svc === 'n8n') {
+        if (!(await portUp('http://127.0.0.1:5678'))) {
+            const node24 = path.join(os.homedir(), 'AppData', 'Local', 'nvm', 'v24.21.0', 'node.exe');
+            const n8nBin = path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'n8n', 'bin', 'n8n');
+            const env = { ...process.env };
+            delete env.N8N_ENCRYPTION_KEY;
+            // `/api` est manglé en `C:/Program Files/Git/api` quand l'env
+            // transite par Git Bash (MSYS path conversion) — on le supprime :
+            // n8n retombe sur son défaut `/api`.
+            delete env.N8N_PUBLIC_API_ENDPOINT;
+            spawnDetached(node24, [n8nBin, 'start'], workspaceRoot, env);
+            if (!(await waitPort('http://127.0.0.1:5678', 60))) return false;
+        }
+        if (!(await portUp('http://127.0.0.1:5680'))) {
+            const proxy = path.join(workspaceRoot, '.agent', 'scripts', 'n8n-auth-proxy.mjs');
+            if (fs.existsSync(proxy)) {
+                spawnDetached(process.execPath, [proxy], workspaceRoot, {
+                    N8N_EMAIL: process.env.N8N_EMAIL || '',
+                    N8N_PASSWORD: process.env.N8N_PASSWORD || '',
+                    N8N_API_KEY: process.env.N8N_API_KEY || '',
+                });
+            }
+            return waitPort('http://127.0.0.1:5680', 20);
+        }
+        return true;
+    }
+    return true; // 'flow' : pas de service externe
+}
+
+/** Tue les processus qui écoutent un port local (pour restart réel). */
+async function killPort(port: number): Promise<void> {
+    const { execSync } = child_process;
+    try {
+        const out = execSync('netstat -ano -p TCP', { encoding: 'utf8' });
+        const pids = new Set<string>();
+        for (const line of out.split(/\r?\n/)) {
+            if (line.includes(`:${port}`) && line.includes('LISTENING')) {
+                const pid = line.trim().split(/\s+/).pop();
+                if (pid && /^\d+$/.test(pid)) pids.add(pid);
+            }
+        }
+        for (const pid of pids) {
+            try { execSync(`taskkill /F /PID ${pid} /T`); } catch { /* déjà mort */ }
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+    } catch { /* netstat indispo : on tente quand même le spawn */ }
+}
+
+async function restartService(workspaceRoot: string, svc: string): Promise<boolean> {
+    if (svc === 'comfyui') await killPort(8188);
+    if (svc === 'n8n') { await killPort(5678); await killPort(5680); }
+    return ensureService(workspaceRoot, svc);
+}
 
 export function activate(context: vscode.ExtensionContext): void {
     const store = new SessionStore(context);
@@ -330,6 +429,13 @@ export function activate(context: vscode.ExtensionContext): void {
     // référent du schéma = l'agent Devin actif, pas un ID persisté périmé.
     async function openAcpSession(sessionId: string, opts?: { isEntry?: boolean }): Promise<void> {
         let target = sessionId;
+        const providerId = sessionId.split('/')[1] || 'devin-cli';
+        if (providerId === 'antigravity-acp' || providerId === 'agy') {
+            try {
+                await vscode.commands.executeCommand('antigravity.panel.focus');
+            } catch { /* ignore */ }
+            return;
+        }
         if (opts?.isEntry && workspaceRoot) {
             const providerId = sessionId.split('/')[1] || 'devin-cli';
             try {
@@ -451,28 +557,45 @@ export function activate(context: vscode.ExtensionContext): void {
             // un monitor ancien repondrait en soumettant le message.
             const draftText = `⌖ ${draft.trim()} — directive pour cet agent : `;
             let sent = false;
-            try {
-                const encVarint = (n: number): number[] => {
-                    const o: number[] = [];
-                    while (n > 0x7f) { o.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); }
-                    o.push(n);
-                    return o;
-                };
-                const lenField = (no: number, d: Buffer) => Buffer.concat([
-                    Buffer.from([(no << 3) | 2]), Buffer.from(encVarint(d.length)), d,
-                ]);
-                const payload = lenField(1, lenField(1, Buffer.from(draftText, 'utf8'))).toString('base64');
-                await vscode.commands.executeCommand('devin.sendChatActionMessage',
-                    JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
-                sent = true;
-                // Focaliser la fenêtre du référent : openCascadeIdInChatPanel
-                // révèle le panneau live — pas de doublon (le doublon venait
-                // de l'URI vscode-cascade-editor, pas de cette commande).
+
+            // 1. Si la cible est Antigravity ou si nous sommes dans l'IDE Antigravity avec la commande disponible :
+            if (providerId === 'antigravity-acp' || providerId === 'agy') {
                 try {
+                    const cmds = await vscode.commands.getCommands(true);
+                    if (cmds.includes('antigravity.addContext')) {
+                        await vscode.commands.executeCommand('antigravity.addContext', draftText);
+                        sent = true;
+                    }
+                } catch { /* pas dans l'instance locale Antigravity */ }
+            }
+
+            // 2. Si la cible est Devin ou si nous sommes dans Devin avec sendChatActionMessage :
+            if (!sent && (providerId === 'devin-cli' || !providerId)) {
+                try {
+                    const encVarint = (n: number): number[] => {
+                        const o: number[] = [];
+                        while (n > 0x7f) { o.push((n & 0x7f) | 0x80); n = Math.floor(n / 128); }
+                        o.push(n);
+                        return o;
+                    };
+                    const lenField = (no: number, d: Buffer) => Buffer.concat([
+                        Buffer.from([(no << 3) | 2]), Buffer.from(encVarint(d.length)), d,
+                    ]);
+                    const payload = lenField(1, lenField(1, Buffer.from(draftText, 'utf8'))).toString('base64');
                     await vscode.commands.executeCommand('devin.sendChatActionMessage',
-                        JSON.stringify({ actionType: 'openCascadeIdInChatPanel', payload: [Buffer.from(target, 'utf8').toString('base64')] }));
-                } catch { /* fenêtre déjà visible ou commande absente */ }
-            } catch { /* commande indisponible -> fallback */ }
+                        JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
+                    sent = true;
+                    // Focaliser la fenêtre du référent : openCascadeIdInChatPanel
+                    // révèle le panneau live — pas de doublon (le doublon venait
+                    // de l'URI vscode-cascade-editor, pas de cette commande).
+                    try {
+                        await vscode.commands.executeCommand('devin.sendChatActionMessage',
+                            JSON.stringify({ actionType: 'openCascadeIdInChatPanel', payload: [Buffer.from(target, 'utf8').toString('base64')] }));
+                    } catch { /* fenêtre déjà visible ou commande absente */ }
+                } catch { /* commande indisponible -> fallback */ }
+            }
+
+            // 3. Si l'action locale n'a pas pu s'appliquer (ex. inter-IDE via bridge ws), passer par injectIdeAgentText avec draft: true :
             if (!sent) {
                 sent = wsRoot ? await injectIdeAgentText(
                     providerId,
@@ -877,6 +1000,33 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'open_comfyui') {
             await vscode.commands.executeCommand('hephaistosChats.openComfyUI');
+            return;
+        }
+
+        if (message.type === 'ensure_service') {
+            const svc = String((message as { service?: string }).service || '');
+            ensureService(workspaceRoot || process.cwd(), svc)
+                .then((ok) => FlowWorkspacePanel.post({ type: 'service_state', service: svc, ok }))
+                .catch(() => FlowWorkspacePanel.post({ type: 'service_state', service: svc, ok: false }));
+            return;
+        }
+
+        if (message.type === 'restart_service') {
+            const svc = String((message as { service?: string }).service || '');
+            FlowWorkspacePanel.post({ type: 'service_state', service: svc, ok: false, checking: true });
+            restartService(workspaceRoot || process.cwd(), svc)
+                .then((ok) => FlowWorkspacePanel.post({ type: 'service_state', service: svc, ok }))
+                .catch(() => FlowWorkspacePanel.post({ type: 'service_state', service: svc, ok: false }));
+            return;
+        }
+
+        if (message.type === 'refresh_state') {
+            try {
+                FlowWorkspacePanel.update(view(workflowStore.load(store.list())), true);
+                FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(true) });
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
             return;
         }
 
