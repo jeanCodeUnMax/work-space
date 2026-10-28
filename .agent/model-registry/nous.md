@@ -1,4 +1,4 @@
-# Registre nous — 2026-10-27T16:30:34.177Z
+# Registre nous — 2026-10-28T00:54:09.472Z
 
 État = dernier ping réel (model_health). `OK`=répond, `KO`=mort/indispo, `—`=pas de latence mesurée.
 Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/agent en bas, section préservée.
@@ -14,6 +14,7 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 | KO | `poolside/laguna-s-2.1:free` | hermes-free | — | 2026-10-27 16:30:33 |
 | KO | `poolside/laguna-xs-2.1:free` | hermes-free | — | 2026-10-27 16:30:33 |
 ## Notes
+
 
 
 

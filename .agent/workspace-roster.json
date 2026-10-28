@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-27T23:20:13.159Z",
+  "updatedAt": "2026-10-28T22:54:54.480Z",
   "core": {
     "devin": [
       {
@@ -17,7 +17,7 @@
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
         "role": "Integrateur-Git",
-        "hidden": false,
+        "hidden": true,
         "title": "sugary-shoemaker"
       },
       {
@@ -39,8 +39,8 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
-        "role": "Architecte",
-        "hidden": false,
+        "role": "Binome-ACP",
+        "hidden": true,
         "title": "bloom-settee"
       },
       {
@@ -56,6 +56,62 @@
         "restore": "existing-only",
         "role": "Devin",
         "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/comfy-inventory",
+        "restore": "open-or-reveal",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/comfy-verify",
+        "restore": "open-or-reveal",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/faint-freon",
+        "restore": "existing-only",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/locrian-blender",
+        "restore": "existing-only",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/river-bougon",
+        "restore": "existing-only",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": false
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/axiomatic-path",
+        "restore": "existing-only",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": false
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "restore": "existing-only",
+        "role": "Antigravity-Tango",
+        "title": "Tango (Antigravity)",
+        "hidden": false
       }
     ],
     "cerberos": [
@@ -71,8 +127,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Codeur",
-        "hidden": false,
+        "role": "Creds-Auditeur",
+        "hidden": true,
         "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
       },
@@ -81,7 +137,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "role": "Reviewer",
-        "hidden": false,
+        "hidden": true,
         "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
         "title": "amber-agent"
       },
@@ -89,8 +145,8 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Auditeur-securite",
-        "hidden": false,
+        "role": "Comfy-Inventaire",
+        "hidden": true,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
       },
@@ -98,18 +154,18 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Sentinelle",
-        "hidden": false,
+        "role": "Creds-Archiviste",
+        "hidden": true,
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         "title": "keen-agent"
       },
       {
-        "providerId": "nim2",
+        "providerId": "nim",
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Verif-Submodules",
-        "hidden": false,
-        "model": "meta/llama-3.1-8b-instruct",
+        "role": "Comfy-Verificateur",
+        "hidden": true,
+        "model": "nvidia/nemotron-3.5-bolt-e4b",
         "title": "xenial-agent"
       },
       {
@@ -117,7 +173,7 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": false,
+        "hidden": true,
         "model": "openrouter/google/gemma-4-31b-it:free",
         "title": "rapid-agent"
       },
@@ -126,7 +182,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": false,
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "zealous-agent"
       },
@@ -144,7 +200,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": false,
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "beacon-agent"
       },
@@ -153,7 +209,7 @@
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
         "role": "Sentinelle-Infra-Perf",
-        "hidden": false,
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "steady-agent"
       },
@@ -281,6 +337,51 @@
         "role": "N8N-Verificateur",
         "title": "n8n-Verificateur",
         "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-anim",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "NVIDIA NIM 2",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-arch",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "NVIDIA NIM 2",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-mod",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "NVIDIA NIM 2",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-025fa1a3-deb7-466d-8db0-ab14b6325096",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "hardy-agent",
+        "hidden": false
+      }
+    ],
+    "antigravity": [
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "cascadeId": "2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "role": "Antigravity-Tango",
+        "title": "Tango (Antigravity)",
+        "model": "gemini-3.8-flash-high",
+        "restore": "open-or-reveal",
+        "hidden": false
       }
     ]
   },
@@ -291,273 +392,414 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-25T00:24:17.068Z",
+    "lastPing": "2026-10-28T19:54:46.277Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
-        "status": "skipped",
+        "status": "failed",
         "delivered": false
       },
       "chat-mvlpm7vh": "session-missing",
-      "chat-mvlpi4qj": "session-missing"
+      "chat-mvlpi4qj": "session-missing",
+      "acp/devin-cli/sugary-shoemaker": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/ionian-helicopter": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/speckled-enthusiasm": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/bloom-settee": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/spectacled-dust": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/plain-bite": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/comfy-inventory": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/comfy-verify": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/faint-freon": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/locrian-blender": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/river-bougon": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/axiomatic-path": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "session 2d2e0c5d-3160-44b2-a5cf-fb246e3a605e non attachable (session/load: Session not found in the current GEMINI_HOME ; session/resume: Session not found in the current GEMINI_HOME)"
+      },
+      "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4": {
+        "transport": "acp-inject",
+        "delivered": true,
+        "stopReason": "end_turn",
+        "reply": "**État des lieux**\n\n- **MCP Obsidian Live** : le harnais `obsidian` est bien installé dans l'environnement CLI‑Anything (voir `list_harnesses`).  \n- **Vault loc",
+        "pong": true,
+        "error": null
+      },
+      "chat-mvmw59wa": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-mvmw5chd": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvmtldvy": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim"
+      },
+      "chat-mvfqytbz": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvfj773t": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim"
+      },
+      "chat-mvflr6cn": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvfj8b4m": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-de8acfde-0423-4480-ad11-aa4519daeee6": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvp0beacon": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-mvpfinfra": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-d27b8084-7202-4e0e-bff4-45d60f123788": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-b8b87e8a-8954-4c29-ae3e-d44e1d132244": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-fabb4d20-ebda-4e32-8da7-07392590dabe": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-82eefc00": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8narchi": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8nops": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8nverif": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-anim": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-arch": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-mod": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-025fa1a3-deb7-466d-8db0-ab14b6325096": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      }
     }
   },
   "workflow": {
     "version": 1,
-    "name": "swat-orchestrateur",
+    "name": "swat-comfyui-models",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Cadrage & Supervision : analyse le besoin, découpe les étapes, supervise le déroulement global.",
+        "task": "Supervise la consolidation modeles ComfyUI",
         "skills": [
-          "orchestrator",
-          "plan-writing"
+          "orchestrator"
         ],
         "mcps": [],
         "title": "ionian-helicopter",
         "position": {
-          "x": -660,
-          "y": -220
+          "x": -528,
+          "y": -374
         }
       },
       {
-        "sessionId": "acp/devin-cli/bloom-settee",
-        "role": "Architecte",
-        "task": "Conception & Spécification technique : architecture, contrats d'interfaces, sélection des patterns.",
+        "sessionId": "acp/devin-cli/river-bougon",
+        "role": "Comfy-Inventaire",
+        "task": "Inventorie les modeles ComfyUI (safetensors/ckpt/pt/gguf) sur C:E:F:G:, detecte doublons, propose plan de consolidation",
         "skills": [
-          "architecture",
-          "api-patterns",
-          "plan-writing"
+          "data-specialist"
         ],
         "mcps": [],
-        "title": "bloom-settee",
+        "title": "comfy-inventory",
         "position": {
-          "x": -330,
-          "y": -220
+          "x": -220,
+          "y": -374
         }
       },
       {
-        "sessionId": "chat-mvmw59wa",
-        "role": "Codeur",
-        "task": "Production de code : implémente la solution technique conformément aux spécifications.",
+        "sessionId": "acp/devin-cli/axiomatic-path",
+        "role": "Comfy-Verificateur",
+        "task": "Verifie que chaque modele consolide est visible par ComfyUI F:/ComfyUI_windows_portable/ComfyUI/models et chargeable",
         "skills": [
-          "clean-code",
-          "nodejs-best-practices"
+          "testing-specialist"
         ],
         "mcps": [],
-        "title": "keen-agent",
+        "title": "comfy-verify",
         "position": {
-          "x": 0,
-          "y": -220
+          "x": 88,
+          "y": -374
         }
       },
       {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Testeur",
-        "task": "Validation technique : tests unitaires TDD, build et compilation avant audit.",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "role": "Antigravity-Tango",
+        "task": "Binome souverain Tango — Assistance technique, developpement et arbitrage de mission",
         "skills": [
-          "testing-patterns",
-          "tdd-workflow"
-        ],
-        "mcps": [],
-        "title": "zealous-agent",
-        "position": {
-          "x": 330,
-          "y": -220
-        }
-      },
-      {
-        "sessionId": "chat-mvmw5chd",
-        "role": "Reviewer",
-        "task": "Revue Qualité : analyse le diff pour la maintenabilité, lisibilité et respect des standards.",
-        "skills": [
-          "code-review-checklist",
+          "antigravity-obsidian",
+          "binome",
+          "jointes",
+          "orchestrator",
           "clean-code"
         ],
         "mcps": [],
-        "title": "amber-agent",
+        "title": "Tango (Antigravity)",
         "position": {
-          "x": 660,
-          "y": -352
+          "x": -220,
+          "y": -154
         }
       },
       {
-        "sessionId": "chat-mvmtldvy",
-        "role": "Auditeur-securite",
-        "task": "Audit Sécurité : scanne vulnérabilités, failles d'injection, secrets et codepoints suspects.",
-        "skills": [
-          "vulnerability-scanner",
-          "mcp-security-audit"
-        ],
+        "sessionId": "chat-025fa1a3-deb7-466d-8db0-ab14b6325096",
+        "role": "OmniRoute",
+        "task": "",
+        "skills": [],
         "mcps": [],
-        "title": "urban-agent",
+        "title": "hardy-agent",
         "position": {
-          "x": 660,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "chat-mvpfinfra",
-        "role": "Sentinelle-Infra-Perf",
-        "task": "Audit Infra & Performance : consommation ressources, dépendances, latence MCP et rate-limits.",
-        "skills": [
-          "performance-profiling",
-          "observability-specialist"
-        ],
-        "mcps": [],
-        "title": "steady-agent",
-        "position": {
-          "x": 660,
-          "y": 88
-        }
-      },
-      {
-        "sessionId": "chat-mvfqytbz",
-        "role": "Sentinelle",
-        "task": "Arbitrage central GO/NO-GO : consolide les 3 rapports d'audit (Qualité, Sécu, Infra) et tranche.",
-        "skills": [
-          "vulnerability-scanner",
-          "code-review-checklist"
-        ],
-        "mcps": [],
-        "title": "keen-agent",
-        "position": {
-          "x": 990,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "chat-mvfj773t",
-        "role": "Verif-Submodules",
-        "task": "Contrôle Git : arborescence, sous-modules et propreté du working tree.",
-        "skills": [
-          "git-history",
-          "lint-and-validate"
-        ],
-        "mcps": [],
-        "title": "xenial-agent",
-        "position": {
-          "x": 1320,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/sugary-shoemaker",
-        "role": "Integrateur-Git",
-        "task": "Livraison Git : commit conventionnel et double push vers origin et personal.",
-        "skills": [
-          "testing-patterns",
-          "lint-and-validate"
-        ],
-        "mcps": [],
-        "title": "sugary-shoemaker",
-        "position": {
-          "x": 1650,
-          "y": -132
-        }
-      },
-      {
-        "sessionId": "chat-mvflr6cn",
-        "role": "Documentaliste-Vault",
-        "task": "Documentation Vault : consigne la note technique dans le Vault Obsidian.",
-        "skills": [
-          "obsidian",
-          "vault-ingest"
-        ],
-        "mcps": [],
-        "title": "rapid-agent",
-        "position": {
-          "x": 1980,
-          "y": -220
-        }
-      },
-      {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Feedback-Beacon-Knowledge",
-        "task": "Capitalisation Hephaistos : consigne les enseignements et patterns dans agentmemory.",
-        "skills": [
-          "vault-ingest",
-          "obsidian"
-        ],
-        "mcps": [],
-        "title": "beacon-agent",
-        "position": {
-          "x": 1980,
-          "y": -44
+          "x": 88,
+          "y": -154
         }
       }
     ],
     "edges": [
       {
-        "id": "edge:orchestrateur->architecte",
+        "id": "e1",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/bloom-settee"
+        "target": "acp/devin-cli/river-bougon"
       },
       {
-        "id": "edge:architecte->codeur",
-        "source": "acp/devin-cli/bloom-settee",
-        "target": "chat-mvmw59wa"
+        "id": "e2",
+        "source": "acp/devin-cli/river-bougon",
+        "target": "acp/devin-cli/axiomatic-path"
       },
       {
-        "id": "edge:codeur->testeur",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:testeur->reviewer",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmw5chd"
-      },
-      {
-        "id": "edge:testeur->auditeur-secu",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvmtldvy"
-      },
-      {
-        "id": "edge:testeur->infra-perf",
-        "source": "chat-mvfj8b4m",
-        "target": "chat-mvpfinfra"
-      },
-      {
-        "id": "edge:reviewer->sentinelle",
-        "source": "chat-mvmw5chd",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:auditeur-secu->sentinelle",
-        "source": "chat-mvmtldvy",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:infra-perf->sentinelle",
-        "source": "chat-mvpfinfra",
-        "target": "chat-mvfqytbz"
-      },
-      {
-        "id": "edge:sentinelle->verif-submodules",
-        "source": "chat-mvfqytbz",
-        "target": "chat-mvfj773t"
-      },
-      {
-        "id": "edge:verif-submodules->integrateur",
-        "source": "chat-mvfj773t",
-        "target": "acp/devin-cli/sugary-shoemaker"
-      },
-      {
-        "id": "edge:integrateur->documentaliste",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvflr6cn"
-      },
-      {
-        "id": "edge:integrateur->feedback-beacon",
-        "source": "acp/devin-cli/sugary-shoemaker",
-        "target": "chat-mvp0beacon"
+        "id": "e3",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e"
       }
     ],
-    "activeSchema": "swat-orchestrateur",
-    "activeSchemaId": "schema-yy5cfkox-i1t73"
+    "activeSchema": "swat-comfyui-models",
+    "activeSchemaId": "swat-comfy-1793149930506"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

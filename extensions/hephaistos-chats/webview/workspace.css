@@ -1063,3 +1063,11 @@ textarea {
 }
 
 .tool-page-hidden { display: none !important; }
+
+.tool-page-btn.tool-loading {
+    animation: toolPulse 1.1s ease-in-out infinite;
+}
+@keyframes toolPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}

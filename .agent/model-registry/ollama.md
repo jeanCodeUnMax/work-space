@@ -1,4 +1,4 @@
-# Registre ollama — 2026-10-27T16:30:34.177Z
+# Registre ollama — 2026-10-28T00:54:09.472Z
 
 État = dernier ping réel (model_health). `OK`=répond, `KO`=mort/indispo, `—`=pas de latence mesurée.
 Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/agent en bas, section préservée.
@@ -13,6 +13,7 @@ Tri : disponibles d'abord, puis par latence croissante. Annotations humaines/age
 | KO | `gpt-oss:120b-cloud` | ollama-cloud | 1409ms | 2026-10-08 06:50:09 |
 | KO | `gemma4:31b-cloud` | ollama-cloud | 1570ms | 2026-10-08 06:50:09 |
 ## Notes
+
 
 
 
