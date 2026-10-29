@@ -30,6 +30,8 @@
  */
 
 import http from 'node:http';
+import net from 'node:net';
+import { Readable } from 'node:stream';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -167,10 +169,48 @@ const server = http.createServer(async (req, res) => {
             outHeaders[k] = v;
         });
         res.writeHead(upstream.status, outHeaders);
+        // SSE (push backend n8n) : flux continu, jamais bufferise — sinon
+        // l'UI affiche "Lost connection to the server" et la requete expire.
+        const ct = upstream.headers.get('content-type') || '';
+        if (ct.includes('text/event-stream') && upstream.body) {
+            const stream = Readable.fromWeb(upstream.body);
+            stream.pipe(res);
+            req.on('close', () => stream.destroy());
+            return;
+        }
         res.end(Buffer.from(await upstream.arrayBuffer()));
     } catch (e) {
         res.writeHead(502, { 'content-type': 'text/plain' });
         res.end(`n8n-auth-proxy: ${e.message}`);
+    }
+});
+
+/* ---------- Upgrade WebSocket (/rest/push) ----------
+ * fetch() ne peut pas upgrader : tunnel TCP brut vers n8n avec le cookie
+ * de session injecte dans le handshake, sinon l'UI perd la connexion
+ * temps reel (statuts d'execution, notifications). */
+server.on('upgrade', async (req, socket, head) => {
+    try {
+        if (!sessionCookie) await login();
+        const upstream = net.createConnection(new URL(TARGET).port || 80, new URL(TARGET).hostname, () => {
+            const lines = [`${req.method} ${req.url} HTTP/1.1`];
+            let hasCookie = false;
+            for (const [k, v] of Object.entries(req.headers)) {
+                const lk = k.toLowerCase();
+                if (lk === 'host') { lines.push(`host: ${new URL(TARGET).host}`); continue; }
+                if (lk === 'cookie') { lines.push(`cookie: ${sessionCookie}`); hasCookie = true; continue; }
+                lines.push(`${k}: ${v}`);
+            }
+            if (!hasCookie && sessionCookie) lines.push(`cookie: ${sessionCookie}`);
+            upstream.write(lines.join('\r\n') + '\r\n\r\n');
+            if (head && head.length) upstream.write(head);
+            upstream.pipe(socket);
+            socket.pipe(upstream);
+        });
+        upstream.on('error', () => socket.destroy());
+        socket.on('error', () => upstream.destroy());
+    } catch {
+        socket.destroy();
     }
 });
 
