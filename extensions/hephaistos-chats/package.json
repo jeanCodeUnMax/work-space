@@ -1,88 +1,88 @@
 {
-    "name": "hephaistos-chats",
-    "displayName": "Hephaistos Chats",
-    "description": "Onglets de chat Hephaistos + espace de travail React Flow : orchestration manuelle des agents du roster (roles, skills, missions, chaines de travail).",
-    "version": "0.3.33",
-    "icon": "media/icon.png",
-    "publisher": "hephaistos",
-    "engines": {
-        "vscode": "^1.85.0"
+  "name": "hephaistos-chats",
+  "displayName": "Hephaistos Chats",
+  "description": "Onglets de chat Hephaistos + espace de travail React Flow : orchestration manuelle des agents du roster (roles, skills, missions, chaines de travail).",
+  "version": "0.3.34",
+  "icon": "media/icon.png",
+  "publisher": "hephaistos",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "hephaistosChats",
+          "title": "Hephaistos Chats",
+          "icon": "media/icon.png"
+        }
+      ]
     },
-    "categories": [
-        "Other"
+    "views": {
+      "hephaistosChats": [
+        {
+          "id": "hephaistosChats.list",
+          "name": "Chats",
+          "type": "webview",
+          "icon": "media/icon.png",
+          "contextualTitle": "Hephaistos Chats",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "hephaistosChats.newChat",
+        "title": "Hephaistos : Nouveau chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "hephaistosChats.openChat",
+        "title": "Hephaistos : Ouvrir le chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "hephaistosChats.openWorkspace",
+        "title": "Hephaistos : Ouvrir lâ€™espace de travail",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "hephaistosChats.openComfyUI",
+        "title": "Hephaistos : Studio ComfyUI",
+        "icon": "$(device-camera)"
+      }
     ],
-    "activationEvents": [
-        "onStartupFinished"
-    ],
-    "main": "./out/extension.js",
-    "contributes": {
-        "viewsContainers": {
-            "activitybar": [
-                {
-                    "id": "hephaistosChats",
-                    "title": "Hephaistos Chats",
-                    "icon": "media/icon.png"
-                }
-            ]
-        },
-        "views": {
-            "hephaistosChats": [
-                {
-                    "id": "hephaistosChats.list",
-                    "name": "Chats",
-                    "type": "webview",
-                    "icon": "media/icon.png",
-                    "contextualTitle": "Hephaistos Chats",
-                    "visibility": "visible"
-                }
-            ]
-        },
-        "commands": [
-            {
-                "command": "hephaistosChats.newChat",
-                "title": "Hephaistos : Nouveau chat",
-                "icon": "$(comment-discussion)"
-            },
-            {
-                "command": "hephaistosChats.openChat",
-                "title": "Hephaistos : Ouvrir le chat",
-                "icon": "$(comment-discussion)"
-            },
-            {
-                "command": "hephaistosChats.openWorkspace",
-                "title": "Hephaistos : Ouvrir lâ€™espace de travail",
-                "icon": "$(type-hierarchy)"
-            },
-            {
-                "command": "hephaistosChats.openComfyUI",
-                "title": "Hephaistos : Studio ComfyUI",
-                "icon": "$(device-camera)"
-            }
-        ],
-        "keybindings": [
-            {
-                "command": "hephaistosChats.openChat",
-                "key": "ctrl+alt+h"
-            }
-        ]
-    },
-    "scripts": {
-        "build:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify",
-        "compile": "npm run build:workspace && tsc -p ./ && tsc -p ./tsconfig.webview.json",
-        "watch": "tsc -watch -p ./",
-        "watch:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify --watch=forever",
-        "test": "npm run compile && node --test test/*.test.cjs",
-        "vscode:prepublish": "npm run compile"
-    },
-    "devDependencies": {
-        "@types/node": "^18.15.0",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "@types/vscode": "^1.85.0",
-        "@xyflow/react": "^12.12.0",
-        "esbuild": "^0.28.2",
-        "react": "^19.3.1",
-        "react-dom": "^19.3.1",
-        "typescript": "^5.0.0"
-    }
+    "keybindings": [
+      {
+        "command": "hephaistosChats.openChat",
+        "key": "ctrl+alt+h"
+      }
+    ]
+  },
+  "scripts": {
+    "build:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify",
+    "compile": "npm run build:workspace && tsc -p ./ && tsc -p ./tsconfig.webview.json",
+    "watch": "tsc -watch -p ./",
+    "watch:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify --watch=forever",
+    "test": "npm run compile && node --test test/*.test.cjs",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/vscode": "^1.85.0",
+    "@xyflow/react": "^12.12.0",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.0.0"
+  }
 }

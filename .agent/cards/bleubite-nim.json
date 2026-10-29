@@ -1,0 +1,12 @@
+{
+  "id": "bleubite-nim",
+  "kind": "bleubite",
+  "title": "Bleubite NIM",
+  "role": "Bleubite",
+  "provider": "nim",
+  "sessionId": "",
+  "skills": [
+    "bleubite-dispatch"
+  ],
+  "mcps": []
+}

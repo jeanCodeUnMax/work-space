@@ -1,94 +1,98 @@
-# n8n AI Providers Report (v2.4.6)
+# n8n AI Providers Report (v2.45.5)
+
+> Régénéré le 2026-10-29 après upgrade 2.4.6 → 2.45.5. Changement majeur vs l'ancien rapport : le schéma `N8N_AI_PROVIDER_<NAME>_API_KEY` **n'existe pas** dans cette version. Les providers AI se configurent via le système de **Credentials** n8n (UI ou API), pas par variables d'environnement.
 
 ## Configuration Points
 
 | Lieu | Méthode |
 |------|---------|
-| **Variables d'environnement** | `N8N_AI_DEFAULT_MODEL`, `N8N_AI_PROVIDER_<NAME>_API_KEY`, `N8N_AI_PROVIDER_<NAME>_BASE_URL` |
-| **Panel Admin** | Settings → AI Services (ou `/rest/settings` endpoint) |
-| **Fichier `.env`** | `N8N_AI_PROVIDER_OPENAI_API_KEY=sk-...` etc. |
+| **Credentials n8n** | Chaque provider AI a un type de credential (clé API + base URL optionnelle), attaché à l'agent/conversation |
+| **Chat Hub settings** | Settings → Chat (module `chat-hub`), agents persistés en base (`chat_hub_agents.provider/model/credentialId`) |
+| **Env vars Instance AI** | `N8N_INSTANCE_AI_MODEL`, `N8N_INSTANCE_AI_EVAL_MODEL`, `N8N_INSTANCE_AI_EVAL_TIMING`, `N8N_INSTANCE_AI_SANDBOX_PROVIDER` |
+| **Env vars générales** | `N8N_AI_ENABLED`, `N8N_AI_ANTHROPIC_KEY`, `N8N_AI_ALLOW_SENDING_PARAMETER_VALUES`, `N8N_AI_TIMEOUT_MAX` |
 
 ---
 
-## Providers natifs supportés
+## Providers natifs supportés (module chat-hub, 2.45.5)
 
-| Provider | Variable env clé | Champ API requis | Notes |
-|----------|------------------|------------------|-------|
-| **OpenAI** | `N8N_AI_PROVIDER_OPENAI_API_KEY` | `model` (ex: `gpt-4o`) | Par défaut si aucune clé n'est définie |
-| **Google / Gemini** | `N8N_AI_PROVIDER_GEMINI_API_KEY` | `model` (ex: `gemini-1.5-pro`) | Nécesse de activer l'API Google Cloud |
-| **Groq** | `N8N_AI_PROVIDER_GROQ_API_KEY` | `model` (ex: `llama-3.1-70b-versatile`) | Très rapide (inference GPU) |
-| **OpenRouter** | `N8N_AI_PROVIDER_OPENROUTER_API_KEY` | `model` (ex: `anthropic/claude-3.5-sonnet`) | Regroupe de nombreux modèles |
-| **xAI (Groq/Mistral-like)** | `N8N_AI_PROVIDER_XAI_API_KEY` | `model` (ex: `grok-beta`) | Endpoint `https://api.x.ai/v1` |
-| **Ollama** | `N8N_AI_PROVIDER_OLLAMA_BASE_URL` = `http://localhost:11434` | `model` (ex: `llama3`) | Local seulement, pas de clé API |
+| Provider | Type | Clé API | Notes |
+|----------|------|---------|-------|
+| **OpenAI** | `openai` | Credential OpenAI | Base URL personnalisable → endpoint OpenAI-compatible |
+| **Anthropic** | `anthropic` | Credential Anthropic | |
+| **Google / Gemini** | `google` | Credential Google (PaLM/Gemini) | |
+| **Groq** | `groq` | Credential Groq | Inférence rapide |
+| **Ollama** | `ollama` | Credential Ollama (base URL) | Local, `http://localhost:11434` |
+| **OpenRouter** | `openRouter` | Credential OpenRouter | Agrégateur multi-modèles |
+| **DeepSeek** | `deepSeek` | Credential DeepSeek | |
+| **Cohere** | `cohere` | Credential Cohere | |
+| **Mistral** | `mistral` | Credential Mistral | |
+| **Azure OpenAI** | `azureOpenAi` | Credential Azure OpenAI | |
+| **Vercel AI Gateway** | `vercel` | Credential Vercel | |
+| **Agent custom (workflow)** | `custom-agent` | — | Expose un workflow n8n comme provider |
+| **n8n** | `n8n` | — | Provider interne |
 
-*D'autres providers (Anthropic, Cohere, etc.) peuvent être ajoutés via **OpenRouter** ou en **provider personnalisé**.*
-
----
-
-## Ajout d'un provider OpenAI-compatible (ex: OmniRoute)
-
-Pour déclarer un endpoint OpenAI-compatible (comme OmniRoute `http://localhost:20128/v1`):
-
-1. **Variable d'environnement** :
-   ```env
-   N8N_AI_PROVIDER_CUSTOM_API_KEY=votre_cle_omniroute
-   N8N_AI_PROVIDER_CUSTOM_BASE_URL=http://localhost:20128/v1
-   N8N_AI_PROVIDER_CUSTOM_MODEL=mistral-large
-   ```
-   Le nom `CUSTOM` est libre ; n8n le montrera comme "Custom (OpenAI-compatible)" dans le sélecteur de modèle.
-
-2. **Via l'admin panel** :
-   - Aller sur *Settings → AI Services*
-   - Cliquer sur *Add Custom Provider*
-   - Champ *Name* : `Custom (OmniRoute)`
-   - Champ *API Key* : votre clé
-   - Champ *Base URL* : `http://localhost:20128/v1`
-   - Champ *Model* : `mistral-large` (ou défaut)
-
-3. **Utilisation dans un nœud** :
-   - Dans le nœud *Ask AI* ou *Assistant*, sélectionner le provider "Custom (OmniRoute)".
-   - Le nœud construira l'appel `POST {BASE_URL}/chat/completions` avec les en-têtes `Authorization: Bearer <KEY>` et `Content-Type: application/json`.
+*xAI (grok) n'apparaît plus dans la liste des providers 2.45.5 ; utiliser OpenRouter si nécessaire.*
 
 ---
 
-## API / Webhook du chat assistant
+## Provider OpenAI-compatible (ex: OmniRoute)
 
-L'assistant n8n expose les points d'entrée suivants :
+Deux voies en 2.45.5 :
 
-| Endpoint | Méthode | Description |
-|----------|---------|-------------|
-| `GET /rest/n8n/ai/assistant/conversations` | Listener | Récupère l'historique des conversations (nécessite auth JWT). |
-| `POST /rest/n8n/ai/assistant/messages` | `message` | Envoie un message et reçoit la réponse de l'IA (retourne `response`, `conversationId`). |
-| `WebSocket /ai-assistant` | `open/close/message` | Push en temps réel des réponses (utilisé par l'interface chat). |
-
-**Utilisation pour un bridge orchestrateur** :
-- Après avoir POSTé un message via `/rest/n8n/ai/assistant/messages`, on obtient un `conversationId`.
-- Ce `conversationId` peut être stocké et réutilisé pour suivre le contexte.
-- Les webhooks n8n peuvent être déclenchés à chaque réponse (`on AI response`) pourNotifier un système externe (CRM, ticket, etc.).
-- Pour une intégration personnalisée, il suffit d'intercepter l'appel REST ou de configurer un *Webhook Node* n8n qui écoute `/rest/n8n/ai/assistant/messages`.
+1. **Credential OpenAI avec Base URL custom** : créer un credential OpenAI, renseigner `Base URL = http://localhost:20128/v1` + clé OmniRoute → utilisable dans Chat Hub et les nœuds AI.
+2. **OpenRouter** : regrouper OmniRoute derrière un endpoint OpenRouter-compatible.
+3. **Agent custom** : workflow n8n wrappant l'appel `POST {BASE_URL}/chat/completions`.
 
 ---
 
-## Résumé des env vars à définir (exemple `.env`)
+## API REST du Chat Hub (module `chat-hub`)
+
+Endpoints vérifiés dans le contrôleur 2.45.5 (base `/rest/chat`) :
+
+| Endpoint | Usage |
+|----------|-------|
+| `POST /conversations/send` | Envoyer un message (création session implicite) |
+| `GET /conversations` | Lister les conversations |
+| `GET /conversations/:sessionId` | Détail d'une session |
+| `POST /conversations/:sessionId/messages/:messageId/edit` | Éditer un message |
+| `POST /conversations/:sessionId/messages/:messageId/regenerate` | Régénérer la réponse |
+| `POST /conversations/:sessionId/messages/:messageId/stop` | Stopper une génération en cours |
+| `POST /conversations/:sessionId/reconnect` | Reprendre un stream |
+| `POST /conversations/manual/:workflowId/send` | Envoyer à un agent workflow custom |
+| `GET /models` | Lister les modèles dispo par provider |
+| `GET|POST /agents`, `GET|PUT|DELETE /agents/:agentId` | CRUD agents Chat Hub |
+| `GET|POST /tools`, `GET|PUT|DELETE /tools/:toolId` | CRUD outils d'agent |
+| `GET|POST /agents/:agentId/files` | Fichiers de connaissance d'un agent |
+
+Auth : session/JWT n8n standard (ou `x-n8n-api-key` via le proxy `.agent/scripts/n8n-auth-proxy.mjs`).
+
+---
+
+## Résumé des env vars utiles (`.env`)
 
 ```env
-# Clés API
-N8N_AI_PROVIDER_OPENAI_API_KEY=sk-xxxxx
-N8N_AI_PROVIDER_GEMINI_API_KEY=AIza-xxxxx
-N8N_AI_PROVIDER_GROQ_API_KEY=gsk-xxxxx
-N8N_AI_PROVIDER_OPENROUTER_API_KEY=sk-or-xxxxx
-N8N_AI_PROVIDER_XAI_API_KEY=xxxx
-N8N_AI_PROVIDER_OLLAMA_BASE_URL=http://localhost:11434
+# Instance AI (assistant intégré)
+N8N_INSTANCE_AI_MODEL=<model-id>
+N8N_INSTANCE_AI_EVAL_MODEL=<model-id>
+N8N_INSTANCE_AI_SANDBOX_PROVIDER=<provider>
 
-# Provider custom OpenAI-compatible (OmniRoute)
-N8N_AI_PROVIDER_CUSTOM_API_KEY=omni-xxxxx
-N8N_AI_PROVIDER_CUSTOM_BASE_URL=http://localhost:20128/v1
-N8N_AI_PROVIDER_CUSTOM_MODEL=mistral-large
-
-# Global
-N8N_AI_DEFAULT_PROVIDER=openai   # ou custom, groq, etc.
+# Général
+N8N_AI_ENABLED=true
+N8N_AI_ANTHROPIC_KEY=sk-ant-xxxxx   # clé fallback historique
+N8N_AI_TIMEOUT_MAX=<ms>
+N8N_AI_ALLOW_SENDING_PARAMETER_VALUES=true
 ```
 
-**Conclusion** : Tous les fournisseurs majeurs sont supportés nativement. Un provider OpenAI-compatible s'ajoute via `BASE_URL` + `API_KEY`. L'assistant expose des endpoints REST/WebSocket utilisables pour construire un bridge orchestrateur externe.
+Les clés des autres providers vivent en base (table `credentials`, chiffrées via `N8N_ENCRYPTION_KEY` / `~/.n8n/config`), pas en env.
 
-*(Rapport généré pour la mission n8n-AI eval)*
+---
+
+## Incidents de migration 2.4.6 → 2.45.5 (résolus)
+
+- `CreateAgentHistoryTable1784000000011` : table `agents` écrasée par un schéma étranger (vide) → renommée `agents_foreign_orphan`, schéma n8n recréé manuellement.
+- `AddAgentQueueMessageReferences1790605116208` : index `IDX_agents_projectId` orphelin sur la table renommée → drop + recréé sur `agents`.
+- 29 migrations rejouées avec succès après correction ; backup pré-upgrade dans `~/.n8n-backup-20261029/`.
+
+**Conclusion** : en 2.45.5, la configuration AI est centrée Credentials + Chat Hub (agents persistés, outils, fichiers). Les endpoints `/rest/chat/*` permettent un bridge orchestrateur externe équivalent à l'ancien `/rest/n8n/ai/assistant/*`.
+
+*(Rapport régénéré pour la mission n8n-AI eval — v2.45.5)*

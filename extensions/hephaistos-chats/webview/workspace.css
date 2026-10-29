@@ -1071,3 +1071,21 @@ textarea {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.35; }
 }
+
+.flow-node-bound {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 11px;
+    color: #3ddc84;
+    font-weight: 600;
+}
+
+.roster-dot.blue { background: #6ca4cf; }
+
+.flow-node.amber {
+    border-color: rgba(226, 166, 93, 0.55);
+}
+
+.flow-node.amber .flow-node-kicker {
+    color: #e2a65d;
+}

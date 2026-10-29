@@ -1,0 +1,13 @@
+{
+  "id": "architecte",
+  "kind": "agy",
+  "title": "Architecte",
+  "role": "Architecte",
+  "provider": "antigravity-acp",
+  "sessionId": "",
+  "skills": [
+    "architecture",
+    "plan-writing"
+  ],
+  "mcps": []
+}

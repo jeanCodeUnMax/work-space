@@ -201,8 +201,40 @@ function buildSendBody(cascadeId, text, planModel) {
 }
 
 /** Injecte un message sans remplacer le modèle choisi dans l'UI. */
+/* Procedure de choix de modele Antigravity (ordre des criteres) :
+ *  1. quota reel restant (GetCascadeModelConfigData, remainingFraction) ;
+ *  2. specialite du modele pour le type de tache ;
+ *  3. la session cible est fournie par l'appelant, jamais deduite.
+ * Un modele sans remainingFraction (quota epuise / inconnu) est ecarte. */
+const AGY_KIND_MODELS = {
+    code: ['GPT-OSS 120B (Medium)', 'Claude Sonnet 5.5 (High)', 'Gemini 3.8 Flash (High)'],
+    general: ['Gemini 3.8 Flash (Medium)', 'Gemini 3.8 Flash (Low)', 'GPT-OSS 120B (Medium)'],
+    image: ['Gemini 3.8 Flash (High)', 'Gemini 3.8 Flash (Medium)'],
+    complex: ['Claude Opus 5.5 (High)', 'Claude Sonnet 5.5 (High)', 'Claude Sonnet 5.5 (Medium)'],
+};
+const AGY_QUOTA_MIN = 0.05;
+
+function pickAgyModel(cfg, kind) {
+    const byLabel = new Map((cfg?.clientModelConfigs || []).filter((c) => !c.disabled).map((c) => [c.label, c]));
+    const order = AGY_KIND_MODELS[kind] || AGY_KIND_MODELS.general;
+    for (const label of order) {
+        const c = byLabel.get(label);
+        const q = c?.quotaInfo?.remainingFraction;
+        if (typeof q === 'number' && q >= AGY_QUOTA_MIN) return label;
+    }
+    return null;
+}
+
+const AGY_DEFAULT_MODEL = process.env.AGY_MODEL || null;
+
 async function sendMessage(hub, cascadeId, text, planModel) {
-    const resolvedModel = await resolvePlanModel(hub, cascadeId, planModel);
+    let chosen = planModel || AGY_DEFAULT_MODEL;
+    if (!chosen) {
+        const cfg = await rpc(hub, 'GetCascadeModelConfigData', {});
+        chosen = pickAgyModel(cfg, process.env.AGY_KIND || 'general');
+        if (!chosen) throw new Error('aucun modele Antigravity avec quota disponible');
+    }
+    const resolvedModel = await resolvePlanModel(hub, cascadeId, chosen);
     const body = buildSendBody(cascadeId, text, resolvedModel);
     // Focus côté hub (ouvre un panneau de chat) : désactivé par défaut, AGY_FOCUS=1 pour l'activer
     if (process.env.AGY_FOCUS === '1') {
@@ -340,7 +372,9 @@ async function main() {
             return j(await waitIdle(hub, cascadeId, timeoutSec));
         }
         case 'ask': {
-            const parsed = takeOption(args, '--model');
+            const kindOpt = takeOption(args, '--kind');
+            if (kindOpt.value) process.env.AGY_KIND = kindOpt.value;
+            const parsed = takeOption(kindOpt.args, '--model');
             let cascadeId = parsed.args[0];
             let rest = parsed.args.slice(1);
             if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cascadeId)) {
@@ -365,6 +399,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-    discoverHub, pickHub, rpc, listConversations, resolvePlanModelFromConfig, resolvePlanModel,
+    discoverHub, pickHub, pickAgyModel, AGY_KIND_MODELS, rpc, listConversations, resolvePlanModelFromConfig, resolvePlanModel,
     buildSendBody, sendMessage, waitIdle, stepCount, readReplies, ask
 };

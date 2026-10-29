@@ -42,9 +42,11 @@ interface AgentData extends Record<string, unknown> {
     onAgentDrop?: (agent: PaletteAgent) => void;
     onRoleDrop?: (role: string) => void;
     onPoint?: () => void;
+    onBind?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
     iconTheme?: string;
     isEntry: boolean;
+    bound?: { at: number; kind: string };
     tone: 'amber' | 'blue' | 'green';
 }
 
@@ -95,6 +97,18 @@ interface WorkflowCatalog {
     mcps?: string[];
     providers: { id: string; label: string }[];
     agents?: PaletteAgent[];
+    cards?: PaletteCard[];
+}
+
+interface PaletteCard {
+    id: string;
+    kind: 'devin' | 'agy' | 'bleubite';
+    title: string;
+    role: string;
+    provider: string;
+    sessionId?: string;
+    skills?: string[];
+    mcps?: string[];
 }
 
 interface WorkflowView {
@@ -211,9 +225,16 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                     title={`Pointer ${data.title} vers l'agent référent`}
                     onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
                 >⌖</button>
+                <button
+                    type="button"
+                    className="flow-node-point"
+                    title="Prendre la fenêtre active et l'attacher à ce bloc"
+                    onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
+                >⤓</button>
             </div>
             {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
+            {data.bound && <span className="flow-node-bound" title={`Carte associée à une fenêtre ${data.bound.kind === 'agy' ? 'Antigravity' : 'Devin'}`}>● associée</span>}
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
             {((data.skills || []).length + (data.mcps || []).length) > 0 && (
                 <div className="flow-node-skills">
@@ -278,6 +299,7 @@ function toStoredGraph(
             skills: node.data.skills || [],
             mcps: node.data.mcps || [],
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
+            bound: node.data.bound,
         })),
         edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
             id,
@@ -308,6 +330,7 @@ function Workspace(): React.JSX.Element {
     const [roleQuery, setRoleQuery] = useState('');
     const [mcpQuery, setMcpQuery] = useState('');
     const [agentQuery, setAgentQuery] = useState('');
+    const [cardQuery, setCardQuery] = useState('');
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
     const togglePalette = (key: string) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
@@ -405,6 +428,7 @@ function Workspace(): React.JSX.Element {
                                 },
                                 onRoleDrop: (role: string) => assignRole(node.id, role),
                                 onPoint: () => pointAgent(node.id),
+                                onBind: () => bindActive(node.id, String(node.data?.provider || '')),
                             },
                         };
                     });
@@ -512,7 +536,8 @@ function Workspace(): React.JSX.Element {
             const state = stateRef.current;
             stateRef.current = { ...state, nodes: nextNodes };
             const hasPositionEnd = changes.some(
-                (change) => change.type === 'position' && change.dragging === false && change.position != null,
+                (change) => (change.type === 'position' && change.dragging === false && change.position != null)
+                    || change.type === 'remove',
             );
             if (hasPositionEnd) {
                 if (saveTimer.current !== undefined) {
@@ -561,6 +586,10 @@ function Workspace(): React.JSX.Element {
         });
     }, [postWorkflowSave, setNodes]);
 
+    const bindActive = useCallback((sessionId: string, provider: string) => {
+        const kind = /devin/i.test(provider) ? 'devin' : 'agy';
+        vscode.postMessage({ type: 'bind_active', sessionId, kind });
+    }, []);
     const pointAgent = useCallback((sessionId: string) => {
         vscode.postMessage({ type: 'point_agent', sessionId });
     }, []);
@@ -973,7 +1002,8 @@ function Workspace(): React.JSX.Element {
                                 onNodeDragStop={onNodeDragStop}
                                 onDragOver={(event) => {
                                     if (event.dataTransfer.types.includes('application/x-hph-role')
-                                        || event.dataTransfer.types.includes('application/x-hph-agent')) {
+                                        || event.dataTransfer.types.includes('application/x-hph-agent')
+                                        || event.dataTransfer.types.includes('application/x-hph-card')) {
                                         event.preventDefault();
                                         event.dataTransfer.dropEffect = 'copy';
                                     }
@@ -986,6 +1016,12 @@ function Workspace(): React.JSX.Element {
                                             const agent = JSON.parse(agentRaw) as PaletteAgent;
                                             vscode.postMessage({ type: 'add_agent', provider: agent.provider || newProvider, agent });
                                         } catch { /* payload invalide */ }
+                                        return;
+                                    }
+                                    const cardRaw = event.dataTransfer.getData('application/x-hph-card');
+                                    if (cardRaw) {
+                                        event.preventDefault();
+                                        try { vscode.postMessage({ type: 'add_card', card: JSON.parse(cardRaw) }); } catch { /* carte invalide */ }
                                         return;
                                     }
                                     const role = event.dataTransfer.getData('application/x-hph-role');
@@ -1134,6 +1170,7 @@ function Workspace(): React.JSX.Element {
                         { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
                         { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
                         { key: 'mcps', label: 'MCPS — glisser sur un bloc pour lui donner les outils du serveur', query: mcpQuery, setQuery: setMcpQuery, placeholder: 'Filtrer les serveurs MCP…' },
+                        { key: 'cards', label: 'CARTES — glisser sur le canevas pour créer un bloc préconfiguré', query: cardQuery, setQuery: setCardQuery, placeholder: 'Filtrer les cartes…' },
                     ] as const).map((palette) => (
                         <div className={`skill-palette${collapsed[palette.key] ? ' collapsed' : ''}`} key={palette.key}>
                             <button
@@ -1177,6 +1214,17 @@ function Workspace(): React.JSX.Element {
                                                 >{agent.role} · {agent.title}</span>
                                             ))}
                                             {(catalog.agents || []).length === 0 && <span className="skill-empty">Aucun agent connu.</span>}
+                                        </>)}
+                                        {palette.key === 'cards' && (<>
+                                            {(catalog.cards || []).length === 0 && <span className="skill-empty">Aucune carte dans .agent/cards</span>}
+                                            {(catalog.cards || []).filter((card) => !palette.query || `${card.title} ${card.role} ${card.kind}`.toLowerCase().includes(palette.query.toLowerCase())).map((card) => (
+                                                <span key={card.id}
+                                                    className={`skill-chip draggable role-chip card-chip card-${card.kind}`}
+                                                    title={`${card.title} · ${card.kind} · ${card.provider}${(card.skills || []).length ? ' · ' + (card.skills || []).join(', ') : ''}`}
+                                                    draggable
+                                                    onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-card', JSON.stringify(card)); event.dataTransfer.effectAllowed = 'copy'; }}
+                                                >{card.kind === 'devin' ? '◆' : card.kind === 'agy' ? '◇' : '•'} {card.title}</span>
+                                            ))}
                                         </>)}
                                         {palette.key === 'mcps' && (<>
                                             {(catalog.mcps || []).filter((mcp) => !palette.query || mcp.toLowerCase().includes(palette.query.toLowerCase())).map((mcp) => (

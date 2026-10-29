@@ -1,0 +1,15 @@
+{
+  "id": "codeur",
+  "kind": "agy",
+  "title": "Codeur",
+  "role": "Codeur",
+  "provider": "antigravity-acp",
+  "sessionId": "",
+  "skills": [
+    "clean-code",
+    "code-review-checklist"
+  ],
+  "mcps": [
+    "hphe"
+  ]
+}

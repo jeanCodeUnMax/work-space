@@ -72,3 +72,21 @@ du livrable + phrase de synthèse.
 - **Anti-sleep** : pas de `sleep` passif — l'activité remonte via
   `.agent/comms.jsonl` et le bus `:7477`.
 - Toute anomalie de worker → Beacon (`worker.failed`) + Second Cerveau.
+
+## Pont Antigravity : procédure de choix de modèle
+
+Ordre des critères, appliqué à chaque envoi (`agy-hub.js ask`, réveil `wakeAntigravity`) :
+
+1. **Quota réel restant** : `GetCascadeModelConfigData` → `quotaInfo.remainingFraction`. Un modèle sous 5 % ou sans quota est écarté. Ne jamais se fier au catalogue seul.
+2. **Spécialité du modèle** pour le type de tâche (`--kind`) :
+   - `code` → GPT-OSS 120B (Medium), puis Claude Sonnet 5.5 (High), puis Gemini 3.8 Flash (High)
+   - `general` (défaut) → Gemini 3.8 Flash (Medium), puis Flash (Low), puis GPT-OSS 120B
+   - `image` / graphisme → Gemini 3.8 Flash (High), puis Flash (Medium)
+   - `complex` (raisonnement lourd) → Claude Opus 5.5 (High), puis Sonnet 5.5
+3. **Session cible** : toujours explicite (cascadeId passé par l'appelant). Jamais déduite de « la plus récente ».
+
+Commandes :
+- `node .agent/agent-bridge/agy-hub.js ask --kind code <cascadeId> "<texte>" 300`
+- `--model "<label exact>"` force un modèle (à éviter sauf demande explicite).
+
+Règle : le modèle envoyé est toujours fixé dans `cascadeConfig.plannerConfig.planModel`. Sans ça, le hub applique son défaut interne (`MODEL_PLACEHOLDER_*`) et change le modèle de la fenêtre.

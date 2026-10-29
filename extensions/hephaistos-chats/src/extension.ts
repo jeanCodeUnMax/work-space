@@ -716,6 +716,14 @@ export function activate(context: vscode.ExtensionContext): void {
             }
         } catch { /* roster absent */ }
         skills = [...skillSet].sort((a, b) => a.localeCompare(b, 'fr'));
+        // Cartes préconfigurées : .agent/cards/*.json, un fichier par carte.
+        const cards: NonNullable<WorkflowCatalog['cards']> = [];
+        try {
+            const cardsDir = workspaceRoot ? path.join(workspaceRoot, '.agent', 'cards') : '';
+            for (const f of fs.readdirSync(cardsDir).filter((n) => n.endsWith('.json')).sort()) {
+                try { cards.push(JSON.parse(fs.readFileSync(path.join(cardsDir, f), 'utf8'))); } catch { /* carte invalide : ignorée */ }
+            }
+        } catch { /* pas de dossier cards */ }
         // Palette AGENTS : le referent (Devin live) + tous les agents connus
         // (noeuds du graphe avec leur role + sessions chat non placees) —
         // glissables sur un bloc pour l'editer ou sur le canvas pour creer.
@@ -800,6 +808,7 @@ export function activate(context: vscode.ExtensionContext): void {
             mcps,
             providers: ACP_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label })),
             agents,
+            cards,
         };
     }
 
@@ -885,6 +894,34 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'add_card') {
+            // Carte préconfigurée (.agent/cards) : crée un bloc avec son rôle,
+            // ses compétences et son provider. Sans session liée, le bloc reçoit
+            // un identifiant de carte ; il sera rattaché à une fenêtre ensuite.
+            const card = (message as { card?: { id?: string; title?: string; role?: string; provider?: string; sessionId?: string; skills?: string[] } }).card;
+            if (card?.id) {
+                try {
+                    const graph = workflowStore.load(store.list());
+                    const sessionId = card.sessionId || `card-${card.id}-${Date.now().toString(36)}`;
+                    if (!graph.nodes.some((n) => n.sessionId === sessionId)) {
+                        const idx = graph.nodes.length;
+                        graph.nodes.push({
+                            sessionId,
+                            role: card.role || card.title || card.id,
+                            task: '',
+                            skills: [...(card.skills || [])],
+                            title: card.title || card.id,
+                            position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                        });
+                    }
+                    FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+                } catch (error) {
+                    FlowWorkspacePanel.error(String(error));
+                }
+            }
+            return;
+        }
+
         if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
             const agent = (message as { agent?: PaletteAgent }).agent;
             if (agent?.sessionId) {
@@ -910,6 +947,76 @@ export function activate(context: vscode.ExtensionContext): void {
                 return;
             }
             openNew((message as { provider?: string }).provider, (message as { role?: string }).role);
+            return;
+        }
+
+        if (message.type === 'bind_active' && message.sessionId) {
+            // Bouton ⤓ d'un bloc : prend la fenêtre ACTIVE et la rattache au bloc.
+            // devin  -> session ACP focalisée (workbench.action.getAcpState)
+            // agy    -> conversation Antigravity active (hub, agy-hub.js current)
+            try {
+                const oldId = String(message.sessionId);
+                // Le type vient de la fenêtre réellement focalisée, jamais de la carte.
+                const acp = (await vscode.commands.executeCommand<any>('workbench.action.getAcpState'))?.reduxStore?.acp;
+                const focused = String(acp?.focusedSessionId || '');
+                let kind: 'agy' | 'devin' = 'devin';
+                let newId = focused;
+                if (focused.startsWith('acp/antigravity-acp/')) {
+                    kind = 'agy';
+                } else if (!focused) {
+                    const cur = require('child_process').execFileSync('node', [
+                        path.join(workspaceRoot || '', '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                    ], { encoding: 'utf8', timeout: 20000 }).trim();
+                    kind = 'agy';
+                    newId = cur ? `acp/antigravity-acp/${cur}` : '';
+                }
+                if (!newId) {
+                    FlowWorkspacePanel.error(`Aucune fenêtre ${kind === 'agy' ? 'Antigravity' : 'Devin'} active à attacher.`);
+                    return;
+                }
+                const graph = workflowStore.load(store.list());
+                const node = graph.nodes.find((n) => n.sessionId === oldId);
+                if (!node) return;
+                // Fenêtre déjà portée par un autre bloc : on la détache de cet
+                // ancien bloc (il garde ses arêtes, sans identité) au lieu de refuser.
+                const previous = graph.nodes.find((n) => n.sessionId === newId && n.sessionId !== oldId);
+                if (previous) {
+                    previous.sessionId = `card-detached-${Date.now().toString(36)}`;
+                    delete (previous as { bound?: unknown }).bound;
+                }
+                node.sessionId = newId;
+                (node as { bound?: { at: number; kind: string } }).bound = { at: Date.now(), kind };
+                if (kind === 'devin') {
+                    // Confirmation locale dans le composer Devin : saisie, JAMAIS soumise.
+                    const note = `Carte associée : ${node.title || 'bloc'} est rattachée à cette conversation (message local, à supprimer).`;
+                    try {
+                        const encVarint = (n: number): number[] => { const out: number[] = []; while (n > 127) { out.push((n & 127) | 128); n >>>= 7; } out.push(n); return out; };
+                        const lenField = (no: number, d: Buffer) => Buffer.concat([Buffer.from([(no << 3) | 2]), Buffer.from(encVarint(d.length)), d]);
+                        const payload = lenField(1, lenField(1, Buffer.from(note, 'utf8'))).toString('base64');
+                        await vscode.commands.executeCommand('devin.sendChatActionMessage',
+                            JSON.stringify({ actionType: 'addCascadeInput', payload: [payload] }));
+                    } catch { /* composer indisponible : pas de confirmation */ }
+                }
+                if (kind === 'agy') {
+                    // Confirmation locale : saisie dans le composer, JAMAIS soumise.
+                    const note = `Carte associée : ${node.title || 'bloc'} est rattachée à cette conversation (message local, à supprimer).`;
+                    try {
+                        const cmds = await vscode.commands.getCommands(true);
+                        if (cmds.includes('antigravity.addContext')) {
+                            await vscode.commands.executeCommand('antigravity.addContext', note);
+                        }
+                    } catch { /* composer indisponible : pas de message */ }
+                }
+                for (const edge of graph.edges) {
+                    if (edge.source === oldId) edge.source = newId;
+                    if (edge.target === oldId) edge.target = newId;
+                }
+                graph.edges = graph.edges.filter((edge) => edge.source !== edge.target);
+                if (graph.entrySessionId === oldId) graph.entrySessionId = newId;
+                FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
             return;
         }
 

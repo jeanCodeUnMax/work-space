@@ -1,0 +1,13 @@
+{
+  "id": "auditeur-securite",
+  "kind": "agy",
+  "title": "Auditeur sécurité",
+  "role": "Auditeur-securite",
+  "provider": "antigravity-acp",
+  "sessionId": "",
+  "skills": [
+    "security-auditor",
+    "code-review-checklist"
+  ],
+  "mcps": []
+}

@@ -65,7 +65,7 @@ export const MODES: { id: ChatMode; label: string; desc: string; color: string }
 
 export const ACP_PROVIDERS: { id: string; label: string }[] = [
     // Agents ACP — même registre que devin.acp.enabledAgents
-    { id: 'devin-cli', label: 'Devin CLI' },
+    { id: 'devin-cli', label: 'Devin ACP' },
     { id: 'antigravity-acp', label: 'Antigravity' },
     { id: 'kilo', label: 'KiloCode' },
     { id: 'hermes', label: 'Hermes' },
