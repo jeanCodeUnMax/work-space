@@ -362,7 +362,10 @@ function Workspace(): React.JSX.Element {
     const reloadTool = (v: 'flow' | 'comfyui' | 'n8n') => {
         if (v === 'flow') { vscode.postMessage({ type: 'refresh_state' }); return; }
         setSvcState((s) => ({ ...s, [v]: 'checking' }));
-        vscode.postMessage({ type: 'restart_service', service: v });
+        // ⟳ = recharger la VUE : remontage de l'iframe + connexion à
+        // l'instance déjà démarrée. Jamais de kill/restart du service.
+        setToolReload((s) => ({ ...s, [v]: s[v] + 1 }));
+        vscode.postMessage({ type: 'ensure_service', service: v });
     };
     const [newProvider, setNewProvider] = useState('openrouter');
     const [iconTheme, setIconTheme] = useState('commando');
@@ -384,10 +387,15 @@ function Workspace(): React.JSX.Element {
                 const ok = Boolean((message as { ok?: boolean }).ok);
                 const checking = Boolean((message as { checking?: boolean }).checking);
                 if (checking) { setSvcState((s) => ({ ...s, [svc]: 'checking' })); return; }
-                setSvcState((s) => ({ ...s, [svc]: ok ? 'up' : 'down' }));
-                if (ok && (svc === 'comfyui' || svc === 'n8n')) {
-                    setToolReload((s) => ({ ...s, [svc]: s[svc] + 1 }));
-                }
+                // Remonter l'iframe seulement quand le service revient
+                // d'un état non-up : sinon chaque ping détruit la session.
+                setSvcState((s) => {
+                    const wasUp = s[svc] === 'up';
+                    if (ok && !wasUp && (svc === 'comfyui' || svc === 'n8n')) {
+                        setToolReload((t) => ({ ...t, [svc]: t[svc] + 1 }));
+                    }
+                    return { ...s, [svc]: ok ? 'up' : 'down' };
+                });
             }
             if (message?.type === 'schemas_state') {
                 setSchemas(message.schemas || []);

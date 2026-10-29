@@ -49,35 +49,65 @@ async function waitPort(url: string, tries = 40): Promise<boolean> {
     return false;
 }
 
+/** Vrai si un processus dont la ligne de commande matche `match` est vivant. */
+function processAlive(match: string): boolean {
+    try {
+        const out = child_process.execSync(
+            `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { \\$_.CommandLine -match '${match}' -and \\$_.CommandLine -notmatch 'Get-CimInstance' }).Count"`,
+            { encoding: 'utf8', windowsHide: true, timeout: 8000 });
+        return Number.parseInt(out.trim(), 10) > 0;
+    } catch { return false; }
+}
+
+/**
+ * Un seul démarrage en vol par service : les clics pendant le boot
+ * (~60 s) réutilisent la promesse en cours au lieu de respawner.
+ */
+const serviceStarts = new Map<string, Promise<boolean>>();
+
+async function ensureService(workspaceRoot: string, svc: string): Promise<boolean> {
+    const pending = serviceStarts.get(svc);
+    if (pending) return pending;
+    const run = ensureServiceOnce(workspaceRoot, svc)
+        .finally(() => { serviceStarts.delete(svc); });
+    serviceStarts.set(svc, run);
+    return run;
+}
+
 /**
  * Auto-launch des services embarqués quand l'onglet est ouvert/rechargé :
  * comfyui → :8188 (run_nvidia_gpu.bat), n8n → :5678 (node 24) + proxy :5680.
+ * Jamais de doublon : on ne spawn que si ni le port ni le processus ne répondent.
  */
-async function ensureService(workspaceRoot: string, svc: string): Promise<boolean> {
+async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
     if (svc === 'comfyui') {
         if (await portUp('http://127.0.0.1:8188')) return true;
-        spawnDetached('F:\\ComfyUI_windows_portable\\run_nvidia_gpu.bat', [], 'F:\\ComfyUI_windows_portable', {
-            ...process.env,
-            PYTHONUTF8: '1',
-        });
+        if (!processAlive('ComfyUI')) {
+            spawnDetached('F:\\ComfyUI_windows_portable\\run_nvidia_gpu.bat', [], 'F:\\ComfyUI_windows_portable', {
+                ...process.env,
+                PYTHONUTF8: '1',
+            });
+        }
         return waitPort('http://127.0.0.1:8188', 60);
     }
     if (svc === 'n8n') {
         if (!(await portUp('http://127.0.0.1:5678'))) {
-            const node24 = path.join(os.homedir(), 'AppData', 'Local', 'nvm', 'v24.21.0', 'node.exe');
-            const n8nBin = path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'n8n', 'bin', 'n8n');
-            const env = { ...process.env };
-            delete env.N8N_ENCRYPTION_KEY;
-            // `/api` est manglé en `C:/Program Files/Git/api` quand l'env
-            // transite par Git Bash (MSYS path conversion) — on le supprime :
-            // n8n retombe sur son défaut `/api`.
-            delete env.N8N_PUBLIC_API_ENDPOINT;
-            spawnDetached(node24, [n8nBin, 'start'], workspaceRoot, env);
+            if (!processAlive('bin[\\\\/]n8n')) {
+                const node24 = path.join(os.homedir(), 'AppData', 'Local', 'nvm', 'v24.21.0', 'node.exe');
+                const n8nBin = path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'n8n', 'bin', 'n8n');
+                const env = { ...process.env };
+                delete env.N8N_ENCRYPTION_KEY;
+                // `/api` est manglé en `C:/Program Files/Git/api` quand l'env
+                // transite par Git Bash (MSYS path conversion) — on le supprime :
+                // n8n retombe sur son défaut `/api`.
+                delete env.N8N_PUBLIC_API_ENDPOINT;
+                spawnDetached(node24, [n8nBin, 'start'], workspaceRoot, env);
+            }
             if (!(await waitPort('http://127.0.0.1:5678', 60))) return false;
         }
         if (!(await portUp('http://127.0.0.1:5680'))) {
             const proxy = path.join(workspaceRoot, '.agent', 'scripts', 'n8n-auth-proxy.mjs');
-            if (fs.existsSync(proxy)) {
+            if (fs.existsSync(proxy) && !processAlive('n8n-auth-proxy')) {
                 spawnDetached(process.execPath, [proxy], workspaceRoot, {
                     N8N_EMAIL: process.env.N8N_EMAIL || '',
                     N8N_PASSWORD: process.env.N8N_PASSWORD || '',
