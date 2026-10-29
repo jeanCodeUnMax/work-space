@@ -204,12 +204,14 @@ function buildSendBody(cascadeId, text, planModel) {
 async function sendMessage(hub, cascadeId, text, planModel) {
     const resolvedModel = await resolvePlanModel(hub, cascadeId, planModel);
     const body = buildSendBody(cascadeId, text, resolvedModel);
-    // Focus côté hub (équiv. openCascadeIdInChatPanel) — best effort
-    try {
-        await rpc(hub, 'SetBrowserOpenConversation', {
-            cascadeId, expiresAt: new Date(Date.now() + 3600e3).toISOString()
-        });
-    } catch { /* non bloquant */ }
+    // Focus côté hub (ouvre un panneau de chat) : désactivé par défaut, AGY_FOCUS=1 pour l'activer
+    if (process.env.AGY_FOCUS === '1') {
+        try {
+            await rpc(hub, 'SetBrowserOpenConversation', {
+                cascadeId, expiresAt: new Date(Date.now() + 3600e3).toISOString()
+            });
+        } catch { /* non bloquant */ }
+    }
     const r = await rpc(hub, 'SendUserCascadeMessage', body);
     comms?.log({ src: 'devin', dst: 'agy', kind: 'prompt', text, convId: cascadeId });
     return r;
@@ -267,8 +269,8 @@ async function ask(hub, cascadeId, text, timeoutSec, planModel) {
     await sendMessage(hub, cascadeId, text, planModel);
     const w = await waitIdle(hub, conversationOf(cascadeId), timeoutSec);
     const { replies } = await readReplies(hub, cascadeId, before);
-    for (const rep of replies) {
-        comms?.log({ src: 'agy', dst: 'devin', kind: rep.type === 'error' ? 'error' : 'reply', text: rep.text, convId: cascadeId });
+    for (const rep of replies.filter((r) => r.text)) {
+        comms?.log({ src: 'agy', dst: 'devin', kind: rep.type === 'error' ? 'agent-error' : 'agent-reply', text: rep.text, convId: cascadeId });
     }
     return { timedOut: !!w.timed_out || !!w.timedOut, replies };
 }
