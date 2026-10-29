@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-29T16:28:12.817Z",
+  "updatedAt": "2026-10-29T16:49:59.783Z",
   "core": {
     "devin": [
       {
@@ -24,9 +24,9 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
-        "role": "Binome-ACP",
+        "role": "Orchestrateur",
         "hidden": false,
-        "title": "trusted-comet"
+        "title": "Orchestrateur"
       },
       {
         "providerId": "devin-cli",
@@ -117,40 +117,40 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/pebble-rhubarb",
         "restore": "existing-only",
-        "role": "Devin",
-        "hidden": true,
-        "title": "amber-tide"
+        "role": "Relecteur-Modo",
+        "hidden": false,
+        "title": "Relecteur-Modo"
       },
       {
         "providerId": "antigravity-acp",
         "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
         "restore": "existing-only",
-        "role": "Devin",
-        "title": "ionian-helicopter",
+        "role": "Redacteur",
+        "title": "Redacteur",
         "hidden": false
       },
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/humdrum-cadet",
         "restore": "existing-only",
-        "role": "Devin",
+        "role": "Relecteur",
         "title": "hardy-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim",
         "sessionId": "acp/nim/nim-7b9b96fd",
         "restore": "existing-only",
-        "role": "NVIDIA NIM",
-        "title": "hardy-agent",
-        "hidden": true
+        "role": "Veilleur-Telegram",
+        "title": "Veilleur-Telegram",
+        "hidden": false
       },
       {
         "providerId": "nim",
         "sessionId": "acp/nim/nim-22c94649",
         "restore": "existing-only",
         "role": "Posteur-Telegram",
-        "title": "hardy-agent",
+        "title": "Posteur-Telegram",
         "hidden": false
       }
     ],
@@ -826,34 +826,21 @@
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
-        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
-        "role": "Devin",
-        "task": "Recoit la demande de post Telegram, prepare le message/fichier",
-        "skills": [],
-        "mcps": [],
-        "title": "ionian-helicopter",
-        "position": {
-          "x": 132,
-          "y": -264
-        },
-        "bound": {
-          "at": 1793286361697,
-          "kind": "agy"
-        }
-      },
-      {
         "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Binome-ACP",
-        "task": "",
+        "role": "Orchestrateur",
+        "task": "Entree du flux SWAT Telegram (Devin associe). Recoit la demande, choisit chat/topic/action, dispatche : Veilleur (lecture canal), Redacteur (contenu), Relecteur-Modo (validation + moderation), Posteur (publication n8n). Arbitre GO/NO-GO. Ne poste jamais soi-meme.",
         "skills": [
-          "orchestrator",
-          "reactive-orchestrator"
+          "flux",
+          "jointes",
+          "binome"
         ],
-        "mcps": [],
-        "title": "trusted-comet",
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Orchestrateur",
         "position": {
-          "x": -242,
-          "y": -286
+          "x": -154,
+          "y": 22
         },
         "bound": {
           "at": 1793286378167,
@@ -861,31 +848,65 @@
         }
       },
       {
-        "sessionId": "acp/devin-cli/humdrum-cadet",
-        "role": "Devin",
-        "task": "",
-        "skills": [],
+        "sessionId": "acp/nim/nim-7b9b96fd",
+        "role": "Veilleur-Telegram",
+        "task": "Veille du canal : historique, messages recents, recherche, stats, topics, membres via node .agent/flux/telegram.mjs read|history|search|stats|topics|updates|members|admins --chat <caverne|canal|id>. Ne publie rien : produit des syntheses pour le Redacteur et l Orchestrateur.",
+        "skills": [
+          "cli-anything-telegram"
+        ],
         "mcps": [],
-        "title": "hardy-agent",
+        "title": "Veilleur-Telegram",
         "position": {
-          "x": -242,
-          "y": 44
+          "x": 220,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "role": "Redacteur",
+        "task": "Prepare le post Telegram : redige le texte final, choisit action (send|image|poll|pin|edit), chat cible (caverne|canal|id numerique) et topic si forum. Sortie structuree JSON : {\"action\",\"chat\",\"topic\",\"text\",\"imageUrl\",\"caption\",\"question\",\"options\"}. Transmet au Relecteur-Modo.",
+        "skills": [
+          "redaction",
+          "telegram"
+        ],
+        "mcps": [],
+        "title": "Redacteur",
+        "position": {
+          "x": 330,
+          "y": 308
         },
         "bound": {
-          "at": 1793287143816,
-          "kind": "devin"
+          "at": 1793286361697,
+          "kind": "agy"
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/pebble-rhubarb",
+        "role": "Relecteur-Modo",
+        "task": "Double casquette : (a) valide le brouillon du Redacteur (ton, secrets, donnees personnelles, conformite) -> GO + version finale ou NO-GO + correction ; (b) moderation via telegram.mjs : pin|unpin|delete|edit|topics|members|admins sur demande de l Orchestrateur.",
+        "skills": [
+          "review",
+          "cli-anything-telegram"
+        ],
+        "mcps": [],
+        "title": "Relecteur-Modo",
+        "position": {
+          "x": 580,
+          "y": 300
         }
       },
       {
         "sessionId": "acp/nim/nim-22c94649",
         "role": "Posteur-Telegram",
-        "task": "Posteur terminal du flux. Recoit le message/fichier prepare par l amont et le publie via le hub n8n (SWAT - Telegram Hub) : node .agent/flux/telegram.mjs <action> [--chat X] [--text T] [--imageUrl U] [--caption C] [--topic N] [--reply N]. Webhook direct : POST http://127.0.0.1:5678/webhook/swat-telegram-hub {\"action\",\"chat\",\"text\"...}. Actions : send|image|send-file|pin|unpin|poll|delete|edit|admins|members|stats|chat|topics|history|read|search|updates. chat = caverne|canal ou id numerique (contact prive). Rapporter la sortie exacte au dispatcher.",
-        "skills": [],
+        "task": "Posteur terminal. Recoit le contenu valide (GO du Relecteur-Modo) et publie via le hub n8n : node .agent/flux/telegram.mjs <action> [--chat X] [--text T] [--imageUrl U] [--caption C] [--topic N] [--reply N]. Webhook : POST http://127.0.0.1:5678/webhook/swat-telegram-hub. Actions : send|image|send-file|pin|unpin|poll|delete|edit|admins|members|stats|chat|topics|history|read|search|updates. Si exec impossible, emettre [POST] {\"action\":...} pour que l orchestrateur execute. Rapporter le message id.",
+        "skills": [
+          "cli-anything-telegram"
+        ],
         "mcps": [],
-        "title": "hardy-agent",
+        "title": "Posteur-Telegram",
         "position": {
-          "x": 132,
-          "y": 22
+          "x": 860,
+          "y": 160
         },
         "bound": {
           "at": 1793288415171,
@@ -895,31 +916,38 @@
     ],
     "edges": [
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/devin-cli/humdrum-cadettarget-top",
+        "id": "e1",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/humdrum-cadet",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
-      },
-      {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-left",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "target": "acp/nim/nim-7b9b96fd",
         "sourceHandle": "source-right",
         "targetHandle": "target-left"
       },
       {
-        "id": "xy-edge__acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3source-bottom-chat-b33e6e23-c376-49a9-b82c-e23e0b15c686target-top",
-        "source": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
-        "target": "acp/nim/nim-22c94649",
+        "id": "e3",
+        "source": "acp/nim/nim-7b9b96fd",
+        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
         "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "targetHandle": "target-left"
       },
       {
-        "id": "xy-edge__acp/devin-cli/humdrum-cadetsource-right-chat-b33e6e23-c376-49a9-b82c-e23e0b15c686target-left",
-        "source": "acp/devin-cli/humdrum-cadet",
+        "id": "e4",
+        "source": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "target": "acp/devin-cli/pebble-rhubarb",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "e5",
+        "source": "acp/devin-cli/pebble-rhubarb",
         "target": "acp/nim/nim-22c94649",
         "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-left",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "sourceHandle": "source-bottom",
         "targetHandle": "target-left"
       }
     ],
