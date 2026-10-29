@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-29T15:59:16.163Z",
+  "updatedAt": "2026-10-29T16:28:12.817Z",
   "core": {
     "devin": [
       {
@@ -149,7 +149,7 @@
         "providerId": "nim",
         "sessionId": "acp/nim/nim-22c94649",
         "restore": "existing-only",
-        "role": "NVIDIA NIM",
+        "role": "Posteur-Telegram",
         "title": "hardy-agent",
         "hidden": false
       }
@@ -878,8 +878,8 @@
       },
       {
         "sessionId": "acp/nim/nim-22c94649",
-        "role": "NVIDIA NIM",
-        "task": "",
+        "role": "Posteur-Telegram",
+        "task": "Posteur terminal du flux. Recoit le message/fichier prepare par l amont et le publie via le hub n8n (SWAT - Telegram Hub) : node .agent/flux/telegram.mjs <action> [--chat X] [--text T] [--imageUrl U] [--caption C] [--topic N] [--reply N]. Webhook direct : POST http://127.0.0.1:5678/webhook/swat-telegram-hub {\"action\",\"chat\",\"text\"...}. Actions : send|image|send-file|pin|unpin|poll|delete|edit|admins|members|stats|chat|topics|history|read|search|updates. chat = caverne|canal ou id numerique (contact prive). Rapporter la sortie exacte au dispatcher.",
         "skills": [],
         "mcps": [],
         "title": "hardy-agent",
