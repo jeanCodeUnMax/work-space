@@ -133,10 +133,13 @@ export function createWorkflowView(
         // Couleurs fixes : jaune = Devin ACP, bleu = Antigravity, vert = Bleubite.
         // Une fenêtre attachée (bound) décide ; sinon le provider de la session.
         const boundKind = (node as { bound?: { kind?: string } }).bound?.kind;
-        const tone: 'amber' | 'blue' | 'green' = boundKind === 'agy' ? 'blue'
-            : boundKind === 'devin' ? 'amber'
+        // agy attaché → bleu. Provider de la session ensuite : devin-cli →
+        // jaune, antigravity → bleu, nim/chat/cerberos → vert. Le bound ne
+        // sert que quand le provider est inconnu (carte sans session).
+        const tone: 'amber' | 'blue' | 'green' =
+            boundKind === 'agy' || provider === 'antigravity-acp' || provider === 'agy' ? 'blue'
                 : provider === 'devin-cli' ? 'amber'
-                    : provider === 'antigravity-acp' || provider === 'agy' ? 'blue'
+                    : provider === 'unknown' && boundKind === 'devin' ? 'amber'
                         : 'green';
         const slug = node.sessionId.split('/').pop() || node.sessionId;
         return {
