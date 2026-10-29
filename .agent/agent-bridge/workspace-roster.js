@@ -92,6 +92,7 @@ function validateWorkflow(input) {
             mcps,
             title: String(raw.title || '').slice(0, 200),
             position: { x, y },
+            ...(raw.bound && typeof raw.bound === 'object' ? { bound: { at: Number(raw.bound.at) || Date.now(), kind: String(raw.bound.kind || '').slice(0, 20) } } : {}),
         });
     }
 

@@ -6,6 +6,7 @@ export interface WorkflowPosition {
 }
 
 export interface WorkflowNode {
+    bound?: { at: number; kind: string };
     sessionId: string;
     role: string;
     task: string;
@@ -32,6 +33,7 @@ export interface WorkflowCatalog {
     mcps?: string[];
     providers: { id: string; label: string }[];
     agents?: PaletteAgent[];
+    cards?: { id: string; kind: 'devin' | 'agy' | 'bleubite'; title: string; role: string; provider: string; sessionId?: string; skills?: string[]; mcps?: string[] }[];
 }
 
 export interface WorkflowEdge {
@@ -68,6 +70,7 @@ export interface WorkflowViewNode extends WorkflowNode {
         mcps: string[];
         external: boolean;
         isEntry: boolean;
+        bound?: { at: number; kind: string };
         tone: 'amber' | 'blue' | 'green';
     };
 }
@@ -127,9 +130,14 @@ export function createWorkflowView(
         const provider = session?.provider
             || (node.sessionId.startsWith('acp/') ? node.sessionId.split('/')[1] : null)
             || (node.sessionId.startsWith('local-') ? 'cerberos' : 'unknown');
-        const tone = provider === 'devin-cli' ? 'amber'
-            : provider === 'antigravity-acp' ? 'blue'
-                : 'green';
+        // Couleurs fixes : jaune = Devin ACP, bleu = Antigravity, vert = Bleubite.
+        // Une fenêtre attachée (bound) décide ; sinon le provider de la session.
+        const boundKind = (node as { bound?: { kind?: string } }).bound?.kind;
+        const tone: 'amber' | 'blue' | 'green' = boundKind === 'agy' ? 'blue'
+            : boundKind === 'devin' ? 'amber'
+                : provider === 'devin-cli' ? 'amber'
+                    : provider === 'antigravity-acp' || provider === 'agy' ? 'blue'
+                        : 'green';
         const slug = node.sessionId.split('/').pop() || node.sessionId;
         return {
             ...node,
@@ -143,6 +151,7 @@ export function createWorkflowView(
                 role: node.role,
                 task: node.task,
                 skills: node.skills || [],
+                bound: node.bound,
                 mcps: node.mcps || [],
                 external,
                 isEntry: node.sessionId === entrySessionId,

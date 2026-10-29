@@ -1,0 +1,15 @@
+{
+  "id": "orchestrateur",
+  "kind": "devin",
+  "title": "Orchestrateur",
+  "role": "Orchestrateur",
+  "provider": "devin-cli",
+  "sessionId": "",
+  "skills": [
+    "orchestrator",
+    "flux"
+  ],
+  "mcps": [
+    "hphe"
+  ]
+}

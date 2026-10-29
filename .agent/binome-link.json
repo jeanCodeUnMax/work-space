@@ -1,0 +1,13 @@
+{
+  "note": "Liaison de session : referent qui recoit les reponses des agents. Etablie par l'utilisateur, a rétablir par session/projet/SWAT.",
+  "referent": {
+    "providerId": "agy",
+    "sessionId": "7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+    "label": "IDE Integrated Browser Features"
+  },
+  "peer": {
+    "providerId": "agy",
+    "cascadeId": "2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+    "label": "Adding New Plugins In Antigravity (Tango)"
+  }
+}

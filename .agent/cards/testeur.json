@@ -1,0 +1,12 @@
+{
+  "id": "testeur",
+  "kind": "agy",
+  "title": "Testeur",
+  "role": "Testeur",
+  "provider": "antigravity-acp",
+  "sessionId": "",
+  "skills": [
+    "testing-specialist"
+  ],
+  "mcps": []
+}

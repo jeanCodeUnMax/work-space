@@ -697,17 +697,10 @@ function Invoke-Snapshot {
   if ($null -ne $acpSummary) { $summary.acpProviders = $acpSummary }
   Write-Log -Level 'info' -Category 'snapshot' -Details $summary
 
-  if ($script:PendingWakeNotes.Count -gt 0 -and $agyHub -eq 'connected' -and $AgyCascadeId) {
-    $wakeText = "[WATCHDOG -> TANGO] " + ($script:PendingWakeNotes -join ' | ') + " (inProgress=$($inProgress.Count), pending=$($pending.Count))"
-    try {
-      Invoke-NodeText -ScriptPath $script:AgyHelper -NodeArgs @(
-        'send', $AgyCascadeId, '--model', $AgyModel, $wakeText
-      ) | Out-Null
-      $script:State.lastAgyWakeAt = $now.ToString('o')
-      Write-Log -Level 'info' -Category 'agy_wake_sent' -Details @{ cascadeId = $AgyCascadeId; notes = @($script:PendingWakeNotes) }
-    } catch {
-      Write-Log -Level 'error' -Category 'agy_wake_failed' -Details @{ cascadeId = $AgyCascadeId }
-    }
+  # Passif : le watchdog observe et journalise, il n'envoie JAMAIS de message
+  # à un modèle (un envoi consomme le quota et peut changer le modèle de la fenêtre).
+  if ($script:PendingWakeNotes.Count -gt 0) {
+    Write-Log -Level 'info' -Category 'watch_notes' -Details @{ notes = @($script:PendingWakeNotes); inProgress = $inProgress.Count; pending = $pending.Count }
   }
 
   foreach ($key in @($script:State.alerts.Keys)) {

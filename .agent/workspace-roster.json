@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-28T22:54:54.480Z",
+  "updatedAt": "2026-10-29T15:59:16.163Z",
   "core": {
     "devin": [
       {
@@ -24,9 +24,9 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
-        "role": "Orchestrateur",
+        "role": "Binome-ACP",
         "hidden": false,
-        "title": "ionian-helicopter"
+        "title": "trusted-comet"
       },
       {
         "providerId": "devin-cli",
@@ -95,7 +95,7 @@
         "restore": "existing-only",
         "role": "Comfy-Inventaire",
         "title": "comfy-inventory",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
@@ -103,7 +103,7 @@
         "restore": "existing-only",
         "role": "Comfy-Verificateur",
         "title": "comfy-verify",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "antigravity-acp",
@@ -111,6 +111,46 @@
         "restore": "existing-only",
         "role": "Antigravity-Tango",
         "title": "Tango (Antigravity)",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/pebble-rhubarb",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true,
+        "title": "amber-tide"
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "restore": "existing-only",
+        "role": "Devin",
+        "title": "ionian-helicopter",
+        "hidden": false
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/humdrum-cadet",
+        "restore": "existing-only",
+        "role": "Devin",
+        "title": "hardy-agent",
+        "hidden": false
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "acp/nim/nim-7b9b96fd",
+        "restore": "existing-only",
+        "role": "NVIDIA NIM",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "acp/nim/nim-22c94649",
+        "restore": "existing-only",
+        "role": "NVIDIA NIM",
+        "title": "hardy-agent",
         "hidden": false
       }
     ],
@@ -369,7 +409,84 @@
         "model": "groq/openai/gpt-oss-120b",
         "role": "OmniRoute",
         "title": "hardy-agent",
-        "hidden": false
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-architecte-mvtahr6f",
+        "restore": "open-or-reveal",
+        "role": "Antigravity-Tango",
+        "title": "Architecte",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-05992cca-4d7b-4947-927e-1443b3209709",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "trusted-comet",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-227ae762-4302-4d76-b165-ca6f01eb8238",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "mighty-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbp5gb",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "ionian-helicopter",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbpvxc",
+        "restore": "open-or-reveal",
+        "role": "Antigravity-Tango",
+        "title": "Architecte",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbqehr",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "mighty-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-743d1cf0-ab2d-4948-a64c-a12a6eeb8282",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "amber-tide",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-703a5a8d-6dcc-4bfd-b075-a9e662bef337",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-b33e6e23-c376-49a9-b82c-e23e0b15c686",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM",
+        "title": "hardy-agent",
+        "hidden": true
       }
     ],
     "antigravity": [
@@ -705,101 +822,109 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-comfyui-models",
+    "name": "flux-telegram",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur",
-        "task": "Supervise la consolidation modeles ComfyUI",
-        "skills": [
-          "orchestrator"
-        ],
+        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "role": "Devin",
+        "task": "Recoit la demande de post Telegram, prepare le message/fichier",
+        "skills": [],
         "mcps": [],
         "title": "ionian-helicopter",
         "position": {
-          "x": -528,
-          "y": -374
+          "x": 132,
+          "y": -264
+        },
+        "bound": {
+          "at": 1793286361697,
+          "kind": "agy"
         }
       },
       {
-        "sessionId": "acp/devin-cli/river-bougon",
-        "role": "Comfy-Inventaire",
-        "task": "Inventorie les modeles ComfyUI (safetensors/ckpt/pt/gguf) sur C:E:F:G:, detecte doublons, propose plan de consolidation",
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Binome-ACP",
+        "task": "",
         "skills": [
-          "data-specialist"
-        ],
-        "mcps": [],
-        "title": "comfy-inventory",
-        "position": {
-          "x": -220,
-          "y": -374
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/axiomatic-path",
-        "role": "Comfy-Verificateur",
-        "task": "Verifie que chaque modele consolide est visible par ComfyUI F:/ComfyUI_windows_portable/ComfyUI/models et chargeable",
-        "skills": [
-          "testing-specialist"
-        ],
-        "mcps": [],
-        "title": "comfy-verify",
-        "position": {
-          "x": 88,
-          "y": -374
-        }
-      },
-      {
-        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "role": "Antigravity-Tango",
-        "task": "Binome souverain Tango — Assistance technique, developpement et arbitrage de mission",
-        "skills": [
-          "antigravity-obsidian",
-          "binome",
-          "jointes",
           "orchestrator",
-          "clean-code"
+          "reactive-orchestrator"
         ],
         "mcps": [],
-        "title": "Tango (Antigravity)",
+        "title": "trusted-comet",
         "position": {
-          "x": -220,
-          "y": -154
+          "x": -242,
+          "y": -286
+        },
+        "bound": {
+          "at": 1793286378167,
+          "kind": "devin"
         }
       },
       {
-        "sessionId": "chat-025fa1a3-deb7-466d-8db0-ab14b6325096",
-        "role": "OmniRoute",
+        "sessionId": "acp/devin-cli/humdrum-cadet",
+        "role": "Devin",
         "task": "",
         "skills": [],
         "mcps": [],
         "title": "hardy-agent",
         "position": {
-          "x": 88,
-          "y": -154
+          "x": -242,
+          "y": 44
+        },
+        "bound": {
+          "at": 1793287143816,
+          "kind": "devin"
+        }
+      },
+      {
+        "sessionId": "acp/nim/nim-22c94649",
+        "role": "NVIDIA NIM",
+        "task": "",
+        "skills": [],
+        "mcps": [],
+        "title": "hardy-agent",
+        "position": {
+          "x": 132,
+          "y": 22
+        },
+        "bound": {
+          "at": 1793288415171,
+          "kind": "devin"
         }
       }
     ],
     "edges": [
       {
-        "id": "e1",
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/devin-cli/humdrum-cadettarget-top",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/river-bougon"
+        "target": "acp/devin-cli/humdrum-cadet",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       },
       {
-        "id": "e2",
-        "source": "acp/devin-cli/river-bougon",
-        "target": "acp/devin-cli/axiomatic-path"
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-left",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
       },
       {
-        "id": "e3",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e"
+        "id": "xy-edge__acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3source-bottom-chat-b33e6e23-c376-49a9-b82c-e23e0b15c686target-top",
+        "source": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "target": "acp/nim/nim-22c94649",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/humdrum-cadetsource-right-chat-b33e6e23-c376-49a9-b82c-e23e0b15c686target-left",
+        "source": "acp/devin-cli/humdrum-cadet",
+        "target": "acp/nim/nim-22c94649",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
       }
     ],
-    "activeSchema": "swat-comfyui-models",
-    "activeSchemaId": "swat-comfy-1793149930506"
+    "activeSchema": "flux-telegram",
+    "activeSchemaId": "schema-mvr09niq-8yor8"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }
