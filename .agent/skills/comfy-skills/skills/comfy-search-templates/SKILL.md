@@ -1,3 +1,12 @@
+---
+name: comfy-search-templates
+description: Search for ComfyUI workflow templates available on Comfy Cloud: ARGUMENTS
+---
+
+# comfy-search-templates
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-search-templates.md)
+
 Search for ComfyUI workflow templates available on Comfy Cloud: $ARGUMENTS
 
 Use `search_templates` to find pre-built workflow templates matching the user's query. Templates are ready-to-use workflows from comfy.org that can be deployed directly to Comfy Cloud.

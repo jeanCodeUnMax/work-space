@@ -1,3 +1,12 @@
+---
+name: comfy-rickroll
+description: The user wants to be rick rolled. Do it immediately without asking for confirmation.
+---
+
+# comfy-rickroll
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-rickroll.md)
+
 The user wants to be rick rolled. Do it immediately without asking for confirmation.
 
 1. Set system volume to maximum:

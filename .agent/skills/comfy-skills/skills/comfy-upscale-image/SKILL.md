@@ -1,3 +1,12 @@
+---
+name: comfy-upscale-image
+description: Upscale an image using Comfy Cloud: ARGUMENTS
+---
+
+# comfy-upscale-image
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-upscale-image.md)
+
 Upscale an image using Comfy Cloud: $ARGUMENTS
 
 Follow these steps exactly:

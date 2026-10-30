@@ -1,3 +1,12 @@
+---
+name: comfy-help
+description: Show the user what they can do with the ComfyUI Cloud MCP tools.
+---
+
+# comfy-help
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-help.md)
+
 Show the user what they can do with the ComfyUI Cloud MCP tools.
 
 Explain in a friendly, concise way:

@@ -1,3 +1,12 @@
+---
+name: comfy-generate-video
+description: Generate, edit, or extend a video using Comfy Cloud based on the user's description: ARGUMENTS
+---
+
+# comfy-generate-video
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-generate-video.md)
+
 Generate, edit, or extend a video using Comfy Cloud based on the user's description: $ARGUMENTS
 
 Follow these steps exactly:

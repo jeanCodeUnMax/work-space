@@ -1,3 +1,12 @@
+---
+name: comfy-remove-background
+description: Remove the background from an image using Comfy Cloud: ARGUMENTS
+---
+
+# comfy-remove-background
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-remove-background.md)
+
 Remove the background from an image using Comfy Cloud: $ARGUMENTS
 
 Follow these steps exactly:

@@ -1,3 +1,12 @@
+---
+name: comfy-search-models
+description: Search for ComfyUI models available on Comfy Cloud: ARGUMENTS
+---
+
+# comfy-search-models
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-search-models.md)
+
 Search for ComfyUI models available on Comfy Cloud: $ARGUMENTS
 
 Use `search_models` to find models matching the user's query. If they didn't specify filters, search by text. If they mentioned a type (checkpoint, lora, vae, controlnet, upscaler), filter by type. If they mentioned a base model (SD 1.5, SDXL, Flux), filter by base_model.

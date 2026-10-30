@@ -1,3 +1,12 @@
+---
+name: comfy-generate-3d
+description: Generate a 3D model using Comfy Cloud based on the user's description: ARGUMENTS
+---
+
+# comfy-generate-3d
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-generate-3d.md)
+
 Generate a 3D model using Comfy Cloud based on the user's description: $ARGUMENTS
 
 Approach: prefer a ready-made template over hand-building, and discover the current options with the tools rather than assuming a fixed catalog. Model, node, and template availability changes over time, so let the tools tell you what exists right now.

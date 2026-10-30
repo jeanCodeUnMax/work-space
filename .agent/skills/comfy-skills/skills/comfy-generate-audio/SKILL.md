@@ -1,3 +1,12 @@
+---
+name: comfy-generate-audio
+description: Generate audio using Comfy Cloud based on the user's description: ARGUMENTS
+---
+
+# comfy-generate-audio
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-generate-audio.md)
+
 Generate audio using Comfy Cloud based on the user's description: $ARGUMENTS
 
 Follow these steps exactly:
