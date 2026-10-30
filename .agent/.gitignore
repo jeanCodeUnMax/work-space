@@ -13,3 +13,9 @@ logs/
 **/.beacon-offset-state.json.lock
 queue/
 agent-bridge/local-paths.json
+
+# ---- Secrets / runtime locaux — JAMAIS versionnes ----
+handoff/
+comms.json
+mail-accounts.json
+n8n-env.json
