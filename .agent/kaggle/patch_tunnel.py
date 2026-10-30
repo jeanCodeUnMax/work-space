@@ -24,7 +24,28 @@ CREDS = os.path.expanduser('~/.cloudflared/' + tunnel_id + '.json')
 creds_raw = open(CREDS, encoding='utf-8').read().strip()
 hostname = os.environ.get('CF_HOSTNAME', '')
 if not hostname:
-    sys.exit('CF_HOSTNAME absent — définis le hostname du tunnel (ex. comfy.tondomaine.fr).')
+    # 1) derive des routes DNS du tunnel resolu
+    try:
+        import re as _re
+        r = subprocess.run(['cloudflared', 'tunnel', 'route', 'dns'], capture_output=True, text=True, timeout=30)
+        for ln in (r.stdout or '').splitlines():
+            if tunnel_id in ln:
+                m = _re.search(r'([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', ln)
+                if m:
+                    hostname = m.group(1); break
+    except Exception:
+        pass
+if not hostname:
+    # 2) fallback fichier local (gitignore) : {"hostname": "..."}
+    _tl = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tunnel.local.json')
+    if os.path.exists(_tl):
+        try:
+            hostname = json.load(open(_tl, encoding='utf-8')).get('hostname', '')
+        except Exception:
+            pass
+if not hostname:
+    sys.exit('Hostname introuvable : CF_HOSTNAME, route DNS du tunnel ou tunnel.local.json requis.')
+
 tok = os.environ.get('KAGGLE_COMFY_TOKEN', '')
 
 nb = json.load(open(NB, encoding='utf-8'))

@@ -23,3 +23,4 @@ n8n-env.json
 # Artefacts générés au push — contiennent les creds réelles injectées.
 kaggle/push-tmp.ipynb
 kaggle-hunyuan3d/push-tmp.ipynb
+kaggle/tunnel.local.json
