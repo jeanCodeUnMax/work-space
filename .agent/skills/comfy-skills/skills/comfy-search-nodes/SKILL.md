@@ -1,3 +1,12 @@
+---
+name: comfy-search-nodes
+description: Search for ComfyUI nodes available on Comfy Cloud: ARGUMENTS
+---
+
+# comfy-search-nodes
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-search-nodes.md)
+
 Search for ComfyUI nodes available on Comfy Cloud: $ARGUMENTS
 
 Use `search_nodes` to find nodes matching the user's query. If they asked about a category (image processing, sampling, conditioning), filter by category. If they asked about I/O types (IMAGE, LATENT, MODEL), filter by input_type or output_type.

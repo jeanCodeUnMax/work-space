@@ -1,3 +1,12 @@
+---
+name: technique-combine-people
+description: Combine a user's photo with another person (real or fictional) into a single composite image: ARGUMENTS
+---
+
+# technique-combine-people
+
+> Source officielle : Comfy-Org/comfy-skills (skills/technique-combine-people.md)
+
 Combine a user's photo with another person (real or fictional) into a single composite image: $ARGUMENTS
 
 Follow these steps exactly:

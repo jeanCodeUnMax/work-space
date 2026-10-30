@@ -1,3 +1,12 @@
+---
+name: technique-consistent-characters
+description: Keep one or more specific characters visually consistent across multiple shots or scenes (images or video) using reference images: ARGUMENTS
+---
+
+# technique-consistent-characters
+
+> Source officielle : Comfy-Org/comfy-skills (skills/technique-consistent-characters.md)
+
 Keep one or more specific characters visually consistent across multiple shots or scenes (images or video) using reference images: $ARGUMENTS
 
 Follow these steps exactly:

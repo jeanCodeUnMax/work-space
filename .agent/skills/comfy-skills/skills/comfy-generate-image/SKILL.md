@@ -1,3 +1,12 @@
+---
+name: comfy-generate-image
+description: Generate, edit, or modify an image using Comfy Cloud based on the user's description: ARGUMENTS
+---
+
+# comfy-generate-image
+
+> Source officielle : Comfy-Org/comfy-skills (skills/comfy-generate-image.md)
+
 Generate, edit, or modify an image using Comfy Cloud based on the user's description: $ARGUMENTS
 
 Follow these steps exactly:
