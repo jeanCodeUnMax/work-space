@@ -1,0 +1,24 @@
+{
+  "profile": "video",
+  "description": "LTX-Video txt2video + img2video (leger, rapide sur T4) + Wan2.1-1.3B en alternatif",
+  "checkpoints": {},
+  "loras": {},
+  "custom_nodes": [
+    "https://github.com/Lightricks/ComfyUI-LTXVideo"
+  ],
+  "models_extra": {
+    "ltxv": {
+      "dir": "checkpoints",
+      "files": {
+        "ltxv-2b-0.9.8.safetensors": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-2b-0.9.8.safetensors"
+      }
+    },
+    "wan21_alt": {
+      "dir": "diffusion_models",
+      "files": {
+        "wan2.1_t2v_1.3B_fp16.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors"
+      },
+      "comment": "alternatif lent mais qualite - clip/vae requis en plus (voir docs LTXV vs Wan)"
+    }
+  }
+}

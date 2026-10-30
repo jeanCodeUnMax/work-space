@@ -63,12 +63,18 @@ print('cells patchees:', n)
 
 # push-tmp : injection DANS les sources des cellules — les quotes des creds
 # sont échappées par json.dump, jamais collées en brut dans le JSON sérialisé.
+_prof = os.environ.get('CF_PROFILE', 'sdxl')
+_mpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'manifests', _prof + '.json')
+_manifest = json.dumps(json.load(open(_mpath, encoding='utf-8')), ensure_ascii=False) if os.path.exists(_mpath) else '{}'
+print('profile:', _prof, '| manifest', len(_manifest), 'chars')
+
 repl = {
     '__KAGGLE_COMFY_TOKEN__': tok,
     '__MAROTTE_TUNNEL_TOKEN__': '',
     '__CF_CREDS_JSON__': creds_raw,
     '__CF_TUNNEL_ID__': tunnel_id,
     '__CF_HOSTNAME__': hostname,
+    '__MANIFEST_JSON__': _manifest,
 }
 remaining = {k: 0 for k in repl}
 for c in nb['cells']:
