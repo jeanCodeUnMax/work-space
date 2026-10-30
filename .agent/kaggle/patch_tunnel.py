@@ -2,14 +2,26 @@ import json, os, glob, sys
 
 NB = r'C:\Program Files\Projet-complet\hephaistos2-kit\.agent\kaggle\comfyui-kaggle.ipynb'
 
-# Creds tunnel nommé : ~/.cloudflared/<TunnelID>.json — l'ID est lu DANS le
-# json lui-même, jamais en dur ici. Hostname : CF_HOSTNAME (env) obligatoire.
-creds_files = glob.glob(os.path.expanduser(r'~\.cloudflared\*.json'))
-if not creds_files:
-    sys.exit('Aucun ~/.cloudflared/<id>.json — crée le tunnel nommé d\'abord (cloudflared tunnel create).')
-CREDS = creds_files[0]
+# Creds du tunnel dédié CF_TUNNEL_NAME (défaut 'comfi') : résolu via
+# `cloudflared tunnel list -o json` -> ~/.cloudflared/<TunnelID>.json.
+import subprocess
+tname = os.environ.get('CF_TUNNEL_NAME', 'comfi')
+tunnel_id = None
+try:
+    out = subprocess.check_output(['cloudflared', 'tunnel', 'list', '-o', 'json'], text=True, timeout=15)
+    for t in json.loads(out):
+        if t.get('name') == tname:
+            tunnel_id = t.get('id'); break
+except Exception:
+    pass
+if not tunnel_id:
+    cands = glob.glob(os.path.expanduser(r'~\.cloudflared\*.json'))
+    if len(cands) == 1:
+        tunnel_id = json.loads(open(cands[0]).read()).get('TunnelID')
+if not tunnel_id:
+    sys.exit(f'Tunnel "{tname}" introuvable - cloudflared tunnel create {tname} puis route dns {tname} <host>.')
+CREDS = os.path.expanduser('~/.cloudflared/' + tunnel_id + '.json')
 creds_raw = open(CREDS, encoding='utf-8').read().strip()
-tunnel_id = json.loads(creds_raw).get('TunnelID') or os.path.splitext(os.path.basename(CREDS))[0]
 hostname = os.environ.get('CF_HOSTNAME', '')
 if not hostname:
     sys.exit('CF_HOSTNAME absent — définis le hostname du tunnel (ex. comfy.tondomaine.fr).')
