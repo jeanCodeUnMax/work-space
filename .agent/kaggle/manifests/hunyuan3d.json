@@ -1,0 +1,14 @@
+{
+  "profile": "hunyuan3d",
+  "description": "Hunyuan3D-2 image-to-3D + texture - necessite les custom nodes Hunyuan3DWrapper",
+  "checkpoints": {
+    "RealVisXL_V5.0_fp16.safetensors": "https://huggingface.co/SG161222/RealVisXL_V5.0/resolve/main/RealVisXL_V5.0_fp16.safetensors"
+  },
+  "loras": {},
+  "custom_nodes": [
+    "https://github.com/Tencent/Comfyui-Hunyuan3d-2-1"
+  ],
+  "models_extra": {
+    "note": "les poids Hunyuan3D-2 sont telecharges par le wrapper au premier usage via hf_hub_download"
+  }
+}
