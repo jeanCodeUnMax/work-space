@@ -89,3 +89,29 @@ for c in nb['cells']:
 json.dump(nb, open(r'C:\Program Files\Projet-complet\hephaistos2-kit\.agent\kaggle\push-tmp.ipynb', 'w', encoding='utf-8'), indent=1)
 print('placeholders restants:', remaining)
 print('tunnel:', tunnel_id, '| host:', hostname)
+
+# --- PUSH + ATTENTE (bouton Run Kaggle -> tout automatique) ---
+import subprocess as _sp, time as _time, os as _os, sys as _sys
+_push = _os.environ.get('KAGGLE_AUTOPUSH', '1') != '0'
+if _push:
+    print('push kernel...')
+    r = _sp.run(['kaggle', 'kernels', 'push'], cwd=_os.path.dirname(_os.path.abspath(__file__)),
+                capture_output=True, text=True)
+    print((r.stdout or r.stderr).strip()[:400])
+    if r.returncode == 0 and _os.environ.get('KAGGLE_NOWAIT', '0') != '1':
+        print('attente tunnel', hostname, '(max ~12 min: clone+deps+modeles+boot)...')
+        _deadline = _time.time() + 720
+        _code = '000'
+        while _time.time() < _deadline:
+            try:
+                r2 = _sp.run(['curl', '-s', '-m', '15', '-o', 'nul', '-w', '%{http_code}',
+                              'https://' + hostname + '/'], capture_output=True, text=True)
+                _code = (r2.stdout or '000').strip()
+            except Exception:
+                pass
+            if _code == '200':
+                break
+            _time.sleep(20)
+        print('endpoint', hostname, '->', _code)
+        if _code != '200':
+            print('TIMEOUT: le kernel boote encore - verifier https://www.kaggle.com/code/lascardm/comfyui-batch-gpu')
