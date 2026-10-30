@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-29T16:49:59.783Z",
+  "updatedAt": "2026-10-29T18:31:01.652Z",
   "core": {
     "devin": [
       {
@@ -26,7 +26,7 @@
         "restore": "existing-only",
         "role": "Orchestrateur",
         "hidden": false,
-        "title": "Orchestrateur"
+        "title": "daring-agent"
       },
       {
         "providerId": "devin-cli",
@@ -127,7 +127,7 @@
         "restore": "existing-only",
         "role": "Redacteur",
         "title": "Redacteur",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
@@ -152,6 +152,22 @@
         "role": "Posteur-Telegram",
         "title": "Posteur-Telegram",
         "hidden": false
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/booming-game",
+        "restore": "existing-only",
+        "role": "Integrateur-Git",
+        "title": "sugary-shoemaker",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/slow-walnut",
+        "restore": "existing-only",
+        "role": "Redacteur",
+        "title": "Redacteur",
+        "hidden": false
       }
     ],
     "cerberos": [
@@ -167,7 +183,7 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Creds-Auditeur",
+        "role": "Codeur",
         "hidden": true,
         "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
@@ -185,7 +201,7 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Comfy-Inventaire",
+        "role": "Auditeur-securite",
         "hidden": true,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
@@ -194,7 +210,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
-        "role": "Creds-Archiviste",
+        "role": "Sentinelle",
         "hidden": true,
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         "title": "keen-agent"
@@ -203,7 +219,7 @@
         "providerId": "nim",
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Comfy-Verificateur",
+        "role": "Verif-Submodules",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-bolt-e4b",
         "title": "xenial-agent"
@@ -242,7 +258,7 @@
         "role": "Feedback-Beacon-Knowledge",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "beacon-agent"
+        "title": "onyx-agent"
       },
       {
         "providerId": "nim2",
@@ -383,24 +399,27 @@
         "sessionId": "chat-hermes-anim",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "NVIDIA NIM 2",
-        "hidden": true
+        "role": "Hermes-Animateur",
+        "hidden": true,
+        "title": "hermes-animateur"
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-hermes-arch",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "NVIDIA NIM 2",
-        "hidden": true
+        "role": "Hermes-Archiviste",
+        "hidden": true,
+        "title": "hermes-archiviste"
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-hermes-mod",
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "role": "NVIDIA NIM 2",
-        "hidden": true
+        "role": "Hermes-Moderateur",
+        "hidden": true,
+        "title": "hermes-moderateur"
       },
       {
         "providerId": "omniroute",
@@ -487,6 +506,93 @@
         "role": "NVIDIA NIM",
         "title": "hardy-agent",
         "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-df34581e-9652-4069-9c76-cf309c2f0586",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "warm-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-63b4fed9-370b-4e0d-9743-114d19d97e97",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-d3d5f458-b208-48ba-9d59-d2a7d7b3440a",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "jolly-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-ebec625e-2d2b-4194-883b-46d1cff4cd2b",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM",
+        "title": "gentle-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-3e680e09-8587-4a3c-9e54-f59f09c39187",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Antigravity",
+        "title": "hardy-ember",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvk6pl",
+        "restore": "open-or-reveal",
+        "role": "Codeur",
+        "title": "jolly-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-6aebbfd4-aee1-4904-a5e2-05081899de90",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Antigravity",
+        "title": "lunar-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-3a971008-c75f-4a54-a8ce-8ece3fb465ca",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "Antigravity",
+        "title": "rapid-tide",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvpb8k",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur",
+        "title": "daring-agent",
+        "hidden": false
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvpu1g",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "rapid-tide",
+        "hidden": false
       }
     ],
     "antigravity": [
@@ -837,13 +943,13 @@
         "mcps": [
           "Hephaistos-everything-search"
         ],
-        "title": "Orchestrateur",
+        "title": "daring-agent",
         "position": {
           "x": -154,
           "y": 22
         },
         "bound": {
-          "at": 1793286378167,
+          "at": 1793298655060,
           "kind": "devin"
         }
       },
@@ -862,7 +968,7 @@
         }
       },
       {
-        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "sessionId": "acp/devin-cli/slow-walnut",
         "role": "Redacteur",
         "task": "Prepare le post Telegram : redige le texte final, choisit action (send|image|poll|pin|edit), chat cible (caverne|canal|id numerique) et topic si forum. Sortie structuree JSON : {\"action\",\"chat\",\"topic\",\"text\",\"imageUrl\",\"caption\",\"question\",\"options\"}. Transmet au Relecteur-Modo.",
         "skills": [
@@ -872,12 +978,12 @@
         "mcps": [],
         "title": "Redacteur",
         "position": {
-          "x": 330,
-          "y": 308
+          "x": 198,
+          "y": 330
         },
         "bound": {
-          "at": 1793286361697,
-          "kind": "agy"
+          "at": 1793298552769,
+          "kind": "devin"
         }
       },
       {
@@ -891,8 +997,8 @@
         "mcps": [],
         "title": "Relecteur-Modo",
         "position": {
-          "x": 580,
-          "y": 300
+          "x": 528,
+          "y": 264
         }
       },
       {
@@ -923,20 +1029,6 @@
         "targetHandle": "target-left"
       },
       {
-        "id": "e3",
-        "source": "acp/nim/nim-7b9b96fd",
-        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-left"
-      },
-      {
-        "id": "e4",
-        "source": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
-        "target": "acp/devin-cli/pebble-rhubarb",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
-      },
-      {
         "id": "e5",
         "source": "acp/devin-cli/pebble-rhubarb",
         "target": "acp/nim/nim-22c94649",
@@ -946,8 +1038,22 @@
       {
         "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-left",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "target": "acp/devin-cli/slow-walnut",
         "sourceHandle": "source-bottom",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__acp/nim/nim-7b9b96fdsource-bottom-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-top",
+        "source": "acp/nim/nim-7b9b96fd",
+        "target": "acp/devin-cli/slow-walnut",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "xy-edge__acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3source-right-acp/devin-cli/pebble-rhubarbtarget-left",
+        "source": "acp/devin-cli/slow-walnut",
+        "target": "acp/devin-cli/pebble-rhubarb",
+        "sourceHandle": "source-right",
         "targetHandle": "target-left"
       }
     ],
