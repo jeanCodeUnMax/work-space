@@ -30,13 +30,16 @@ async function portUp(url: string, ms = 2500): Promise<boolean> {
 }
 
 function spawnDetached(cmd: string, args: string[], cwd?: string, extraEnv?: NodeJS.ProcessEnv): void {
+    const isScript = /\.(bat|cmd)$/i.test(cmd);
     const child = child_process.spawn(cmd, args, {
         cwd,
         detached: true,
         stdio: 'ignore',
-        env: { ...process.env, ...extraEnv },
+        // ELECTRON_RUN_AS_NODE : process.execPath pointe le binaire Electron de
+        // l'IDE — sans ce flag, il ne peut pas exécuter les .mjs des proxies.
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', ...extraEnv },
         windowsHide: true,
-        shell: cmd.toLowerCase().endsWith('.bat'),
+        shell: isScript,
     });
     child.unref();
 }
