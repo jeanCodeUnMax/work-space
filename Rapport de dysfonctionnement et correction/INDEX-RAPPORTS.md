@@ -26,6 +26,8 @@ Periode couverte : nuit 18-19/10/2026.
 | 18 | persistance positions React Flow schemas | transverse | webview workspace.tsx, workflowStore | Moyenne | Documente |
 | 19 | Herald OS : canal prive tunnel SSH absent | transverse | canal prive herald-os | Moyenne | Documente |
 | 20 | Run SWAT analyse : bug parsing `devin-hub send` (filtre --as avale args[0]), `ping` global sur cascades ACP (focus hijack + ping d'agent occupe), `fs_write` Bleubite backslashes doubles hors workspace, NIM 503, statut `acp-missing` trompeur | #735-#740 | agent-bridge/devin-hub.js, workspace-roster.js ping, acp-inject, fs_write worker | Moyenne (bug livraison reel + pieges d'usage) | Partiellement corrige (devin-hub fixe) + documente |
+| 21 | Onglet ComfyUI vide : `403` ComfyUI `origin_only_middleware` sur `Sec-Fetch-Site: cross-site` envoye par l'iframe webview (curl 200 / iframe 403) ; WS proxy casse (Host duplique), proxy jamais lance si :8188 up, launcher absent du PATH | hephaistos2-kit | ComfyUI server.py middlewares, run_comfyui.bat --enable-cors-header, comfyui.cmd PATH, comfyui-proxy.mjs host filter, extension.ts ensureServiceOnce | Haute (debug live obligatoire, aucun fix par git pull) | Corrige (flag CORS + launcher + proxy WS) + documente |
+| 22 | Memo operationnel : chaine ports/services saine, regles a ne jamais casser (cors-header, comfyui.cmd, node_modules monitor), checklist onglet vide, extensions canoniques, politique git pull org/push jcum | transverse | run_comfyui.bat, comfyui.cmd, extensions.json, update-kit.ps1 | Reference | Documente |
 
 ### Verification de cloture C - 2026-10-19
 

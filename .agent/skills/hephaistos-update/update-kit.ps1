@@ -51,6 +51,13 @@ foreach ($ext in Get-ChildItem "$KitRoot\extensions" -Directory) {
     New-Item -ItemType Directory -Path $dest -Force | Out-Null
     Copy-Item "$($ext.FullName)\*" $dest -Recurse -Force -Exclude .git,node_modules
   }
+  # REGLE GRAVEE : VSIX/copie n'embarquent pas node_modules -> npm install --omit=dev obligatoire
+  $deps = $pkg.PSObject.Properties['dependencies']
+  if ($deps -and $deps.Value.PSObject.Properties.Count -gt 0) {
+    Log "npm install --omit=dev dans $($pub).$name-$ver"
+    Push-Location $dest
+    try { & npm install --omit=dev --no-audit --no-fund 2>&1 | ForEach-Object { Log "  npm: $_" } } finally { Pop-Location }
+  }
   Get-ChildItem $ExtDir -Directory | Where-Object { $_.Name -like "$pub.$name-*" -and $_.Name -ne "$pub.$name-$ver" } | ForEach-Object {
     New-Item -ItemType Directory -Path "$ExtDir.bak" -Force | Out-Null
     try { Move-Item $_.FullName "$ExtDir.bak\" -Force -ErrorAction Stop; Log "archive $($_.Name)" } catch { Log "verrouille (ok): $($_.Name)" }

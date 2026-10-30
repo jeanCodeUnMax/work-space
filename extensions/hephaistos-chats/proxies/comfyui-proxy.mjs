@@ -90,6 +90,7 @@ server.on('upgrade', async (req, client, head) => {
     const port = Number(u.port) || (u.protocol === 'https:' ? 443 : 80);
     const upstream = net.connect(port, u.hostname, () => {
         const headers = Object.entries(req.headers)
+            .filter(([k]) => k !== 'host') // host deja reecrit -> sinon doublon, aiohttp 400
             .map(([k, v]) => `${k}: ${v}`).join('\r\n');
         upstream.write(`GET ${req.url} HTTP/1.1\r\nHost: ${u.host}\r\n${headers}\r\n\r\n`);
         if (head?.length) upstream.write(head);

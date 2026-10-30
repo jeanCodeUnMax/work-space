@@ -178,18 +178,20 @@ function proxyScript(workspaceRoot: string, name: string): string {
  */
 async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
     if (svc === 'comfyui') {
-        if (await portUp('http://127.0.0.1:8188')) return true;
-        if (!processAlive('ComfyUI')) {
-            const comfy = resolveComfyUI();
-            if (!comfy) {
-                FlowWorkspacePanel.error('ComfyUI introuvable : mets un launcher comfyui.cmd sur le PATH (%USERPROFILE%\\.hephaistos\\bin) ou définis COMFYUI_HOME.');
-                return false;
+        if (!(await portUp('http://127.0.0.1:8188'))) {
+            if (!processAlive('ComfyUI')) {
+                const comfy = resolveComfyUI();
+                if (!comfy) {
+                    FlowWorkspacePanel.error('ComfyUI introuvable : mets un launcher comfyui.cmd sur le PATH (%USERPROFILE%\\.hephaistos\\bin) ou définis COMFYUI_HOME.');
+                    return false;
+                }
+                spawnDetached(comfy.bat, [], comfy.cwd, { ...process.env, PYTHONUTF8: '1' });
             }
-            spawnDetached(comfy.bat, [], comfy.cwd, { ...process.env, PYTHONUTF8: '1' });
+            if (!(await waitPort('http://127.0.0.1:8188', 60))) return false;
         }
-        if (!(await waitPort('http://127.0.0.1:8188', 60))) return false;
         // Proxy interne :8190 — l'onglet iframes toujours ce port, le proxy
         // choisit le backend (local ou COMFYUI_REMOTE) à chaque requête.
+        // Inconditionnel : même si :8188 tournait déjà, le proxy doit être là.
         if (!(await portUp('http://127.0.0.1:8190'))) {
             const proxy = proxyScript(workspaceRoot, 'comfyui-proxy.mjs');
             if (fs.existsSync(proxy) && !processAlive('comfyui-proxy')) {
@@ -1322,6 +1324,8 @@ export function activate(context: vscode.ExtensionContext): void {
             await vscode.commands.executeCommand('hephaistosChats.openComfyUI');
             return;
         }
+
+
 
         if (message.type === 'ensure_service') {
             const svc = String((message as { service?: string }).service || '');

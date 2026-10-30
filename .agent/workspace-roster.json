@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-30T17:45:20.183Z",
+  "updatedAt": "2026-10-30T22:18:25.832Z",
   "core": {
     "devin": [
       {
@@ -168,6 +168,13 @@
         "role": "Redacteur",
         "title": "Redacteur",
         "hidden": false
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/bottlenose-sulfur",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
