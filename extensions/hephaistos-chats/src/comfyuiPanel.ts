@@ -10,7 +10,9 @@ export class ComfyUIPanel {
     private static current: vscode.WebviewPanel | undefined;
 
     static open(context: vscode.ExtensionContext): void {
-        const url = (process.env.COMFYUI_URL || 'http://127.0.0.1:8188').replace(/\/+$/, '');
+        // Le panneau cible le proxy interne :8190 — c'est lui qui choisit le
+        // backend (local :8188 ou COMFYUI_REMOTE), l'URL reste stable/portable.
+        const url = (process.env.COMFYUI_URL || 'http://127.0.0.1:8190').replace(/\/+$/, '');
         if (ComfyUIPanel.current) {
             ComfyUIPanel.current.reveal(vscode.ViewColumn.Active);
             return;

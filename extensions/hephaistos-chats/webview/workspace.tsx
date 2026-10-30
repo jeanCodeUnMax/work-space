@@ -102,7 +102,7 @@ interface WorkflowCatalog {
 
 interface PaletteCard {
     id: string;
-    kind: 'devin' | 'agy' | 'bleubite';
+    kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
     title: string;
     role: string;
     provider: string;
@@ -367,7 +367,7 @@ function Workspace(): React.JSX.Element {
         setToolReload((s) => ({ ...s, [v]: s[v] + 1 }));
         vscode.postMessage({ type: 'ensure_service', service: v });
     };
-    const [newProvider, setNewProvider] = useState('openrouter');
+    const [newProvider, setNewProvider] = useState('devin-cli');
     const [iconTheme, setIconTheme] = useState('commando');
     const saveTimer = useRef<number | undefined>(undefined);
     const deleteTimer = useRef<number | undefined>(undefined);
@@ -595,7 +595,7 @@ function Workspace(): React.JSX.Element {
     }, [postWorkflowSave, setNodes]);
 
     const bindActive = useCallback((sessionId: string, provider: string) => {
-        const kind = /devin/i.test(provider) ? 'devin' : 'agy';
+        const kind = /server|herald|cerber|d2r2/i.test(provider) ? 'serveros' : /devin/i.test(provider) ? 'devin' : /antigravity|agy/i.test(provider) ? 'agy' : 'bleubite';
         vscode.postMessage({ type: 'bind_active', sessionId, kind });
     }, []);
     const pointAgent = useCallback((sessionId: string) => {
@@ -819,7 +819,7 @@ function Workspace(): React.JSX.Element {
                     >
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
                     </select>
-                    <button type="button" className="add-agent" onClick={addAgent}>+ Agent</button>
+                    <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc vide du type choisi, à rattacher ensuite avec ⤓">+ Bloc</button>
                 </div>
             </header>
             <div className="workspace-content">
@@ -899,29 +899,13 @@ function Workspace(): React.JSX.Element {
                                             title={schema.desc || schema.name}
                                             onClick={() => loadSchema(schema.id)}
                                         >
-                                            {schema.builtin && (
-                                                <span className="schema-builtin-badge" title="Schéma standard livré avec le kit Hephaistos — restaurable après suppression">★</span>
-                                            )}
                                             {schema.mode === 'council' && (
                                                 <span className="schema-council-badge" title="Mode concile : les experts délibèrent sur transcript partagé, puis le président rend le verdict">⚖</span>
                                             )}
                                             {schema.name}
                                         </button>
                                         )}
-                                        {schema.builtin && renamingId !== schema.id && (
-                                        <button
-                                            type="button"
-                                            className="schema-rename"
-                                            title="Promouvoir le canvas actuel comme version officielle de ce standard (gabarit canonique)"
-                                            aria-label={"Mettre à jour " + schema.name}
-                                            onClick={() => { if (window.confirm(`Écraser le gabarit canonique « ${schema.name} » avec le canvas actuel ? Cette action remplace le schéma standard.`)) vscode.postMessage({ type: 'schema_update_standard', id: schema.id, all: showAllSchemas }); }}
-                                        >
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                                <path fill="currentColor" d="M12 2.5 15 9l6.7.6-5 4.4 1.5 6.5L12 16.9 5.8 20.5l1.5-6.5-5-4.4L9 9l3-6.5Z"/>
-                                            </svg>
-                                        </button>
-                                        )}
-                                        {!schema.builtin && renamingId !== schema.id && (
+                                        {renamingId !== schema.id && (
                                         <button
                                             type="button"
                                             className="schema-rename"
@@ -1174,11 +1158,11 @@ function Workspace(): React.JSX.Element {
                     )}
                     {completedCount > 0 && <div className="run-summary">{completedCount} étape{completedCount > 1 ? 's' : ''} terminée{completedCount > 1 ? 's' : ''} dans cette exécution.</div>}
                     {([
-                        { key: 'competences', label: 'COMPÉTENCES — glisser sur un agent', query: skillQuery, setQuery: setSkillQuery, placeholder: 'Filtrer les compétences…' },
-                        { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
-                        { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
-                        { key: 'mcps', label: 'MCPS — glisser sur un bloc pour lui donner les outils du serveur', query: mcpQuery, setQuery: setMcpQuery, placeholder: 'Filtrer les serveurs MCP…' },
                         { key: 'cards', label: 'CARTES — glisser sur le canevas pour créer un bloc préconfiguré', query: cardQuery, setQuery: setCardQuery, placeholder: 'Filtrer les cartes…' },
+                        { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
+                        { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
+                        { key: 'competences', label: 'COMPÉTENCES — glisser sur un agent', query: skillQuery, setQuery: setSkillQuery, placeholder: 'Filtrer les compétences…' },
+                        { key: 'mcps', label: 'MCPS — glisser sur un bloc pour lui donner les outils du serveur', query: mcpQuery, setQuery: setMcpQuery, placeholder: 'Filtrer les serveurs MCP…' },
                     ] as const).map((palette) => (
                         <div className={`skill-palette${collapsed[palette.key] ? ' collapsed' : ''}`} key={palette.key}>
                             <button
@@ -1231,7 +1215,7 @@ function Workspace(): React.JSX.Element {
                                                     title={`${card.title} · ${card.kind} · ${card.provider}${(card.skills || []).length ? ' · ' + (card.skills || []).join(', ') : ''}`}
                                                     draggable
                                                     onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-card', JSON.stringify(card)); event.dataTransfer.effectAllowed = 'copy'; }}
-                                                >{card.kind === 'devin' ? '◆' : card.kind === 'agy' ? '◇' : '•'} {card.title}</span>
+                                                >{card.kind === 'devin' ? '◆' : card.kind === 'agy' ? '◇' : card.kind === 'serveros' ? '⬢' : '•'} {card.title}</span>
                                             ))}
                                         </>)}
                                         {palette.key === 'mcps' && (<>
