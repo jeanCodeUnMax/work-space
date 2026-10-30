@@ -1,0 +1,21 @@
+{
+ "id": "cerberos",
+ "kind": "serveros",
+ "title": "CerberOS",
+ "role": "Serveur distant",
+ "provider": "cerberos",
+ "sessionId": "local-9b832147b19ac504ec006f0355a0b514a8c04fe98913a36053c8a10b2ef0a3ad",
+ "skills": [
+  "ssh-remote",
+  "n8n-admin",
+  "cli-anything",
+  "linux-sysadmin"
+ ],
+ "mcps": [
+  "Hephaistos-everything-search"
+ ],
+ "bound": {
+  "at": 0,
+  "kind": "acp"
+ }
+}

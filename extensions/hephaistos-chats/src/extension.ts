@@ -49,6 +49,85 @@ async function waitPort(url: string, tries = 40): Promise<boolean> {
     return false;
 }
 
+/** where.exe — premier binaire trouvé sur le PATH (ou null). */
+function which(bin: string): string | null {
+    try {
+        const out = child_process.execFileSync('where.exe', [bin], { encoding: 'utf8', timeout: 5000 })
+            .trim().split(/\r?\n/).filter(Boolean);
+        return out[0] || null;
+    } catch { return null; }
+}
+
+/**
+ * ComfyUI — résolution portable, zéro chemin en dur :
+ * 1. launcher `comfyui.cmd|bat` ou `run_nvidia_gpu.bat` sur le PATH
+ *    (convention : %USERPROFILE%\.hephaistos\bin, répliquable par machine),
+ * 2. COMFYUI_HOME explicite,
+ * 3. emplacements classiques de la distrib portable (dernier recours).
+ */
+function resolveComfyUI(): { bat: string; cwd: string } | null {
+    for (const name of ['comfyui.cmd', 'comfyui.bat', 'run_nvidia_gpu.bat']) {
+        const onPath = which(name);
+        if (onPath) return { bat: onPath, cwd: path.dirname(onPath) };
+    }
+    const home = process.env.COMFYUI_HOME;
+    if (home) {
+        for (const b of ['run_nvidia_gpu.bat', 'run_cpu.bat']) {
+            const bat = path.join(home, b);
+            if (fs.existsSync(bat)) return { bat, cwd: home };
+        }
+    }
+    for (const dir of [
+        'F:\\ComfyUI_windows_portable',
+        'C:\\ComfyUI_windows_portable',
+        'D:\\ComfyUI_windows_portable',
+        path.join(os.homedir(), 'ComfyUI_windows_portable'),
+        path.join(os.homedir(), 'AppData', 'Local', 'ComfyUI_windows_portable'),
+    ]) {
+        const bat = path.join(dir, 'run_nvidia_gpu.bat');
+        if (fs.existsSync(bat)) return { bat, cwd: dir };
+    }
+    return null;
+}
+
+/**
+ * n8n — résolution portable :
+ * 1. N8N_NODE + N8N_BIN explicites,
+ * 2. node sur le PATH + n8n via `npm root -g`,
+ * 3. scan nvm (dernier node) + npm global classique.
+ */
+function resolveN8n(): { node: string; bin: string } | null {
+    const envNode = process.env.N8N_NODE;
+    const envBin = process.env.N8N_BIN;
+    if (envNode && envBin && fs.existsSync(envNode) && fs.existsSync(envBin)) {
+        return { node: envNode, bin: envBin };
+    }
+    const node = which('node.exe') || which('node');
+    let n8nBin: string | null = envBin && fs.existsSync(envBin) ? envBin : null;
+    if (!n8nBin) {
+        try {
+            const root = child_process.execFileSync('npm', ['root', '-g'], { encoding: 'utf8', timeout: 8000, shell: true }).trim();
+            const cand = path.join(root, 'n8n', 'bin', 'n8n');
+            if (fs.existsSync(cand)) n8nBin = cand;
+        } catch { /* npm absent du PATH */ }
+    }
+    if (!n8nBin) {
+        const cand = path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'n8n', 'bin', 'n8n');
+        if (fs.existsSync(cand)) n8nBin = cand;
+    }
+    let nodeExe = node;
+    if (!nodeExe) {
+        const nvm = path.join(os.homedir(), 'AppData', 'Local', 'nvm');
+        try {
+            for (const v of fs.readdirSync(nvm).filter((d) => /^v\d+/.test(d)).sort().reverse()) {
+                const exe = path.join(nvm, v, 'node.exe');
+                if (fs.existsSync(exe)) { nodeExe = exe; break; }
+            }
+        } catch { /* pas de nvm */ }
+    }
+    return nodeExe && n8nBin ? { node: nodeExe, bin: n8nBin } : null;
+}
+
 /** Vrai si un processus dont la ligne de commande matche `match` est vivant. */
 function processAlive(match: string): boolean {
     try {
@@ -74,39 +153,70 @@ async function ensureService(workspaceRoot: string, svc: string): Promise<boolea
     return run;
 }
 
+/** Racine de l'extension — renseignée par activate() pour les proxies internes. */
+let extensionRoot = '';
+
+/**
+ * Chemin d'un proxy embarqué : <extension>/proxies/<name> d'abord (portable),
+ * repli <workspace>/.agent/scripts/<name> (compat historique du kit).
+ */
+function proxyScript(workspaceRoot: string, name: string): string {
+    if (extensionRoot) {
+        const bundled = path.join(extensionRoot, 'proxies', name);
+        if (fs.existsSync(bundled)) return bundled;
+    }
+    return path.join(workspaceRoot, '.agent', 'scripts', name);
+}
+
 /**
  * Auto-launch des services embarqués quand l'onglet est ouvert/rechargé :
- * comfyui → :8188 (run_nvidia_gpu.bat), n8n → :5678 (node 24) + proxy :5680.
+ * comfyui → :8188 + proxy :8190, n8n → :5678 + proxy :5680, mail-api :5681.
  * Jamais de doublon : on ne spawn que si ni le port ni le processus ne répondent.
  */
 async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
     if (svc === 'comfyui') {
         if (await portUp('http://127.0.0.1:8188')) return true;
         if (!processAlive('ComfyUI')) {
-            spawnDetached('F:\\ComfyUI_windows_portable\\run_nvidia_gpu.bat', [], 'F:\\ComfyUI_windows_portable', {
-                ...process.env,
-                PYTHONUTF8: '1',
-            });
+            const comfy = resolveComfyUI();
+            if (!comfy) {
+                FlowWorkspacePanel.error('ComfyUI introuvable : mets un launcher comfyui.cmd sur le PATH (%USERPROFILE%\\.hephaistos\\bin) ou définis COMFYUI_HOME.');
+                return false;
+            }
+            spawnDetached(comfy.bat, [], comfy.cwd, { ...process.env, PYTHONUTF8: '1' });
         }
-        return waitPort('http://127.0.0.1:8188', 60);
+        if (!(await waitPort('http://127.0.0.1:8188', 60))) return false;
+        // Proxy interne :8190 — l'onglet iframes toujours ce port, le proxy
+        // choisit le backend (local ou COMFYUI_REMOTE) à chaque requête.
+        if (!(await portUp('http://127.0.0.1:8190'))) {
+            const proxy = proxyScript(workspaceRoot, 'comfyui-proxy.mjs');
+            if (fs.existsSync(proxy) && !processAlive('comfyui-proxy')) {
+                spawnDetached(process.execPath, [proxy], workspaceRoot, process.env);
+            }
+            if (!(await waitPort('http://127.0.0.1:8190', 10))) return false;
+        }
+        return true;
     }
     if (svc === 'n8n') {
         if (!(await portUp('http://127.0.0.1:5678'))) {
             if (!processAlive('bin[\\\\/]n8n')) {
-                const node24 = path.join(os.homedir(), 'AppData', 'Local', 'nvm', 'v24.21.0', 'node.exe');
-                const n8nBin = path.join(os.homedir(), 'AppData', 'Roaming', 'npm', 'node_modules', 'n8n', 'bin', 'n8n');
+                const n8n = resolveN8n();
+                if (!n8n) {
+                    FlowWorkspacePanel.error('n8n introuvable : installe-le en global (npm i -g n8n) ou définis N8N_NODE + N8N_BIN.');
+                    return false;
+                }
                 const env = { ...process.env };
                 delete env.N8N_ENCRYPTION_KEY;
                 // `/api` est manglé en `C:/Program Files/Git/api` quand l'env
                 // transite par Git Bash (MSYS path conversion) — on le supprime :
                 // n8n retombe sur son défaut `/api`.
                 delete env.N8N_PUBLIC_API_ENDPOINT;
-                spawnDetached(node24, [n8nBin, 'start'], workspaceRoot, env);
+                spawnDetached(n8n.node, [n8n.bin, 'start'], workspaceRoot, env);
             }
-            if (!(await waitPort('http://127.0.0.1:5678', 60))) return false;
+            // Premier boot n8n : migrations + licence peuvent dépasser 60 s.
+            if (!(await waitPort('http://127.0.0.1:5678', 90))) return false;
         }
         if (!(await portUp('http://127.0.0.1:5680'))) {
-            const proxy = path.join(workspaceRoot, '.agent', 'scripts', 'n8n-auth-proxy.mjs');
+            const proxy = proxyScript(workspaceRoot, 'n8n-auth-proxy.mjs');
             if (fs.existsSync(proxy) && !processAlive('n8n-auth-proxy')) {
                 spawnDetached(process.execPath, [proxy], workspaceRoot, {
                     N8N_EMAIL: process.env.N8N_EMAIL || '',
@@ -114,8 +224,11 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
                     N8N_API_KEY: process.env.N8N_API_KEY || '',
                 });
             }
-            return waitPort('http://127.0.0.1:5680', 20);
+            if (!(await waitPort('http://127.0.0.1:5680', 20))) return false;
         }
+        // mail-api (:5681) volontairement NON auto-lancé : config mail
+        // personnelle de l'utilisateur, pas un service de l'extension. Le
+        // script reste dispo dans .agent/scripts pour qui en a besoin.
         return true;
     }
     return true; // 'flow' : pas de service externe
@@ -147,6 +260,7 @@ async function restartService(workspaceRoot: string, svc: string): Promise<boole
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+    extensionRoot = context.extensionPath;
     const store = new SessionStore(context);
     let status = 'Initialisation...';
     let orchConnected = false;
@@ -778,6 +892,9 @@ export function activate(context: vscode.ExtensionContext): void {
             return (s?.codename && String(s.codename).trim()) || 'Bleubite';
         };
         for (const [sessionId, node] of nodeById) {
+            // Les blocs cartes vides (card-*) ne sont pas des agents : ils
+            // vivent dans la palette CARTES, pas ici.
+            if (sessionId.startsWith('card-')) continue;
             if (agents.some((a) => a.sessionId === sessionId)) continue;
             const s = sessions?.find((item) => item.id === sessionId);
             agents.push({
@@ -799,6 +916,12 @@ export function activate(context: vscode.ExtensionContext): void {
                 model: s.model,
             });
         }
+        // Tri : référent en tête, puis les agents non placés (à ajouter),
+        // puis ceux déjà sur le canvas — alphabétique dans chaque groupe.
+        agents.sort((a, b) =>
+            Number(b.referent || false) - Number(a.referent || false)
+            || Number(a.placed || false) - Number(b.placed || false)
+            || a.title.localeCompare(b.title, 'fr'));
         // Palette roles = les vrais roles metier du graphe + roster (puces
         // d'expertise des blocs), pas une liste statique.
         // Palette roles = les vraies specialisations des blocs (graphe +
@@ -836,7 +959,15 @@ export function activate(context: vscode.ExtensionContext): void {
             roles,
             skills,
             mcps,
-            providers: ACP_PROVIDERS.map((provider) => ({ id: provider.id, label: provider.label })),
+            // Dropdown "+ Bloc" : types de blocs créables, pas les transports.
+            // L'ordre est volontaire — Devin, AGY, Bleubite, puis les ServerOS.
+            providers: [
+                { id: 'devin-cli', label: 'Devin ACP' },
+                { id: 'antigravity-acp', label: 'Antigravity' },
+                { id: 'bleubite', label: 'Bleubite' },
+                { id: 'cerberos', label: 'Cerber — HeraldOS' },
+                { id: 'd2r2', label: 'CerberOS — D2R2' },
+            ],
             agents,
             cards,
         };
@@ -928,11 +1059,13 @@ export function activate(context: vscode.ExtensionContext): void {
             // Carte préconfigurée (.agent/cards) : crée un bloc avec son rôle,
             // ses compétences et son provider. Sans session liée, le bloc reçoit
             // un identifiant de carte ; il sera rattaché à une fenêtre ensuite.
-            const card = (message as { card?: { id?: string; title?: string; role?: string; provider?: string; sessionId?: string; skills?: string[] } }).card;
+            const card = (message as { card?: { id?: string; kind?: string; title?: string; role?: string; provider?: string; sessionId?: string; skills?: string[]; mcps?: string[] } }).card;
             if (card?.id) {
                 try {
                     const graph = workflowStore.load(store.list());
-                    const sessionId = card.sessionId || `card-${card.id}-${Date.now().toString(36)}`;
+                    // Carte vide : sessionId generique card-* pour qu'elle reste
+                    // un bloc en attente de liaison (bouton bind), jamais un bleubite.
+                    const sessionId = `card-${card.id}-${Date.now().toString(36)}`;
                     if (!graph.nodes.some((n) => n.sessionId === sessionId)) {
                         const idx = graph.nodes.length;
                         graph.nodes.push({
@@ -940,7 +1073,10 @@ export function activate(context: vscode.ExtensionContext): void {
                             role: card.role || card.title || card.id,
                             task: '',
                             skills: [...(card.skills || [])],
+                            mcps: [...(card.mcps || [])],
                             title: card.title || card.id,
+                            provider: card.provider || '',
+                            cardKind: (card.kind as 'devin' | 'agy' | 'bleubite' | 'serveros') || 'bleubite',
                             position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
                         });
                     }
@@ -976,7 +1112,35 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
                 return;
             }
-            openNew((message as { provider?: string }).provider, (message as { role?: string }).role);
+            // Dropdown "+ Bloc" : crée un bloc VIDE du type choisi — jamais de
+            // fenêtre chat (un openNew ici spawnait un bleubite fantôme). Le
+            // bloc attend ensuite le bouton ⤓ pour être rattaché.
+            const provider = String((message as { provider?: string }).provider || 'bleubite');
+            const blockTypes: Record<string, { kind: 'devin' | 'agy' | 'bleubite' | 'serveros'; label: string; role: string }> = {
+                'devin-cli': { kind: 'devin', label: 'Devin ACP', role: 'Devin' },
+                'antigravity-acp': { kind: 'agy', label: 'Antigravity', role: 'Antigravity' },
+                'cerberos': { kind: 'serveros', label: 'Cerber — HeraldOS', role: 'Server OS' },
+                'd2r2': { kind: 'serveros', label: 'CerberOS — D2R2', role: 'Server OS' },
+            };
+            const t = blockTypes[provider] || { kind: 'bleubite' as const, label: 'Bleubite', role: 'Bleubite' };
+            try {
+                const graph = workflowStore.load(store.list());
+                const sessionId = `card-${provider}-${Date.now().toString(36)}`;
+                const idx = graph.nodes.length;
+                graph.nodes.push({
+                    sessionId,
+                    role: (message as { role?: string }).role || t.role,
+                    task: '',
+                    skills: [],
+                    title: t.label,
+                    provider,
+                    cardKind: t.kind,
+                    position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                });
+                FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+            } catch (error) {
+                FlowWorkspacePanel.error(String(error));
+            }
             return;
         }
 
@@ -989,11 +1153,18 @@ export function activate(context: vscode.ExtensionContext): void {
                 // Le type vient de la fenêtre réellement focalisée, jamais de la carte.
                 const acp = (await vscode.commands.executeCommand<any>('workbench.action.getAcpState'))?.reduxStore?.acp;
                 const focused = String(acp?.focusedSessionId || '');
-                let kind: 'agy' | 'devin' = 'devin';
+                // Le kind vient du provider de la fenêtre focalisée —
+                // acp/<provider>/<id>. local-* = session HeraldOS (serveros).
+                const kindOf = (id: string): 'devin' | 'agy' | 'bleubite' | 'serveros' => {
+                    if (id.startsWith('acp/antigravity-acp/')) return 'agy';
+                    if (id.startsWith('acp/devin-cli/')) return 'devin';
+                    if (id.startsWith('acp/cerberos/') || id.startsWith('acp/d2r2/') || id.startsWith('local-')) return 'serveros';
+                    if (id.startsWith('acp/')) return 'bleubite';
+                    return 'devin';
+                };
+                let kind = kindOf(focused);
                 let newId = focused;
-                if (focused.startsWith('acp/antigravity-acp/')) {
-                    kind = 'agy';
-                } else if (!focused) {
+                if (!focused) {
                     const cur = require('child_process').execFileSync('node', [
                         path.join(workspaceRoot || '', '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
                     ], { encoding: 'utf8', timeout: 20000 }).trim();
@@ -1007,6 +1178,15 @@ export function activate(context: vscode.ExtensionContext): void {
                 const graph = workflowStore.load(store.list());
                 const node = graph.nodes.find((n) => n.sessionId === oldId);
                 if (!node) return;
+                // Garde : une carte typée n'accepte que la fenêtre du bon type.
+                // Sans ça, un ⤓ sur CerberOS rattachait la conversation Devin
+                // focalisée (kind devin) à une carte serveros.
+                const want = (node as { cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros' }).cardKind;
+                if (want && want !== kind) {
+                    const labels: Record<string, string> = { devin: 'Devin ACP', agy: 'Antigravity', bleubite: 'Bleubite', serveros: 'Server OS' };
+                    FlowWorkspacePanel.error(`La carte « ${node.title || 'bloc'} » attend une fenêtre ${labels[want]}, pas ${labels[kind]}. Focalise la bonne conversation.`);
+                    return;
+                }
                 // Fenêtre déjà portée par un autre bloc : on la détache de cet
                 // ancien bloc (il garde ses arêtes, sans identité) au lieu de refuser.
                 const previous = graph.nodes.find((n) => n.sessionId === newId && n.sessionId !== oldId);

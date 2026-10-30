@@ -14,6 +14,9 @@ export interface WorkflowNode {
     /** Serveurs MCP distribués à ce bloc (noms du broker mcp-mux). */
     mcps?: string[];
     title?: string;
+    provider?: string;
+    /** Kind voulu par la carte (.agent/cards) pour les blocs sans session. */
+    cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros';
     position: WorkflowPosition;
 }
 
@@ -33,7 +36,7 @@ export interface WorkflowCatalog {
     mcps?: string[];
     providers: { id: string; label: string }[];
     agents?: PaletteAgent[];
-    cards?: { id: string; kind: 'devin' | 'agy' | 'bleubite'; title: string; role: string; provider: string; sessionId?: string; skills?: string[]; mcps?: string[] }[];
+    cards?: { id: string; kind: 'devin' | 'agy' | 'bleubite' | 'serveros'; title: string; role: string; provider: string; sessionId?: string; skills?: string[]; mcps?: string[] }[];
 }
 
 export interface WorkflowEdge {
@@ -62,6 +65,7 @@ export interface WorkflowViewNode extends WorkflowNode {
     data: {
         sessionId: string;
         title: string;
+        kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
         provider: string;
         model: string;
         role: string;
@@ -127,19 +131,28 @@ export function createWorkflowView(
     const nodes = graph.nodes.map((node): WorkflowViewNode => {
         const session = sessionsById.get(node.sessionId);
         const external = !session;
+        const cardKind = (node as { cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros' }).cardKind;
         const provider = session?.provider
+            || (node as { provider?: string }).provider
             || (node.sessionId.startsWith('acp/') ? node.sessionId.split('/')[1] : null)
             || (node.sessionId.startsWith('local-') ? 'cerberos' : 'unknown');
         // Couleurs fixes : jaune = Devin ACP, bleu = Antigravity, vert = Bleubite.
         // Une fenêtre attachée (bound) décide ; sinon le provider de la session.
         const boundKind = (node as { bound?: { kind?: string } }).bound?.kind;
+        // Le kind effectif : carte vide -> cardKind ; session -> provider/bound.
+        const kind: 'devin' | 'agy' | 'bleubite' | 'serveros' =
+            cardKind
+            || (boundKind as 'devin' | 'agy' | 'bleubite' | 'serveros' | undefined)
+            || (provider === 'devin-cli' ? 'devin'
+                : provider === 'antigravity-acp' ? 'agy'
+                    : provider === 'cerberos' || provider === 'serveros' || provider === 'd2r2' ? 'serveros'
+                        : 'bleubite');
         // agy attaché → bleu. Provider de la session ensuite : devin-cli →
         // jaune, antigravity → bleu, nim/chat/cerberos → vert. Le bound ne
         // sert que quand le provider est inconnu (carte sans session).
         const tone: 'amber' | 'blue' | 'green' =
-            boundKind === 'agy' || provider === 'antigravity-acp' || provider === 'agy' ? 'blue'
-                : provider === 'devin-cli' ? 'amber'
-                    : provider === 'unknown' && boundKind === 'devin' ? 'amber'
+            kind === 'agy' ? 'blue'
+                : kind === 'devin' ? 'amber'
                         : 'green';
         const slug = node.sessionId.split('/').pop() || node.sessionId;
         return {
@@ -149,6 +162,7 @@ export function createWorkflowView(
             data: {
                 sessionId: node.sessionId,
                 title: session ? sessionTitle(session) : (node.title || slug || node.role),
+                kind,
                 provider,
                 model: session?.model || (external ? 'agent IDE' : ''),
                 role: node.role,

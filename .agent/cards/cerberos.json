@@ -1,0 +1,14 @@
+{
+  "id": "cerberos",
+  "kind": "serveros",
+  "title": "CerberOS",
+  "role": "Serveur D2R2",
+  "provider": "d2r2",
+  "sessionId": null,
+  "skills": [
+    "ssh-remote",
+    "d2r2-agent",
+    "linux-sysadmin"
+  ],
+  "mcps": []
+}
