@@ -173,7 +173,7 @@ function proxyScript(workspaceRoot: string, name: string): string {
 
 /**
  * Auto-launch des services embarqués quand l'onglet est ouvert/rechargé :
- * comfyui → :8188 + proxy :8190, n8n → :5678 + proxy :5680, mail-api :5681.
+ * comfyui → :8188, n8n → :5678 + proxy :5680, mail-api :5681.
  * Jamais de doublon : on ne spawn que si ni le port ni le processus ne répondent.
  */
 async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
@@ -188,15 +188,6 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
             spawnDetached(comfy.bat, [], comfy.cwd, { ...process.env, PYTHONUTF8: '1' });
         }
         if (!(await waitPort('http://127.0.0.1:8188', 60))) return false;
-        // Proxy interne :8190 — l'onglet iframes toujours ce port, le proxy
-        // choisit le backend (local ou COMFYUI_REMOTE) à chaque requête.
-        if (!(await portUp('http://127.0.0.1:8190'))) {
-            const proxy = proxyScript(workspaceRoot, 'comfyui-proxy.mjs');
-            if (fs.existsSync(proxy) && !processAlive('comfyui-proxy')) {
-                spawnDetached(process.execPath, [proxy], workspaceRoot, process.env);
-            }
-            if (!(await waitPort('http://127.0.0.1:8190', 10))) return false;
-        }
         return true;
     }
     if (svc === 'n8n') {
