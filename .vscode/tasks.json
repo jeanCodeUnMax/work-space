@@ -1,0 +1,20 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Kaggle: Push + Boot (sdxl)",
+      "type": "shell",
+      "command": "python .agent/kaggle/patch_tunnel.py",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "Kaggle: Push + Boot (video)",
+      "type": "shell",
+      "command": "python .agent/kaggle/patch_tunnel.py",
+      "options": { "cwd": "${workspaceFolder}", "env": { "CF_PROFILE": "video" } },
+      "problemMatcher": []
+    }
+  ]
+}

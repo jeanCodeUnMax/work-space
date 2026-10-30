@@ -785,6 +785,12 @@ function Workspace(): React.JSX.Element {
                 <div className="workspace-tools">
                     <button
                         type="button"
+                        className="tool-page-btn"
+                        title="Kaggle — pousse le notebook distant et attend le tunnel (profil CF_PROFILE, defaut sdxl)"
+                        onClick={() => vscode.postMessage({ type: 'kaggle_push' })}
+                    >▲ Kaggle</button>
+                    <button
+                        type="button"
                         className={"tool-page-btn" + (pageView === 'flow' ? " active" : "")}
                         title="Éditeur de flux (React Flow)"
                         onClick={() => switchPage('flow')}

@@ -1323,6 +1323,15 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'kaggle_push') {
+            const ws = workspaceRoot || process.cwd();
+            const t = vscode.window.createTerminal('Kaggle Push');
+            t.show(true);
+            t.sendText('python "' + ws + '/.agent/kaggle/patch_tunnel.py"', true);
+            FlowWorkspacePanel.post({ type: 'service_state', service: 'kaggle', ok: true, checking: true });
+            return;
+        }
+
         if (message.type === 'ensure_service') {
             const svc = String((message as { service?: string }).service || '');
             ensureService(workspaceRoot || process.cwd(), svc)
