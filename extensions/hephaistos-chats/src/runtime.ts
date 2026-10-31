@@ -191,7 +191,7 @@ async function syncNimModels(providerId: string): Promise<ListedModel[]> {
         });
         if (!res.ok) return [];
         const data = (await res.json()) as any;
-        const ids: string[] = Array.isArray(data.data) ? data.data.map((m: any) => m.id) : [];
+        const ids: string[] = Array.isArray(data.data) ? data.data.map((m: any) => m.id).sort((a: string, b: string) => a.localeCompare(b)) : [];
         return ids.filter((id) => !SKIP_MODEL.test(id)).map((id) => ({ provider: providerId, id }));
     } catch {
         return [];
@@ -207,6 +207,7 @@ async function syncOllamaModels(providerId: string): Promise<ListedModel[]> {
         if (!res.ok) return [];
         const data = (await res.json()) as { models?: { name: string }[] };
         return (data.models || [])
+            .sort((a, b) => a.name.localeCompare(b.name))
             .filter((m) => m.name.includes(':cloud') === wantCloud)
             .map((m) => ({ provider: providerId, id: m.name }));
     } catch {
@@ -260,12 +261,37 @@ async function syncOmnirouteModels(providerId: string): Promise<ListedModel[]> {
         });
         if (!res.ok) return [];
         const data = (await res.json()) as any;
-        const ids: string[] = Array.isArray(data.data) ? data.data.map((m: any) => m.id || m).filter(Boolean) : [];
+        // Whitelist free/local : aihorde/pollinations/veoaifree = generation
+        // d'images (ComfyUI), uncloseai = provider mort, gemini = forfait payant.
+        // openrouter : seuls les :free restent (le reste debite la cle).
+        const FREE_OWNERS = new Set(['combo', 'ollama-cloud', 'cloudflare-ai', 'huggingchat',
+            'duckduckgo-web', 'kilo-gateway', 'nvidia', 'groq', 'mistral', 'huggingface']);
+        const NON_CHAT = /image|flux|sdxl|diffus|dall|ltx|hunyuan|video|whisper|tts|audio|rerank|moderation|embed/i;
+        const ids: string[] = Array.isArray(data.data)
+            ? data.data
+                .filter((m: any) => {
+                    const owner = String(m.owned_by || '');
+                    const id = String(m.id || '');
+                    if (NON_CHAT.test(id)) return false;
+                    if (owner === 'openrouter') return id.endsWith(':free');
+                    return FREE_OWNERS.has(owner);
+                })
+                .map((m: any) => String(m.id))
+                .sort((a: string, b: string) => a.localeCompare(b))
+            : [];
         return ids.filter((id) => !SKIP_MODEL.test(id)).map((id) => ({ provider: providerId, id }));
     } catch {
         return [];
     }
 }
+
+/** Listes connues quand le provider n'annonce pas ses modèles en ACP. */
+const ACP_MODEL_FALLBACK: Record<string, string[]> = {
+    'gemini': ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-3-pro-preview'],
+    'codex-acp': ['gpt-5.3-codex', 'gpt-5.2-codex', 'gpt-5.1-codex-mini'],
+    'opencode': ['opencode/grok-code-fast-1', 'opencode/nemotron-3-ultra-free', 'opencode/big-pickle'],
+    'huggingface': ['deepseek-ai/DeepSeek-V3.2', 'meta-llama/Llama-3.3-70B-Instruct', 'Qwen/Qwen2.5-72B-Instruct'],
+};
 
 /**
  * Syncing par provider — même contrat que la sonde NIM : liste triée de modèles.
@@ -288,18 +314,23 @@ export async function syncProviderModels(providerId: string, cwd: string): Promi
             // Le modèle actif est celui du profil OPENCODE_CONFIG (la sonde ACP
             // renvoie les agents build/plan, pas la liste des modèles).
             const m = acpProfileModel(providerId) || devinAgentPreference(providerId).model;
-            return { provider: providerId, models: m ? [{ provider: providerId, id: m }] : [], source: 'fallback' };
+            const known = ACP_MODEL_FALLBACK[providerId] || [];
+            const ids = m ? [m, ...known.filter((x) => x !== m)] : known;
+            return { provider: providerId, models: ids.map((id) => ({ provider: providerId, id })), source: 'fallback' };
         }
         if (isAcpOnlyProvider(providerId)) {
             const models = await probeAcpModels(providerId, cwd);
             if (models.length) {
                 return { provider: providerId, models, source: 'acp-probe' };
             }
-            // Sonde vide (cold-start/timeout) : repli sur le modèle préféré Devin — réel, pas factice.
+            // Sonde vide (cold-start/timeout ou provider qui n'annonce pas ses
+            // modèles, ex. gemini/codex) : liste statique connue + préférence Devin.
             const pref = devinAgentPreference(providerId).model;
+            const known = ACP_MODEL_FALLBACK[providerId] || [];
+            const ids = pref ? [pref, ...known.filter((m) => m !== pref)] : known;
             return {
                 provider: providerId,
-                models: pref ? [{ provider: providerId, id: pref }] : [],
+                models: ids.map((id) => ({ provider: providerId, id })),
                 source: 'acp-probe',
                 error: 'aucun modèle annoncé',
             };

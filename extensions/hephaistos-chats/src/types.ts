@@ -73,9 +73,6 @@ export const ACP_PROVIDERS: { id: string; label: string }[] = [
     { id: 'mistral-vibe', label: 'Mistral Vibe' },
     { id: 'gemini', label: 'Gemini CLI' },
     { id: 'codex-acp', label: 'Codex ACP' },
-    { id: 'cline', label: 'Cline' },
-    { id: 'vtcode', label: 'VTCode' },
-    { id: 'devin-cloud', label: 'Devin Cloud' },
     // Providers modèles routés par OpenCode (profils OPENCODE_CONFIG)
     { id: 'nim', label: 'NVIDIA NIM' },
     { id: 'nim2', label: 'NVIDIA NIM 2' },
