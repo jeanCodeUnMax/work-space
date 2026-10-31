@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-30T20:26:44.678Z",
+  "updatedAt": "2026-10-31T09:16:29.633Z",
   "core": {
     "devin": [
       {
@@ -185,7 +185,7 @@
         "restore": "open-or-reveal",
         "role": "Codeur",
         "hidden": true,
-        "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
       },
       {
@@ -273,7 +273,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "OpenRouter",
         "hidden": true
       },
@@ -308,7 +308,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "OpenRouter",
         "title": "xenial-yew",
         "hidden": true
@@ -317,7 +317,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-fabb4d20-ebda-4e32-8da7-07392590dabe",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "Codeur",
         "title": "brave-willow",
         "hidden": true
@@ -326,7 +326,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "OpenRouter",
         "title": "young-agent",
         "hidden": true
@@ -335,7 +335,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "OpenRouter",
         "title": "amber-agent",
         "hidden": true
@@ -344,7 +344,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "Codeur",
         "title": "quiet-vault",
         "hidden": true
@@ -353,7 +353,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "OpenRouter",
         "title": "hardy-agent",
         "hidden": true
@@ -502,7 +502,7 @@
         "providerId": "nim",
         "sessionId": "chat-b33e6e23-c376-49a9-b82c-e23e0b15c686",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "NVIDIA NIM",
         "title": "hardy-agent",
         "hidden": true
@@ -538,7 +538,7 @@
         "providerId": "nim",
         "sessionId": "chat-ebec625e-2d2b-4194-883b-46d1cff4cd2b",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "NVIDIA NIM",
         "title": "gentle-agent",
         "hidden": true
@@ -547,7 +547,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-3e680e09-8587-4a3c-9e54-f59f09c39187",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "Antigravity",
         "title": "hardy-ember",
         "hidden": true
@@ -564,7 +564,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-6aebbfd4-aee1-4904-a5e2-05081899de90",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "Antigravity",
         "title": "lunar-agent",
         "hidden": true
@@ -573,7 +573,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-3a971008-c75f-4a54-a8ce-8ece3fb465ca",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
         "role": "Antigravity",
         "title": "rapid-tide",
         "hidden": true
@@ -593,6 +593,20 @@
         "role": "Antigravity",
         "title": "rapid-tide",
         "hidden": false
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "NVIDIA NIM"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "NVIDIA NIM 2"
       }
     ],
     "antigravity": [
@@ -1017,6 +1031,30 @@
         "bound": {
           "at": 1793288415171,
           "kind": "devin"
+        }
+      },
+      {
+        "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
+        "role": "NVIDIA NIM",
+        "task": "",
+        "skills": [],
+        "mcps": [],
+        "title": "",
+        "position": {
+          "x": 660,
+          "y": 290
+        }
+      },
+      {
+        "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
+        "role": "NVIDIA NIM 2",
+        "task": "",
+        "skills": [],
+        "mcps": [],
+        "title": "",
+        "position": {
+          "x": 100,
+          "y": 460
         }
       }
     ],
