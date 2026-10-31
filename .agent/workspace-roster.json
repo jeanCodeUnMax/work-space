@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-31T09:16:29.633Z",
+  "updatedAt": "2026-10-31T09:22:43.764Z",
   "core": {
     "devin": [
       {
@@ -598,15 +598,28 @@
         "providerId": "nim",
         "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
-        "role": "NVIDIA NIM"
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM",
+        "title": "young-ibis",
+        "hidden": false
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
-        "role": "NVIDIA NIM 2"
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM 2",
+        "title": "daring-agent",
+        "hidden": false
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-38bb399c-f180-41d3-a3a4-5f92697edb3d",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "role": "NVIDIA NIM 2",
+        "title": "onyx-agent",
+        "hidden": false
       }
     ],
     "antigravity": [
@@ -1039,10 +1052,10 @@
         "task": "",
         "skills": [],
         "mcps": [],
-        "title": "",
+        "title": "young-ibis",
         "position": {
-          "x": 660,
-          "y": 290
+          "x": 242,
+          "y": 638
         }
       },
       {
@@ -1051,10 +1064,22 @@
         "task": "",
         "skills": [],
         "mcps": [],
-        "title": "",
+        "title": "daring-agent",
         "position": {
-          "x": 100,
-          "y": 460
+          "x": -154,
+          "y": 660
+        }
+      },
+      {
+        "sessionId": "chat-38bb399c-f180-41d3-a3a4-5f92697edb3d",
+        "role": "NVIDIA NIM 2",
+        "task": "",
+        "skills": [],
+        "mcps": [],
+        "title": "onyx-agent",
+        "position": {
+          "x": 594,
+          "y": 660
         }
       }
     ],
