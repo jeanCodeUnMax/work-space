@@ -8,8 +8,6 @@ param(
   [ValidateRange(1, 1440)]
   [int]$CriticalTaskMinutes = 90,
   [string]$HeartbeatTaskId = '',
-  [string]$AgyCascadeId = '7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3',
-  [string]$AgyModel = 'MODEL_PLACEHOLDER_M418',
   [switch]$Once,
   [switch]$SkipBootstrap,
   [switch]$NoMcpConfigRepair
@@ -58,7 +56,6 @@ $script:State = @{
   alerts = @{}
   commsOffset = [long]0
   cpuHighSince = $null
-  lastAgyWakeAt = $null
   lastAcpProbeAt = $null
   lastMuxCheckAt = $null
   muxDriftSignature = $null
@@ -76,7 +73,7 @@ if (Test-Path -LiteralPath $script:StatePath) {
     foreach ($key in @('alerts', 'taskFirstSeen', 'taskStatuses', 'wokenTasks')) {
       if (-not $loaded.Contains($key) -or $loaded[$key] -isnot [System.Collections.IDictionary]) { $loaded[$key] = @{} }
     }
-    foreach ($key in @('commsOffset', 'cpuHighSince', 'lastAgyWakeAt', 'lastAcpProbeAt', 'lastMuxCheckAt', 'muxDriftSignature')) {
+    foreach ($key in @('commsOffset', 'cpuHighSince', 'lastAcpProbeAt', 'lastMuxCheckAt', 'muxDriftSignature')) {
       if (-not $loaded.Contains($key)) { $loaded[$key] = $null }
     }
     if ($loaded.commsOffset -isnot [long] -and $loaded.commsOffset -isnot [int]) {
@@ -587,15 +584,6 @@ function Invoke-Snapshot {
   }
   if ($bridge -ne 'connected') { Set-Alert -Key 'bridge:down' -Code 'websocket_bridge_unreachable' }
 
-  $agyHub = 'unreachable'
-  $agyConversationCount = 0
-  try {
-    $agyRows = @(Invoke-NodeText -ScriptPath $script:AgyHelper -NodeArgs @('list') |
-      ConvertFrom-Json -AsHashtable)
-      $agyConversationCount = @($agyRows).Count
-    $agyHub = 'connected'
-  } catch { }
-  if ($agyHub -ne 'connected') { Set-Alert -Key 'hub:agy' -Code 'antigravity_hub_unreachable' }
 
   $muxStatus = [string](@(Invoke-McpMuxCheck -Now $now)[-1])
 
@@ -686,8 +674,6 @@ function Invoke-Snapshot {
     dbPulseAgeMinutes = if ($null -ne $dbAgeMinutes) { [Math]::Round($dbAgeMinutes, 1) } else { $null }
     hpheHealth = $health
     bridge = $bridge
-    agyHub = $agyHub
-    agyConversationCount = $agyConversationCount
     mcpMux = $muxStatus
   }
   if ($HeartbeatTaskId) {
