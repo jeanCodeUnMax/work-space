@@ -332,6 +332,9 @@ if ($Elevated) {
   Register-ScheduledTask -TaskName 'hphe-taskwatch' -Action $act -Trigger $trg -Settings $set -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
   Start-ScheduledTask -TaskName 'hphe-taskwatch'
   Write-Host "  + hphe-taskwatch (SYSTEM, 5 min) enregistree"
+  [Environment]::SetEnvironmentVariable('HEPHAISTOS_WATCHDOG','1','User')
+  $env:HEPHAISTOS_WATCHDOG='1'
+  Write-Host "  + HEPHAISTOS_WATCHDOG=1 (env User) - watchdog unifie actif"
 } else {
   Write-Host "  taskwatch : relancer en admin avec -Elevated pour enregistrer hphe-taskwatch"
 }

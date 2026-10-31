@@ -62,6 +62,8 @@ $script:State = @{
   taskFirstSeen = @{}
   taskStatuses = @{}
   wokenTasks = @{}
+  notifiedTasks = @{}
+  devinSession = ''
 }
 $script:ActiveAlertKeys = @{}
 $script:PendingWakeNotes = [System.Collections.Generic.List[string]]::new()
@@ -70,10 +72,10 @@ $stateLoaded = $false
 if (Test-Path -LiteralPath $script:StatePath) {
   try {
     $loaded = Get-Content -LiteralPath $script:StatePath -Raw | ConvertFrom-Json -AsHashtable
-    foreach ($key in @('alerts', 'taskFirstSeen', 'taskStatuses', 'wokenTasks')) {
+    foreach ($key in @('alerts', 'taskFirstSeen', 'taskStatuses', 'wokenTasks', 'notifiedTasks')) {
       if (-not $loaded.Contains($key) -or $loaded[$key] -isnot [System.Collections.IDictionary]) { $loaded[$key] = @{} }
     }
-    foreach ($key in @('commsOffset', 'cpuHighSince', 'lastAcpProbeAt', 'lastMuxCheckAt', 'muxDriftSignature')) {
+    foreach ($key in @('commsOffset', 'cpuHighSince', 'devinSession', 'lastAcpProbeAt', 'lastMuxCheckAt', 'muxDriftSignature')) {
       if (-not $loaded.Contains($key)) { $loaded[$key] = $null }
     }
     if ($loaded.commsOffset -isnot [long] -and $loaded.commsOffset -isnot [int]) {
@@ -370,6 +372,23 @@ function Test-DependenciesComplete {
   return $true
 }
 
+function Resolve-DevinSession {
+  if ($script:State.devinSession) { return $script:State.devinSession }
+  try {
+    $roster = Invoke-McpJson -Tool 'memory_read' -ArgsJson '{"key":"team/roster","projectId":"Herald-OS"}'
+    $content = [string](Get-Field $roster.memory 'content')
+    if ($content) {
+      $r = $content | ConvertFrom-Json
+      $sid = [string]$r.binome.cash.sessionId
+      if ($sid) {
+        $script:State.devinSession = ($sid -split '/')[-1]
+        return $script:State.devinSession
+      }
+    }
+  } catch { }
+  return $null
+}
+
 function Invoke-Snapshot {
   $script:ActiveAlertKeys = @{}
   $script:PendingWakeNotes.Clear()
@@ -459,6 +478,30 @@ function Invoke-Snapshot {
 
     foreach ($task in $pending) {
       if (-not (Get-Field $task 'assigned_to') -or -not (Test-DependenciesComplete -Task $task -TasksById $tasksById)) { continue }
+      $nid = [string](Get-Field $task 'id')
+      if ($nid -and -not $script:State.notifiedTasks.ContainsKey($nid)) {
+        $script:State.notifiedTasks[$nid] = $now.ToString('o')
+        $assigneeId = [string](Get-Field $task 'assigned_to')
+        $assignedName = 'agent'
+        $agentRow = @($agents | Where-Object { [string]$_.id -eq $assigneeId }) | Select-Object -First 1
+        if ($agentRow) { $assignedName = [string](Get-Field $agentRow 'agent_name') }
+        $taskTitle = [string](Get-Field $task 'title')
+        Write-Log -Level 'info' -Category 'task_notify' -Details @{ taskId = $nid; assignee = $assignedName }
+        try { Write-CommsEvent -Code "task_notify" -TaskId $nid } catch { }
+        if ($assignedName -eq 'devin') {
+          $sess = Resolve-DevinSession
+          if ($sess) {
+            try {
+              $inject = Join-Path $script:AgentDir 'agent-bridgecp-inject.js'
+              & node $inject --provider 'devin-cli' --session $sess --prompt "[WATCHDOG] Tache orchestratrice pending #$nid : $taskTitle. Reclame via get_next_task puis update_task." --wait turn --timeout 60 | Out-Null
+            } catch { }
+          }
+        }
+        while ($script:State.notifiedTasks.Count -gt 500) {
+          $oldest = @($script:State.notifiedTasks.Keys)[0]
+          $script:State.notifiedTasks.Remove($oldest)
+        }
+      }
       $createdAt = ConvertTo-UtcDateTime -Value (Get-Field $task 'created_at') -Fallback ([DateTime]::MinValue)
       if ($createdAt -ne [DateTime]::MinValue -and
           ($now - $createdAt).TotalMinutes -ge $StaleTaskMinutes) {
