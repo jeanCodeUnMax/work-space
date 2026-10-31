@@ -29,7 +29,18 @@ async function portUp(url: string, ms = 2500): Promise<boolean> {
     } catch { return false; }
 }
 
-function spawnDetached(cmd: string, args: string[], cwd?: string, extraEnv?: NodeJS.ProcessEnv): void {
+function spawnDetached(cmd: string, args: string[], cwd?: string, extraEnv?: NodeJS.ProcessEnv, visible = false): void {
+    if (visible) {
+        // Terminal visible : `cmd /c start` alloue une console détachée de
+        // l'IDE — le processus survit à l'IDE et l'utilisateur voit les logs.
+        // Pas de quotes manuels : Node quote déjà les args avec espaces ; un
+        // arg vide devient "" = titre fenêtre vide pour `start`.
+        const child = child_process.spawn('cmd.exe',
+            ['/c', 'start', '', cmd, ...args],
+            { cwd, detached: true, stdio: 'ignore', env: { ...process.env, ...extraEnv }, windowsHide: true });
+        child.unref();
+        return;
+    }
     const isScript = /\.(bat|cmd)$/i.test(cmd);
     const child = child_process.spawn(cmd, args, {
         cwd,
@@ -99,7 +110,7 @@ function resolveComfyUI(): { bat: string; cwd: string } | null {
  * 2. node sur le PATH + n8n via `npm root -g`,
  * 3. scan nvm (dernier node) + npm global classique.
  */
-function resolveN8n(): { node: string; bin: string } | null {
+function resolveN8n(workspaceRoot?: string): { node: string; bin: string } | null {
     const envNode = process.env.N8N_NODE;
     const envBin = process.env.N8N_BIN;
     if (envNode && envBin && fs.existsSync(envNode) && fs.existsSync(envBin)) {
@@ -107,6 +118,11 @@ function resolveN8n(): { node: string; bin: string } | null {
     }
     const node = which('node.exe') || which('node');
     let n8nBin: string | null = envBin && fs.existsSync(envBin) ? envBin : null;
+    // Monorepo local : le workspace est le repo n8n (packages/cli/bin/n8n).
+    if (!n8nBin && workspaceRoot) {
+        const cand = path.join(workspaceRoot, 'packages', 'cli', 'bin', 'n8n');
+        if (fs.existsSync(cand)) n8nBin = cand;
+    }
     if (!n8nBin) {
         try {
             const root = child_process.execFileSync('npm', ['root', '-g'], { encoding: 'utf8', timeout: 8000, shell: true }).trim();
@@ -204,7 +220,7 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
     if (svc === 'n8n') {
         if (!(await portUp('http://127.0.0.1:5678'))) {
             if (!processAlive('bin[\\\\/]n8n')) {
-                const n8n = resolveN8n();
+                const n8n = resolveN8n(workspaceRoot);
                 if (!n8n) {
                     FlowWorkspacePanel.error('n8n introuvable : installe-le en global (npm i -g n8n) ou définis N8N_NODE + N8N_BIN.');
                     return false;
@@ -215,7 +231,7 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
                 // transite par Git Bash (MSYS path conversion) — on le supprime :
                 // n8n retombe sur son défaut `/api`.
                 delete env.N8N_PUBLIC_API_ENDPOINT;
-                spawnDetached(n8n.node, [n8n.bin, 'start'], workspaceRoot, env);
+                spawnDetached(n8n.node, [n8n.bin, 'start'], workspaceRoot, env, true);
             }
             // Premier boot n8n : migrations + licence peuvent dépasser 60 s.
             if (!(await waitPort('http://127.0.0.1:5678', 90))) return false;
