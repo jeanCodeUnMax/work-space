@@ -34,6 +34,8 @@ interface AgentData extends Record<string, unknown> {
     model: string;
     role: string;
     task: string;
+    /** Kind voulu par la carte (.agent/cards) — persiste après chaque save. */
+    cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros';
     skills?: string[];
     mcps?: string[];
     external?: boolean;
@@ -59,6 +61,9 @@ interface StoredNode {
     task: string;
     skills?: string[];
     mcps?: string[];
+    provider?: string;
+    cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros';
+    bound?: { at: number; kind: string };
     position: { x: number; y: number };
 }
 
@@ -228,7 +233,11 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 <button
                     type="button"
                     className="flow-node-point"
-                    title="Prendre la fenêtre active et l'attacher à ce bloc"
+                    title={(data.cardKind || (data.provider === 'antigravity-acp' ? 'agy' : data.provider === 'devin-cli' ? 'devin' : undefined)) === 'agy'
+                        ? "Attacher la fenêtre Antigravity à ce bloc"
+                        : (data.cardKind || (data.provider === 'devin-cli' ? 'devin' : undefined)) === 'devin'
+                            ? "Attacher la fenêtre Devin à ce bloc"
+                            : "Prendre la fenêtre active et l'attacher à ce bloc"}
                     onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
                 >⤓</button>
             </div>
@@ -298,6 +307,11 @@ function toStoredGraph(
             task: node.data.task,
             skills: node.data.skills || [],
             mcps: node.data.mcps || [],
+            // provider + cardKind repartent vers le roster : sans eux la
+            // carte perd son type au premier save et le bind ⤓ accepte
+            // n'importe quelle fenêtre focalisée (bug AGY↔Devin).
+            provider: node.data.provider,
+            cardKind: node.data.cardKind,
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
             bound: node.data.bound,
         })),
@@ -436,7 +450,7 @@ function Workspace(): React.JSX.Element {
                                 },
                                 onRoleDrop: (role: string) => assignRole(node.id, role),
                                 onPoint: () => pointAgent(node.id),
-                                onBind: () => bindActive(node.id, String(node.data?.provider || '')),
+                                onBind: () => bindActive(node.id, String(node.data?.provider || ''), node.data?.cardKind),
                             },
                         };
                     });
@@ -594,8 +608,14 @@ function Workspace(): React.JSX.Element {
         });
     }, [postWorkflowSave, setNodes]);
 
-    const bindActive = useCallback((sessionId: string, provider: string) => {
-        const kind = /server|herald|cerber|d2r2/i.test(provider) ? 'serveros' : /devin/i.test(provider) ? 'devin' : /antigravity|agy/i.test(provider) ? 'agy' : 'bleubite';
+    const bindActive = useCallback((sessionId: string, provider: string, cardKind?: string) => {
+        // Le kind de la carte prime : le host cible la fenêtre du bon type
+        // (Antigravity pour une carte agy, Devin pour une carte devin), pas
+        // simplement la fenêtre focalisée. Sans type explicite ni provider
+        // identifiable on n'envoie rien : un 'bleubite' déduit d'un provider
+        // 'unknown' ferait refuser la fenêtre AGY/Devin à tort.
+        const kind = cardKind
+            || (/server|herald|cerber|d2r2/i.test(provider) ? 'serveros' : /devin/i.test(provider) ? 'devin' : /antigravity|agy/i.test(provider) ? 'agy' : undefined);
         vscode.postMessage({ type: 'bind_active', sessionId, kind });
     }, []);
     const pointAgent = useCallback((sessionId: string) => {

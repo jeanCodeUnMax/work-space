@@ -14,7 +14,7 @@
     "ltxv_text_encoder": {
       "dir": "text_encoders",
       "files": {
-        "t5xxl_fp8_e4m3fn.safetensors": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn.safetensors"
+        "t5xxl_fp8_e4m3fn.safetensors": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors"
       }
     }
   },

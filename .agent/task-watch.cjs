@@ -1,6 +1,6 @@
 // task-watch.cjs — watcher push des transitions de taches orchestrateur.
 // Se connecte au WS bridge (:7477) et imprime chaque transition de statut.
-// Persiste aussi dans .agent/task-events.log. Relance auto sur deconnexion.
+// Persiste dans .agent/task-events.log et .agent/comms.jsonl. Relance auto sur deconnexion.
 const fs = require('fs');
 const path = require('path');
 let WebSocket;
@@ -8,15 +8,22 @@ try { WebSocket = require('ws'); }
 catch {
   // fallback : ws du repo ou du monitor installé (toute version) — aucun
   // chemin machine/version en dur.
+  const userHome = process.env.USERPROFILE || 'C:\\Users\\Administrator';
   const fallbackDirs = [
     path.join(__dirname, 'agent-bridge', 'node_modules', 'ws'),
     path.join(__dirname, '..', 'extensions', 'orchestrator-monitor', 'ws-bridge', 'node_modules', 'ws'),
+    'C:\\Program Files\\servers\\hephaistos2-kit\\extension\\node_modules\\ws',
+    'C:\\Users\\Administrator\\AppData\\Roaming\\npm\\node_modules\\ws',
   ];
   try {
-    const extRoot = path.join(process.env.USERPROFILE || '', '.devin', 'extensions');
-    for (const name of fs.readdirSync(extRoot)) {
-      if (name.startsWith('hephaistos.orchestrator-monitor-')) {
-        fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+    for (const extDir of ['.devin', '.vscode']) {
+      const extRoot = path.join(userHome, extDir, 'extensions');
+      if (fs.existsSync(extRoot)) {
+        for (const name of fs.readdirSync(extRoot)) {
+          if (name.startsWith('hephaistos.orchestrator-monitor-')) {
+            fallbackDirs.push(path.join(extRoot, name, 'ws-bridge', 'node_modules', 'ws'));
+          }
+        }
       }
     }
   } catch {}
@@ -25,6 +32,7 @@ catch {
 if (!WebSocket) { console.error('[task-watch] module "ws" introuvable — npm i ws'); process.exit(2); }
 
 const LOG = path.join(__dirname, 'task-events.log');
+const COMMS = path.join(__dirname, 'comms.jsonl');
 const URL = 'ws://127.0.0.1:7477';
 const seen = new Map(); // task id -> last status
 
@@ -57,12 +65,26 @@ function emit(line) {
   console.log(out);
   try { fs.appendFileSync(LOG, out + '\n'); } catch {}
 }
+function logComms(t, status) {
+  try {
+    const entry = {
+      ts: new Date().toISOString(),
+      src: 'task-watch',
+      dst: 'dashboard',
+      kind: status === 'pending' ? 'task_notify' : (status === 'completed' || status === 'failed' ? 'wake' : 'event'),
+      text: `[TASK-WATCH] #${t.id} [${status}] ${(t.title || '').slice(0, 80)}${t.result ? ' (result ok)' : ''}`,
+      taskId: String(t.id)
+    };
+    fs.appendFileSync(COMMS, JSON.stringify(entry) + '\n');
+  } catch {}
+}
 function track(t) {
   const prev = seen.get(t.id);
   if (prev === t.status) return;
   seen.set(t.id, t.status);
   const tag = { completed: 'DONE', failed: 'FAIL', in_progress: 'RUN', pending: 'PEND' }[t.status] || t.status;
   emit(`${tag} #${t.id} ${(t.title || '').slice(0, 80)}${t.result ? ' (result ok)' : ''}`);
+  logComms(t, t.status);
 }
 
 function connect() {

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-10-31T09:22:43.764Z",
+  "updatedAt": "2026-11-01T02:35:15.098Z",
   "core": {
     "devin": [
       {
@@ -109,9 +109,9 @@
         "providerId": "antigravity-acp",
         "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
         "restore": "existing-only",
-        "role": "Antigravity-Tango",
-        "title": "Tango (Antigravity)",
-        "hidden": true
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": false
       },
       {
         "providerId": "devin-cli",
@@ -601,7 +601,7 @@
         "model": "opencode/nemotron-3-ultra-free",
         "role": "NVIDIA NIM",
         "title": "young-ibis",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -610,7 +610,7 @@
         "model": "opencode/nemotron-3-ultra-free",
         "role": "NVIDIA NIM 2",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -619,6 +619,30 @@
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "role": "NVIDIA NIM 2",
         "title": "onyx-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvx7t748",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur",
+        "title": "daring-agent",
+        "hidden": false
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mvx7vkc0",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": false
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvx7w8xm",
+        "restore": "open-or-reveal",
+        "role": "NVIDIA NIM 2",
+        "title": "daring-agent",
         "hidden": false
       }
     ],
@@ -972,11 +996,12 @@
         ],
         "title": "daring-agent",
         "position": {
-          "x": -154,
-          "y": 22
+          "x": -264,
+          "y": -22
         },
+        "provider": "unknown",
         "bound": {
-          "at": 1793298655060,
+          "at": 1793500508218,
           "kind": "devin"
         }
       },
@@ -990,9 +1015,10 @@
         "mcps": [],
         "title": "Veilleur-Telegram",
         "position": {
-          "x": 220,
-          "y": 0
-        }
+          "x": 286,
+          "y": -44
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "acp/devin-cli/slow-walnut",
@@ -1005,9 +1031,10 @@
         "mcps": [],
         "title": "Redacteur",
         "position": {
-          "x": 198,
-          "y": 330
+          "x": 110,
+          "y": 286
         },
+        "provider": "devin-cli",
         "bound": {
           "at": 1793298552769,
           "kind": "devin"
@@ -1026,7 +1053,8 @@
         "position": {
           "x": 528,
           "y": 264
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "acp/nim/nim-22c94649",
@@ -1041,45 +1069,28 @@
           "x": 860,
           "y": 160
         },
+        "provider": "nim",
         "bound": {
           "at": 1793288415171,
           "kind": "devin"
         }
       },
       {
-        "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
-        "role": "NVIDIA NIM",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "role": "Antigravity",
         "task": "",
         "skills": [],
         "mcps": [],
-        "title": "young-ibis",
+        "title": "Antigravity",
         "position": {
-          "x": 242,
-          "y": 638
-        }
-      },
-      {
-        "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
-        "role": "NVIDIA NIM 2",
-        "task": "",
-        "skills": [],
-        "mcps": [],
-        "title": "daring-agent",
-        "position": {
-          "x": -154,
-          "y": 660
-        }
-      },
-      {
-        "sessionId": "chat-38bb399c-f180-41d3-a3a4-5f92697edb3d",
-        "role": "NVIDIA NIM 2",
-        "task": "",
-        "skills": [],
-        "mcps": [],
-        "title": "onyx-agent",
-        "position": {
-          "x": 594,
-          "y": 660
+          "x": 682,
+          "y": -110
+        },
+        "provider": "antigravity-acp",
+        "cardKind": "agy",
+        "bound": {
+          "at": 1793500492735,
+          "kind": "agy"
         }
       }
     ],

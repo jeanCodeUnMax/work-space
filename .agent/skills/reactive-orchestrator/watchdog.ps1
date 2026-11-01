@@ -492,7 +492,7 @@ function Invoke-Snapshot {
           $sess = Resolve-DevinSession
           if ($sess) {
             try {
-              $inject = Join-Path $script:AgentDir 'agent-bridgecp-inject.js'
+              $inject = Join-Path $script:AgentDir 'agent-bridge\acp-inject.js'
               & node $inject --provider 'devin-cli' --session $sess --prompt "[WATCHDOG] Tache orchestratrice pending #$nid : $taskTitle. Reclame via get_next_task puis update_task." --wait turn --timeout 60 | Out-Null
             } catch { }
           }

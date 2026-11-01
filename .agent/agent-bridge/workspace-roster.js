@@ -92,6 +92,11 @@ function validateWorkflow(input) {
             mcps,
             title: String(raw.title || '').slice(0, 200),
             position: { x, y },
+            // provider + cardKind doivent survivre au save : sinon une carte
+            // ACP perd son type (agy/devin) et le bind rattache la mauvaise
+            // fenetre de chat (bug AGY<->Devin).
+            ...(raw.provider ? { provider: String(raw.provider).slice(0, 120) } : {}),
+            ...(['devin', 'agy', 'bleubite', 'serveros'].includes(raw.cardKind) ? { cardKind: String(raw.cardKind) } : {}),
             ...(raw.bound && typeof raw.bound === 'object' ? { bound: { at: Number(raw.bound.at) || Date.now(), kind: String(raw.bound.kind || '').slice(0, 20) } } : {}),
         });
     }

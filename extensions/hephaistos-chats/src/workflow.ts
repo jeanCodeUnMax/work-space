@@ -66,6 +66,7 @@ export interface WorkflowViewNode extends WorkflowNode {
         sessionId: string;
         title: string;
         kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
+        cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros';
         provider: string;
         model: string;
         role: string;
@@ -163,6 +164,10 @@ export function createWorkflowView(
                 sessionId: node.sessionId,
                 title: session ? sessionTitle(session) : (node.title || slug || node.role),
                 kind,
+                // cardKind repasse au webview pour survivre au prochain save —
+                // sans ce round-trip la carte oublie son type (AGY/Devin) après
+                // un drag et le bind ⤓ rattache la mauvaise fenêtre.
+                cardKind,
                 provider,
                 model: session?.model || (external ? 'agent IDE' : ''),
                 role: node.role,

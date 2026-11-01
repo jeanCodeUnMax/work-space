@@ -956,7 +956,7 @@ export function activate(context: vscode.ExtensionContext): void {
             // Dropdown "+ Bloc" : types de blocs créables, pas les transports.
             // L'ordre est volontaire — Devin, AGY, Bleubite, puis les ServerOS.
             providers: [
-                { id: 'devin-cli', label: 'Devin ACP' },
+                { id: 'devin-cli', label: 'Devin' },
                 { id: 'antigravity-acp', label: 'Antigravity' },
                 { id: 'bleubite', label: 'Bleubite' },
                 { id: 'cerberos', label: 'Cerber — HeraldOS' },
@@ -1111,7 +1111,7 @@ export function activate(context: vscode.ExtensionContext): void {
             // bloc attend ensuite le bouton ⤓ pour être rattaché.
             const provider = String((message as { provider?: string }).provider || 'bleubite');
             const blockTypes: Record<string, { kind: 'devin' | 'agy' | 'bleubite' | 'serveros'; label: string; role: string }> = {
-                'devin-cli': { kind: 'devin', label: 'Devin ACP', role: 'Devin' },
+                'devin-cli': { kind: 'devin', label: 'Devin', role: 'Devin' },
                 'antigravity-acp': { kind: 'agy', label: 'Antigravity', role: 'Antigravity' },
                 'cerberos': { kind: 'serveros', label: 'Cerber — HeraldOS', role: 'Server OS' },
                 'd2r2': { kind: 'serveros', label: 'CerberOS — D2R2', role: 'Server OS' },
@@ -1139,12 +1139,35 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'bind_active' && message.sessionId) {
-            // Bouton ⤓ d'un bloc : prend la fenêtre ACTIVE et la rattache au bloc.
-            // devin  -> session ACP focalisée (workbench.action.getAcpState)
-            // agy    -> conversation Antigravity active (hub, agy-hub.js current)
+            // Bouton ⤓ d'un bloc : rattache la fenêtre du BON type au bloc.
+            // La carte décide de la cible — agy -> conversation Antigravity
+            // live, devin -> session Devin ACP live — et PAS seulement la
+            // fenêtre focalisée : sinon une carte AGY héritait du chat Devin
+            // qui avait le focus (bug d'association croisée).
             try {
                 const oldId = String(message.sessionId);
-                // Le type vient de la fenêtre réellement focalisée, jamais de la carte.
+                const labels: Record<string, string> = { devin: 'Devin', agy: 'Antigravity', bleubite: 'Bleubite', serveros: 'Server OS' };
+                const wsRoot = workspaceRoot || '';
+                const graph = workflowStore.load(store.list());
+                const node = graph.nodes.find((n) => n.sessionId === oldId);
+                if (!node) return;
+                // Le kind voulu : cardKind persisté, sinon le kind envoyé par le
+                // webview, sinon déduit du provider/titre/role — les vieilles
+                // cartes ont perdu cardKind+provider avant le fix et ne portent
+                // plus que leur titre (« Antigravity », « Devin »…).
+                const stored = (node as { cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros' }).cardKind;
+                const hintOf = (...texts: (string | undefined)[]): 'devin' | 'agy' | 'bleubite' | 'serveros' | undefined => {
+                    const t = texts.filter(Boolean).join(' ').toLowerCase();
+                    if (/antigravity|\bagy\b/.test(t)) return 'agy';
+                    if (/\bdevin\b/.test(t)) return 'devin';
+                    if (/cerber|herald|d2r2|server/.test(t)) return 'serveros';
+                    return undefined;
+                };
+                const want = (stored && stored !== 'bleubite' ? stored : undefined)
+                    || hintOf((node as { provider?: string }).provider,
+                        node.title, node.role,
+                        (message as { kind?: string }).kind)
+                    || stored;
                 const acp = (await vscode.commands.executeCommand<any>('workbench.action.getAcpState'))?.reduxStore?.acp;
                 const focused = String(acp?.focusedSessionId || '');
                 // Le kind vient du provider de la fenêtre focalisée —
@@ -1156,29 +1179,54 @@ export function activate(context: vscode.ExtensionContext): void {
                     if (id.startsWith('acp/')) return 'bleubite';
                     return 'devin';
                 };
-                let kind = kindOf(focused);
-                let newId = focused;
-                if (!focused) {
-                    const cur = require('child_process').execFileSync('node', [
-                        path.join(workspaceRoot || '', '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
-                    ], { encoding: 'utf8', timeout: 20000 }).trim();
+                const pickLive = async (providerId: string): Promise<string> => {
+                    try {
+                        const live = await ideAgentSessions(providerId, wsRoot);
+                        const s = live.find((x) => x.focused) || live[0];
+                        return s?.sessionId ? `acp/${providerId}/${s.sessionId}` : '';
+                    } catch { return ''; }
+                };
+                const agyCurrent = (): string => {
+                    try {
+                        const cur = require('child_process').execFileSync('node', [
+                            path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                        ], { encoding: 'utf8', timeout: 20000 }).trim();
+                        return cur ? `acp/antigravity-acp/${cur}` : '';
+                    } catch { return ''; }
+                };
+                let kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
+                let newId = '';
+                if (want === 'agy') {
+                    // Carte Antigravity -> la conversation AGY live, même si un
+                    // chat Devin a le focus.
+                    newId = focused.startsWith('acp/antigravity-acp/')
+                        ? focused
+                        : (await pickLive('antigravity-acp')) || agyCurrent();
                     kind = 'agy';
-                    newId = cur ? `acp/antigravity-acp/${cur}` : '';
+                } else if (want === 'devin') {
+                    // Carte Devin -> la session Devin live, même si c'est une
+                    // conversation Antigravity qui a le focus.
+                    newId = focused.startsWith('acp/devin-cli/')
+                        ? focused
+                        : await pickLive('devin-cli');
+                    kind = 'devin';
+                } else {
+                    // Sans type imposé : la fenêtre focalisée, puis repli AGY.
+                    kind = kindOf(focused);
+                    newId = focused;
+                    if (!focused) {
+                        kind = 'agy';
+                        newId = agyCurrent();
+                    }
+                    // Garde : une carte typée n'accepte que la fenêtre du bon
+                    // type (ex. CerberOS refuse une conversation Devin).
+                    if (want && want !== kind) {
+                        FlowWorkspacePanel.error(`La carte « ${node.title || 'bloc'} » attend une fenêtre ${labels[want]}, pas ${labels[kind]}. Focalise la bonne conversation.`);
+                        return;
+                    }
                 }
                 if (!newId) {
-                    FlowWorkspacePanel.error(`Aucune fenêtre ${kind === 'agy' ? 'Antigravity' : 'Devin'} active à attacher.`);
-                    return;
-                }
-                const graph = workflowStore.load(store.list());
-                const node = graph.nodes.find((n) => n.sessionId === oldId);
-                if (!node) return;
-                // Garde : une carte typée n'accepte que la fenêtre du bon type.
-                // Sans ça, un ⤓ sur CerberOS rattachait la conversation Devin
-                // focalisée (kind devin) à une carte serveros.
-                const want = (node as { cardKind?: 'devin' | 'agy' | 'bleubite' | 'serveros' }).cardKind;
-                if (want && want !== kind) {
-                    const labels: Record<string, string> = { devin: 'Devin ACP', agy: 'Antigravity', bleubite: 'Bleubite', serveros: 'Server OS' };
-                    FlowWorkspacePanel.error(`La carte « ${node.title || 'bloc'} » attend une fenêtre ${labels[want]}, pas ${labels[kind]}. Focalise la bonne conversation.`);
+                    FlowWorkspacePanel.error(`Aucune fenêtre ${labels[want || kind] || 'agent'} ouverte à attacher.`);
                     return;
                 }
                 // Fenêtre déjà portée par un autre bloc : on la détache de cet

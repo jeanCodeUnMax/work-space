@@ -6,12 +6,16 @@
 // Prints the tool result content as text to stdout. Exit 0 on success.
 
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
-const MCP_CONFIG = process.env.DEVIN_MCP_CONFIG
+let MCP_CONFIG = process.env.DEVIN_MCP_CONFIG
   || join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'devin', 'mcp_config.json');
+if (!existsSync(MCP_CONFIG)) {
+  const fallback = 'C:/Users/Administrator/AppData/Roaming/devin/mcp_config.json';
+  if (existsSync(fallback)) MCP_CONFIG = fallback;
+}
 const TIMEOUT_MS = Number(process.env.MCP_CALL_TIMEOUT_MS || 20000);
 
 const [serverName, toolName, argsJson] = process.argv.slice(2);
@@ -19,6 +23,16 @@ if (!serverName || !toolName) {
   console.error('usage: mcp-call.mjs <server> <tool> [json-args]');
   process.exit(64);
 }
+
+const SERVER_ALIASES = {
+  orchestrator: 'Hephaistos-everything-search',
+  filesystem: 'Hephaistos-everything-search',
+  agentmemory: 'Hephaistos-everything-search',
+  qdrant: 'Hephaistos-everything-search',
+  zvec: 'Hephaistos-everything-search',
+  'nim-router': 'Hephaistos-everything-search',
+};
+const effectiveServer = SERVER_ALIASES[serverName] || serverName;
 
 let toolArgs = {};
 if (argsJson) {
@@ -28,16 +42,21 @@ if (argsJson) {
 
 const cfg = JSON.parse(readFileSync(MCP_CONFIG, 'utf8'));
 const servers = cfg.mcpServers || cfg;
-let def = servers[serverName];
+let def = servers[effectiveServer] || servers[serverName];
 if ((!def || !def.command) && servers['mcp-mux']?.args) {
   const muxArgs = servers['mcp-mux'].args;
   const cfgIdx = muxArgs.indexOf('--config');
-  const muxPath = cfgIdx >= 0 && muxArgs[cfgIdx + 1]
+  let muxPath = cfgIdx >= 0 && muxArgs[cfgIdx + 1]
     ? muxArgs[cfgIdx + 1]
     : join(homedir(), '.config', 'mcp-mux', 'mcp-mux.json');
+  if (!existsSync(muxPath)) {
+    const fallbackMux = 'C:/Users/Administrator/.config/mcp-mux/mcp-mux.json';
+    if (existsSync(fallbackMux)) muxPath = fallbackMux;
+  }
   try {
     const muxCfg = JSON.parse(readFileSync(muxPath, 'utf8'));
-    const muxSrv = (muxCfg.servers || muxCfg.mcpServers || muxCfg)[serverName];
+    const muxServers = muxCfg.servers || muxCfg.mcpServers || muxCfg;
+    const muxSrv = muxServers[effectiveServer] || muxServers[serverName];
     if (muxSrv && !muxSrv.disabled && muxSrv.command) def = muxSrv;
   } catch { /* fallback failed */ }
 }

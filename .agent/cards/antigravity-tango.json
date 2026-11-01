@@ -1,0 +1,10 @@
+{
+  "id": "antigravity-tango",
+  "kind": "agy",
+  "title": "Antigravity — Tango",
+  "role": "Antigravity",
+  "provider": "antigravity-acp",
+  "sessionId": "",
+  "skills": ["binome", "orchestrator"],
+  "mcps": []
+}

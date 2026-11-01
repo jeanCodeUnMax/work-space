@@ -1,0 +1,10 @@
+{
+  "id": "devin-cash",
+  "kind": "devin",
+  "title": "Devin — Cash",
+  "role": "Devin",
+  "provider": "devin-cli",
+  "sessionId": "",
+  "skills": ["binome", "orchestrator"],
+  "mcps": []
+}
