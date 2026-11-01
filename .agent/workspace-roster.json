@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-01T02:35:15.098Z",
+  "updatedAt": "2026-11-01T02:46:16.972Z",
   "core": {
     "devin": [
       {
@@ -1083,8 +1083,8 @@
         "mcps": [],
         "title": "Antigravity",
         "position": {
-          "x": 682,
-          "y": -110
+          "x": 594,
+          "y": -44
         },
         "provider": "antigravity-acp",
         "cardKind": "agy",
