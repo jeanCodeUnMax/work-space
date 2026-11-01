@@ -2,3 +2,5 @@ node_modules/
 out/
 *.vsix
 *.log
+# La release courante doit etre trackee (le VSIX sert de binaire distribue).
+!hephaistos-chats-*.vsix
