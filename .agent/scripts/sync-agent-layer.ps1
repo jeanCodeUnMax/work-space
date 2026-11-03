@@ -54,7 +54,7 @@ $Dest = Join-Path $Target '.agent'
 if (-not (Test-Path $Source)) { Write-Error "Source introuvable: $Source"; exit 1 }
 if (-not (Test-Path $Target)) { Write-Error "Cible introuvable: $Target"; exit 1 }
 
-$SkipDirs = @('__pycache__', 'node_modules', 'logs', 'queue', 'deliverables')
+$SkipDirs = @('__pycache__', 'node_modules', 'logs', 'queue', 'deliverables', 'kaggle', 'chats', 'flux')
 $SkipFiles = @(
     '.beacon-learn-state.json', '.beacon-offset.json',
     'ingestion.log', 'ingestion.state.json', '.ingestion-state.json',
