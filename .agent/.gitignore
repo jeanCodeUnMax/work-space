@@ -24,3 +24,5 @@ n8n-env.json
 kaggle/push-tmp.ipynb
 kaggle-hunyuan3d/push-tmp.ipynb
 kaggle/tunnel.local.json
+kaggle-*/
+colab/

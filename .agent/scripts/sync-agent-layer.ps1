@@ -67,7 +67,7 @@ $copied = 0; $skipped = 0
 Get-ChildItem -Path $Source -Recurse -File | ForEach-Object {
     $rel = $_.FullName.Substring($Source.Length + 1)
     $parts = $rel -split '[\\/]'
-    if ($parts | Where-Object { $SkipDirs -contains $_ }) { $skipped++; return }
+    if ($parts | Where-Object { $SkipDirs -contains $_ -or $_ -like 'kaggle-*' }) { $skipped++; return }
     if ($SkipFiles -contains $_.Name) { $skipped++; return }
     $dst = Join-Path $Dest $rel
     $same = (Test-Path $dst) -and
