@@ -54,13 +54,21 @@ $Dest = Join-Path $Target '.agent'
 if (-not (Test-Path $Source)) { Write-Error "Source introuvable: $Source"; exit 1 }
 if (-not (Test-Path $Target)) { Write-Error "Cible introuvable: $Target"; exit 1 }
 
-$SkipDirs = @('__pycache__', 'node_modules', 'logs', 'queue', 'deliverables', 'kaggle', 'chats', 'flux', 'hermes')
+$SkipDirs = @('__pycache__', 'node_modules', 'logs', 'queue', 'deliverables', 'kaggle', 'chats', 'flux', 'hermes', 'analysis', 'consciousness', 'n8n-templates', 'handoff', 'reports', 'security-audits', 'model-registry', 'backups')
 $SkipFiles = @(
     '.beacon-learn-state.json', '.beacon-offset.json',
     'ingestion.log', 'ingestion.state.json', '.ingestion-state.json',
     'rag_bridge.pid', 'rag_bridge_stdout.log', 'rag_bridge_stderr.log', 'rag_bridge.log',
     'comms.jsonl', 'ws-bridge.token', 'watch-state.json', 'binome-manifest.json',
-    'reactive-orchestrator-watchdog.jsonl'
+    'reactive-orchestrator-watchdog.jsonl',
+    # Runtime kit-local : ne jamais propager dans les workspaces injectes.
+    'comms.json', 'binome-link.json', 'creds-matrix.json', 'bind-debug.log',
+    'ws-bridge.log', 'task-events.log', 'ping-tango-751.txt', 'security-watch.cjs',
+    'task-watch.cjs', 'skill-registry.json', 'mcp-config.json.exemple',
+    'n8n-ai-providers-report.md', 'n8n-cleanup-report.json',
+    'n8n-image-workflow.json', 'n8n-telegram-workflow.json', 'n8n-proxy.log',
+    'nim1-dispatch.log', 'nim2-dispatch.log', 'omni1-dispatch.log',
+    'hermes-dispatch.log', 'comfy-models-inventory.json', 'comfy-models-move-report.json'
 )
 
 $copied = 0; $skipped = 0
