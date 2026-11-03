@@ -10,7 +10,7 @@
     Depose aussi (parite v1 'hephaistos-kit init') :
       - .vscode/     : configs IDE partagees — fichiers manquants uniquement,
                        jamais d'ecrasement des settings du projet
-      - .devin/      : regles (.devin/rules) et skills (.devin/skills) Devin —
+
                        fichiers manquants uniquement, jamais d'ecrasement
       - .ragignore   : exclusions d'ingestion — depose seulement si absent
       - .mcp-access  : acces MCP du projet — depose seulement si absent
@@ -86,42 +86,6 @@ Get-ChildItem -Path $Source -Recurse -File | ForEach-Object {
 # l'extension orchestrator-monitor ; plus aucune config .vscode n'est poussee. ---
 $vsCopied = 0; $vsKept = 0
 
-# --- .devin : regles et skills Devin du template — fichiers manquants uniquement ---
-$devinSrc = Join-Path $KitRoot '.devin'
-$devinCopied = 0; $devinKept = 0
-if (Test-Path $devinSrc) {
-    # .devin/rules
-    $rulesSrc = Join-Path $devinSrc 'rules'
-    if (Test-Path $rulesSrc) {
-        Get-ChildItem -Path $rulesSrc -File | ForEach-Object {
-            $dst = Join-Path $Target (Join-Path '.devin\rules' $_.Name)
-            if (Test-Path $dst) { $devinKept++; return }
-            if ($DryRun) { Write-Host "  COPY .devin\rules\$($_.Name)" }
-            else {
-                New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
-                Copy-Item $_.FullName $dst -Force
-            }
-            $devinCopied++
-        }
-    }
-    # .devin/skills
-    $skillsSrc = Join-Path $devinSrc 'skills'
-    if (Test-Path $skillsSrc) {
-        Get-ChildItem -Path $skillsSrc -Directory | ForEach-Object {
-            $skillDir = $_
-            Get-ChildItem -Path $skillDir.FullName -File | ForEach-Object {
-                $dst = Join-Path $Target (Join-Path ".devin\skills\$($skillDir.Name)" $_.Name)
-                if (Test-Path $dst) { $devinKept++; return }
-                if ($DryRun) { Write-Host "  COPY .devin\skills\$($skillDir.Name)\$($_.Name)" }
-                else {
-                    New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
-                    Copy-Item $_.FullName $dst -Force
-                }
-                $devinCopied++
-            }
-        }
-    }
-}
 
 # --- fichiers racine du template : deposes si absents (-Force pour ecraser) ---
 $RootFiles = @('.ragignore', '.mcp-access', '.gitignore', '.gitmodules', '.env', '.env.example', 'AGENTS.md')
@@ -139,5 +103,5 @@ foreach ($name in $RootFiles) {
 
 $mode = if ($DryRun) { '[DRY-RUN]' } else { '' }
 Write-Host "$mode $copied fichier(s) .agent a synchroniser vers $Dest ($skipped ignores runtime)" -ForegroundColor Green
-Write-Host "$mode .devin : $devinCopied depose(s), $devinKept conserve(s) | .vscode : $vsCopied depose(s), $vsKept conserve(s) | $($rootResults -join ' | ')" -ForegroundColor Green
+Write-Host "$mode .vscode : $vsCopied depose(s), $vsKept conserve(s) | $($rootResults -join ' | ')" -ForegroundColor Green
 Write-Host "Note: les fichiers propres au projet (rules/local_rules.md, etc.) sont preserves." -ForegroundColor DarkGray
