@@ -64,6 +64,11 @@ const server = http.createServer(async (req, res) => {
     const mod = target.protocol === 'https:' ? (await import('node:https')).default : http;
     const headers = { ...req.headers, host: target.host };
     delete headers['if-none-match']; // les caches 304 stale cassent les previews
+    // ComfyUI >=0.4x rejette les requetes cross-site (403 en iframe webview) :
+    // on lisse les entetes fetch pour que l'upstream voie une requete neutre.
+    for (const h of Object.keys(headers)) {
+        if (h.startsWith('sec-fetch-') || h === 'origin' || h === 'referer') delete headers[h];
+    }
     const upstream = mod.request(target, { method: req.method, headers }, (up) => {
         const out = { ...up.headers };
         if (out['set-cookie']) {
