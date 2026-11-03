@@ -4,14 +4,17 @@ NB = r'comfyui-kaggle.ipynb'
 OUT = r'push-tmp.ipynb'
 
 creds = open(os.path.expanduser(r'~\.cloudflared\6a056836-2022-4863-b8a2-57a9c4cfbe31.json'), encoding='utf-8').read().strip()
-manifest = json.dumps(json.load(open('manifests/video.json', encoding='utf-8')), ensure_ascii=False)
+import sys as _sys
+_mf = _sys.argv[1] if len(_sys.argv) > 1 else 'manifests/video.json'
+manifest = json.dumps(json.load(open(_mf, encoding='utf-8')), ensure_ascii=False)
+print('manifest:', _mf)
 
 repl = {
     '__KAGGLE_COMFY_TOKEN__': os.environ.get('KAGGLE_COMFY_TOKEN', ''),
     '__MAROTTE_TUNNEL_TOKEN__': '',
     '__CF_CREDS_JSON__': creds,
     '__CF_TUNNEL_ID__': '6a056836-2022-4863-b8a2-57a9c4cfbe31',
-    '__CF_HOSTNAME__': 'comfi.art-qalam.fr',
+    '__CF_HOSTNAME__': (_sys.argv[2] if len(_sys.argv) > 2 else 'comfi.art-qalam.fr'),
     '__MANIFEST_JSON__': manifest,
 }
 
@@ -60,7 +63,7 @@ def _dl(d, files):
             _log('retry '+name+' err='+(r.stderr or '')[-120:])
             time.sleep(5)
         if not ok:
-            raise RuntimeError('download echoue: ' + name)
+            _log('FAILED '+name); print('FAILED:', name); continue
         os.replace(tmp, dst)
         print('downloaded:', name, os.path.getsize(dst)); _log('downloaded '+name+' '+str(os.path.getsize(dst)))
 base='/kaggle/working/ComfyUI/models'

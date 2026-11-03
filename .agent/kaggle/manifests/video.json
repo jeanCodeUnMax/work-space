@@ -1,6 +1,6 @@
 {
   "profile": "video",
-  "description": "Video LTXV uniquement (leger - tient dans le disque kernel)",
+  "description": "Kit video minimal eprouve: LTXV 2B + T5XXL (~11 Go, sous quota)",
   "checkpoints": {},
   "loras": {},
   "custom_nodes": [],
@@ -8,13 +8,13 @@
     "ltxv_checkpoint": {
       "dir": "checkpoints",
       "files": {
-        "ltx-video-2b-v0.9.5.safetensors": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors"
+        "ltx-video-2b-v0.9.5.safetensors": "/kaggle/input/models-ltx/ltx-video-2b-v0.9.5.safetensors"
       }
     },
     "ltxv_text_encoder": {
       "dir": "text_encoders",
       "files": {
-        "t5xxl_fp8_e4m3fn.safetensors": "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors"
+        "t5xxl_fp8_e4m3fn.safetensors": "/kaggle/input/models-ltx/t5xxl_fp8_e4m3fn.safetensors"
       }
     }
   },

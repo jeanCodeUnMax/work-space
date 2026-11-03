@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-01T02:46:16.972Z",
+  "updatedAt": "2026-11-01T02:57:09.460Z",
   "core": {
     "devin": [
       {
@@ -1015,8 +1015,8 @@
         "mcps": [],
         "title": "Veilleur-Telegram",
         "position": {
-          "x": 286,
-          "y": -44
+          "x": 616,
+          "y": -66
         },
         "provider": "nim"
       },
@@ -1032,7 +1032,7 @@
         "title": "Redacteur",
         "position": {
           "x": 110,
-          "y": 286
+          "y": 264
         },
         "provider": "devin-cli",
         "bound": {
@@ -1051,8 +1051,8 @@
         "mcps": [],
         "title": "Relecteur-Modo",
         "position": {
-          "x": 528,
-          "y": 264
+          "x": 506,
+          "y": 352
         },
         "provider": "devin-cli"
       },
@@ -1083,8 +1083,8 @@
         "mcps": [],
         "title": "Antigravity",
         "position": {
-          "x": 594,
-          "y": -44
+          "x": 154,
+          "y": -110
         },
         "provider": "antigravity-acp",
         "cardKind": "agy",
@@ -1096,37 +1096,44 @@
     ],
     "edges": [
       {
-        "id": "e1",
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605etarget-left",
         "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605esource-right-acp/nim/nim-7b9b96fdtarget-left",
+        "source": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
         "target": "acp/nim/nim-7b9b96fd",
         "sourceHandle": "source-right",
         "targetHandle": "target-left"
       },
       {
-        "id": "e5",
-        "source": "acp/devin-cli/pebble-rhubarb",
-        "target": "acp/nim/nim-22c94649",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
-      },
-      {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-left",
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/devin-cli/slow-walnuttarget-left",
         "source": "acp/devin-cli/ionian-helicopter",
         "target": "acp/devin-cli/slow-walnut",
         "sourceHandle": "source-bottom",
         "targetHandle": "target-left"
       },
       {
-        "id": "xy-edge__acp/nim/nim-7b9b96fdsource-bottom-acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3target-top",
+        "id": "xy-edge__acp/nim/nim-7b9b96fdsource-bottom-acp/devin-cli/slow-walnuttarget-top",
         "source": "acp/nim/nim-7b9b96fd",
         "target": "acp/devin-cli/slow-walnut",
         "sourceHandle": "source-bottom",
         "targetHandle": "target-top"
       },
       {
-        "id": "xy-edge__acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3source-right-acp/devin-cli/pebble-rhubarbtarget-left",
+        "id": "xy-edge__acp/devin-cli/slow-walnutsource-right-acp/devin-cli/pebble-rhubarbtarget-left",
         "source": "acp/devin-cli/slow-walnut",
         "target": "acp/devin-cli/pebble-rhubarb",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/pebble-rhubarbsource-right-acp/nim/nim-22c94649target-left",
+        "source": "acp/devin-cli/pebble-rhubarb",
+        "target": "acp/nim/nim-22c94649",
         "sourceHandle": "source-right",
         "targetHandle": "target-left"
       }

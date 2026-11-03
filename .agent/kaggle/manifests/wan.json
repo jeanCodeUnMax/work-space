@@ -1,0 +1,27 @@
+{
+  "profile": "wan-video",
+  "description": "Kit video Wan 2.2 TI2V 5B + umt5 (~17 Go, sous quota)",
+  "checkpoints": {},
+  "loras": {},
+  "custom_nodes": [],
+  "models_extra": {
+    "wan_unet": {
+      "dir": "diffusion_models",
+      "files": {
+        "wan2.2_ti2v_5B_fp16.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors"
+      }
+    },
+    "wan_clip": {
+      "dir": "text_encoders",
+      "files": {
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+      }
+    },
+    "wan_vae": {
+      "dir": "vae",
+      "files": {
+        "wan2.2_vae.safetensors": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors"
+      }
+    }
+  }
+}

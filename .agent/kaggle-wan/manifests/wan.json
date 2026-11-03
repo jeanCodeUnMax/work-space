@@ -1,0 +1,27 @@
+{
+  "profile": "wan-video",
+  "description": "Kit video Wan 2.2 TI2V 5B + umt5 (~17 Go, sous quota)",
+  "checkpoints": {},
+  "loras": {},
+  "custom_nodes": [],
+  "models_extra": {
+    "wan_unet": {
+      "dir": "diffusion_models",
+      "files": {
+        "wan2.2_ti2v_5B_fp16.safetensors": "/kaggle/input/models-wan/wan2.2_ti2v_5B_fp16.safetensors"
+      }
+    },
+    "wan_clip": {
+      "dir": "text_encoders",
+      "files": {
+        "umt5_xxl_fp8_e4m3fn_scaled.safetensors": "/kaggle/input/models-wan/umt5_xxl_fp8_e4m3fn_scaled.safetensors"
+      }
+    },
+    "wan_vae": {
+      "dir": "vae",
+      "files": {
+        "wan2.2_vae.safetensors": "/kaggle/input/models-wan/wan2.2_vae.safetensors"
+      }
+    }
+  }
+}
