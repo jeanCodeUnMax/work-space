@@ -26,6 +26,7 @@ Periode couverte : nuit 18-19/10/2026.
 | 18 | persistance positions React Flow schemas | transverse | webview workspace.tsx, workflowStore | Moyenne | Documente |
 | 19 | Herald OS : canal prive tunnel SSH absent | transverse | canal prive herald-os | Moyenne | Documente |
 | 20 | Run SWAT analyse : bug parsing `devin-hub send` (filtre --as avale args[0]), `ping` global sur cascades ACP (focus hijack + ping d'agent occupe), `fs_write` Bleubite backslashes doubles hors workspace, NIM 503, statut `acp-missing` trompeur | #735-#740 | agent-bridge/devin-hub.js, workspace-roster.js ping, acp-inject, fs_write worker | Moyenne (bug livraison reel + pieges d'usage) | Partiellement corrige (devin-hub fixe) + documente |
+| 21 | Restauration du token du bridge WebSocket; distinction entre refus 401 et EADDRINUSE | transverse | orchestrator-monitor, bridge WS :7477 | Moyenne (panne du chat Hephaistos) | Token provisionne et connexion testee; procedure documentee |
 
 ### Verification de cloture C - 2026-10-19
 
