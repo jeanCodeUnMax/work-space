@@ -275,11 +275,21 @@ test('standard schemas are flagged builtin and restorable from kit templates', (
     assert.equal(listed.find((s) => s.name === 'swat-code-review').builtin, true);
     assert.equal(listed.find((s) => s.name === 'flux-perso').builtin, false);
 
-    // Suppression du builtin puis restauration depuis le gabarit du kit
-    roster.deleteSchema(root, entry.id);
-    assert.equal(roster.listSchemas(root, false).some((s) => s.name === 'swat-code-review'), false);
+    // Schéma standard protégé : suppression refusée, l'entrée reste listée.
+    // NB : saveSchema renomme les noms standards en « (copie) » — entry.id
+    // désigne donc la copie utilisateur ; le builtin est l'entrée auto-restaurée.
+    const builtin = listed.find((s) => s.name === 'swat-code-review');
+    const refused = roster.deleteSchema(root, builtin.id);
+    assert.equal(refused.protected, true);
+    assert.equal(roster.listSchemas(root, false).some((s) => s.name === 'swat-code-review'), true);
+
+    // Auto-guérison : un graphe standard divergent du gabarit est réparé.
+    const store = JSON.parse(fs.readFileSync(process.env.HEPHAISTOS_SCHEMA_FILE, 'utf8'));
+    const idx = store.schemas.findIndex((s) => s.id === builtin.id);
+    store.schemas[idx].graph.nodes = store.schemas[idx].graph.nodes.slice(0, 1);
+    fs.writeFileSync(process.env.HEPHAISTOS_SCHEMA_FILE, JSON.stringify(store));
     const restored = roster.restoreStandardSchemas(root);
-    assert.deepEqual(restored.restored, ['swat-code-review']);
+    assert.deepEqual(restored.restored, ['swat-code-review (repare)']);
     const back = roster.listSchemas(root, false).find((s) => s.name === 'swat-code-review');
     assert.equal(back.builtin, true);
     assert.equal(back.nodes, 2);

@@ -18,7 +18,7 @@ import http from 'node:http';
 import net from 'node:net';
 
 const PORT = Number(process.env.COMFYUI_PROXY_PORT || 8190);
-const LOCAL = process.env.COMFYUI_LOCAL || 'http://127.0.0.1:8188';
+const LOCAL = process.env.COMFYUI_LOCAL || 'http://127.0.0.1:8000';
 const FIXED = process.env.COMFYUI_BACKEND || '';
 const REMOTE = process.env.COMFYUI_REMOTE || '';
 

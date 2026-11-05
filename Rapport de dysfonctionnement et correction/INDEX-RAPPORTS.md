@@ -28,6 +28,8 @@ Periode couverte : nuit 18-19/10/2026.
 | 20 | Run SWAT analyse : bug parsing `devin-hub send` (filtre --as avale args[0]), `ping` global sur cascades ACP (focus hijack + ping d'agent occupe), `fs_write` Bleubite backslashes doubles hors workspace, NIM 503, statut `acp-missing` trompeur | #735-#740 | agent-bridge/devin-hub.js, workspace-roster.js ping, acp-inject, fs_write worker | Moyenne (bug livraison reel + pieges d'usage) | Partiellement corrige (devin-hub fixe) + documente |
 | 21 | Restauration du token du bridge WebSocket; distinction entre refus 401 et EADDRINUSE | transverse | orchestrator-monitor, bridge WS :7477 | Moyenne (panne du chat Hephaistos) | Token provisionne et connexion testee; procedure documentee |
 
+| 23 | extension hephaistos-chats : onglets ComfyUI gris + n8n 401 (creds vides, proxy jamais spawne, iframe :8188 en dur, deploiement .cursor au lieu de .devin) | transverse | `extension.ts`, `workspace.tsx`, `proxies/` | Haute (2 onglets HS + deploy croise) | Corrige (0.3.46, verifie runtime) |
+
 ### Verification de cloture C - 2026-10-19
 
 - Les rapports 01-11 sont presents. Les statuts ci-dessus distinguent les garde-fous deployes, les incidents documentes et les ecarts d'audit encore ouverts; les rapports 10-11 ne sont pas presentes comme des corrections appliquees.

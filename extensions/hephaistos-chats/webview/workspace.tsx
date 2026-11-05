@@ -971,7 +971,7 @@ function Workspace(): React.JSX.Element {
                         key={"comfyui-" + toolReload.comfyui}
                         className={"tool-page" + (pageView !== 'comfyui' ? " tool-page-hidden" : "")}
                         title="ComfyUI"
-                        src="http://127.0.0.1:8188"
+                        src="http://127.0.0.1:8190"
                     />
                 )}
                 {(pageView === 'n8n' || toolLoaded.n8n) && (

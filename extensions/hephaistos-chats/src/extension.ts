@@ -69,26 +69,13 @@ function which(bin: string): string | null {
  * 3. emplacements classiques de la distrib portable (dernier recours).
  */
 function resolveComfyUI(): { bat: string; cwd: string } | null {
-    for (const name of ['comfyui.cmd', 'comfyui.bat', 'run_nvidia_gpu.bat']) {
-        const onPath = which(name);
-        if (onPath) return { bat: onPath, cwd: path.dirname(onPath) };
-    }
-    const home = process.env.COMFYUI_HOME;
-    if (home) {
-        for (const b of ['run_nvidia_gpu.bat', 'run_cpu.bat']) {
-            const bat = path.join(home, b);
-            if (fs.existsSync(bat)) return { bat, cwd: home };
-        }
-    }
-    for (const dir of [
-        'F:\\ComfyUI_windows_portable',
-        'C:\\ComfyUI_windows_portable',
-        'D:\\ComfyUI_windows_portable',
-        path.join(os.homedir(), 'ComfyUI_windows_portable'),
-        path.join(os.homedir(), 'AppData', 'Local', 'ComfyUI_windows_portable'),
+    const exeEnv = process.env.COMFYUI_EXE;
+    if (exeEnv && fs.existsSync(exeEnv)) return { bat: exeEnv, cwd: path.dirname(exeEnv) };
+    for (const exe of [
+        'F:\ComfyUi\ComfyUI\Comfy Desktop\Comfy Desktop.exe',
+        path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'Comfy Desktop', 'Comfy Desktop.exe'),
     ]) {
-        const bat = path.join(dir, 'run_nvidia_gpu.bat');
-        if (fs.existsSync(bat)) return { bat, cwd: dir };
+        if (fs.existsSync(exe)) return { bat: exe, cwd: path.dirname(exe) };
     }
     return null;
 }
@@ -178,7 +165,8 @@ function proxyScript(workspaceRoot: string, name: string): string {
  */
 async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
     if (svc === 'comfyui') {
-        if (await portUp('http://127.0.0.1:8188')) return true;
+        const comfyLocal = process.env.COMFYUI_LOCAL || 'http://127.0.0.1:8000';
+        if (!(await portUp(comfyLocal))) {
         if (!processAlive('ComfyUI')) {
             const comfy = resolveComfyUI();
             if (!comfy) {
@@ -187,7 +175,18 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
             }
             spawnDetached(comfy.bat, [], comfy.cwd, { ...process.env, PYTHONUTF8: '1' });
         }
-        if (!(await waitPort('http://127.0.0.1:8188', 60))) return false;
+        if (!(await waitPort(comfyLocal, 60))) return false;
+        }
+        
+        if (!(await portUp('http://127.0.0.1:8190'))) {
+            const proxy = proxyScript(workspaceRoot, 'comfyui-proxy.mjs');
+            if (fs.existsSync(proxy) && !processAlive('comfyui-proxy')) {
+                const penv: Record<string, string> = {};
+                for (const k of ['COMFYUI_LOCAL','COMFYUI_REMOTE','COMFYUI_PROXY_PORT']) { const v = process.env[k]; if (v) penv[k] = v; }
+                spawnDetached(process.execPath, [proxy], workspaceRoot, penv);
+            }
+            if (!(await waitPort('http://127.0.0.1:8190', 20))) return false;
+        }
         return true;
     }
     if (svc === 'n8n') {
@@ -212,11 +211,9 @@ async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<bo
         if (!(await portUp('http://127.0.0.1:5680'))) {
             const proxy = proxyScript(workspaceRoot, 'n8n-auth-proxy.mjs');
             if (fs.existsSync(proxy) && !processAlive('n8n-auth-proxy')) {
-                spawnDetached(process.execPath, [proxy], workspaceRoot, {
-                    N8N_EMAIL: process.env.N8N_EMAIL || '',
-                    N8N_PASSWORD: process.env.N8N_PASSWORD || '',
-                    N8N_API_KEY: process.env.N8N_API_KEY || '',
-                });
+                const proxyEnv: Record<string, string> = {};
+                for (const k of ['N8N_EMAIL','N8N_PASSWORD','N8N_API_KEY']) { const v = process.env[k]; if (v) proxyEnv[k] = v; }
+                spawnDetached(process.execPath, [proxy], workspaceRoot, proxyEnv);
             }
             if (!(await waitPort('http://127.0.0.1:5680', 20))) return false;
         }

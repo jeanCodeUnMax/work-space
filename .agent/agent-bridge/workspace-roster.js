@@ -96,6 +96,9 @@ function validateWorkflow(input) {
             // ACP perd son type (agy/devin) et le bind rattache la mauvaise
             // fenetre de chat (bug AGY<->Devin).
             ...(raw.provider ? { provider: String(raw.provider).slice(0, 120) } : {}),
+            // Champ `question` (mode concile) : problematique injectee au run,
+            // separee de la mission ROLE: — doit survivre au validate/load.
+            ...(raw.question ? { question: String(raw.question).slice(0, 6000) } : {}),
             ...(['devin', 'agy', 'bleubite', 'serveros'].includes(raw.cardKind) ? { cardKind: String(raw.cardKind) } : {}),
             ...(raw.bound && typeof raw.bound === 'object' ? { bound: { at: Number(raw.bound.at) || Date.now(), kind: String(raw.bound.kind || '').slice(0, 20) } } : {}),
         });
@@ -148,6 +151,7 @@ function validateWorkflow(input) {
     if (input.activeSchema) out.activeSchema = String(input.activeSchema).slice(0, 120);
     if (input.activeSchemaId) out.activeSchemaId = String(input.activeSchemaId).slice(0, 120);
     if (input.mode === 'council' || isCouncilSchemaName(out.name) || isCouncilSchemaName(out.activeSchema)) out.mode = 'council';
+    if (input.question) out.question = String(input.question).slice(0, 6000);
     return out;
 }
 

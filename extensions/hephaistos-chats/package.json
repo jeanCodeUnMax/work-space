@@ -2,7 +2,7 @@
   "name": "hephaistos-chats",
   "displayName": "Hephaistos Chats",
   "description": "Onglets de chat Hephaistos + espace de travail React Flow : orchestration manuelle des agents du roster (roles, skills, missions, chaines de travail).",
-  "version": "0.3.39",
+  "version": "0.3.46",
   "icon": "media/icon.png",
   "publisher": "hephaistos",
   "engines": {
@@ -50,7 +50,7 @@
       },
       {
         "command": "hephaistosChats.openWorkspace",
-        "title": "Hephaistos : Ouvrir l\u00c3\u0192\u00c2\u00a2\u00c3\u00a2\u00e2\u20ac\u0161\u00c2\u00ac\u00c3\u00a2\u00e2\u20ac\u017e\u00c2\u00a2espace de travail",
+        "title": "Hephaistos : Ouvrir lÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢espace de travail",
         "icon": "$(type-hierarchy)"
       },
       {

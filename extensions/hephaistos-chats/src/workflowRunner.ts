@@ -12,40 +12,139 @@ import { SessionStore } from './sessionStore';
 const execFileAsync = promisify(execFile);
 const MAX_OUTPUT_CHARS = 6000;
 
+// Préfixe marquant une mission « structurelle » (prompt de rôle polyvalent)
+// par opposition à une question injectée dans la mission du chairman.
+const COUNCIL_ROLE_PREFIX = 'ROLE:';
+
+/**
+ * La question du concile n'est PAS stockée dans la mission du chairman :
+ * c'est un paramètre de run fourni par Devin. Ordre de résolution :
+ *  1. champ `question` du nœud chairman (roster/schéma actif)
+ *  2. champ `question` du graphe
+ *  3. dernier message utilisateur de la session chairman (chat-*)
+ *  4. mission du chairman si elle n'est pas préfixée ROLE: (compat legacy)
+ */
+function resolveCouncilQuestion(
+    entry: WorkflowNode & { question?: string },
+    graph: WorkflowGraph & { question?: string },
+    sessions: SessionStore,
+): string {
+    if (typeof entry.question === 'string' && entry.question.trim()) return entry.question.trim();
+    if (typeof graph.question === 'string' && graph.question.trim()) return graph.question.trim();
+    const session = sessions.get(entry.sessionId);
+    const lastUser = session?.messages
+        ? [...session.messages].reverse().find((m) => m.role === 'user' && m.text.trim())
+        : undefined;
+    if (lastUser) return lastUser.text.trim();
+    const task = entry.task.trim();
+    if (task && !task.toUpperCase().startsWith(COUNCIL_ROLE_PREFIX)) return task;
+    throw new Error(
+        'Aucune problématique soumise au concile : injecte-la dans la session chairman '
+        + '(dernier message utilisateur), renseigne le champ `question` du nœud ou du '
+        + 'graphe, ou écris-la dans la mission du bloc chairman.',
+    );
+}
+
 interface CouncilTurn {
     role: string;
     sessionId: string;
     round: number;
     text: string;
+    label?: string;
+}
+
+interface AnonymizedResponse {
+    label: string;
+    role: string;
+    sessionId: string;
+    text: string;
+}
+
+function councilPhaseLabel(round: number): string {
+    if (round === 0) return 'Verdict';
+    if (round === 1) return 'Avis';
+    if (round === 2) return 'Revue';
+    return 'Débat';
 }
 
 function formatTranscript(transcript: CouncilTurn[]): string {
     return transcript
-        .map((turn) => `[${turn.round === 0 ? 'Verdict' : `Tour ${turn.round}`}] ${turn.role}:\n${turn.text}`)
+        .map((turn) => `[${councilPhaseLabel(turn.round)}] ${turn.role}${turn.label ? ` (réponse ${turn.label})` : ''}:\n${turn.text}`)
         .join('\n\n');
 }
 
-function buildCouncilTurnPrompt(
+function buildCouncilOpinionPrompt(node: WorkflowNode, question: string): string {
+    const skills = (node.skills || []).length ? ` Compétences: ${(node.skills || []).join(', ')}.` : '';
+    return `[CONCILE — avis indépendant]\nTu es ${node.role}, conseiller siégeant au concile.${skills}\nTon angle de pensée : ${node.task}\n\nQUESTION À TRANCHER:\n${question}\n\nRéponds depuis ton angle uniquement — direct, spécifique, sans complaisance ni fausse balance. Pousse ta perspective à fond : les autres conseillers couvrent les angles que tu ne traites pas. Entre 150 et 300 mots, sans préambule.`;
+}
+
+function anonymizeOpinions(opinions: CouncilTurn[]): AnonymizedResponse[] {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const shuffled = [...opinions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.map((turn, index) => ({
+        label: letters[index],
+        role: turn.role,
+        sessionId: turn.sessionId,
+        text: turn.text,
+    }));
+}
+
+function buildCouncilReviewPrompt(
+    node: WorkflowNode,
+    question: string,
+    anonymized: AnonymizedResponse[],
+): string {
+    const skills = (node.skills || []).length ? ` Compétences: ${(node.skills || []).join(', ')}.` : '';
+    const responses = anonymized.map((anon) => `**Réponse ${anon.label} :**\n${anon.text}`).join('\n\n');
+    return `[CONCILE — revue par les pairs]\nTu es ${node.role}, conseiller siégeant au concile.${skills}\n\n${anonymized.length} conseillers ont répondu indépendamment à cette question :\n\n---\n${question}\n---\n\nVoici leurs réponses, anonymisées :\n\n${responses}\n\nRéponds à ces trois questions en citant les lettres :\n1. Quelle réponse est la plus forte, et pourquoi ?\n2. Quelle réponse a le plus gros angle mort, et que manque-t-il ?\n3. Qu'est-ce que TOUTES les réponses ont raté et que le concile doit considérer ?\n\nMoins de 200 mots. Direct.`;
+}
+
+function buildCouncilDebatePrompt(
     node: WorkflowNode,
     question: string,
     transcript: CouncilTurn[],
-    round: number,
-    totalRounds: number,
 ): string {
     const skills = (node.skills || []).length ? ` Compétences: ${(node.skills || []).join(', ')}.` : '';
-    const history = transcript.length ? `\n\nTRANSCRIPT DU CONCILE JUSQU'ICI:\n${formatTranscript(transcript)}` : '';
-    const instruction = round === 1
-        ? "Donne ta position argumentée sur la question, en t'appuyant sur ton expertise. Sois concis, tranché et honnête — signale les incertitudes."
-        : "Après lecture des positions de tes pairs : réplique aux désaccords, renforce ou nuance ta position, puis indique si tu converges vers un consensus et lequel.";
-    return `[CONCILE — tour ${round}/${totalRounds}]\nTu es ${node.role}, expert siégeant au concile.${skills}\nTon expertise : ${node.task}\n\nQUESTION À TRANCHER:\n${question}\n${history}\n\n${instruction}`;
+    return `[CONCILE — débat ouvert]\nTu es ${node.role}, conseiller siégeant au concile.${skills}\nTon angle de pensée : ${node.task}\n\nQUESTION À TRANCHER:\n${question}\n\nDÉLIBÉRATION COMPLÈTE JUSQU'ICI (avis dé-anonymisés, revues par les pairs, répliques déjà données):\n${formatTranscript(transcript)}\n\nL'anonymat est levé et le débat est ouvert : réplique aux désaccords en citant les conseillers par leur rôle, renforce ou nuance ta position, et indique si tu converges vers un consensus — lequel. Concis et tranché, 150-250 mots.`;
 }
 
 function buildCouncilVerdictPrompt(
     entry: WorkflowNode,
     question: string,
     transcript: CouncilTurn[],
+    mapping: string,
 ): string {
-    return `[CONCILE — SYNTHÈSE FINALE]\nTu es ${entry.role}, président du concile.\n\nQUESTION SOUMISE AU CONCILE:\n${question}\n\nTRANSCRIPT COMPLET DE LA DÉLIBÉRATION:\n${formatTranscript(transcript)}\n\nRédige le VERDICT du concile : position retenue, arguments déterminants, points de dissensus restants et recommandation d'action. Conclusion claire, motivée et actionnable.`;
+    const opinions = transcript.filter((turn) => turn.round === 1)
+        .map((turn) => `**${turn.role}${turn.label ? ` — réponse ${turn.label}` : ''} :**\n${turn.text}`)
+        .join('\n\n');
+    const reviews = transcript.filter((turn) => turn.round === 2)
+        .map((turn) => `**Revue de ${turn.role} :**\n${turn.text}`)
+        .join('\n\n');
+    const debate = transcript.filter((turn) => turn.round === 3)
+        .map((turn) => `**Réplique de ${turn.role} :**\n${turn.text}`)
+        .join('\n\n');
+    return `[CONCILE — VERDICT]\nTu es ${entry.role}, chairman du concile : tu synthétises les avis des conseillers, leurs revues croisées et le débat en un verdict final.\n\nQUESTION SOUMISE AU CONCILE:\n${question}\n\nAVIS DES CONSEILLERS (correspondance de l'anonymat : ${mapping}):\n${opinions}\n\nREVUES PAR LES PAIRS:\n${reviews}\n\nDÉBAT OUVERT:\n${debate}\n\nRends le verdict avec exactement cette structure :\n\n## Consensus du concile\n[Points sur lesquels plusieurs conseillers ont convergé indépendamment — signaux à haute confiance.]\n\n## Désaccords du concile\n[Désaccords réels : présente les deux côtés et explique pourquoi des conseillers raisonnables divergent.]\n\n## Angles morts détectés\n[Ce qui n'a émergé que grâce à la revue par les pairs — manques signalés par d'autres conseillers.]\n\n## Recommandation\n[Réponse claire et directe — pas de « ça dépend ». Tu peux suivre la minorité si son raisonnement est le plus solide, en expliquant pourquoi.]\n\n## Premier pas concret\n[UNE seule action immédiate — pas une liste.]\n\nDirect, sans langue de bois : le concile existe pour trancher.`;
+}
+
+function escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function buildCouncilHtmlReport(
+    graphName: string,
+    runId: string,
+    question: string,
+    transcript: CouncilTurn[],
+): string {
+    const verdict = transcript.find((turn) => turn.round === 0);
+    const sections = transcript.filter((turn) => turn.round !== 0)
+        .map((turn) => `<details><summary>${escapeHtml(councilPhaseLabel(turn.round))} · ${escapeHtml(turn.role)}${turn.label ? ` — réponse ${escapeHtml(turn.label)}` : ''}</summary><div class="turn">${escapeHtml(turn.text)}</div></details>`)
+        .join('\n');
+    return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Concile — ${escapeHtml(graphName)}</title><style>body{font-family:system-ui,'Segoe UI',Arial,sans-serif;max-width:860px;margin:32px auto;padding:0 16px;color:#1f2933;background:#fff}h1{font-size:20px}.meta{color:#6b7280;font-size:13px}.verdict{border:1px solid #d1d5db;border-left:4px solid #4f46e5;border-radius:8px;padding:16px 20px;background:#f8f7ff;white-space:pre-wrap}details{border:1px solid #e5e7eb;border-radius:8px;margin:10px 0;padding:8px 14px}summary{cursor:pointer;font-weight:600}.turn{white-space:pre-wrap;margin:10px 0;color:#374151}footer{margin-top:24px;font-size:12px;color:#9ca3af}</style></head><body><h1>Concile — ${escapeHtml(graphName)}</h1><p class="meta">Run ${runId}</p><h2>Question</h2><div class="turn">${escapeHtml(question)}</div><h2>Verdict du chairman</h2><div class="verdict">${escapeHtml(verdict ? verdict.text : 'Verdict non rendu (concile interrompu).')}</div><h2>Délibération</h2>${sections}<footer>Généré par hephaistos-chats workflowRunner — ${new Date().toISOString()}</footer></body></html>`;
 }
 
 interface RosterStatus {
@@ -76,13 +175,14 @@ export class WorkflowRunner {
         graph: WorkflowGraph,
         entrySessionId: string,
         enabledProviders: Set<string>,
+        question?: string,
     ): Promise<void> {
         if (this.activeRun) throw new Error('Un flux est déjà en cours.');
         this.activeRun = true;
         const runId = randomUUID();
         try {
             if (graph.mode === 'council') {
-                await this.executeCouncil(graph, entrySessionId, runId, enabledProviders);
+                await this.executeCouncil(graph, entrySessionId, runId, enabledProviders, question);
                 this.onFinished(runId, true, 'Concile terminé — verdict rendu.');
             } else {
                 await this.execute(graph, entrySessionId, runId, enabledProviders);
@@ -198,16 +298,24 @@ export class WorkflowRunner {
     }
 
     /**
-     * Mode concile : délibération séquentielle à transcript partagé.
-     * Le nœud d'entrée est le président (sa mission = la question) ; chaque
-     * expert parle à tour de rôle en lisant tout ce qui a été dit, puis le
-     * président rend le verdict. Pas de parallélisme : c'est une discussion.
+     * Mode concile (méthodologie LLM Council, skill `llm-council`) :
+     * le nœud d'entrée est le chairman (sa mission = la question).
+     *  1. Avis indépendants en parallèle — aucun conseiller ne voit les autres.
+     *  2. Revue par les pairs en parallèle — avis mélangés et anonymisés A, B, C…
+     *  3. Débat ouvert en 2 tours séquentiels — anonymat levé, chacun
+     *     réplique à tous les autres via le transcript partagé (full duplex
+     *     broadcast ; le graphe affiche le maillage complet entre pairs).
+     *  4. Verdict du chairman : consensus, désaccords, angles morts,
+     *     recommandation et premier pas concret.
+     * Artefacts : concil-live.md (suivi temps réel), archive .md et rapport
+     * visuel concil-<runId>.html dans .agent/reports.
      */
     private async executeCouncil(
         graph: WorkflowGraph,
         entrySessionId: string,
         runId: string,
         enabledProviders: Set<string>,
+        providedQuestion?: string,
     ): Promise<void> {
         // En mode concile, toutes les cartes siégent — les arêtes ne portent
         // pas de sémantique d'exécution (ordre de parole = ordre du graphe).
@@ -218,7 +326,7 @@ export class WorkflowRunner {
         if (!experts.length) {
             throw new Error('Un concile exige au moins un expert en plus du président (nœud d’entrée).');
         }
-        const question = entry.task.trim() || 'Question non précisée par le président du concile.';
+        const question = providedQuestion?.trim() || resolveCouncilQuestion(entry, graph, this.sessions);
         const liveRoster = await this.getLiveRoster();
         const rosterIds = new Set(
             (liveRoster.entries || [])
@@ -272,39 +380,116 @@ export class WorkflowRunner {
             this.onProgress({ runId, sessionId, taskId: task.taskId, state: 'failed', message });
         };
 
-        const ROUNDS = 2;
-        for (let round = 1; round <= ROUNDS && !failedSession; round++) {
-            for (const node of experts) {
+        // Phase 1 — avis indépendants en parallèle : aucun conseiller ne voit
+        // les réponses des autres. L'indépendance est ce qui produit la tension
+        // entre perspectives (méthodo LLM Council).
+        const opinionResults = await Promise.all(experts.map(async (node) => {
+            try {
+                const output = await takeTurn(node, buildCouncilOpinionPrompt(node, question));
+                transcript.push({ role: node.role, sessionId: node.sessionId, round: 1, text: output });
+                writeReport();
+                this.onProgress({
+                    runId,
+                    sessionId: node.sessionId,
+                    taskId: taskBySession.get(node.sessionId)!.taskId,
+                    state: 'running',
+                    message: `Avis rendu — ${output.slice(0, 150)}`,
+                });
+                return { node, error: undefined as unknown };
+            } catch (error) {
+                return { node, error };
+            }
+        }));
+        const opinionFailure = opinionResults.find((result) => result.error);
+        if (opinionFailure) {
+            failedSession = opinionFailure.node.sessionId;
+            failureError = opinionFailure.error;
+            await failTurn(opinionFailure.node.sessionId, opinionFailure.error);
+        }
+
+        // Phase 2 — revue par les pairs en parallèle : les avis sont mélangés et
+        // anonymisés (Réponse A, B, C…) pour que chaque conseiller évalue le
+        // fond, pas l'auteur.
+        let anonymized: AnonymizedResponse[] = [];
+        if (!failedSession) {
+            anonymized = anonymizeOpinions(transcript.filter((turn) => turn.round === 1));
+            for (const anon of anonymized) {
+                const turn = transcript.find((item) => item.sessionId === anon.sessionId && item.round === 1);
+                if (turn) turn.label = anon.label;
+            }
+            writeReport();
+            const reviewResults = await Promise.all(experts.map(async (node) => {
                 try {
-                    const output = await takeTurn(node, buildCouncilTurnPrompt(node, question, transcript, round, ROUNDS));
-                    transcript.push({ role: node.role, sessionId: node.sessionId, round, text: output });
+                    const output = await takeTurn(node, buildCouncilReviewPrompt(node, question, anonymized));
+                    transcript.push({ role: node.role, sessionId: node.sessionId, round: 2, text: output });
                     writeReport();
                     const task = taskBySession.get(node.sessionId)!;
-                    const lastRound = round === ROUNDS;
                     await callHpheTool('update_task', {
                         task_id: task.taskId,
-                        status: lastRound ? 'completed' : 'in_progress',
-                        result: `[Tour ${round}] ${output.slice(0, 3900)}`,
+                        status: 'in_progress',
+                        result: `[Revue] ${output.slice(0, 3900)}`,
                     });
                     this.onProgress({
                         runId,
                         sessionId: node.sessionId,
                         taskId: task.taskId,
-                        state: lastRound ? 'completed' : 'running',
-                        message: `Tour ${round}/${ROUNDS} — ${output.slice(0, 150)}`,
+                        state: 'running',
+                        message: `Revue rendue — ${output.slice(0, 150)}`,
                     });
+                    return { node, error: undefined as unknown };
                 } catch (error) {
-                    failedSession = node.sessionId;
-                    failureError = error;
-                    await failTurn(node.sessionId, error);
-                    break;
+                    return { node, error };
+                }
+            }));
+            const reviewFailure = reviewResults.find((result) => result.error);
+            if (reviewFailure) {
+                failedSession = reviewFailure.node.sessionId;
+                failureError = reviewFailure.error;
+                await failTurn(reviewFailure.node.sessionId, reviewFailure.error);
+            }
+        }
+
+        // Phase 3 — débat ouvert : l'anonymat tombe et les conseillers
+        // discutent entre eux. Deux tours de parole chaînés (séquentiel) :
+        // chaque réplique est visible par tous les suivants — full duplex
+        // via le transcript partagé, vrai va-et-vient multi-tour.
+        const DEBATE_ROUNDS = 2;
+        if (!failedSession) {
+            for (let debateRound = 1; debateRound <= DEBATE_ROUNDS && !failedSession; debateRound++) {
+                for (const node of experts) {
+                    try {
+                        const output = await takeTurn(node, buildCouncilDebatePrompt(node, question, transcript));
+                        transcript.push({ role: node.role, sessionId: node.sessionId, round: 3, text: output });
+                        writeReport();
+                        const task = taskBySession.get(node.sessionId)!;
+                        const lastTurn = debateRound === DEBATE_ROUNDS;
+                        await callHpheTool('update_task', {
+                            task_id: task.taskId,
+                            status: lastTurn ? 'completed' : 'in_progress',
+                            result: `[Débat ${debateRound}/${DEBATE_ROUNDS}] ${output.slice(0, 3900)}`,
+                        });
+                        this.onProgress({
+                            runId,
+                            sessionId: node.sessionId,
+                            taskId: task.taskId,
+                            state: lastTurn ? 'completed' : 'running',
+                            message: `Réplique ${debateRound}/${DEBATE_ROUNDS} — ${output.slice(0, 150)}`,
+                        });
+                    } catch (error) {
+                        failedSession = node.sessionId;
+                        failureError = error;
+                        await failTurn(node.sessionId, error);
+                        break;
+                    }
                 }
             }
         }
 
+        // Phase 4 — verdict du chairman : avis dé-anonymisés + revues + débat.
         if (!failedSession) {
             try {
-                const verdict = await takeTurn(entry, buildCouncilVerdictPrompt(entry, question, transcript));
+                const mapping = anonymized.map((anon) => `${anon.label}=${anon.role}`).join(', ');
+                const verdict = await takeTurn(entry, buildCouncilVerdictPrompt(entry, question, transcript, mapping));
                 transcript.push({ role: `Verdict — ${entry.role}`, sessionId: entry.sessionId, round: 0, text: verdict });
                 writeReport();
                 const task = taskBySession.get(entry.sessionId)!;
@@ -322,6 +507,17 @@ export class WorkflowRunner {
             fs.copyFileSync(liveReport, path.join(reportDir, `concil-${runId.slice(0, 8)}.md`));
         } catch (error) {
             logRuntime(`concil report archive failed: ${String(error)}`);
+        }
+        // Rapport visuel HTML auto-contenu (méthodo LLM Council) : verdict en
+        // évidence, interventions des conseillers en sections repliées.
+        try {
+            fs.writeFileSync(
+                path.join(reportDir, `concil-${runId.slice(0, 8)}.html`),
+                buildCouncilHtmlReport(graph.name, runId, question, transcript),
+                'utf8',
+            );
+        } catch (error) {
+            logRuntime(`concil html report write failed: ${String(error)}`);
         }
 
         if (failedSession) {

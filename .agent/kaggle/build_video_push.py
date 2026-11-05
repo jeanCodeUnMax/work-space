@@ -3,7 +3,7 @@ import json, os
 NB = r'comfyui-kaggle.ipynb'
 OUT = r'push-tmp.ipynb'
 
-creds = open(os.path.expanduser(r'~\.cloudflared\6a056836-2022-4863-b8a2-57a9c4cfbe31.json'), encoding='utf-8').read().strip()
+creds = open(os.path.expanduser(r'~\.cloudflared\2e6aa7ac-239a-4cac-b2c4-b8fc05be9f79.json'), encoding='utf-8').read().strip()
 import sys as _sys
 _mf = _sys.argv[1] if len(_sys.argv) > 1 else 'manifests/video.json'
 manifest = json.dumps(json.load(open(_mf, encoding='utf-8')), ensure_ascii=False)
@@ -13,7 +13,7 @@ repl = {
     '__KAGGLE_COMFY_TOKEN__': os.environ.get('KAGGLE_COMFY_TOKEN', ''),
     '__MAROTTE_TUNNEL_TOKEN__': '',
     '__CF_CREDS_JSON__': creds,
-    '__CF_TUNNEL_ID__': '6a056836-2022-4863-b8a2-57a9c4cfbe31',
+    '__CF_TUNNEL_ID__': '2e6aa7ac-239a-4cac-b2c4-b8fc05be9f79',
     '__CF_HOSTNAME__': (_sys.argv[2] if len(_sys.argv) > 2 else 'comfi.art-qalam.fr'),
     '__MANIFEST_JSON__': manifest,
 }

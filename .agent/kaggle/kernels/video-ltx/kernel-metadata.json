@@ -1,0 +1,16 @@
+{
+  "id": "lascardm/comfyui-batch-gpu",
+  "title": "ComfyUI batch GPU",
+  "code_file": "push-tmp.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "category_ids": [],
+  "dataset_sources": [
+    "lascardm/models-ltx"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

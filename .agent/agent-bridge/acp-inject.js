@@ -41,7 +41,10 @@ const PROVIDERS = {
     // Fenêtres hephaistos-chats (extension VS Code) : serveur ACP stdio adossé à .agent/chats/sessions.json
     'hephaistos': {
         cmd: process.execPath,
-        args: [path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs')],
+        args: [process.env.HPHE_ACP_SERVER
+                || (fs.existsSync(path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs'))
+                    ? path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs')
+                    : 'C:/Program Files/Projet-complet/hephaistos2-kit/extensions/hephaistos-chats/acp-server.mjs')],
     },
     // Cerberos : pont SSH vers `hermes acp` sur le laptop Herald OS —
     // même spawn que la distribution Devin (acp/registry.json).
