@@ -592,7 +592,9 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     function openSession(sessionId: string, restoreIfMissing = false): void {
-        let session = store.get(sessionId);
+        // La carte peut lister une session écrite par une autre instance
+        // (sync-sessions, acp-server) non encore rechargée : relire le disque.
+        let session = store.get(sessionId) || (store.reloadFromDisk() ? store.get(sessionId) : undefined);
         if (!session && restoreIfMissing && sessionId.startsWith('chat-') && workflowStore) {
             const profile = workflowStore.getAgentProfile(sessionId);
             if (profile) {

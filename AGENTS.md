@@ -44,3 +44,30 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 2. **Fallback sans consigne explicite** : si aucun schéma n'est actif (`activeSchemaId` absent), interroger `listSchemas` et adopter automatiquement le schéma de workspace le plus adapté (ex. `swat-orchestrateur` pour un cycle complet, `swat-fix-rapide` pour un correctif urgent).
 3. **Dispatch formel via l'orchestrateur hphe-mcp** : interdiction formelle d'exécuter un workflow uniquement en simulation textuelle ou en simples commandes shell. Toute tâche déléguée d'un nœud SWAT doit être matérialisée par `create_task` / `dispatch_task` et close par `update_task` sur `Hephaistos-everything-search`.
 
+
+## 4quinquies. Visibilité des chats Bleubites — GRAVÉ DANS LE MARBRE (2026-11-04)
+
+**Le webview hephaistos-chats ne surveille que `workspaceFolders[0]/.agent/chats/sessions.json`.** Une injection ACP est un client stdio séparé : elle écrit le store, exécute les outils, mais ne notifie PAS le panneau ouvert. Conséquences obligatoires :
+
+1. **Toujours injecter depuis le workspace qui possède les sessions** (`--cwd C:/data-sys/hephaistos2-kit`) — un inject depuis un autre root échoue `session introuvable`.
+2. **Synchroniser le store vers le workspace où l'utilisateur regarde** : `node .agent/scripts/sync-sessions.mjs` (watcher fs, debounce 250 ms, miroir sessions.json src → dst).
+3. **Rendu** : si le panneau n'affiche rien après sync → `workspace-roster.js restore` (réouverture = rechargement depuis le disque).
+4. Preuve de livraison = `delivered:true` + fichier écrit + ligne bus `comms.jsonl` — jamais la déclaration du modèle ni le silence du panneau.
+
+## 4sexies. Sub-agents internes INTERDITS — GRAVÉ DANS LE MARBRE (2026-11-05)
+
+**Il est INTERDIT à Devin de lancer ses propres sub-agents (`run_subagent`, `subagent_*`, ou tout équivalent interne/invisible) sauf demande EXPLICITE de l'utilisateur.**
+
+1. **Toute exécution déléguée visible** passe par les Bleubites : fenêtres `hephaistos-chats` (inject via `acp-inject.js --provider hephaistos`, sessions résolues par `.agent/workspace-roster.json`) ou par l'orchestrateur `hphe-mcp` (`dispatch_task` pour les workers CLI).
+2. **Un sub-agent interne est invisible** pour l'utilisateur : rien dans les chats, rien sur le bus, aucune preuve observable. C'est une violation de la règle de livraison vérifiable.
+3. **Concils inclus** : les advisors sont les sessions Bleubites de `.agent/council/advisors.json` via `.agent/council/supervise.mjs` — jamais des sub-agents.
+4. En cas de besoin d'un sub-agent interne → demander l'autorisation explicitement, ne jamais l'assumer.
+
+## 🪟 VISIBILITÉ DU CONCILE SWAT & HEPHAISTOS-CHATS (GRAVÉ DANS LE MARBRE - 2026-11-12)
+- Le webview Hephaistos-Chats surveille EXCLUSIVEMENT `workspaceFolders[0]/.agent/chats/sessions.json`.
+- En cas de non-affichage des actions d'un agent dans sa fenêtre respective :
+  1. Synchroniser immédiatement `sessions.json` depuis le workspace maître (`C:/data-sys/hephaistos2-kit/.agent/chats/sessions.json` -> `.agent/chats/sessions.json`).
+  2. S'assurer que `.agent/agent-bridge/node_modules` est rattaché par jonction NTFS vers `C:/data-sys/hephaistos2-kit/.agent/agent-bridge/node_modules`.
+  3. Exécuter impérativement `node .agent/agent-bridge/workspace-roster.js restore` pour forcer le rechargement des webviews existantes (aucun doublon de chat).
+  4. Lancer le miroir automatique en arrière-plan : `node .agent/scripts/sync-sessions.mjs`.
+  5. Preuve de fonctionnement = sessions.json écrit + statut `open-requested` sur chaque session dans le retour du roster.

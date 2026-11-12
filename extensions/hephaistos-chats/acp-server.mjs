@@ -315,6 +315,8 @@ const CHAT_TOOLS = [
                 properties: {
                     path: { type: 'string', description: 'Path relative to workspace root, or absolute inside it' },
                     content: { type: 'string' },
+                    append: { type: 'boolean', description: 'Append instead of overwrite (auto-true for .jsonl files)' },
+                    overwrite: { type: 'boolean', description: 'Force overwrite even for .jsonl files' },
                 },
                 required: ['path', 'content'],
             },
@@ -427,9 +429,10 @@ function runLocalTool(name, argsJson, cwd) {
         case 'fs_write_text_file': {
             const target = resolveWorkspacePath(args.path, cwd);
             const content = String(args.content ?? '');
+            const append = (args.append === true || target.endsWith('.jsonl')) && args.overwrite !== true;
             fs.mkdirSync(path.dirname(target), { recursive: true });
-            fs.writeFileSync(target, content);
-            return `ok: écrit ${target} (${Buffer.byteLength(content)} octets)`;
+            fs[append ? 'appendFileSync' : 'writeFileSync'](target, content);
+            return `ok: ${append ? 'ajoute' : 'ecrit'} ${target} (${Buffer.byteLength(content)} octets)`;
         }
         case 'fs_read_text_file': {
             const raw = fs.readFileSync(resolveWorkspacePath(args.path, cwd), 'utf8');
@@ -809,7 +812,7 @@ function agentTurn(session, text, cwd) {
                         return respondTo(rid, { content: fs.readFileSync(params.path, 'utf8') });
                     case 'fs/write_text_file':
                         fs.mkdirSync(path.dirname(params.path), { recursive: true });
-                        fs.writeFileSync(params.path, params.content);
+                        fs[(params.append === true || String(params.path).endsWith('.jsonl')) && params.overwrite !== true ? 'appendFileSync' : 'writeFileSync'](params.path, params.content);
                         return respondTo(rid, {});
                     case 'session/request_permission': {
                         const opts = params?.options || [];

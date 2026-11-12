@@ -25,3 +25,12 @@ Estas reglas han sido registradas en Obsidian Second Brain y son de OBLIGATORIO 
 
 - Pousser hephaistos2-kit UNIQUEMENT vers les remotes `origin` (projet-temporaire) et `personal` (lascard-m).
 - **JAMAIS** pousser vers le remote/dépôt « art-qalam », jusqu'à nouvel ordre explicite de l'utilisateur.
+
+## 🪟 VISIBILITÉ DU CONCILE SWAT & HEPHAISTOS-CHATS (GRAVÉ DANS LE MARBRE - 2026-11-12)
+- Le webview Hephaistos-Chats surveille EXCLUSIVEMENT `workspaceFolders[0]/.agent/chats/sessions.json`.
+- En cas de non-affichage des actions d'un agent dans sa fenêtre respective :
+  1. Synchroniser immédiatement `sessions.json` depuis le workspace maître (`C:/data-sys/hephaistos2-kit/.agent/chats/sessions.json` -> `.agent/chats/sessions.json`).
+  2. S'assurer que `.agent/agent-bridge/node_modules` est rattaché par jonction NTFS vers `C:/data-sys/hephaistos2-kit/.agent/agent-bridge/node_modules`.
+  3. Exécuter impérativement `node .agent/agent-bridge/workspace-roster.js restore` pour forcer le rechargement des webviews existantes (aucun doublon de chat).
+  4. Lancer le miroir automatique en arrière-plan : `node .agent/scripts/sync-sessions.mjs`.
+  5. Preuve de fonctionnement = sessions.json écrit + statut `open-requested` sur chaque session dans le retour du roster.

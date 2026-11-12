@@ -973,6 +973,10 @@ Agent activé → Vérifier frontmatter "skills:" → Lire SKILL.md (INDEX) → 
 1. **Quand un agent est activé :**
     - ✅ Activer : Lire Règles → Vérifier Frontmatter → Charger SKILL.md → Appliquer tout.
 2. **Interdit** : Ne jamais sauter la lecture des règles d'agent ou des instructions de skill. "Lire → Comprendre → Appliquer" est obligatoire.
+3. **Protocole JIT Skills MUX (Compétences à la demande)** :
+    - Pour toute compétence spécialisée externe (vidéo, PPTX, diagrammes SVG, TS avancé, reverse-engineering, etc.), appliquer impérativement le protocole JIT `skills-mux` (`python c:/data-sys/claude-skills-mux/claude-skills-mux/skills_mux.py route -> vet -> activate -> deactivate`).
+    - INTERDICTION formelle d'exécuter ou de cloner des dépôts tiers hors de ce cycle éphémère sécurisé.
+    - Toute compétence montée temporairement DOIT être immédiatement désactivée (`python skills_mux.py deactivate <slug>` ou `cleanup`) dès la fin de la tâche pour préserver la mémoire et le contexte.
 
 ---
 
@@ -1374,3 +1378,12 @@ Pour tout outil `cli-anything-*` (mail, telegram, obsidian, 7zip, cerberos…), 
 - Restauration idempotente : réutiliser l'onglet/panneau existant, ouvrir uniquement les absents (`open_chat` → `ChatPanel.openById`), **jamais de doublon ni de conversation de remplacement**.
 - Après `restore` : `ping --write` obligatoire — `acp-inject --wait turn` exige `delivered` + `end_turn` + `PONG` ; `devin-cli` via `wake_acp_agent` (soumission seule). Résultats persistés dans `verification.results`.
 - Ne jamais traiter une session persistée comme preuve qu'une fenêtre est ouverte.
+
+## 🪟 VISIBILITÉ DU CONCILE SWAT & HEPHAISTOS-CHATS (GRAVÉ DANS LE MARBRE - 2026-11-12)
+- Le webview Hephaistos-Chats surveille EXCLUSIVEMENT `workspaceFolders[0]/.agent/chats/sessions.json`.
+- En cas de non-affichage des actions d'un agent dans sa fenêtre respective :
+  1. Synchroniser immédiatement `sessions.json` depuis le workspace maître (`C:/data-sys/hephaistos2-kit/.agent/chats/sessions.json` -> `.agent/chats/sessions.json`).
+  2. S'assurer que `.agent/agent-bridge/node_modules` est rattaché par jonction NTFS vers `C:/data-sys/hephaistos2-kit/.agent/agent-bridge/node_modules`.
+  3. Exécuter impérativement `node .agent/agent-bridge/workspace-roster.js restore` pour forcer le rechargement des webviews existantes (aucun doublon de chat).
+  4. Lancer le miroir automatique en arrière-plan : `node .agent/scripts/sync-sessions.mjs`.
+  5. Preuve de fonctionnement = sessions.json écrit + statut `open-requested` sur chaque session dans le retour du roster.

@@ -151,8 +151,17 @@ export class ChatPanel {
         enabled?: boolean;
     }): Promise<void> {
         if (message.type === 'switch_session' && message.id) {
-            const nextSession = this.store.get(message.id);
-            if (nextSession && nextSession.id !== this.session.id) {
+            // La session peut être listée via sessions.json sans être encore
+            // en mémoire (écriture externe) : recharger le disque avant d'abandonner.
+            let nextSession = this.store.get(message.id);
+            if (!nextSession && this.store.reloadFromDisk()) {
+                nextSession = this.store.get(message.id);
+            }
+            if (!nextSession) {
+                void vscode.window.showWarningMessage(`Conversation introuvable : ${message.id}`);
+                return;
+            }
+            if (nextSession.id !== this.session.id) {
                 const previousId = this.session.id;
                 acpDispose(previousId);
                 ChatPanel.openById.delete(previousId);
