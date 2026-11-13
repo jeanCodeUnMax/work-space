@@ -152,6 +152,9 @@ function validateWorkflow(input) {
     if (input.activeSchemaId) out.activeSchemaId = String(input.activeSchemaId).slice(0, 120);
     if (input.mode === 'council' || isCouncilSchemaName(out.name) || isCouncilSchemaName(out.activeSchema)) out.mode = 'council';
     if (input.question) out.question = String(input.question).slice(0, 6000);
+    // Cadenas du canvas : le verrou survit au save — sinon chaque reload
+    // redevient editable et la disposition arrangee repart.
+    if (typeof input.locked === 'boolean') out.locked = input.locked;
     return out;
 }
 
@@ -199,7 +202,12 @@ function findCoreMember(roster, sessionId) {
 
 function writeRoster(root, roster) {
     roster.updatedAt = new Date().toISOString();
-    fs.writeFileSync(rosterPath(root), JSON.stringify(roster, null, 2) + '\n', 'utf8');
+    // Ecriture atomique : tmp + rename. Sans ca, le watcher extension/CLI peut
+    // lire un JSON tronque -> graphe vide pousse au canvas (nodes+fils perdus).
+    const target = rosterPath(root);
+    const tmp = `${target}.tmp-${process.pid}`;
+    fs.writeFileSync(tmp, JSON.stringify(roster, null, 2) + '\n', 'utf8');
+    fs.renameSync(tmp, target);
 }
 
 function readWorkflow(root) {
@@ -214,6 +222,21 @@ function readWorkflow(root) {
     }
     return workflow;
 }
+function findFreePosition(existingNodes, startIndex = 0) {
+    const list = Array.isArray(existingNodes) ? existingNodes : [];
+    for (let slot = startIndex; slot < startIndex + 200; slot++) {
+        const x = 100 + (slot % 4) * 300;
+        const y = 100 + Math.floor(slot / 4) * 240;
+        const overlaps = list.some((n) => {
+            const p = n && n.position;
+            return p && Math.abs(p.x - x) < 260 && Math.abs(p.y - y) < 200;
+        });
+        if (!overlaps) return { x, y };
+    }
+    const idx = list.length;
+    return { x: 100 + (idx % 4) * 300, y: 100 + Math.floor(idx / 4) * 240 };
+}
+
 function syncRosterWorkflow(root, sessions) {
     const roster = loadRoster(root);
     dedupeRosterCore(roster);
@@ -247,7 +270,9 @@ function syncRosterWorkflow(root, sessions) {
     const keepNode = (id) => !hiddenIds.has(id) && (rosterIds.has(id) || Boolean(schemaIds && schemaIds.has(id)));
 
     const activeNodes = workflow.nodes.filter((node) => keepNode(node.sessionId));
-    if (activeNodes.length !== workflow.nodes.length) {
+    // Garde-fou anti-vide : un roster partiellement lisible ne doit pas
+    // elaguer la totalite du graphe en une passe.
+    if (activeNodes.length !== workflow.nodes.length && !(activeNodes.length === 0 && workflow.nodes.length > 0)) {
         workflow.nodes = activeNodes;
         changed = true;
     }
@@ -292,7 +317,7 @@ function syncRosterWorkflow(root, sessions) {
                 task: '',
                 skills: [],
                 title: String(member.title || '').slice(0, 200),
-                position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
+                position: findFreePosition(workflow.nodes, index),
             };
             workflow.nodes.push(node);
             nodes.set(member.sessionId, node);
@@ -343,7 +368,7 @@ function upsertChatAgent(root, agent) {
             sessionId,
             role: String(agent.role || member.role || 'Agent').slice(0, 120),
             task: '',
-            position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
+            position: findFreePosition(workflow.nodes, index),
         });
     }
     roster.workflow = validateWorkflow(workflow);
@@ -355,7 +380,51 @@ function upsertChatAgent(root, agent) {
 function saveWorkflow(root, input) {
     const roster = loadRoster(root);
     dedupeRosterCore(roster);
+    // Assainir les fils AVANT validation : un fil orphelin (endpoint absent,
+    // doublon source->target) ne doit pas faire echouer TOUT le save — sinon
+    // chaque drag/autosave throw en silence et les positions ne persistent
+    // jamais. On ecarte les fils invalides, on garde les noeuds+positions.
+    if (input && Array.isArray(input.nodes) && Array.isArray(input.edges)) {
+        const ids = new Set(input.nodes.map((node) => String(node?.sessionId || '')));
+        const seen = new Set();
+        const cleanEdges = [];
+        let droppedEdges = 0;
+        for (const edge of input.edges) {
+            const source = String(edge?.source || '');
+            const target = String(edge?.target || '');
+            const key = `${source}→${target}`;
+            if (!ids.has(source) || !ids.has(target) || source === target || seen.has(key)) {
+                droppedEdges++;
+                continue;
+            }
+            seen.add(key);
+            cleanEdges.push(edge);
+        }
+        if (droppedEdges > 0) {
+            console.warn(`[roster] saveWorkflow: ${droppedEdges} fils orphelins/doublons ecartes (save conserve)`);
+            input = { ...input, edges: cleanEdges };
+        }
+    }
     const workflow = validateWorkflow(input);
+
+    // Garde-fou anti-vide : un workflow_change emis depuis un etat webview
+    // partiel (refresh) ne doit jamais ecraser un graphe non vide.
+    const existing = (roster.workflow && Array.isArray(roster.workflow.nodes)) ? roster.workflow.nodes : [];
+    if (workflow.nodes.length === 0 && existing.length > 0 && input.allowEmpty !== true) {
+        console.warn('[roster] saveWorkflow REJETE: graphe vide entrant, existant conserve');
+        return validateWorkflow(roster.workflow);
+    }
+    // Garde anti-retrecissement : les suppressions legitimes passent par
+    // remove_agent/hide_agent (unitaire). Un save webview qui lache >1
+    // noeud en une passe est un etat partiel a rejeter.
+    if (existing.length > 1 && input.allowShrink !== true) {
+        const incomingIds = new Set(workflow.nodes.map((node) => node.sessionId));
+        const dropped = existing.filter((node) => !incomingIds.has(node.sessionId)).length;
+        if (dropped > 1) {
+            console.warn(`[roster] saveWorkflow REJETE: ${dropped} noeuds laches en un save (etat partiel suspect)`);
+            return validateWorkflow(roster.workflow);
+        }
+    }
 
     if (input.activeSchema) workflow.activeSchema = input.activeSchema;
     else if (roster.workflow && roster.workflow.activeSchema) workflow.activeSchema = roster.workflow.activeSchema;
@@ -765,7 +834,7 @@ async function main() {
                     sessionId,
                     role: role || 'Agent',
                     task: '',
-                    position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
+                    position: findFreePosition(workflow.nodes, index),
                 });
             }
             roster.workflow = validateWorkflow(workflow);
@@ -933,7 +1002,7 @@ function findMatchingSchema(root, workflow) {
 
 function syncActiveSchemaSnapshot(root, workflow) {
     const list = readSchemas();
-    if (!list.length || !workflow) return;
+    if (!list.length || !workflow || (Array.isArray(workflow.nodes) && workflow.nodes.length === 0)) return;
     const workspace = path.resolve(root);
     let index = -1;
     if (workflow.activeSchemaId) {
@@ -951,10 +1020,39 @@ function syncActiveSchemaSnapshot(root, workflow) {
     workflow.activeSchemaId = current.id;
     workflow.activeSchema = current.name;
 
-    // Schémas standards = immuables : ne JAMAIS réécrire leur graphe depuis
-    // l'état live. C'est ce canal qui a propagé un graphe élagué dans le
-    // schéma sauvegardé (corruption swat-orchestrateur).
-    if (isStandardSchemaName(current.name) || current.builtin === true) return;
+    // Schémas STANDARDS : structure canonique immuable (protection contre la
+    // corruption swat-orchestrateur), MAIS les positions sont une donnée
+    // utilisateur — on patche UNIQUEMENT nodes[].position dans l'entrée de la
+    // banque. Sans ça, loadSchema restaure un layout historique à chaque
+    // retour de schéma et les positions draggées sont perdues (cercle vicieux).
+    if (isStandardSchemaName(current.name)) {
+        const storedNodes = (current.graph && Array.isArray(current.graph.nodes)) ? current.graph.nodes : [];
+        const liveNodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+        if (!storedNodes.length || !liveNodes.length) return;
+        const posByKey = new Map();
+        for (const n of liveNodes) {
+            const p = n && n.position;
+            if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+                posByKey.set(n.sessionId || n.id, { x: Math.round(p.x), y: Math.round(p.y) });
+            }
+        }
+        let changed = false;
+        const patchedNodes = storedNodes.map((n) => {
+            const p = posByKey.get(n && (n.sessionId || n.id));
+            if (!p) return n;
+            if (n.position && n.position.x === p.x && n.position.y === p.y) return n;
+            changed = true;
+            return { ...n, position: p };
+        });
+        if (!changed) return;
+        list[index] = {
+            ...current,
+            graph: { ...current.graph, nodes: patchedNodes },
+            savedAt: new Date().toISOString(),
+        };
+        writeSchemas(list);
+        return;
+    }
 
     const snapshot = cleanSchemaGraph(workflow, current.name);
     list[index] = {
@@ -1203,6 +1301,12 @@ function loadSchema(root, id) {
         activeSchemaId: freshEntry.id,
         ...(schemaModeFor(freshEntry) ? { mode: 'council' } : {}),
     });
+    // ISOLATION DES POSITIONS (regle vinca) : chaque recette possede sa
+    // disposition. Les sessionId sont partages entre schemas — conserver
+    // la position du workflow precedent contaminait le schema fraichement
+    // charge (le Concile recupérait les positions du code-review, puis le
+    // snapshot les reecrivait dans le fichier). Le schema EST la verite :
+    // ses positions s'appliquent telles quelles.
     roster.workflow = workflow;
     writeRoster(root, roster);
     return workflow;
@@ -1233,7 +1337,7 @@ function setMemberHidden(root, sessionId, hidden) {
                     task: '',
                     skills: [],
                     title: String(foundMember.title || '').slice(0, 200),
-                    position: { x: 100 + (index % 3) * 280, y: 120 + Math.floor(index / 3) * 170 },
+                    position: findFreePosition(workflow.nodes, index),
                 });
             }
             syncActiveSchemaSnapshot(root, roster.workflow);

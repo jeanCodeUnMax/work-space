@@ -16,8 +16,8 @@
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -660,
-          "y": 0
+          "x": -154,
+          "y": -220
         }
       },
       {
@@ -30,7 +30,7 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": -220,
+          "x": 286,
           "y": -220
         }
       },
@@ -44,8 +44,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": -220,
-          "y": 0
+          "x": 286,
+          "y": -418
         }
       },
       {
@@ -58,8 +58,8 @@
         ],
         "title": "steady-agent",
         "position": {
-          "x": -220,
-          "y": 220
+          "x": 286,
+          "y": -22
         }
       },
       {
@@ -72,8 +72,8 @@
         ],
         "title": "keen-agent",
         "position": {
-          "x": 220,
-          "y": 0
+          "x": 682,
+          "y": -220
         }
       },
       {
@@ -86,8 +86,8 @@
         ],
         "title": "xenial-agent",
         "position": {
-          "x": 550,
-          "y": 0
+          "x": 968,
+          "y": -220
         }
       },
       {
@@ -100,8 +100,8 @@
         ],
         "title": "rapid-agent",
         "position": {
-          "x": 880,
-          "y": -110
+          "x": 1276,
+          "y": -418
         }
       },
       {
@@ -114,8 +114,8 @@
         ],
         "title": "beacon-agent",
         "position": {
-          "x": 880,
-          "y": 110
+          "x": 1276,
+          "y": -44
         }
       }
     ],

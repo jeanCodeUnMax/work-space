@@ -16,8 +16,8 @@
         ],
         "title": "ionian-helicopter",
         "position": {
-          "x": -440,
-          "y": 0
+          "x": -176,
+          "y": -220
         }
       },
       {
@@ -30,7 +30,7 @@
         ],
         "title": "keen-agent",
         "position": {
-          "x": -110,
+          "x": 308,
           "y": -220
         }
       },
@@ -44,8 +44,8 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": -110,
-          "y": 0
+          "x": 308,
+          "y": -484
         }
       },
       {
@@ -58,8 +58,8 @@
         ],
         "title": "urban-agent",
         "position": {
-          "x": -110,
-          "y": 220
+          "x": 308,
+          "y": 44
         }
       },
       {
@@ -71,8 +71,8 @@
         ],
         "title": "keen-agent",
         "position": {
-          "x": 330,
-          "y": 0
+          "x": 946,
+          "y": -220
         }
       },
       {
@@ -85,8 +85,8 @@
         ],
         "title": "rapid-agent",
         "position": {
-          "x": 660,
-          "y": -154
+          "x": 1562,
+          "y": -22
         }
       },
       {
@@ -99,8 +99,8 @@
         ],
         "title": "beacon-agent",
         "position": {
-          "x": 660,
-          "y": 0
+          "x": 1562,
+          "y": -220
         }
       },
       {
@@ -112,8 +112,8 @@
         ],
         "title": "sugary-shoemaker",
         "position": {
-          "x": 660,
-          "y": 154
+          "x": 1562,
+          "y": -418
         }
       }
     ],

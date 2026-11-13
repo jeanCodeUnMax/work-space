@@ -57,6 +57,8 @@ export interface WorkflowGraph {
     edges: WorkflowEdge[];
     /** 'council' = délibération multi-experts sur transcript partagé (tours séquentiels). */
     mode?: 'council';
+    /** Cadenas : true = canvas en lecture seule (drag/édition bloqués). */
+    locked?: boolean;
 }
 
 export interface WorkflowViewNode extends WorkflowNode {
