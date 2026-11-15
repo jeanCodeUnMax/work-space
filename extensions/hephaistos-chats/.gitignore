@@ -2,5 +2,6 @@ node_modules/
 out/
 
 *.log
-# La release courante doit etre trackee (le VSIX sert de binaire distribue).
-!hephaistos-chats-*.vsix
+# Seule la release courante est trackee (le VSIX sert de binaire distribue).
+# Mettre a jour la version a chaque bump (git rm --cached l ancienne au passage).
+!hephaistos-chats-0.3.53.vsix
