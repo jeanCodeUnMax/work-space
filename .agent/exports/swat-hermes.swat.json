@@ -1,0 +1,123 @@
+{
+  "format": "hephaistos-swat-schema@1",
+  "id": "schema-swat-hermes",
+  "name": "swat-hermes",
+  "graph": {
+    "version": 1,
+    "name": "swat-hermes",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Orchestrateur",
+        "task": "Recoit la demande Hermes/caverne, dispatche via le schema",
+        "skills": [
+          "orchestrator"
+        ],
+        "mcps": [],
+        "title": "Orchestrateur",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-hermes-anim",
+        "role": "Hermes-Animateur",
+        "task": "Anime la caverne : posts, sondages, epingles via cli-anything-telegram --chat caverne. Mode bot par defaut (Moi_Hermes_bot, admin), --as-user seulement si demande. Forum: --topic <id>. DONE:<tache>",
+        "skills": [
+          "cli-anything-telegram"
+        ],
+        "mcps": [
+          "cli-anything"
+        ],
+        "title": "hermes-animateur",
+        "position": {
+          "x": 280,
+          "y": -100
+        }
+      },
+      {
+        "sessionId": "chat-hermes-mod",
+        "role": "Hermes-Moderateur",
+        "task": "Modere : delete/edit, liste admins/members, stats via cli-anything-telegram --chat caverne. Verifie permissions du bot avant actions. DONE:<tache>",
+        "skills": [
+          "cli-anything-telegram"
+        ],
+        "mcps": [
+          "cli-anything"
+        ],
+        "title": "hermes-moderateur",
+        "position": {
+          "x": 280,
+          "y": 100
+        }
+      },
+      {
+        "sessionId": "chat-hermes-arch",
+        "role": "Hermes-Archiviste",
+        "task": "Organise le forum : topics list/creation, history, search --deep, contenu vers vault-pepites. DONE:<tache>",
+        "skills": [
+          "cli-anything-telegram",
+          "antigravity-obsidian"
+        ],
+        "mcps": [
+          "cli-anything",
+          "vault-pepites"
+        ],
+        "title": "hermes-archiviste",
+        "position": {
+          "x": 560,
+          "y": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e1",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-hermes-anim"
+      },
+      {
+        "id": "e2",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-hermes-mod"
+      },
+      {
+        "id": "e3",
+        "source": "chat-hermes-anim",
+        "target": "chat-hermes-arch"
+      },
+      {
+        "id": "e4",
+        "source": "chat-hermes-mod",
+        "target": "chat-hermes-arch"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "sessionId": "chat-hermes-anim",
+      "providerId": "nim2",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "role": "Hermes-Animateur",
+      "title": "hermes-animateur"
+    },
+    {
+      "sessionId": "chat-hermes-mod",
+      "providerId": "nim2",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "role": "Hermes-Moderateur",
+      "title": "hermes-moderateur"
+    },
+    {
+      "sessionId": "chat-hermes-arch",
+      "providerId": "nim2",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "role": "Hermes-Archiviste",
+      "title": "hermes-archiviste"
+    }
+  ],
+  "exportedAt": "2026-11-15T22:13:45.959Z",
+  "sourceWorkspace": "hephaistos2-kit"
+}

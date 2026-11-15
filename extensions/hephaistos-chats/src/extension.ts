@@ -340,7 +340,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // jamais de doublon : ChatPanel.open révèle le panel s'il existe déjà.
     orchWs.on('message', (data: any) => {
         if (data?.type === 'open_chat' && typeof data.sessionId === 'string') {
-            openSession(data.sessionId);
+            openSession(data.sessionId, true);
         }
     });
 
@@ -1210,6 +1210,16 @@ export function activate(context: vscode.ExtensionContext): void {
                     newId = focused.startsWith('acp/antigravity-acp/')
                         ? focused
                         : await pickIdeSession('antigravity-acp');
+                    if (!newId) {
+                        // Repli historique : la cascade AGY active via le hub
+                        // (agy-hub.js lit le daemon — indépendant du monitor).
+                        try {
+                            const cur = require('child_process').execFileSync('node', [
+                                path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                            ], { encoding: 'utf8', timeout: 20000 }).trim();
+                            if (cur) newId = `acp/antigravity-acp/${cur}`;
+                        } catch { /* hub AGY indisponible */ }
+                    }
                     kind = 'agy';
                 } else if (want === 'devin') {
                     // Carte Devin -> la session Devin live, même si c'est une
@@ -1225,6 +1235,14 @@ export function activate(context: vscode.ExtensionContext): void {
                     if (!focused) {
                         kind = 'agy';
                         newId = await pickIdeSession('antigravity-acp');
+                        if (!newId) {
+                            try {
+                                const cur = require('child_process').execFileSync('node', [
+                                    path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                                ], { encoding: 'utf8', timeout: 20000 }).trim();
+                                if (cur) newId = `acp/antigravity-acp/${cur}`;
+                            } catch { /* hub AGY indisponible */ }
+                        }
                     }
                     // Garde : une carte typée n'accepte que la fenêtre du bon
                     // type (ex. CerberOS refuse une conversation Devin).
@@ -1331,7 +1349,8 @@ export function activate(context: vscode.ExtensionContext): void {
         if (message.type === 'schema_save') {
             try {
                 const graphToSave = message.graph ? workflowStore.save(message.graph) : workflowStore.load(store.list());
-                workflowStore.saveSchema(String((message as { name?: string }).name || graphToSave.name || 'Schema'), graphToSave);
+                const saveId = typeof (message as { id?: string }).id === 'string' && (message as { id?: string }).id ? { id: String((message as { id?: string }).id) } : undefined;
+                workflowStore.saveSchema(String((message as { name?: string }).name || graphToSave.name || 'Schema'), graphToSave, saveId);
                 const refreshed = workflowStore.load(store.list());
                 FlowWorkspacePanel.syncCache(view(refreshed));
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });

@@ -202,13 +202,16 @@ test('a chat agent is added to the roster and workflow once', () => {
     assert.equal(data.workflow.nodes[0].role, 'Devin');
 });
 
-test('workflow roster rejects cycles and removes links with a member', () => {
+test('workflow roster persists cycles and removes links with a member', () => {
     const root = makeRosterRoot();
     roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Devin' });
     roster.upsertChatAgent(root, { sessionId: 'chat-two', model: 'model-b', role: 'Reviewer' });
     roster.connectWorkflowAgents(root, 'chat-one', 'chat-two');
 
-    assert.throws(() => roster.connectWorkflowAgents(root, 'chat-two', 'chat-one'), /cyclique/);
+    // Boucle autorisée au stockage : le lancement auto (workflowOrder) la
+    // refusera toujours, mais le graphe de l'utilisateur persiste.
+    const cyclic = roster.connectWorkflowAgents(root, 'chat-two', 'chat-one');
+    assert.equal(cyclic.edges.length, 2);
 
     const data = roster.removeChatAgent(root, 'chat-two');
     assert.equal(data.nodes.length, 1);

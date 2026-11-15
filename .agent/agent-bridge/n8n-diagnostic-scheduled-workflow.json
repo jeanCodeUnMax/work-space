@@ -1,0 +1,59 @@
+{
+  "name": "Hephaistos2-Kit - diagnostic planifie",
+  "nodes": [
+    {
+      "id": "schedule",
+      "name": "Tous les jours 06h00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 200],
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "days", "daysInterval": 1, "triggerAtHour": 6, "triggerAtMinute": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call",
+      "name": "Lancer diagnostic SWAT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/hephaistos-diagnostic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "{}",
+        "options": { "timeout": 600000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "synthese",
+      "name": "Synthese verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 200],
+      "parameters": {
+        "jsCode": "const r = $json; const v = r.verdict || 'inconnu'; const c = r.counts || {}; return [{ json: { verdict: v, counts: c, reportFile: r.reportFile || null, swat: r.swatExecutionState || null, ts: new Date().toISOString() } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Tous les jours 06h00": { "main": [[{ "node": "Lancer diagnostic SWAT", "type": "main", "index": 0 }]] },
+    "Lancer diagnostic SWAT": { "main": [[{ "node": "Synthese verdict", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {}
+}

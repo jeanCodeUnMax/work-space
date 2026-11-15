@@ -119,23 +119,10 @@ function validateWorkflow(input) {
         return edgeObj;
     });
 
-    const indegree = new Map([...nodes.keys()].map((id) => [id, 0]));
-    const outgoing = new Map([...nodes.keys()].map((id) => [id, []]));
-    for (const edge of edges) {
-        indegree.set(edge.target, indegree.get(edge.target) + 1);
-        outgoing.get(edge.source).push(edge.target);
-    }
-    const ready = [...indegree].filter(([, degree]) => degree === 0).map(([id]) => id);
-    let visited = 0;
-    while (ready.length) {
-        const id = ready.shift();
-        visited++;
-        for (const next of outgoing.get(id)) {
-            indegree.set(next, indegree.get(next) - 1);
-            if (indegree.get(next) === 0) ready.push(next);
-        }
-    }
-    if (visited !== nodes.size) throw new Error('connexion cyclique interdite dans un pipeline');
+    // Les boucles (retour worker -> orchestrateur, binome aller-retour) sont
+    // autorisees a la persistance : l'utilisateur dessine son orchestration
+    // librement. L'ordonnanceur d'execution (workflowOrder / runners) refuse
+    // toujours de lancer un flux cyclique, avec un message explicite.
 
     const entrySessionId = input.entrySessionId == null ? null : String(input.entrySessionId);
     if (entrySessionId && !nodes.has(entrySessionId)) {
@@ -682,7 +669,24 @@ async function main() {
             console.log(JSON.stringify({ command: 'schema restore-standards', ...restoreStandardSchemas(root) }, null, 1));
             return;
         }
-        throw new Error('usage: schema save|list|load|delete|create|restore-standards');
+        if (sub === 'export') {
+            const target = args[2];
+            if (!target) throw new Error('usage: schema export <id|nom> [--out fichier.json]');
+            const bundle = exportSchema(root, target);
+            const outIdx = args.indexOf('--out');
+            const outFile = outIdx >= 0 ? args[outIdx + 1] : path.join(root, '.agent', 'exports', `${bundle.name}.swat.json`);
+            fs.mkdirSync(path.dirname(outFile), { recursive: true });
+            fs.writeFileSync(outFile, JSON.stringify(bundle, null, 2));
+            console.log(JSON.stringify({ command: 'schema export', id: bundle.id, name: bundle.name, file: outFile, agents: bundle.agents.length }, null, 1));
+            return;
+        }
+        if (sub === 'import') {
+            const file = args[2];
+            if (!file) throw new Error('usage: schema import <fichier.swat.json>');
+            console.log(JSON.stringify({ command: 'schema import', ...importSchema(root, file) }, null, 1));
+            return;
+        }
+        throw new Error('usage: schema save|list|load|delete|create|export|import|restore-standards');
     }
     if (cmd === 'workflow') {
         console.log(JSON.stringify({ command: 'workflow', workflow: cmdWorkflow(root, args.slice(1)) }, null, 1));
@@ -952,11 +956,11 @@ function syncActiveSchemaSnapshot(root, workflow) {
     workflow.activeSchemaId = current.id;
     workflow.activeSchema = current.name;
 
-    // Schémas standards = immuables : ne JAMAIS réécrire leur graphe depuis
-    // l'état live. C'est ce canal qui a propagé un graphe élagué dans le
-    // schéma sauvegardé (corruption swat-orchestrateur).
-    if (isStandardSchemaName(current.name) || current.builtin === true) return;
-
+    // Tous les schémas — standards compris — répercutent les modifications du
+    // graphe live dans la banque (version de travail de l'utilisateur). Le
+    // gabarit canonique (.agent/templates/schemas/) n'est PAS touché ici : il
+    // sert de référence usine pour « Restaurer les standards » et n'est réécrit
+    // que par promotion explicite (updateStandardSchema / sauvegarde écrasante).
     const snapshot = cleanSchemaGraph(workflow, current.name);
     list[index] = {
         ...current,
@@ -968,17 +972,49 @@ function syncActiveSchemaSnapshot(root, workflow) {
     writeSchemas(list);
 }
 
-function saveSchema(root, name, graph) {
+function saveSchema(root, name, graph, opts) {
     const list = readSchemas();
     const workspace = path.resolve(root);
     let effectiveName = String(name || graph?.activeSchema || graph?.name || 'Schema').trim().slice(0, 120) || 'Schema';
-    // Schéma standard protégé : une sauvegarde sous son nom crée une copie
-    // utilisateur — le gabarit canonique n'est jamais écrasé.
-    if (isStandardSchemaName(effectiveName)) {
-        effectiveName = `${effectiveName} (copie)`;
+    // Cible explicite (bouton « Écraser » de la banque) : opts.id prime sur le
+    // nom — l'utilisateur choisit quelle version il remplace.
+    let index = -1;
+    if (opts?.id) {
+        index = list.findIndex((item) => item.id === opts.id);
+    }
+    if (index < 0) {
+        index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(effectiveName) && sameWorkspace(item.workspace, workspace));
+    }
+    const syncRoster = (entry) => {
+        try {
+            const roster = loadRoster(root);
+            dedupeRosterCore(roster);
+            const workflow = validateWorkflow({ ...cleanSchemaGraph(graph, entry.name), name: entry.name, activeSchema: entry.name, activeSchemaId: entry.id });
+            roster.workflow = workflow;
+            writeRoster(root, roster);
+        } catch { /* ignore si roster absent */ }
+    };
+    if (index >= 0) {
+        const target = list[index];
+        // Écrasement d'un schéma standard = promotion canonique : le gabarit
+        // .agent/templates/schemas/ ET la banque suivent la nouvelle version.
+        if (target.builtin === true || isStandardSchemaName(target.name)) {
+            const promoted = updateStandardSchema(root, target.id, graph);
+            if (promoted.updated) {
+                const refreshed = readSchemas().find((item) => item.id === target.id) || target;
+                syncRoster(refreshed);
+                return refreshed;
+            }
+            return target;
+        }
+        const cleanGraph = cleanSchemaGraph(graph, target.name);
+        const entry = { ...target, graph: cleanGraph, desc: schemaDesc(cleanGraph), savedAt: new Date().toISOString() };
+        list[index] = entry;
+        writeSchemas(list);
+        syncRoster(entry);
+        return entry;
     }
     const cleanGraph = cleanSchemaGraph(graph, effectiveName);
-    const index = list.findIndex((item) => normSchemaName(item.name) === normSchemaName(effectiveName) && sameWorkspace(item.workspace, workspace));
     const entry = {
         id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
         name: effectiveName,
@@ -986,33 +1022,21 @@ function saveSchema(root, name, graph) {
         graph: cleanGraph,
         desc: schemaDesc(cleanGraph),
         savedAt: new Date().toISOString(),
-        builtin: isStandardSchemaName(effectiveName) || (index >= 0 && list[index].builtin === true) || undefined,
-        mode: isCouncilSchemaName(effectiveName) || (index >= 0 && list[index].mode === 'council') ? 'council' : undefined,
+        builtin: isStandardSchemaName(effectiveName) || undefined,
+        mode: isCouncilSchemaName(effectiveName) ? 'council' : undefined,
     };
-    if (index >= 0) {
-        entry.id = list[index].id;
-        list[index] = entry;
-    } else {
-        list.push(entry);
-    }
+    list.push(entry);
     writeSchemas(list);
-
-    try {
-        const roster = loadRoster(root);
-        dedupeRosterCore(roster);
-        const workflow = validateWorkflow({ ...cleanGraph, name: entry.name, activeSchema: entry.name, activeSchemaId: entry.id });
-        roster.workflow = workflow;
-        writeRoster(root, roster);
-    } catch { /* ignore si roster absent */ }
-
+    syncRoster(entry);
     return entry;
 }
 
 function listSchemas(root, all) {
     const workspace = path.resolve(root);
-    // Auto-guérison à chaque listage : gabarits standards absents ou divergents
-    // sont restaurés depuis .agent/templates/schemas/ avant tout affichage.
-    try { restoreStandardSchemas(root); } catch { /* best-effort */ }
+    // Auto-guérison à chaque listage : gabarits standards ABSENTS recréés
+    // depuis .agent/templates/schemas/ — les versions modifiées par
+    // l'utilisateur ne sont pas touchées (retour usine = action explicite).
+    try { restoreStandardSchemas(root, { onlyMissing: true }); } catch { /* best-effort */ }
     return readSchemas()
         .filter((item) => all || sameWorkspace(item.workspace, workspace))
         .map((item) => ({
@@ -1120,7 +1144,13 @@ function createEmptySchema(root, name) {
     return roster.workflow;
 }
 
-function restoreStandardSchemas(root) {
+function restoreStandardSchemas(root, opts) {
+    // onlyMissing : réparation silencieuse à chaque listage — ne recrée que les
+    // schémas standards ABSENTS, sans toucher les versions modifiées par
+    // l'utilisateur (sinon les edits du graphe live seraient écrasés en
+    // permanence). La restauration complète (retour au gabarit usine) reste
+    // possible via la commande explicite « Restaurer les standards ».
+    const onlyMissing = opts?.onlyMissing === true;
     const templates = readSchemaTemplates(root);
     const workspace = path.resolve(root);
     const list = readSchemas();
@@ -1128,9 +1158,8 @@ function restoreStandardSchemas(root) {
     for (const tpl of templates) {
         const index = list.findIndex((item) =>
             sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(tpl.name));
-        // Auto-réparation : un schéma standard divergent du gabarit canonique
-        // est rétabli tel quel (corruption évitée — ex. swat-orchestrateur).
         if (index >= 0) {
+            if (onlyMissing) continue;
             const current = list[index];
             if (JSON.stringify(current.graph) !== JSON.stringify(tpl.graph)) {
                 list[index] = { ...current, graph: tpl.graph, builtin: true, desc: schemaDesc(tpl.graph) };
@@ -1208,6 +1237,92 @@ function loadSchema(root, id) {
     writeRoster(root, roster);
     return workflow;
 }
+// Export portable d'un schéma SWAT : le graphe seul ne suffit pas — les nœuds
+// chat-* ne portent ni provider ni modèle. Le bundle embarque leurs profils
+// roster pour que l'import recrée des agents équivalents sur une autre machine.
+function exportSchema(root, idOrName) {
+    const list = readSchemas();
+    const workspace = path.resolve(root);
+    const entry = list.find((item) => item.id === idOrName)
+        || list.find((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(idOrName));
+    if (!entry) throw new Error(`Schema introuvable: ${idOrName}`);
+    const roster = loadRoster(root);
+    const members = Object.values(roster.core || {}).flat();
+    const agents = [];
+    for (const node of entry.graph?.nodes || []) {
+        if (!String(node.sessionId || '').startsWith('chat-')) continue;
+        const member = members.find((item) => item.sessionId === node.sessionId);
+        agents.push({
+            sessionId: node.sessionId,
+            providerId: member?.providerId || 'nim2',
+            model: member?.model || '',
+            role: node.role || member?.role || 'Agent',
+            title: node.title || member?.title || '',
+        });
+    }
+    return {
+        format: 'hephaistos-swat-schema@1',
+        id: entry.id,
+        name: entry.name,
+        mode: schemaModeFor(entry),
+        graph: entry.graph,
+        agents,
+        exportedAt: new Date().toISOString(),
+        sourceWorkspace: path.basename(workspace),
+    };
+}
+
+// Import : enregistre le schéma dans la banque du workspace courant ET déclare
+// les agents chat-* manquants dans le roster (restore: open-or-reveal) pour que
+// la voie de restauration puisse recréer leurs fenêtres — même sessionId.
+function importSchema(root, file) {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const bundle = raw.format === 'hephaistos-swat-schema@1' ? raw : { name: raw.name || path.basename(file).replace(/\.(swat\.)?json$/, ''), graph: raw.graph || raw, agents: [] };
+    const name = String(bundle.name || 'Schema importe').trim().slice(0, 120) || 'Schema importe';
+    const graph = cleanSchemaGraph(bundle.graph, name);
+    if (!Array.isArray(graph.nodes) || !graph.nodes.length) throw new Error('graphe vide ou invalide');
+    const workspace = path.resolve(root);
+    const roster = loadRoster(root);
+    dedupeRosterCore(roster);
+    roster.core.bleubites = roster.core.bleubites || [];
+    const added = [];
+    const profiles = new Map((bundle.agents || []).map((a) => [a.sessionId, a]));
+    for (const node of graph.nodes) {
+        const sid = String(node.sessionId || '');
+        if (!sid.startsWith('chat-')) continue;
+        const exists = Object.values(roster.core).flat().some((m) => m.sessionId === sid);
+        if (exists) continue;
+        const profile = profiles.get(sid) || {};
+        roster.core.bleubites.push({
+            providerId: profile.providerId || 'nim2',
+            sessionId: sid,
+            model: profile.model || '',
+            role: node.role || profile.role || 'Agent',
+            title: node.title || profile.title || '',
+            restore: 'open-or-reveal',
+        });
+        added.push(sid);
+    }
+    const list = readSchemas();
+    let effectiveName = name;
+    if (list.some((item) => sameWorkspace(item.workspace, workspace) && normSchemaName(item.name) === normSchemaName(name))) {
+        effectiveName = `${name} (import)`;
+    }
+    const entry = {
+        id: `schema-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        name: effectiveName,
+        workspace,
+        graph,
+        desc: schemaDesc(graph),
+        savedAt: new Date().toISOString(),
+        mode: bundle.mode === 'council' ? 'council' : undefined,
+    };
+    list.push(entry);
+    writeSchemas(list);
+    writeRoster(root, roster);
+    return { id: entry.id, name: entry.name, nodes: graph.nodes.length, agentsAdded: added };
+}
+
 function setMemberHidden(root, sessionId, hidden) {
     const roster = loadRoster(root);
     dedupeRosterCore(roster);
@@ -1284,6 +1399,8 @@ module.exports = {
     saveSchema,
     listSchemas,
     loadSchema,
+    exportSchema,
+    importSchema,
     deleteSchema,
     renameSchema,
     updateStandardSchema,

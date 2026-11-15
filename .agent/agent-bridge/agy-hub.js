@@ -26,6 +26,9 @@
 'use strict';
 
 const http = require('http');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const { execSync } = require('child_process');
 let comms;
 try { comms = require('./comms'); } catch { comms = null; }
@@ -54,8 +57,13 @@ function listHubs() {
     for (const r of rows) {
         const cl = r.CommandLine || '';
         const port = /--hub-port[=\s](\d+)/.exec(cl)?.[1];
-        const csrf = /--csrf_token[=\s]([0-9a-fA-F-]+)/.exec(cl)?.[1];
+        let csrf = /--csrf_token[=\s]([0-9a-fA-F-]+)/.exec(cl)?.[1];
         const addDir = /--add-dir[=\s]([^\s"]+)/.exec(cl)?.[1];
+        // agy ≥ daemon : le jeton n'est plus sur la cmdline, il est persisté
+        // dans ~/.gemini/<app_data_dir>/daemon/hub_<port>.json (pid vérifiable).
+        if (port && !csrf) {
+            csrf = csrfFromDaemonFile(r.ProcessId, Number(port), cl);
+        }
         if (port && csrf) {
             const exe = /^\s*"([^"]+)"|^(\S+)/.exec(cl)?.[1] || /^\s*"([^"]+)"|^(\S+)/.exec(cl)?.[2] || '';
             hubs.push({ pid: r.ProcessId, port: Number(port), csrfToken: csrf, addDir, exe });
@@ -63,6 +71,22 @@ function listHubs() {
     }
     if (!hubs.length) throw new Error('aucun hub agy trouvé (extension Antigravity non active ?)');
     return hubs;
+}
+
+// agy ≥ daemon : csrf absent de la cmdline → ~/.gemini/<app_data_dir>/daemon/
+// hub_<port>.json { pid, httpPort, csrfToken }. Le pid doit correspondre au
+// process pour écarter les fichiers périmés (le dossier en accumule des dizaines).
+function csrfFromDaemonFile(pid, port, cmdline) {
+    try {
+        const appDir = /--app_data_dir[=\s]"?([^\s"]+)/.exec(cmdline || '')?.[1] || 'antigravity';
+        const file = path.join(os.homedir(), '.gemini', appDir, 'daemon', `hub_${port}.json`);
+        const meta = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (Number(meta.pid) !== Number(pid)) return undefined;
+        const token = String(meta.csrfToken || '');
+        return token || undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 function discoverHub(preferDir) {

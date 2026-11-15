@@ -502,11 +502,15 @@ function Workspace(): React.JSX.Element {
         nextEntry: string | null,
         nextName: string,
         nextEntryIsExplicit: boolean,
+        tagSchema?: string,
+        tagSchemaId?: string,
     ) => {
         const s = stateRef.current;
+        // Le tag de schéma est celui capturé à la programmation du save : un
+        // workflow_state entrant entre-temps ne doit pas réétiqueter le graphe.
         vscode.postMessage({
             type: 'workflow_change',
-            graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit, s.activeSchema, s.activeSchemaId),
+            graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit, tagSchema ?? s.activeSchema, tagSchemaId ?? s.activeSchemaId),
         });
     }, []);
 
@@ -517,10 +521,12 @@ function Workspace(): React.JSX.Element {
         nextName = workflowName,
         nextEntryIsExplicit = entryIsExplicit,
     ) => {
+        const tagSchema = stateRef.current.activeSchema;
+        const tagSchemaId = stateRef.current.activeSchemaId;
         if (saveTimer.current !== undefined) window.clearTimeout(saveTimer.current);
         saveTimer.current = window.setTimeout(() => {
             saveTimer.current = undefined;
-            postWorkflowSave(nextNodes, nextEdges, nextEntry, nextName, nextEntryIsExplicit);
+            postWorkflowSave(nextNodes, nextEdges, nextEntry, nextName, nextEntryIsExplicit, tagSchema, tagSchemaId);
         }, 300);
     }, [edges, entryIsExplicit, entrySessionId, nodes, postWorkflowSave, workflowName]);
 
@@ -622,20 +628,75 @@ function Workspace(): React.JSX.Element {
         vscode.postMessage({ type: 'point_agent', sessionId });
     }, []);
 
+    // Un lien refusé par le roster (doublon, self-loop, endpoint absent)
+    // échouait en silence au save : l'edge restait dessiné puis disparaissait
+    // au changement de schéma. On refuse donc AVANT de le dessiner.
+    const edgeRejection = (source: string, target: string, pool: Edge[]): string | null => {
+        if (source === target) return 'Connexion refusée : un bloc ne peut pas se lier à lui-même.';
+        if (pool.some((e) => e.source === source && e.target === target)) {
+            return 'Connexion refusée : ce lien existe déjà.';
+        }
+        return null;
+    };
+
+    // Les boucles sont autorisées au dessin (orchestration libre) ; seul le
+    // lancement automatique les refuse. On le signale sans bloquer.
+    const createsCycle = (source: string, target: string, pool: Edge[]): boolean => {
+        const bySource = new Map<string, string[]>();
+        for (const e of pool) {
+            const list = bySource.get(e.source) || [];
+            list.push(e.target);
+            bySource.set(e.source, list);
+        }
+        const stack = [target];
+        const seen = new Set<string>();
+        while (stack.length) {
+            const cur = stack.pop() as string;
+            if (cur === source) return true;
+            if (seen.has(cur)) continue;
+            seen.add(cur);
+            for (const nxt of bySource.get(cur) || []) stack.push(nxt);
+        }
+        return false;
+    };
+
     const onConnect = useCallback((connection: Connection) => {
+        const rejected = connection.source && connection.target
+            ? edgeRejection(connection.source, connection.target, edges)
+            : 'Connexion refusée : lien incomplet.';
+        if (rejected) {
+            setRunSummary(rejected);
+            return;
+        }
+        const cycled = connection.source && connection.target
+            ? createsCycle(connection.source, connection.target, edges)
+            : false;
         const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, edges);
         setEdges(nextEdges);
         setSelectedEdgeId(null);
+        if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
         sendSave(nodes, nextEdges);
     }, [edges, nodes, sendSave, setEdges]);
 
     const onReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
+        const pool = edges.filter((edge) => edge.id !== oldEdge.id);
+        const rejected = connection.source && connection.target
+            ? edgeRejection(connection.source, connection.target, pool)
+            : 'Connexion refusée : lien incomplet.';
+        if (rejected) {
+            setRunSummary(rejected);
+            return;
+        }
+        const cycled = connection.source && connection.target
+            ? createsCycle(connection.source, connection.target, pool)
+            : false;
         const nextEdges = addEdge(
             { ...connection, type: 'smoothstep' },
-            edges.filter((edge) => edge.id !== oldEdge.id),
+            pool,
         );
         setEdges(nextEdges);
         setSelectedEdgeId(null);
+        if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
         sendSave(nodes, nextEdges);
     }, [edges, nodes, sendSave, setEdges]);
 
@@ -752,6 +813,16 @@ function Workspace(): React.JSX.Element {
         const name = renameValue.trim();
         setRenamingId(null);
         if (name) vscode.postMessage({ type: 'schema_rename', id, name, all: showAllSchemas });
+    };
+    const overwriteSchema = (schema: { id: string; name: string }): void => {
+        const s = stateRef.current;
+        vscode.postMessage({
+            type: 'schema_save',
+            id: schema.id,
+            name: schema.name,
+            all: showAllSchemas,
+            graph: toStoredGraph(s.nodes, s.edges, schema.name, s.entrySessionId, s.entryIsExplicit, s.activeSchema, s.activeSchemaId),
+        });
     };
     const requestDeleteSchema = (id: string): void => {
         if (confirmDeleteId === id) {
@@ -941,6 +1012,19 @@ function Workspace(): React.JSX.Element {
                                         >
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                                 <path fill="currentColor" d="M16.7 3.3a2.6 2.6 0 0 1 3.7 0l.3.3a2.6 2.6 0 0 1 0 3.7l-9.9 9.9-4.6 1 .9-4.7 9.6-9.5Zm2.2 1.5a.9.9 0 0 0-1.3 0l-.7.7 2.2 2.2.7-.7a.9.9 0 0 0 0-1.3l-.9-.9Z"/>
+                                            </svg>
+                                        </button>
+                                        )}
+                                        {renamingId !== schema.id && (
+                                        <button
+                                            type="button"
+                                            className="schema-rename"
+                                            title="Écraser ce schéma avec le graphe courant"
+                                            aria-label={"Écraser " + schema.name}
+                                            onClick={() => overwriteSchema(schema)}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path fill="currentColor" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm3-10H5V5h10v4Z"/>
                                             </svg>
                                         </button>
                                         )}

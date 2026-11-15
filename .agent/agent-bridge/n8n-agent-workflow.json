@@ -1,0 +1,129 @@
+{
+  "name": "Hephaistos2-Kit - Agent IA n8n",
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Demande agent authentifiee",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "hphe-agent",
+      "position": [0, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hephaistos-agent",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" }
+      }
+    },
+    {
+      "id": "agent",
+      "name": "Agent IA Hephaistos",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [280, 300],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.prompt || $json.body.objective || 'Resume la demande recue.' }}",
+        "options": {
+          "systemMessage": "Tu es l'agent natif n8n du kit Hephaistos2. Tu reponds en francais, de facon factuelle et concise. Tu as trois outils : catalogue_swats (liste les SWAT et leur etat), statut_mission (etat d'une mission par son missionId) et lancer_diagnostic (declenche le diagnostic architecture complet). Regles : jamais d'action destructive, jamais d'invention de resultat ; cite les IDs (missionId, schemaId, taskId) quand tu les obtiens ; si un outil echoue, rapporte l'erreur brute au lieu de deviner. Pour lancer une mission SWAT autre que le diagnostic, reponds avec un objet JSON {missionId, swatId, objective, inputs, constraints, expectedDeliverable} sans l'executer toi-meme. Quand la demande porte sur des donnees (catalogue, statut, diagnostic), tu DOIS appeler l'outil correspondant au lieu de repondre de memoire.",
+          "maxIterations": 8,
+          "returnIntermediateSteps": false
+        }
+      }
+    },
+    {
+      "id": "model",
+      "name": "NIM Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [280, 520],
+      "parameters": {
+        "model": { "__rl": true, "mode": "list", "value": "nvidia/nemotron-3-ultra-550b-a55b" },
+        "options": {
+          "maxTokens": 4000,
+          "extraBody": { "chat_template_kwargs": { "enable_thinking": false } }
+        }
+      },
+      "credentials": {
+        "openAiApi": { "id": "DFluXIElcU9iTlHG", "name": "NVIDIA NIM (env)" }
+      }
+    },
+    {
+      "id": "tool-swats",
+      "name": "catalogue_swats",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [60, 560],
+      "parameters": {
+        "toolDescription": "Liste les SWAT enregistres dans le kit Hephaistos2 et le schema actif de l'extension. GET sans parametre.",
+        "method": "GET",
+        "url": "http://127.0.0.1:7478/swats",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "optimizeResponse": true
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" }
+      }
+    },
+    {
+      "id": "tool-mission",
+      "name": "statut_mission",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [280, 640],
+      "parameters": {
+        "toolDescription": "Retourne l'etat d'une mission SWAT par son missionId : running, completed, failed et les etapes terminees.",
+        "method": "GET",
+        "url": "http://127.0.0.1:7478/missions/{missionId}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "optimizeResponse": true,
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "missionId", "description": "Identifiant exact de la mission a consulter", "type": "string" }
+          ]
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" }
+      }
+    },
+    {
+      "id": "tool-diag",
+      "name": "lancer_diagnostic",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [500, 560],
+      "parameters": {
+        "toolDescription": "Lance le diagnostic complet de l'architecture Hephaistos2-Kit (SWAT diagnostic : Runtime-Comms, Roster, Architecture, Synthese). Retourne le verdict et les checks. Peut prendre plusieurs minutes.",
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/hephaistos-diagnostic",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "{}",
+        "optimizeResponse": true
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" }
+      }
+    }
+  ],
+  "connections": {
+    "Demande agent authentifiee": { "main": [[{ "node": "Agent IA Hephaistos", "type": "main", "index": 0 }]] },
+    "NIM Model": { "ai_languageModel": [[{ "node": "Agent IA Hephaistos", "type": "ai_languageModel", "index": 0 }]] },
+    "catalogue_swats": { "ai_tool": [[{ "node": "Agent IA Hephaistos", "type": "ai_tool", "index": 0 }]] },
+    "statut_mission": { "ai_tool": [[{ "node": "Agent IA Hephaistos", "type": "ai_tool", "index": 0 }]] },
+    "lancer_diagnostic": { "ai_tool": [[{ "node": "Agent IA Hephaistos", "type": "ai_tool", "index": 0 }]] }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {}
+}

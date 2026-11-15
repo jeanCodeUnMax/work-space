@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-15T20:42:12.771Z",
+  "updatedAt": "2026-11-15T23:32:26.197Z",
   "core": {
     "devin": [
       {
@@ -16,9 +16,9 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
-        "role": "Orchestrateur",
-        "hidden": true,
-        "title": "Devin - orchestrateur n8n"
+        "role": "Integrateur-Git",
+        "hidden": false,
+        "title": "daring-agent"
       },
       {
         "providerId": "devin-cli",
@@ -40,7 +40,7 @@
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
         "role": "Architecte",
-        "hidden": true,
+        "hidden": false,
         "title": "bloom-settee"
       },
       {
@@ -175,6 +175,14 @@
         "restore": "existing-only",
         "role": "Devin",
         "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "restore": "existing-only",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": false
       }
     ],
     "cerberos": [
@@ -191,7 +199,7 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "role": "Codeur",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
       },
@@ -200,7 +208,7 @@
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
         "role": "Reviewer",
-        "hidden": true,
+        "hidden": false,
         "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
         "title": "amber-agent"
       },
@@ -209,7 +217,7 @@
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
         "role": "Auditeur-securite",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
       },
@@ -218,7 +226,7 @@
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
         "role": "Sentinelle",
-        "hidden": true,
+        "hidden": false,
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
         "title": "keen-agent"
       },
@@ -227,7 +235,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "role": "Verif-Submodules",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-bolt-e4b",
         "title": "xenial-agent"
       },
@@ -236,7 +244,7 @@
         "sessionId": "chat-mvflr6cn",
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
-        "hidden": true,
+        "hidden": false,
         "model": "openrouter/google/gemma-4-31b-it:free",
         "title": "rapid-agent"
       },
@@ -245,7 +253,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "zealous-agent"
       },
@@ -263,7 +271,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "onyx-agent"
       },
@@ -272,7 +280,7 @@
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
         "role": "Sentinelle-Infra-Perf",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "ionic-orbit"
       },
@@ -381,7 +389,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Architecte",
         "title": "calm-ember",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -390,7 +398,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Operate",
         "title": "trusted-harbor",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -399,7 +407,7 @@
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Verificateur",
         "title": "xenial-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim2",
@@ -727,6 +735,46 @@
         "role": "Bleubite",
         "title": "Bleubite",
         "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwiegaz5",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwieshlz",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwiez55g",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwif4s9j",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwifrov9",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
       }
     ],
     "antigravity": [
@@ -749,7 +797,7 @@
     "pingAfterRestore": true
   },
   "verification": {
-    "lastPing": "2026-10-28T19:54:46.277Z",
+    "lastPing": "2026-11-15T22:11:20.690Z",
     "results": {
       "acp/devin-cli/trusted-robin": {
         "transport": "wake_acp_agent",
@@ -1062,90 +1110,329 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-n8n",
+    "name": "swat-orchestrateur (copie)",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Recoit la demande n8n/Telegram, dispatche via le schema",
+        "task": "Cadrage & Supervision : analyse le besoin, découpe les étapes, supervise le déroulement global.",
         "skills": [
-          "orchestrator"
+          "orchestrator",
+          "plan-writing"
         ],
         "mcps": [],
         "title": "daring-agent",
         "position": {
-          "x": -22,
-          "y": -110
+          "x": -660,
+          "y": -220
+        },
+        "provider": "devin-cli",
+        "bound": {
+          "at": 1794784621729,
+          "kind": "devin"
         }
       },
       {
-        "sessionId": "chat-n8narchi",
-        "role": "N8N-Architecte",
-        "task": "Concois n'importe quel workflow n8n 2.x (JSON nodes/connections, connections clees par NOM). Livrable: fichier .agent/n8n-<nom>.json. Aucun appel reseau. DONE:<tache>.",
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "role": "Architecte",
+        "task": "Conception & Spécification technique : architecture, contrats d'interfaces, sélection des patterns.",
         "skills": [
-          "cli-anything-n8n"
+          "architecture",
+          "api-patterns",
+          "plan-writing"
         ],
-        "mcps": [
-          "cli-anything",
-          "Hephaistos-everything-search"
-        ],
-        "title": "calm-ember",
+        "mcps": [],
+        "title": "bloom-settee",
         "position": {
-          "x": 280,
-          "y": -120
-        }
+          "x": -330,
+          "y": -220
+        },
+        "provider": "devin-cli"
       },
       {
-        "sessionId": "chat-n8nops",
-        "role": "N8N-Operate",
-        "task": "Opere n8n via le harness MCP cli-anything (harness_run n8n : workflow list/import/create/activate/deactivate/delete/validate/autofix, execution list/get, status). DONE:<tache>.",
+        "sessionId": "chat-mvmw59wa",
+        "role": "Codeur",
+        "task": "Production de code : implémente la solution technique conformément aux spécifications.",
         "skills": [
-          "cli-anything-n8n"
+          "clean-code",
+          "nodejs-best-practices"
         ],
-        "mcps": [
-          "cli-anything"
-        ],
-        "title": "trusted-harbor",
+        "mcps": [],
+        "title": "keen-agent",
         "position": {
-          "x": 550,
-          "y": -110
-        }
+          "x": 0,
+          "y": -220
+        },
+        "provider": "nim2"
       },
       {
-        "sessionId": "chat-n8nverif",
-        "role": "N8N-Verificateur",
-        "task": "Verifie les workflows/executions n8n via harness_run n8n (execution list, workflow test --data). Rapporte statuts et erreurs precises. DONE:<tache>.",
-        "skills": [],
-        "mcps": [
-          "cli-anything"
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Testeur",
+        "task": "Validation technique : tests unitaires TDD, build et compilation avant audit.",
+        "skills": [
+          "testing-patterns",
+          "tdd-workflow"
         ],
+        "mcps": [],
+        "title": "zealous-agent",
+        "position": {
+          "x": 330,
+          "y": -220
+        },
+        "provider": "nim2"
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Reviewer",
+        "task": "Revue Qualité : analyse le diff pour la maintenabilité, lisibilité et respect des standards.",
+        "skills": [
+          "code-review-checklist",
+          "clean-code"
+        ],
+        "mcps": [],
+        "title": "amber-agent",
+        "position": {
+          "x": 660,
+          "y": -352
+        },
+        "provider": "omniroute"
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Auditeur-securite",
+        "task": "Audit Sécurité : scanne vulnérabilités, failles d'injection, secrets et codepoints suspects.",
+        "skills": [
+          "vulnerability-scanner",
+          "mcp-security-audit"
+        ],
+        "mcps": [],
+        "title": "urban-agent",
+        "position": {
+          "x": 660,
+          "y": -132
+        },
+        "provider": "nim"
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sentinelle-Infra-Perf",
+        "task": "Audit Infra & Performance : consommation ressources, dépendances, latence MCP et rate-limits.",
+        "skills": [
+          "performance-profiling",
+          "observability-specialist"
+        ],
+        "mcps": [],
+        "title": "ionic-orbit",
+        "position": {
+          "x": 660,
+          "y": 88
+        },
+        "provider": "nim2"
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle",
+        "task": "Arbitrage central GO/NO-GO : consolide les 3 rapports d'audit (Qualité, Sécu, Infra) et tranche.",
+        "skills": [
+          "vulnerability-scanner",
+          "code-review-checklist"
+        ],
+        "mcps": [],
+        "title": "keen-agent",
+        "position": {
+          "x": 990,
+          "y": -132
+        },
+        "provider": "omniroute"
+      },
+      {
+        "sessionId": "chat-mvfj773t",
+        "role": "Verif-Submodules",
+        "task": "Contrôle Git : arborescence, sous-modules et propreté du working tree.",
+        "skills": [
+          "git-history",
+          "lint-and-validate"
+        ],
+        "mcps": [],
         "title": "xenial-agent",
         "position": {
-          "x": 836,
-          "y": -110
+          "x": 1320,
+          "y": -132
+        },
+        "provider": "nim"
+      },
+      {
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Livraison Git : commit conventionnel et double push vers origin et personal.",
+        "skills": [
+          "testing-patterns",
+          "lint-and-validate"
+        ],
+        "mcps": [],
+        "title": "daring-agent",
+        "position": {
+          "x": 1650,
+          "y": -132
+        },
+        "provider": "devin-cli"
+      },
+      {
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Documentation Vault : consigne la note technique dans le Vault Obsidian.",
+        "skills": [
+          "obsidian",
+          "vault-ingest"
+        ],
+        "mcps": [],
+        "title": "rapid-agent",
+        "position": {
+          "x": 1980,
+          "y": -220
+        },
+        "provider": "omniroute"
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Feedback-Beacon-Knowledge",
+        "task": "Capitalisation Hephaistos : consigne les enseignements et patterns dans agentmemory.",
+        "skills": [
+          "vault-ingest",
+          "obsidian"
+        ],
+        "mcps": [],
+        "title": "onyx-agent",
+        "position": {
+          "x": 2002,
+          "y": 22
+        },
+        "provider": "nim2"
+      },
+      {
+        "sessionId": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "role": "Antigravity",
+        "task": "Architecte stratege (fenetre Antigravity). Transforme la mission de l Orchestrateur en plan d execution ordonne : etapes, fichiers cibles, criteres d acceptation, ordre des audits. Ne code pas ; produit le plan que la chaine valide.",
+        "skills": [],
+        "mcps": [],
+        "title": "Antigravity",
+        "position": {
+          "x": -660,
+          "y": 110
+        },
+        "provider": "antigravity-acp",
+        "cardKind": "agy",
+        "bound": {
+          "at": 1794784612774,
+          "kind": "agy"
         }
       }
     ],
     "edges": [
       {
-        "id": "e1",
+        "id": "edge:orchestrateur->architecte",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-n8narchi"
+        "target": "acp/devin-cli/bloom-settee"
       },
       {
-        "id": "e2",
-        "source": "chat-n8narchi",
-        "target": "chat-n8nops"
+        "id": "edge:architecte->codeur",
+        "source": "acp/devin-cli/bloom-settee",
+        "target": "chat-mvmw59wa"
       },
       {
-        "id": "e3",
-        "source": "chat-n8nops",
-        "target": "chat-n8nverif"
+        "id": "edge:codeur->testeur",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:testeur->reviewer",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:testeur->auditeur-secu",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:testeur->infra-perf",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:reviewer->sentinelle",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:auditeur-secu->sentinelle",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:infra-perf->sentinelle",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:sentinelle->verif-submodules",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvfj773t"
+      },
+      {
+        "id": "edge:verif-submodules->integrateur",
+        "source": "chat-mvfj773t",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      },
+      {
+        "id": "edge:integrateur->documentaliste",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:integrateur->feedback-beacon",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "chat-mvp0beacon"
+      },
+      {
+        "id": "xy-edge__card-antigravity-acp-mwifrov9source-right-acp/devin-cli/bloom-setteetarget-left",
+        "source": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "target": "acp/devin-cli/bloom-settee",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__card-antigravity-acp-mwifrov9source-right-acp/devin-cli/sugary-shoemakertarget-left",
+        "source": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "target": "acp/devin-cli/sugary-shoemaker",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-card-antigravity-acp-mwifrov9target-top",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/sugary-shoemakersource-right-acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829target-top",
+        "source": "acp/devin-cli/sugary-shoemaker",
+        "target": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "xy-edge__acp/devin-cli/bloom-setteesource-bottom-acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829target-top",
+        "source": "acp/devin-cli/bloom-settee",
+        "target": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
       }
     ],
-    "activeSchema": "swat-n8n",
-    "activeSchemaId": "schema-swat-n8n"
+    "activeSchema": "swat-orchestrateur (copie)",
+    "activeSchemaId": "schema-mwifrjrl-fgimn"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }
