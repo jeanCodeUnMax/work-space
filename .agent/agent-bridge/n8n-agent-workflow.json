@@ -28,9 +28,9 @@
       "position": [280, 300],
       "parameters": {
         "promptType": "define",
-        "text": "={{ $json.body.prompt || $json.body.objective || 'Resume la demande recue.' }}",
+        "text": "={{ $json.body?.prompt || $json.body?.objective || $json.body?.message || $json.query?.prompt || 'Resume la demande recue.' }}",
         "options": {
-          "systemMessage": "Tu es l'agent natif n8n du kit Hephaistos2. Tu reponds en francais, de facon factuelle et concise. Tu as trois outils : catalogue_swats (liste les SWAT et leur etat), statut_mission (etat d'une mission par son missionId) et lancer_diagnostic (declenche le diagnostic architecture complet). Regles : jamais d'action destructive, jamais d'invention de resultat ; cite les IDs (missionId, schemaId, taskId) quand tu les obtiens ; si un outil echoue, rapporte l'erreur brute au lieu de deviner. Pour lancer une mission SWAT autre que le diagnostic, reponds avec un objet JSON {missionId, swatId, objective, inputs, constraints, expectedDeliverable} sans l'executer toi-meme. Quand la demande porte sur des donnees (catalogue, statut, diagnostic), tu DOIS appeler l'outil correspondant au lieu de repondre de memoire.",
+          "systemMessage": "Tu es l'agent natif n8n du kit Hephaistos2. Tu reponds en francais, de facon factuelle et concise. Tu as trois outils : catalogue_swats (liste les SWAT et leur etat), statut_mission (etat d'une mission par son missionId) et lancer_diagnostic (declenche le diagnostic architecture complet). Regles : jamais d'action destructive, jamais d'invention de resultat ; cite les IDs (missionId, schemaId, taskId) quand tu les obtiens ; si un outil echoue, rapporte l'erreur brute au lieu de deviner. Pour lancer une mission SWAT autre que le diagnostic, reponds avec un objet JSON {missionId, swatId, objective, inputs, constraints, expectedDeliverable} sans l'executer toi-meme. Quand la demande porte sur des donnees (catalogue, statut, diagnostic), tu DOIS appeler l'outil correspondant au lieu de repondre de memoire. Si un parametre obligatoire manque (missionId, swatId, objective), demande-le a l'utilisateur au lieu d'appeler l'outil avec un champ vide.",
           "maxIterations": 8,
           "returnIntermediateSteps": false
         }
@@ -78,7 +78,7 @@
       "typeVersion": 1.1,
       "position": [280, 640],
       "parameters": {
-        "toolDescription": "Retourne l'etat d'une mission SWAT par son missionId : running, completed, failed et les etapes terminees.",
+        "toolDescription": "Retourne l'etat d'une mission SWAT par son missionId : running, completed, failed et les etapes terminees. Necessite le missionId exact fourni par l'utilisateur ; s'il n'en donne pas, demande-le au lieu d'appeler cet outil.",
         "method": "GET",
         "url": "http://127.0.0.1:7478/missions/{missionId}",
         "authentication": "genericCredentialType",
@@ -101,7 +101,7 @@
       "typeVersion": 1.1,
       "position": [500, 560],
       "parameters": {
-        "toolDescription": "Lance le diagnostic complet de l'architecture Hephaistos2-Kit (SWAT diagnostic : Runtime-Comms, Roster, Architecture, Synthese). Retourne le verdict et les checks. Peut prendre plusieurs minutes.",
+        "toolDescription": "Lance le diagnostic complet de l'architecture Hephaistos2-Kit (SWAT diagnostic : Runtime-Comms, Roster, Architecture, Synthese). Retourne le verdict et les checks. Peut prendre plusieurs minutes. Prerequis : le schema actif dans l'extension doit etre 'swat-diagnostic-hephaistos' ; si l'appel echoue avec l'erreur sur le schema actif, demande a l'utilisateur de le selectionner d'abord.",
         "method": "POST",
         "url": "http://127.0.0.1:5678/webhook/hephaistos-diagnostic",
         "authentication": "genericCredentialType",
