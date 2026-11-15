@@ -1,0 +1,124 @@
+{
+  "name": "Hephaistos bridge-api — demo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:7478/sessions?providerId=devin-cli",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "List sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Choisit la fenêtre focalisée (sinon la première) et prépare le POST /ask\nconst sessions = $input.first().json.sessions || [];\nconst target = sessions.find(s => s.focused) || sessions[0];\nif (!target) throw new Error('Aucune fenêtre ACP ouverte');\nreturn [{\n  json: {\n    providerId: target.providerId,\n    sessionId: target.sessionId,\n    text: 'Réponds en une phrase : confirme que tu reçois ce message depuis n8n.',\n    timeoutSec: 300\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Pick focused session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/ask",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"providerId\":\"{{ $json.providerId }}\",\"sessionId\":\"{{ $json.sessionId }}\",\"text\":\"{{ $json.text }}\",\"timeoutSec\":{{ $json.timeoutSec }}}",
+        "options": {
+          "timeout": 310000
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Ask agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "List sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List sessions": {
+      "main": [
+        [
+          {
+            "node": "Pick focused session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick focused session": {
+      "main": [
+        [
+          {
+            "node": "Ask agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {}
+}

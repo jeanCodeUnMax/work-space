@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-03T18:09:50.009Z",
+  "updatedAt": "2026-11-15T20:42:12.771Z",
   "core": {
     "devin": [
       {
@@ -16,9 +16,9 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
-        "role": "Integrateur-Git",
+        "role": "Orchestrateur",
         "hidden": true,
-        "title": "sugary-shoemaker"
+        "title": "Devin - orchestrateur n8n"
       },
       {
         "providerId": "devin-cli",
@@ -39,7 +39,7 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/bloom-settee",
         "restore": "existing-only",
-        "role": "Binome-ACP",
+        "role": "Architecte",
         "hidden": true,
         "title": "bloom-settee"
       },
@@ -111,14 +111,14 @@
         "restore": "existing-only",
         "role": "Antigravity",
         "title": "Antigravity",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/pebble-rhubarb",
         "restore": "existing-only",
         "role": "Relecteur-Modo",
-        "hidden": false,
+        "hidden": true,
         "title": "Relecteur-Modo"
       },
       {
@@ -143,7 +143,7 @@
         "restore": "existing-only",
         "role": "Veilleur-Telegram",
         "title": "Veilleur-Telegram",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim",
@@ -151,7 +151,7 @@
         "restore": "existing-only",
         "role": "Posteur-Telegram",
         "title": "Posteur-Telegram",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
@@ -167,7 +167,14 @@
         "restore": "existing-only",
         "role": "Redacteur",
         "title": "Redacteur",
-        "hidden": false
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/quiet-shake",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -185,7 +192,7 @@
         "restore": "open-or-reveal",
         "role": "Codeur",
         "hidden": true,
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
       },
       {
@@ -267,7 +274,7 @@
         "role": "Sentinelle-Infra-Perf",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "steady-agent"
+        "title": "ionic-orbit"
       },
       {
         "providerId": "openrouter",
@@ -373,8 +380,8 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Architecte",
-        "title": "n8n-Architecte",
-        "hidden": true
+        "title": "calm-ember",
+        "hidden": false
       },
       {
         "providerId": "nim2",
@@ -382,8 +389,8 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Operate",
-        "title": "n8n-Operate",
-        "hidden": true
+        "title": "trusted-harbor",
+        "hidden": false
       },
       {
         "providerId": "nim2",
@@ -391,8 +398,8 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "N8N-Verificateur",
-        "title": "n8n-Verificateur",
-        "hidden": true
+        "title": "xenial-agent",
+        "hidden": false
       },
       {
         "providerId": "nim2",
@@ -502,7 +509,7 @@
         "providerId": "nim",
         "sessionId": "chat-b33e6e23-c376-49a9-b82c-e23e0b15c686",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "opencode/nemotron-3-ultra-free",
         "role": "NVIDIA NIM",
         "title": "hardy-agent",
         "hidden": true
@@ -538,7 +545,7 @@
         "providerId": "nim",
         "sessionId": "chat-ebec625e-2d2b-4194-883b-46d1cff4cd2b",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "opencode/nemotron-3-ultra-free",
         "role": "NVIDIA NIM",
         "title": "gentle-agent",
         "hidden": true
@@ -547,7 +554,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-3e680e09-8587-4a3c-9e54-f59f09c39187",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "opencode/nemotron-3-ultra-free",
         "role": "Antigravity",
         "title": "hardy-ember",
         "hidden": true
@@ -564,7 +571,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-6aebbfd4-aee1-4904-a5e2-05081899de90",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "opencode/nemotron-3-ultra-free",
         "role": "Antigravity",
         "title": "lunar-agent",
         "hidden": true
@@ -573,7 +580,7 @@
         "providerId": "antigravity-acp",
         "sessionId": "chat-3a971008-c75f-4a54-a8ce-8ece3fb465ca",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "opencode/nemotron-3-ultra-free",
         "role": "Antigravity",
         "title": "rapid-tide",
         "hidden": true
@@ -584,7 +591,7 @@
         "restore": "open-or-reveal",
         "role": "Orchestrateur",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -592,7 +599,7 @@
         "restore": "open-or-reveal",
         "role": "Antigravity",
         "title": "rapid-tide",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim",
@@ -627,7 +634,7 @@
         "restore": "open-or-reveal",
         "role": "Orchestrateur",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -635,7 +642,7 @@
         "restore": "open-or-reveal",
         "role": "Antigravity",
         "title": "Antigravity",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -643,7 +650,83 @@
         "restore": "open-or-reveal",
         "role": "NVIDIA NIM 2",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwi14cuz",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwi1iess",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mwi80brw",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Diagnostic-Runtime-Comms",
+        "title": "Diagnostic-Runtime-Comms",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mwi80bs2",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Diagnostic-Roster-Identites",
+        "title": "Diagnostic-Roster-Identites",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mwi80bs4",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Diagnostic-Architecture",
+        "title": "Diagnostic-Architecture",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mwi80bs7",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Diagnostic-Synthese",
+        "title": "Diagnostic-Synthese",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-bleubite-mwia8idn",
+        "restore": "open-or-reveal",
+        "role": "Bleubite",
+        "title": "Bleubite",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mwia8wyk",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-bleubite-mwialylw",
+        "restore": "open-or-reveal",
+        "role": "Bleubite",
+        "title": "Bleubite",
+        "hidden": true
       }
     ],
     "antigravity": [
@@ -979,167 +1062,90 @@
   },
   "workflow": {
     "version": 1,
-    "name": "flux-telegram",
+    "name": "swat-n8n",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "role": "Orchestrateur",
-        "task": "Entree du flux SWAT Telegram (Devin associe). Recoit la demande, choisit chat/topic/action, dispatche : Veilleur (lecture canal), Redacteur (contenu), Relecteur-Modo (validation + moderation), Posteur (publication n8n). Arbitre GO/NO-GO. Ne poste jamais soi-meme.",
+        "task": "Recoit la demande n8n/Telegram, dispatche via le schema",
         "skills": [
-          "flux",
-          "jointes",
-          "binome"
+          "orchestrator"
         ],
-        "mcps": [
-          "Hephaistos-everything-search"
-        ],
+        "mcps": [],
         "title": "daring-agent",
         "position": {
-          "x": -264,
-          "y": -22
-        },
-        "provider": "unknown",
-        "bound": {
-          "at": 1793500508218,
-          "kind": "devin"
-        }
-      },
-      {
-        "sessionId": "acp/nim/nim-7b9b96fd",
-        "role": "Veilleur-Telegram",
-        "task": "Veille du canal : historique, messages recents, recherche, stats, topics, membres via node .agent/flux/telegram.mjs read|history|search|stats|topics|updates|members|admins --chat <caverne|canal|id>. Ne publie rien : produit des syntheses pour le Redacteur et l Orchestrateur.",
-        "skills": [
-          "cli-anything-telegram"
-        ],
-        "mcps": [],
-        "title": "Veilleur-Telegram",
-        "position": {
-          "x": 616,
-          "y": -66
-        },
-        "provider": "nim"
-      },
-      {
-        "sessionId": "acp/devin-cli/slow-walnut",
-        "role": "Redacteur",
-        "task": "Prepare le post Telegram : redige le texte final, choisit action (send|image|poll|pin|edit), chat cible (caverne|canal|id numerique) et topic si forum. Sortie structuree JSON : {\"action\",\"chat\",\"topic\",\"text\",\"imageUrl\",\"caption\",\"question\",\"options\"}. Transmet au Relecteur-Modo.",
-        "skills": [
-          "redaction",
-          "telegram"
-        ],
-        "mcps": [],
-        "title": "Redacteur",
-        "position": {
-          "x": 110,
-          "y": 264
-        },
-        "provider": "devin-cli",
-        "bound": {
-          "at": 1793298552769,
-          "kind": "devin"
-        }
-      },
-      {
-        "sessionId": "acp/devin-cli/pebble-rhubarb",
-        "role": "Relecteur-Modo",
-        "task": "Double casquette : (a) valide le brouillon du Redacteur (ton, secrets, donnees personnelles, conformite) -> GO + version finale ou NO-GO + correction ; (b) moderation via telegram.mjs : pin|unpin|delete|edit|topics|members|admins sur demande de l Orchestrateur.",
-        "skills": [
-          "review",
-          "cli-anything-telegram"
-        ],
-        "mcps": [],
-        "title": "Relecteur-Modo",
-        "position": {
-          "x": 506,
-          "y": 352
-        },
-        "provider": "devin-cli"
-      },
-      {
-        "sessionId": "acp/nim/nim-22c94649",
-        "role": "Posteur-Telegram",
-        "task": "Posteur terminal. Recoit le contenu valide (GO du Relecteur-Modo) et publie via le hub n8n : node .agent/flux/telegram.mjs <action> [--chat X] [--text T] [--imageUrl U] [--caption C] [--topic N] [--reply N]. Webhook : POST http://127.0.0.1:5678/webhook/swat-telegram-hub. Actions : send|image|send-file|pin|unpin|poll|delete|edit|admins|members|stats|chat|topics|history|read|search|updates. Si exec impossible, emettre [POST] {\"action\":...} pour que l orchestrateur execute. Rapporter le message id.",
-        "skills": [
-          "cli-anything-telegram"
-        ],
-        "mcps": [],
-        "title": "Posteur-Telegram",
-        "position": {
-          "x": 860,
-          "y": 160
-        },
-        "provider": "nim",
-        "bound": {
-          "at": 1793288415171,
-          "kind": "devin"
-        }
-      },
-      {
-        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "role": "Antigravity",
-        "task": "",
-        "skills": [],
-        "mcps": [],
-        "title": "Antigravity",
-        "position": {
-          "x": 154,
+          "x": -22,
           "y": -110
-        },
-        "provider": "antigravity-acp",
-        "cardKind": "agy",
-        "bound": {
-          "at": 1793500492735,
-          "kind": "agy"
+        }
+      },
+      {
+        "sessionId": "chat-n8narchi",
+        "role": "N8N-Architecte",
+        "task": "Concois n'importe quel workflow n8n 2.x (JSON nodes/connections, connections clees par NOM). Livrable: fichier .agent/n8n-<nom>.json. Aucun appel reseau. DONE:<tache>.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "cli-anything",
+          "Hephaistos-everything-search"
+        ],
+        "title": "calm-ember",
+        "position": {
+          "x": 280,
+          "y": -120
+        }
+      },
+      {
+        "sessionId": "chat-n8nops",
+        "role": "N8N-Operate",
+        "task": "Opere n8n via le harness MCP cli-anything (harness_run n8n : workflow list/import/create/activate/deactivate/delete/validate/autofix, execution list/get, status). DONE:<tache>.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "cli-anything"
+        ],
+        "title": "trusted-harbor",
+        "position": {
+          "x": 550,
+          "y": -110
+        }
+      },
+      {
+        "sessionId": "chat-n8nverif",
+        "role": "N8N-Verificateur",
+        "task": "Verifie les workflows/executions n8n via harness_run n8n (execution list, workflow test --data). Rapporte statuts et erreurs precises. DONE:<tache>.",
+        "skills": [],
+        "mcps": [
+          "cli-anything"
+        ],
+        "title": "xenial-agent",
+        "position": {
+          "x": 836,
+          "y": -110
         }
       }
     ],
     "edges": [
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605etarget-left",
+        "id": "e1",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "target": "chat-n8narchi"
       },
       {
-        "id": "xy-edge__acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605esource-right-acp/nim/nim-7b9b96fdtarget-left",
-        "source": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "target": "acp/nim/nim-7b9b96fd",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "e2",
+        "source": "chat-n8narchi",
+        "target": "chat-n8nops"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/devin-cli/slow-walnuttarget-left",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/slow-walnut",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-left"
-      },
-      {
-        "id": "xy-edge__acp/nim/nim-7b9b96fdsource-bottom-acp/devin-cli/slow-walnuttarget-top",
-        "source": "acp/nim/nim-7b9b96fd",
-        "target": "acp/devin-cli/slow-walnut",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
-      },
-      {
-        "id": "xy-edge__acp/devin-cli/slow-walnutsource-right-acp/devin-cli/pebble-rhubarbtarget-left",
-        "source": "acp/devin-cli/slow-walnut",
-        "target": "acp/devin-cli/pebble-rhubarb",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
-      },
-      {
-        "id": "xy-edge__acp/devin-cli/pebble-rhubarbsource-right-acp/nim/nim-22c94649target-left",
-        "source": "acp/devin-cli/pebble-rhubarb",
-        "target": "acp/nim/nim-22c94649",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "e3",
+        "source": "chat-n8nops",
+        "target": "chat-n8nverif"
       }
     ],
-    "activeSchema": "flux-telegram",
-    "activeSchemaId": "schema-mvr09niq-8yor8"
+    "activeSchema": "swat-n8n",
+    "activeSchemaId": "schema-swat-n8n"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

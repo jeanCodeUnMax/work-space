@@ -96,6 +96,35 @@ export interface WorkflowRunStatus {
     message?: string;
 }
 
+export function focusedIdeSessionId(
+    providerId: string,
+    sessions: { providerId: string; sessionId: string; focused?: boolean }[],
+): string {
+    const normalized = ideSessionChoices(providerId, sessions).filter((session) => session.focused);
+    return normalized.length === 1 ? normalized[0].sessionId : '';
+}
+
+export function ideSessionChoices(
+    providerId: string,
+    sessions: { providerId: string; sessionId: string; focused?: boolean; title?: string }[],
+): { providerId: string; sessionId: string; focused?: boolean; title?: string }[] {
+    const prefix = `acp/${providerId}/`;
+    return sessions
+        .filter((session) => session.providerId === providerId && session.sessionId)
+        .map((session) => ({ ...session, sessionId: normalizeAcpSessionId(providerId, session.sessionId) }))
+        .filter((session) => session.sessionId && session.sessionId.startsWith(prefix))
+        .sort((a, b) => Number(b.focused === true) - Number(a.focused === true)
+            || String(a.title || a.sessionId).localeCompare(String(b.title || b.sessionId), 'fr'));
+}
+
+export function normalizeAcpSessionId(providerId: string, sessionId: string): string {
+    const id = String(sessionId || '');
+    if (!id) return '';
+    if (!id.startsWith('acp/')) return `acp/${providerId}/${id}`;
+    const parts = id.split('/');
+    return parts.length >= 3 && parts[1] === providerId ? id : '';
+}
+
 export function defaultRoleForProvider(provider: string): string {
     if (provider === 'devin-cli') return 'Devin';
     if (provider === 'antigravity-acp') return 'Antigravity';

@@ -401,6 +401,7 @@ function upsertCoreAgent(root, group, agent) {
         roster.core[group].push(member);
     }
     if (agent.providerId) member.providerId = agent.providerId;
+    if (agent.model) member.model = String(agent.model).slice(0, 200);
     if (agent.role && !member.role) member.role = String(agent.role).slice(0, 120);
     if (agent.title) member.title = String(agent.title).slice(0, 200);
     const workflow = validateWorkflow(roster.workflow || emptyWorkflow());

@@ -1,6 +1,10 @@
 *-dispatch.log
 task-events.log
 comms.jsonl
+reports/comms-before-repair-*.7z
+reports/diagnostic-ui-*.png
+reports/env-before-utf8-*
+reports/native-*.7z
 ws-bridge.token
 hphe-rest.token
 *.token

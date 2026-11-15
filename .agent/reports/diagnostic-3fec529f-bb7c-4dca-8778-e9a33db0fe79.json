@@ -1,0 +1,174 @@
+{
+  "diagnosticId": "3fec529f-bb7c-4dca-8778-e9a33db0fe79",
+  "collectedAt": "2026-11-15T19:24:18.995Z",
+  "activeSchemaId": "schema-mwi80bsc-5frlh",
+  "activeSchemaName": "swat-diagnostic-hephaistos",
+  "checks": [
+    {
+      "id": "roster-json",
+      "status": "pass",
+      "evidence": {
+        "activeSchemaId": "schema-mwi80bsc-5frlh",
+        "entrySessionId": "acp/devin-cli/sugary-shoemaker",
+        "nodeCount": 5,
+        "edgeCount": 6
+      },
+      "durationMs": 0
+    },
+    {
+      "id": "chat-session-bindings",
+      "status": "pass",
+      "evidence": [
+        {
+          "sessionId": "chat-mwi80brw",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs2",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs4",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs7",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        }
+      ],
+      "limitation": "Presence et coherence disque uniquement ; pas une preuve de fenetre ouverte.",
+      "durationMs": 1
+    },
+    {
+      "id": "architecture-canonical-reference",
+      "status": "pass",
+      "evidence": {
+        "file": ".agent/ARCHITECTURE.md",
+        "sha256": "6ff4a732164a8b43bbcc6b3cfee6fd76b33b196a5a3df584b23fd09df32d4394"
+      },
+      "limitation": "Reference canonique presente ; pas une validation exhaustive de architecture.",
+      "durationMs": 0
+    },
+    {
+      "id": "n8n-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "ok"
+      },
+      "durationMs": 8
+    },
+    {
+      "id": "rest-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "healthy",
+        "pipeConnected": true,
+        "ingestBusy": false
+      },
+      "durationMs": 3
+    },
+    {
+      "id": "bridge-websocket",
+      "status": "pass",
+      "evidence": {
+        "connected": true
+      },
+      "limitation": "Connexion du bridge ; pas un ACK de livraison agent."
+    },
+    {
+      "id": "native-acp-enumeration",
+      "status": "pass",
+      "evidence": {
+        "sessionCount": 152
+      },
+      "limitation": "Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants.",
+      "durationMs": 3474
+    },
+    {
+      "id": "canonical-mcp-health",
+      "status": "pass",
+      "evidence": {
+        "status": "healthy",
+        "pipeConnected": true
+      },
+      "limitation": "Sonde du serveur canonique, pas de tous ses outils.",
+      "durationMs": 38
+    },
+    {
+      "id": "orchestrator-task-state",
+      "status": "pass",
+      "evidence": {
+        "readable": true,
+        "taskCount": 131,
+        "states": {
+          "completed": 66,
+          "failed": 41,
+          "pending": 10,
+          "cancelled": 4,
+          "done": 10
+        }
+      },
+      "limitation": "Lecture seule : ne teste pas le spawn des workers CLI ni ne reconcilie les taches.",
+      "durationMs": 38
+    },
+    {
+      "id": "comms-jsonl-integrity",
+      "status": "fail",
+      "evidence": {
+        "entries": 2500,
+        "malformed": 1
+      },
+      "limitation": "Integrite du journal uniquement ; aucun contenu de message expose.",
+      "durationMs": 3
+    },
+    {
+      "id": "installed-extensions",
+      "status": "pass",
+      "evidence": {
+        "versions": [
+          "hephaistos.hephaistos-chats@0.3.48",
+          "hephaistos.orchestrator-monitor@0.0.75"
+        ]
+      },
+      "limitation": "Versions installees seulement ; activation et rechargement non prouves.",
+      "durationMs": 1874
+    },
+    {
+      "id": "ide-ui-interaction",
+      "status": "not_tested",
+      "evidence": "Aucun clic utilisateur, association de carte ou affichage de panneau teste par cette sonde."
+    },
+    {
+      "id": "cli-worker-execution",
+      "status": "not_tested",
+      "evidence": "Aucun worker CLI lance : pas de consommation ni de modification pour simuler un test."
+    },
+    {
+      "id": "cloud-and-external-services",
+      "status": "not_tested",
+      "evidence": "Kaggle, Colab, ComfyUI et autres integrations externes non testes."
+    }
+  ],
+  "counts": {
+    "pass": 10,
+    "fail": 1,
+    "warn": 0,
+    "not_tested": 3
+  },
+  "verdict": "degraded",
+  "repairsPerformed": false
+}

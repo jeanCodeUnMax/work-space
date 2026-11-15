@@ -14,7 +14,7 @@ import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
 import { ACP_PROVIDERS, ChatSession, normalizeIconTheme, sessionTitle } from './types';
-import { createWorkflowView, defaultRoleForProvider, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
+import { createWorkflowView, defaultRoleForProvider, focusedIdeSessionId, ideSessionChoices, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
 
@@ -1179,17 +1179,28 @@ export function activate(context: vscode.ExtensionContext): void {
                 const pickLive = async (providerId: string): Promise<string> => {
                     try {
                         const live = await ideAgentSessions(providerId, wsRoot);
-                        const s = live.find((x) => x.focused) || live[0];
-                        return s?.sessionId ? `acp/${providerId}/${s.sessionId}` : '';
+                        return focusedIdeSessionId(providerId, live);
                     } catch { return ''; }
                 };
-                const agyCurrent = (): string => {
-                    try {
-                        const cur = require('child_process').execFileSync('node', [
-                            path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
-                        ], { encoding: 'utf8', timeout: 20000 }).trim();
-                        return cur ? `acp/antigravity-acp/${cur}` : '';
-                    } catch { return ''; }
+                const pickIdeSession = async (providerId: string): Promise<string> => {
+                    // La fenêtre active prime ; sinon proposer les conversations
+                    // live plutôt que deviner une session persistée.
+                    const focusedId = await pickLive(providerId);
+                    if (focusedId) return focusedId;
+                    const live = await ideAgentSessions(providerId, wsRoot);
+                    const choices = ideSessionChoices(providerId, live);
+                    if (!choices.length) return '';
+                    if (choices.length === 1) return choices[0].sessionId;
+                    const picked = await vscode.window.showQuickPick(
+                        choices.map((session) => ({
+                            label: session.title || session.sessionId.split('/').pop() || session.sessionId,
+                            description: session.sessionId,
+                            detail: session.focused ? 'Fenêtre active' : undefined,
+                            sessionId: session.sessionId,
+                        })),
+                        { placeHolder: 'Fenêtre agent à associer à ce bloc' },
+                    );
+                    return picked?.sessionId || '';
                 };
                 let kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
                 let newId = '';
@@ -1198,14 +1209,14 @@ export function activate(context: vscode.ExtensionContext): void {
                     // chat Devin a le focus.
                     newId = focused.startsWith('acp/antigravity-acp/')
                         ? focused
-                        : (await pickLive('antigravity-acp')) || agyCurrent();
+                        : await pickIdeSession('antigravity-acp');
                     kind = 'agy';
                 } else if (want === 'devin') {
                     // Carte Devin -> la session Devin live, même si c'est une
                     // conversation Antigravity qui a le focus.
                     newId = focused.startsWith('acp/devin-cli/')
                         ? focused
-                        : await pickLive('devin-cli');
+                        : await pickIdeSession('devin-cli');
                     kind = 'devin';
                 } else {
                     // Sans type imposé : la fenêtre focalisée, puis repli AGY.
@@ -1213,7 +1224,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     newId = focused;
                     if (!focused) {
                         kind = 'agy';
-                        newId = agyCurrent();
+                        newId = await pickIdeSession('antigravity-acp');
                     }
                     // Garde : une carte typée n'accepte que la fenêtre du bon
                     // type (ex. CerberOS refuse une conversation Devin).
