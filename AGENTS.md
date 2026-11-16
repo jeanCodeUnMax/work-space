@@ -137,3 +137,9 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Garde-fous du runner : schema non actif = 409, worker non `chat-*` refuse, divergence roster/session = erreur, digest modifie = abort, une seule mission a la fois, pas de rejeu post-restart.
 - Healthcheck (`hphe-architecture-healthcheck`, 5 min) -> transition non-ok -> declenche le diagnostic SWAT via `hephaistos-diagnostic-async`.
 - 2026-11-16 : purge de 61 taches failed/cancelled via `delete_task` (canal MCP) ; `swatTool` maxBuffer porte a 16 Mo (la sonde `orchestrator-task-state` debordait a ~2,7 Mo). Publication n8n : la version executee suit `activeVersionId` + `workflow_published_version`, pas `versionId` seul ; un node webhook sans champ `webhookId` est enregistre sous un chemin prefixe.
+## Concile SWAT (mode council)
+
+- Graphe `mode: council` (schema-mvpjbchn-ijt6c) : chairman = `acp/devin-cli/ionian-helicopter` (non injectable : l'appelant synthetise), 6 membres `chat-*` (Premiers-Principes, Expansionniste, Executeur, Empirique, Contrariant, Outsider).
+- `POST /swat/start` avec ce schema : run auto-pilote — ronde 1 parallele (reponses isolees), ronde 2 parallele (peer-review anonymisee Membre A-F), puis `phase: done`. `wait` (ms, max 600000) bloque la reponse HTTP jusqu'au resultat.
+- `/swat/next` et `/swat/step` refusent les runs council ; suivi via `GET /missions/:id` -> `council.replies`, `council.reviews`, `council.chairmanPrompt` (prompt de synthese pret pour le chairman).
+- Parallelisme : `acp-inject` accepte `lockKey` (lock par session, pas par provider). Echec membre tolere ; moins de 3 reponses ronde 1 = mission failed.

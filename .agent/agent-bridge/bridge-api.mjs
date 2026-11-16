@@ -201,10 +201,13 @@ export function normalizeMission(body) {
 
 function missionStatus(run) {
     const outputs = Object.values(run.outputs).filter((o) => o.sessionId);
-    return { ok: !run.failed, missionId: run.contract?.missionId, runId: run.runId,
+    const st = { ok: !run.failed, missionId: run.contract?.missionId, runId: run.runId,
         schemaId: run.graph.activeSchemaId, state: run.failed ? 'failed'
+            : run.council ? (run.council.phase === 'done' ? 'completed' : 'in_progress')
             : outputs.length === run.graph.nodes.length - 1 ? 'completed' : 'in_progress',
         steps: outputs, error: run.failed || null };
+    if (run.council) st.council = run.council;
+    return st;
 }
 
 function recordMission(run) {
@@ -222,12 +225,31 @@ function savedMission(id) {
 export function swatGraph(root = WS_ROOT) {
     const roster = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'workspace-roster.json'), 'utf8'));
     const graph = roster.workflow;
-    if (!graph?.activeSchemaId || graph.mode === 'council') throw new Error('Schema actif absent ou mode council non pris en charge par ce runner.');
+    if (!graph?.activeSchemaId) throw new Error('Schema actif absent.');
+    const council = graph.mode === 'council';
     const ids = graph.nodes.map((n) => n.sessionId);
     if (!ids.length || new Set(ids).size !== ids.length || !ids.includes(graph.entrySessionId)
         || graph.nodes.some((n) => !n.role?.trim() || !n.task?.trim())
         || graph.edges.some((e) => !ids.includes(e.source) || !ids.includes(e.target) || e.target === graph.entrySessionId)) {
         throw new Error('Graphe SWAT invalide : identites, missions ou liens incoherents.');
+    }
+    if (council) {
+        const members = Object.values(roster.core).flat();
+        const sessions = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'chats', 'sessions.json'), 'utf8'));
+        const list = Array.isArray(sessions) ? sessions : sessions.sessions;
+        for (const id of ids.filter((id) => id !== graph.entrySessionId)) {
+            if (!id.startsWith('chat-')) throw new Error(`Transport worker non pris en charge : ${id}. Aucun fallback CLI.`);
+            const member = members.find((m) => m.sessionId === id && !m.hidden);
+            const session = Array.isArray(list) ? list.find((s) => s.id === id || s.sessionId === id) : null;
+            if (!member || !session) throw new Error(`Session exacte du SWAT absente : ${id}`);
+            if (session.provider !== member.providerId || session.model !== member.model) {
+                throw new Error(`Provider/modele divergent du roster pour ${id}`);
+            }
+        }
+        const semantic = { name: graph.name, activeSchemaId: graph.activeSchemaId, mode: 'council',
+            entrySessionId: graph.entrySessionId,
+            nodes: graph.nodes.map((n) => ({ sessionId: n.sessionId, role: n.role, task: n.task })) };
+        return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(semantic)).digest('hex') };
     }
     const reached = new Set([graph.entrySessionId]);
     const pending = new Set(ids.filter((id) => id !== graph.entrySessionId));
@@ -282,6 +304,7 @@ async function swatStep(b) {
         recordMission(run);
         throw error;
     }
+    if (run.graph.mode === 'council') throw new Error('Run council auto-pilote : pas d etape manuelle.');
     if (run.outputs[b.sessionId]) return run.outputs[b.sessionId];
     if (run.busy) throw new Error('Une etape est deja en cours pour ce run.');
     const node = run.graph.nodes.find((n) => n.sessionId === b.sessionId);
@@ -317,6 +340,69 @@ async function swatStep(b) {
         recordMission(run);
         throw new Error(run.failed);
     } finally { run.busy = false; }
+}
+
+/* Mode council : 2 rondes paralleles de membres + materiel de synthese rendu
+   au chairman (entrySessionId, acp/* non injectable ici -> l'appelant
+   synthetise via chairmanPrompt). Chaque membre est isole en ronde 1,
+   puis peer-review anonymise en ronde 2. Echec membre tolere, <3 reponses
+   en ronde 1 = mission failed. */
+async function councilMemberStep(run, node, phase, prompt) {
+    let taskId;
+    try {
+        const task = await swatTool('create_task', {
+            title: `[${run.graph.name || 'Concile'}] ${node.role} - ronde ${phase}`,
+            description: prompt, dispatcher: run.graph.entrySessionId,
+        });
+        taskId = task.task_id ?? task.id;
+        if (taskId != null) await swatTool('update_task', { task_id: taskId, status: 'in_progress' });
+        const result = await inject({ providerId: 'hephaistos', sessionId: node.sessionId,
+            lockKey: `hephaistos:${node.sessionId}`, cwd: WS_ROOT, text: prompt,
+            wait: 'turn', timeoutMs: 300000, turnTimeoutMs: 300000 });
+        if (result.stopReason !== 'end_turn' || !result.reply?.trim()) throw new Error('Tour ACP incomplet ou sans reponse.');
+        if (taskId != null) await swatTool('update_task', { task_id: taskId, status: 'completed', result: result.reply });
+        return { ok: true, sessionId: node.sessionId, role: node.role, taskId, reply: result.reply };
+    } catch (error) {
+        if (taskId != null) {
+            try { await swatTool('update_task', { task_id: taskId, status: 'failed', result: String(error.message || error) }); }
+            catch { /* suivi best-effort */ }
+        }
+        return { ok: false, sessionId: node.sessionId, role: node.role, taskId, error: String(error.message || error) };
+    }
+}
+
+async function councilRun(run) {
+    const members = run.graph.nodes.filter((n) => n.sessionId !== run.graph.entrySessionId);
+    const letters = 'ABCDEFGH';
+    const anon = new Map(members.map((n, i) => [n.sessionId, `Membre ${letters[i] || i + 1}`]));
+    try {
+        run.council = { phase: 'round1', anon: Object.fromEntries(anon) };
+        recordMission(run);
+        const r1 = await Promise.all(members.map((n) => councilMemberStep(run, n, '1',
+            `Tu es ${n.role}, membre du concile.\nMission de role : ${n.task}\n\nQuestion soumise au concile :\n${run.mission}\n\nReponds selon ta posture de role, de maniere directe et argumentee.`)));
+        for (const o of r1) { run.outputs[o.sessionId] = { ok: o.ok, sessionId: o.sessionId, role: o.role, taskId: o.taskId, reply: o.reply || '', error: o.error || null }; }
+        recordMission(run);
+        const answered = r1.filter((o) => o.ok && o.reply?.trim());
+        if (answered.length < 3) throw new Error(`Concile degrade : ${answered.length}/6 reponses en ronde 1 (minimum 3).`);
+        const repliesText = answered.map((o) => `=== ${anon.get(o.sessionId)} ===\n${o.reply}`).join('\n\n');
+        const voters = members.filter((n) => answered.some((o) => o.sessionId === n.sessionId));
+        run.council.phase = 'round2';
+        recordMission(run);
+        const r2 = await Promise.all(voters.map((n) => councilMemberStep(run, n, '2',
+            `Tu es ${n.role}, membre du concile.\nMission de role : ${n.task}\n\nQuestion soumise au concile :\n${run.mission}\n\nVoici les reponses des membres (anonymisees) :\n\n${repliesText}\n\nClasse les reponses de la meilleure a la moins bonne pour la question posee. Format attendu :\nCLASSEMENT: Membre X > Membre Y > ...\nJUSTIFICATION: une ligne par reponse classee.`)));
+        recordMission(run);
+        const reviews = r2.filter((o) => o.ok && o.reply?.trim());
+        run.council = { phase: 'done',
+            replies: answered.map((o) => ({ role: o.role, anon: anon.get(o.sessionId), reply: o.reply })),
+            reviews: reviews.map((o) => ({ role: o.role, review: o.reply })),
+            memberErrors: r1.concat(r2).filter((o) => !o.ok).map((o) => ({ role: o.role, error: o.error })),
+            chairmanPrompt: `Tu es le chairman du concile. Question soumise :\n${run.mission}\n\nReponses des membres (ronde 1) :\n\n${repliesText}\n\nPeer-reviews anonymes (ronde 2) :\n\n${reviews.map((o) => `=== ${o.role} ===\n${o.reply}`).join('\n\n')}\n\nSynthetise la reponse finale : consensus, desaccords significatifs, recommandation argumentee.` };
+        recordMission(run);
+    } catch (error) {
+        run.failed = String(error.message || error);
+        run.council.phase = 'failed';
+        recordMission(run);
+    }
 }
 
 const server = http.createServer(async (req, res) => {
@@ -511,8 +597,9 @@ const server = http.createServer(async (req, res) => {
             catch (e) { return json(res, 502, { ok: false, error: String(e.message).slice(0, 300) }); }
         }
         if (req.method === 'POST' && url.pathname === '/swat/start') {
+            const rawBody = await readBody(req).catch(() => ({}));
             let contract;
-            try { contract = normalizeMission(await readBody(req)); }
+            try { contract = normalizeMission(rawBody); }
             catch (error) { return json(res, 400, { ok: false, error: error.message }); }
             const fingerprint = crypto.createHash('sha256').update(JSON.stringify(contract)).digest('hex');
             const existing = [...swatRuns.values()].find((r) => r.contract?.missionId === contract.missionId);
@@ -533,6 +620,17 @@ const server = http.createServer(async (req, res) => {
             const run = { runId, graph, digest, contract, fingerprint, mission, busy: false,
                 outputs: { [graph.entrySessionId]: { reply: mission } } };
             swatRuns.set(runId, run);
+            if (graph.mode === 'council') {
+                const done = councilRun(run);
+                const waitMs = Math.min(Number(rawBody.wait) || 0, 600000);
+                if (waitMs > 0) {
+                    await Promise.race([done, new Promise((r) => setTimeout(r, waitMs))]);
+                    return json(res, 200, missionStatus(run));
+                }
+                done.catch(() => {});
+                return json(res, 200, { ...missionStatus(run), entryMode: 'council-autorun',
+                    hint: 'GET /missions/' + contract.missionId + ' pour le resultat (replies, reviews, chairmanPrompt).' });
+            }
             recordMission(run);
             return json(res, 200, { ok: true, runId, missionId: contract.missionId, schemaId: graph.activeSchemaId,
                 entrySessionId: graph.entrySessionId, entryMode: 'n8n-orchestrator', state: 'in_progress' });
@@ -541,6 +639,8 @@ const server = http.createServer(async (req, res) => {
             const b = await readBody(req);
             const run = swatRuns.get(b.runId);
             if (!run) return json(res, 404, { ok: false, error: 'Run inconnu' });
+            if (run.graph.mode === 'council') return json(res, 409, { ok: false,
+                error: 'Run council auto-pilote : interroger GET /missions/:id, pas de pilotage par etapes.' });
             if (run.failed) return json(res, 409, missionStatus(run));
             const next = run.graph.nodes.find((n) => !run.outputs[n.sessionId]
                 && run.graph.edges.filter((e) => e.target === n.sessionId).every((e) => run.outputs[e.source]));

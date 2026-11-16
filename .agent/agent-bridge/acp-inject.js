@@ -98,7 +98,8 @@ function inject(opts) {
     const spec = providerCommand(providerId);
     if (!spec) return Promise.reject(Object.assign(new Error(`provider ACP non injectable: ${providerId}`), { code: 'unsupported' }));
 
-    const lock = adapters.acquireAcpLock(providerId, timeoutMs);
+    const lockAgent = opts.lockKey || providerId;
+    const lock = adapters.acquireAcpLock(lockAgent, timeoutMs);
     if (!lock.acquired) {
         return Promise.reject(Object.assign(new Error(`[acp-inject] ${lock.reason}`), { code: 'locked', remainingMs: lock.remainingMs }));
     }
@@ -128,14 +129,14 @@ function inject(opts) {
         function fail(err) {
             if (settled) return;
             settled = true;
-            adapters.releaseAcpLock(providerId);
+            adapters.releaseAcpLock(lockAgent);
             clearTimeout(timer);
             clearTimeout(turnTimer);
             try { child.kill(); } catch { /* noop */ }
             reject(err);
         }
         function succeed(extra) {
-            adapters.releaseAcpLock(providerId);
+            adapters.releaseAcpLock(lockAgent);
             if (settled) return;
             settled = true;
             clearTimeout(timer);
@@ -213,7 +214,7 @@ function inject(opts) {
         });
         child.on('error', (e) => fail(Object.assign(e, { code: e.code || 'spawn' })));
         child.on('exit', (code) => {
-            adapters.releaseAcpLock(providerId);
+            adapters.releaseAcpLock(lockAgent);
             if (!settled) {
                 if (activitySeen || promptDone) succeed({ exited: true });
                 else fail(new Error(`provider ${providerId} terminé (code ${code}) avant livraison`));
