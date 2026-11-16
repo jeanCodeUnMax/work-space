@@ -1,0 +1,171 @@
+{
+  "name": "Hephaistos2-Kit - Obsidian Hub",
+  "id": "obsidiandd22f48b5b",
+  "webhookPath": "hphe-obsidian",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hphe-obsidian",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3bbedf3e-684a-48e8-ad6e-d8c41fa33b13",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        300
+      ],
+      "webhookId": "2704110d11ad42e7810458ba234c6a4e",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst b = $json.body || $json;\nconst BASE = 'https://127.0.0.1:27124';\nconst enc = p => '/' + p.split('/').filter(Boolean).map(encodeURIComponent).join('/');\nconst a = (b.action || 'status').toLowerCase();\nlet method='GET', url=BASE+'/', body, qs, extraHeaders={};\nconst P = b.path ? enc(b.path) : '';\nswitch (a) {\n  case 'status': break;\n  case 'list': url = BASE + '/vault' + (b.dir ? enc(b.dir) + '/' : '/'); break;\n  case 'read': url = BASE + '/vault' + P; break;\n  case 'write': method='PUT'; url = BASE + '/vault' + P; body = b.content ?? ''; break;\n  case 'append': method='POST'; url = BASE + '/vault' + P; body = b.content ?? ''; break;\n  case 'delete': method='DELETE'; url = BASE + '/vault' + P; break;\n  case 'patch':\n    method='PATCH'; url = BASE + '/vault' + P;\n    extraHeaders['Operation']=b.operation||'append';\n    extraHeaders['Target-Type']=b.targetType||'heading';\n    extraHeaders['Target']=b.target||'';\n    body = b.content ?? '';\n    break;\n  case 'search': method='POST'; url = BASE + '/search/simple/'; qs = { query: b.query||'', contextLength: b.contextLength||100 }; break;\n  case 'search-json': method='POST'; url = BASE + '/search/'; body = b.query||{}; break;\n  case 'commands': url = BASE + '/commands/'; break;\n  case 'command': method='POST'; url = BASE + '/commands/' + encodeURIComponent(b.command||''); break;\n  case 'active': url = BASE + '/active/'; break;\n  case 'open': method='POST'; url = BASE + '/open' + P; break;\n  case 'periodic': method=b.method||'GET'; url = BASE + '/periodic/' + (b.period||'daily') + '/'; body = b.content; break;\n  default: throw new Error('action inconnue: '+a);\n}\nreturn [{ json: { action:a, method, url, qs, body, extraHeaders } }];\n"
+      },
+      "id": "55b6cf1a-370d-49b6-867c-3dfed9ce1452",
+      "name": "Build Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.method }}",
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.action==='search-json' ? 'application/json' : 'text/markdown' }}"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json, text/markdown, */*"
+            },
+            {
+              "name": "Operation",
+              "value": "={{ $json.extraHeaders['Operation'] || '' }}"
+            },
+            {
+              "name": "Target-Type",
+              "value": "={{ $json.extraHeaders['Target-Type'] || '' }}"
+            },
+            {
+              "name": "Target",
+              "value": "={{ $json.extraHeaders['Target'] || '' }}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.qs['query'] || '' }}"
+            },
+            {
+              "name": "contextLength",
+              "value": "={{ $json.qs['contextLength'] || '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/markdown",
+        "body": "={{ typeof $json.body === 'string' ? $json.body : JSON.stringify($json.body ?? '') }}",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "lowercaseHeaders": false
+        }
+      },
+      "id": "5ec02403-d15f-42b2-a612-23180038907c",
+      "name": "Obsidian REST",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "obsidian-11280beb32a3",
+          "name": "Obsidian REST API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "c1e4a378-8a76-45ea-9ec1-0a6c3f26664a",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Request": {
+      "main": [
+        [
+          {
+            "node": "Obsidian REST",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obsidian REST": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "credentials": {
+    "webhook": "Hephaistos Bridge",
+    "http": "Obsidian REST API"
+  },
+  "api": "https://127.0.0.1:27124 (Obsidian Local REST API plugin, vault F:\\doc_Obsidian\\Doc)"
+}

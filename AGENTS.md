@@ -145,3 +145,12 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Parallelisme : `acp-inject` accepte `lockKey` (lock par session, pas par provider). Echec membre tolere ; moins de 3 reponses ronde 1 = mission failed.
 - Workflow n8n `Hephaistos2-Kit - Concile SWAT` (`hpheConcileSwat`) : `POST /webhook/hphe-concile` (headerAuth) `{question|objective, missionId?, wait?}` -> `POST /swat/start` (wait<=540000) -> renvoie le missionStatus complet. Re-POST avec le meme missionId = poll (replay). Export : `.agent/agent-bridge/n8n-concile-workflow.json`.
 - Insertion manuelle n8n : un workflow actif exige `workflow_entity.active=1` + `activeVersionId` + `workflow_published_version` + `workflow_history` (versionId doit exister la, sinon 'no activeVersion nodes') + `webhook_entity` (avec `webhookId` du node) + `shared_workflow`.
+
+## Obsidian Hub (Local REST API)
+
+- Workflow `Hephaistos2-Kit - Obsidian Hub` (`obsidiandd22f48b5b`), source `.agent/agent-bridge/n8n-obsidian-hub-workflow.json`. Entree `POST /webhook/hphe-obsidian` (Header Auth `Hephaistos Bridge`).
+- Cible : plugin **Local REST API 5.5.0** du vault `F:\doc_Obsidian\Doc` — `https://127.0.0.1:27124` (HTTPS auto-signe, `allowUnauthorizedCerts`). Clef stockee chiffree dans le credential n8n `Obsidian REST API` (`obsidian-11280beb32a3`), jamais dans le JSON du workflow.
+- Actions routees par un noeud Code vers un httpRequest dynamique : `status`, `list`, `read`, `write`, `append`, `delete`, `patch` (headers Operation/Target), `search` (POST `/search/simple/`), `search-json`, `commands`, `command`, `active`, `open`, `periodic`.
+- Community node `n8n-nodes-obsidian@0.1.11` installe dans `~/.n8n/nodes` (`--ignore-scripts`, deps pures JS : chokidar+yaml — la dep transitive `isolated-vm` exige ClangCL et n'est pas requise au runtime).
+- Obsidian doit etre **ouvert** pour que l'API reponde ; l'ecriture disque via SWAT reste la voie qui marche a froid.
+- n8n 2.x exige `workflow_published_version` + `workflow_history` alignes sur `activeVersionId` pour servir le webhook ; le `respondToWebhook` exige `respondWith:json`+`responseBody` (le defaut = redirect URL).
