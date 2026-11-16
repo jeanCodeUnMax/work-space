@@ -102,7 +102,7 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 
 ## Missions SWAT Telegram
 
-- Schema `swat-telegram` (`schema-mwjes81q-lsrr4`) : entry `acp/devin-cli` Orchestrateur-Flux + workers `chat-*` Redacteur-Telegram puis Relecteur-Modo (verdict `GO` + texte final). Les Bleubites n'ont que des outils fs_* : **aucun worker ne peut envoyer** — l'envoi est fait par n8n apres la mission.
+- Schema `swat-telegram` (`schema-mvr09niq-8yor8`) : entry `acp/devin-cli` Orchestrateur-Flux + workers `chat-*` Redacteur-Telegram puis Relecteur-Modo (verdict `GO` + texte final). Les Bleubites n'ont que des outils fs_* : **aucun worker ne peut envoyer** — l'envoi est fait par n8n apres la mission.
 - Workflow `Hephaistos2-Kit - Telegram SWAT` (`Z07C5VZbpHaSwdxn`), source `.agent/agent-bridge/n8n-telegram-swat-workflow.json`. Entree `POST /webhook/hephaistos-telegram` (Header Auth `Hephaistos Bridge`), contrat `{instruction|text, chat?, missionId?}` — pipeline : bind `swat-telegram` -> mission `hephaistos-swat-missions` -> verdict GO/NO-GO du Relecteur -> envoi via `swat-telegram-hub` seulement si GO.
 - Envoi unique : `SWAT - Telegram Hub` (`RAp6qBCMGOcauYmK`, webhook `swat-telegram-hub`) route `action` (send/send-file/image/pin/unpin/poll/delete/edit/admins/members/stats/chat/topics/history/read/search/updates) + `chat` parametrable vers le proxy `:5680`. Les workflows `SWAT - Telegram Post` et `SWAT - Telegram Image` sont desactives — sous-ensembles en dur du Hub, ne pas les reactiver.
 - Pont CLI : `node .agent/flux/telegram.mjs <action> [--chat X] [--text T]` (chemin `swat-telegram-hub` par defaut, override `N8N_TELEGRAM_PATH`).
