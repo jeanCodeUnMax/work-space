@@ -9,4 +9,6 @@ set "N8N_INSTANCE_AI_MODEL_URL=https://integrate.api.nvidia.com/v1"
 set "N8N_INSTANCE_AI_MODEL=deepseek-ai/deepseek-v4.1-flash"
 set "N8N_INSTANCE_AI_UTILITY_MODEL=openai/gpt-oss-20b"
 set "N8N_INSTANCE_AI_MODEL_API_KEY=%NVIDIA_API_KEY%"
+REM Busqueda web del assistant: Brave Search API (clave de entorno, nunca en repo).
+set "INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%"
 n8n.cmd start >> "%USERPROFILE%\.n8n\n8n-run.log" 2>&1
