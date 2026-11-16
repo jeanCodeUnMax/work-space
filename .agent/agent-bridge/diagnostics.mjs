@@ -69,6 +69,15 @@ export async function collectDiagnostics({ root, tool, requestAcp, bridgeConnect
                 status: body.status || body.state, pipeConnected: body.pipe_connected, ingestBusy: body.ingest_busy } };
         });
     }
+    await measure('n8n-agent-gateway', async () => {
+        const webhook = process.env.N8N_AGENT_URL || 'http://127.0.0.1:5678/webhook/hephaistos-agent';
+        const response = await fetchImpl(webhook, { method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(5000) });
+        const published = [200, 401, 403].includes(response.status);
+        return { status: published ? 'pass' : 'fail', evidence: { httpStatus: response.status, webhook,
+            workflowId: 'sy2KbjC2J9Xy52oj' },
+            limitation: 'Sonde auth uniquement (401/403 = route publiee) ; ne teste ni le LLM ni les outils.' };
+    });
     checks.push({ id: 'bridge-websocket', status: bridgeConnected ? 'pass' : 'fail',
         evidence: { connected: bridgeConnected }, limitation: 'Connexion du bridge ; pas un ACK de livraison agent.' });
     await measure('native-acp-enumeration', async () => {

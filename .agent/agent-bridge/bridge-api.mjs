@@ -13,6 +13,10 @@
  *        → wake + attente de la réponse corrélée dans comms.jsonl → {ok, reply}
  *   GET  /reply/:convId?timeout=<sec>  → long-poll comms.jsonl
  *   GET  /comms?limit=<n>              → tail du bus (diagnostic)
+ *   POST /agent   {prompt, timeoutSec?} → façade canonique de l'agent IA n8n
+ *        (workflow sy2KbjC2J9Xy52oj, webhook /webhook/hephaistos-agent) :
+ *        catalogue SWAT, statut mission, lancement diagnostic. L'auth n8n
+ *        est injectée ici — le client n'a besoin que du token bridge.
  *
  * Auth : même secret que le bridge — Bearer token ou ?token=, lu depuis
  * ORCH_MONITOR_TOKEN puis .agent/ws-bridge.token. Loopback only.
@@ -39,6 +43,8 @@ const WS_ROOT = process.env.HEPHAISTOS_WORKSPACE || path.resolve(__dirname, '..'
 const WS_URL = process.env.BRIDGE_API_WS || 'ws://127.0.0.1:7477';
 const PORT = Number(process.env.BRIDGE_API_PORT || 7478);
 const COMMS_LOG = process.env.COMMS_LOG || path.join(WS_ROOT, '.agent', 'comms.jsonl');
+const N8N_AGENT_URL = process.env.N8N_AGENT_URL || 'http://127.0.0.1:5678/webhook/hephaistos-agent';
+const N8N_AGENT_TIMEOUT_MS = Number(process.env.N8N_AGENT_TIMEOUT_MS || 900000);
 const MAX_BODY = 64 * 1024;
 const DEFAULT_REPLY_TIMEOUT_S = 120;
 const REPLY_KINDS = new Set(['reply', 'chat-reply', 'agent-reply', 'agent-error']);
@@ -416,6 +422,27 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET' && seg[0] === 'comms') {
             const n = Math.min(Number(url.searchParams.get('limit')) || 50, 500);
             return json(res, 200, { ok: true, entries: commsEntries().slice(-n) });
+        }
+        if (req.method === 'POST' && url.pathname === '/agent') {
+            const b = await readBody(req);
+            if (!b.prompt?.trim()) return json(res, 400, { ok: false, error: 'prompt requis' });
+            const convId = crypto.randomUUID();
+            const timeoutMs = Math.min(Number(b.timeoutSec) * 1000 || N8N_AGENT_TIMEOUT_MS, 900000);
+            const started = Date.now();
+            const r = await fetch(N8N_AGENT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+                body: JSON.stringify({ prompt: String(b.prompt) }),
+                signal: AbortSignal.timeout(timeoutMs),
+            });
+            const raw = await r.text();
+            let body;
+            try { body = JSON.parse(raw); } catch { body = { raw }; }
+            fs.appendFileSync(COMMS_LOG, JSON.stringify({ ts: new Date().toISOString(), src: 'bridge-api',
+                dst: 'n8n-agent-ia', kind: 'agent-call', convId,
+                text: JSON.stringify({ prompt: String(b.prompt).slice(0, 300), status: r.status,
+                    durationMs: Date.now() - started }) }) + '\n');
+            return json(res, r.status, { ok: r.ok, convId, ...body });
         }
         json(res, 404, { ok: false, error: 'not found' });
     } catch (e) {

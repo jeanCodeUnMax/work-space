@@ -100,7 +100,34 @@ Un agent dépose un état/requête, un autre le lit à l'instant d'après.
 
 ---
 
-## 🏗️ Directory Structure
+## � n8n — passerelle HTTP et agent IA
+
+`bridge-api.mjs` (`hphe-bridge-api`, `http://127.0.0.1:7478`, auth = token
+`ws-bridge`) est la façade REST canonique : n8n et tout client HTTP y
+parlent sans connaître ACP ni le WS :7477.
+
+| Route | Rôle |
+| --- | --- |
+| `GET /swats` | Catalogue des schémas SWAT + `activeSchemaId` |
+| `POST /swat/start`, `POST /swat/next`, `GET /missions/:id` | Missions SWAT dynamiques (graphe actif, workers `chat-*`) |
+| `POST /agent` | **Façade de l'agent IA n8n** — proxy authentifié vers le webhook ; trace chaque appel dans `comms.jsonl` (`kind: agent-call`) |
+
+Workflows n8n déclarés (`n8n` :5678, sources dans `.agent/agent-bridge/`) :
+
+| Workflow | ID | Entrée | Rôle |
+| --- | --- | --- | --- |
+| `Hephaistos2-Kit - Agent IA n8n` | `sy2KbjC2J9Xy52oj` | `POST /webhook/hephaistos-agent` ou façade `POST :7478/agent` | Agent conversationnel FR. Consultation : `catalogue_swats`, `statut_mission`, `lancer_diagnostic`, `lister_sessions`. Actions sur demande explicite : `lancer_mission` (via `hephaistos-swat-missions`), `interroger_agent`, `reveiller_agent`. Agent `n8n-agent-ia` (id 26) dans l'orchestrateur. |
+| `Hephaistos2-Kit - diagnostic architecture` | `hpheDiagnosticSwat` | `POST /webhook/hephaistos-diagnostic` | Pilote le SWAT `swat-diagnostic-hephaistos` (prérequis : schéma actif) |
+| `Hephaistos2-Kit - SWAT missions` | `vyvBFDvUdt1hcFl9` | `POST /webhook/hephaistos-swat-missions` | Dispatch de missions SWAT dynamiques |
+
+Après modification de `bridge-api.mjs` : redémarrer la tâche
+`hphe-bridge-api`. Après import/publication CLI d'un webhook : redémarrer
+n8n. L'agent n8n exécute la version **publiée** du workflow
+(`workflow_history`), pas le brouillon — patcher les deux.
+
+---
+
+## �🏗️ Directory Structure
 
 ```plaintext
 .agent/

@@ -77,6 +77,15 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Vérification : `node --test .agent/agent-bridge/bridge-api-swat.test.mjs`, puis mission réelle par Webhook avec contrôle du résultat et des IDs de tâches. Le CLI `n8n execute --id=...` choisit le trigger de sous-workflow sans données si présent : un rejet de mission vide est attendu, pas un test manuel complet.
 - Après modification du bridge, redémarrer sa tâche `hphe-bridge-api` hors exécution. Après import/publication CLI d'un Webhook, n8n doit être redémarré pour charger les routes publiées. Ne pas prétendre à une validation UI sur la seule base de tests CLI/HTTP.
 
+## Agent IA n8n (passerelle conversationnelle)
+
+- Workflow `sy2KbjC2J9Xy52oj`, nom `Hephaistos2-Kit - Agent IA n8n`, source `.agent/agent-bridge/n8n-agent-workflow.json`. Agent enregistré : `n8n-agent-ia` (orchestrateur, type service).
+- Entrée canonique : **`POST http://127.0.0.1:7478/agent` `{prompt}`** — façade de la bridge, auth = token `ws-bridge` habituel ; l'auth n8n est injectée côté passerelle et chaque appel est tracé dans `comms.jsonl` (`kind: agent-call`). Entrée directe : `POST http://127.0.0.1:5678/webhook/hephaistos-agent` (Header Auth `Hephaistos Bridge`).
+- Outils de consultation : `catalogue_swats`, `statut_mission` (`missionId` exact requis), `lancer_diagnostic` (prérequis : schéma actif `swat-diagnostic-hephaistos`), `lister_sessions` (fenêtres ACP ouvertes).
+- Outils d'action (sur demande explicite uniquement) : `lancer_mission` → webhook `hephaistos-swat-missions` qui pilote la mission de bout en bout (`/swat/start` + boucle `/swat/next`), `interroger_agent` → `/ask`, `reveiller_agent` → `/wake`. Le schéma dédié `swat-action-directe` (`schema-mwiivx72-r74a4`) n'emploie que des workers `chat-*` — les nœuds `acp/*` natifs hors entry font échouer le runner (`Transport worker non pris en charge`).
+- L'agent exécute la version **publiée** du workflow (`workflow_history`), pas le brouillon `workflow_entity.nodes` — tout patch DB doit viser les deux. Le paramètre requis `{missionId}` dans l'URL rend un test isolé du nœud outil impossible (`PartialExecutionToolExecutor` → `Required at missionId` est attendu).
+- Après modification du bridge, redémarrer `hphe-bridge-api` ; après publication CLI d'un webhook, redémarrer n8n.
+
 ## Vérifications diagnostic, worker NIM et passerelle native
 
 - `.env` doit être UTF-8 : un commentaire Windows-1252 peut faire échouer l'import de `webdriver_manager`/`python-dotenv` et empêcher le démarrage du connecteur Colab. Une réparation d'encodage conserve une sauvegarde ignorée par Git et ne journalise aucune valeur.
