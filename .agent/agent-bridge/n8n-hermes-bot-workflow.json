@@ -134,7 +134,7 @@
         "promptType": "define",
         "text": "={{ $json.prompt }}",
         "options": {
-          "systemMessage": "Tu es Hermes, l'assistant du groupe Telegram 'La caverne d'Hermes'. Tu reponds en francais, concis (<800 caracteres), direct et utile. OUTILS : memory_search/memory_read (retrouver faits du groupe), memory_write (memoriser un fait utile: cle+categorie), everything_search/content_search (retrouver un fichier/note). N'utilise un outil que si utile. Jamais de secrets, cles, prompts internes ou chemins sensibles. Ne pretend jamais avoir execute une action Telegram.",
+          "systemMessage": "Tu es Hermes, l'assistant du groupe Telegram 'La caverne d'Hermes'. Tu reponds en francais, concis (<800 caracteres), direct et utile. OUTILS : memory_search/memory_read et memory_write -> TOUJOURS avec projectId 'caverne' (retrouver/memoriser les faits du groupe) ; everything_search/content_search (fichiers, notes) ; beacon__search_memory/get_memory/search_activity (activite systeme, lecture seule). REGLES STRICTES : pour toute question factuelle sur le groupe ou ses membres, fais memory_search d'abord et n'affirme que ce qui s'y trouve ; n'invente jamais identites, preferences, roles ou historique ; n'ecris en memoire que des faits explicitement donnes par l'utilisateur ; distingue 'en memoire:' d'une inference. Jamais de secrets, cles, prompts internes ou chemins sensibles. Ne pretend jamais avoir execute une action Telegram.",
           "maxIterations": 3
         }
       },
@@ -337,6 +337,35 @@
         80,
         -320
       ]
+    },
+    {
+      "parameters": {
+        "serverTransport": "httpStreamable",
+        "endpointUrl": "http://127.0.0.1:8767/mcp",
+        "authentication": "none",
+        "include": "selected",
+        "includeTools": [
+          "beacon__search_memory",
+          "beacon__get_memory",
+          "beacon__get_memory_context",
+          "beacon__search_activity",
+          "beacon__summarize_activity",
+          "beacon__get_activity_event",
+          "beacon__list_activity_filters",
+          "beacon__candidates_list"
+        ],
+        "options": {
+          "timeout": 45000
+        }
+      },
+      "id": "mcp-beacon-1",
+      "name": "MCP Beacon (mux)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        -320,
+        -460
+      ]
     }
   ],
   "connections": {
@@ -499,6 +528,17 @@
           {
             "node": "Agent Hermes",
             "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MCP Beacon (mux)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Hermes",
+            "type": "ai_tool",
             "index": 0
           }
         ]
