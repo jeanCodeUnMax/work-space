@@ -1470,7 +1470,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'schema_delete') {
             try {
-                workflowStore.deleteSchema(String((message as { id?: string }).id || ''));
+                const deletedSchemaId = String((message as { id?: string }).id || '');
+                const res = workflowStore.deleteSchema(deletedSchemaId);
+                if (res && res.protected) {
+                    FlowWorkspacePanel.error(`Le schema "${res.name || deletedSchemaId}" est un schema standard du kit : sa suppression est refusee (restauration via les gabarits).`);
+                }
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
                 FlowWorkspacePanel.update(view(workflowStore.load(store.list())));
             } catch (error) {

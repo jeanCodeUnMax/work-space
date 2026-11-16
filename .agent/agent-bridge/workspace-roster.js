@@ -1057,7 +1057,7 @@ function renameSchema(root, id, newName) {
     const index = list.findIndex((item) => item.id === id);
     if (index < 0) return { renamed: false, error: 'schema introuvable' };
     const entry = list[index];
-    if (entry.builtin === true || isStandardSchemaName(entry.name)) {
+    if (isStandardSchemaName(entry.name)) {
         return { renamed: false, protected: true, name: entry.name };
     }
     let effectiveName = String(newName || '').trim().slice(0, 120);
@@ -1089,7 +1089,10 @@ function deleteSchema(root, id) {
     const list = readSchemas();
     const target = list.find((item) => item.id === id);
     // Schéma standard protégé : suppression refusée (gabarit canonique).
-    if (target && (target.builtin === true || isStandardSchemaName(target.name))) {
+    // La protection tient au NOM standard (restaurable via gabarit) — le
+    // drapeau `builtin` stocke peut etre corrompu sur des schemas custom
+    // et ne doit pas rendre leur suppression impossible.
+    if (target && isStandardSchemaName(target.name)) {
         return { deleted: 0, protected: true, name: target.name };
     }
     const next = list.filter((item) => item.id !== id);

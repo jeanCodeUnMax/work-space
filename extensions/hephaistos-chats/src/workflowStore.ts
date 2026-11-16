@@ -90,8 +90,8 @@ export class WorkflowStore {
         return this.api.loadSchema(this.workspaceRoot, id);
     }
 
-    deleteSchema(id: string): void {
-        this.api.deleteSchema(this.workspaceRoot, id);
+    deleteSchema(id: string): { deleted?: number; protected?: boolean; name?: string } {
+        return this.api.deleteSchema(this.workspaceRoot, id) as { deleted?: number; protected?: boolean; name?: string };
     }
 
     renameSchema(id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string } {
