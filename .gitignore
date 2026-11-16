@@ -103,3 +103,5 @@ devin-crash-logs-*.zip
 /nul
 .env
 *.local.json
+.agent/creds-matrix.json
+.agent/handoff/
