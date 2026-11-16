@@ -1,0 +1,106 @@
+{
+  "name": "Hephaistos2-Kit - Telegram Outil (agent)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trig1",
+      "name": "Entree agent",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Whitelist actions Telegram exposables a l'agent. chat force a 'caverne'.\nconst inp = $json || {};\nconst ALLOWED = {\n  image:   ['prompt'],\n  'send-file': ['path','caption'],\n  history: ['limit'],\n  read:    ['message_id'],\n  search:  ['query','limit'],\n  chatinfo:[],\n  members: [], admins: [], stats: [], topics: [],\n  poll:    ['question','options'],\n};\nconst act = String(inp.action||'').toLowerCase().trim();\nif (!ALLOWED[act]) return [{ json: { ok:false, error:\"action refusee: \"+act+\" (permises: \"+Object.keys(ALLOWED).join(', ')+\")\" } }];\nconst body = { action: act, chat: 'caverne' };\nfor (const k of ALLOWED[act]) if (inp[k] !== undefined && inp[k] !== null && inp[k] !== '') body[k] = inp[k];\nif (body.message_id !== undefined) { body.messageId = Number(body.message_id)||0; delete body.message_id; }\nif (act==='poll' && !Array.isArray(body.options)) body.options = String(body.options||'').split('|').map(s=>s.trim()).filter(Boolean);\n\nbody.asUser = false;\nreturn [{ json: { ok:true, body } }];"
+      },
+      "id": "val1",
+      "name": "Valider action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/swat-telegram-hub",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body || {}) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "hub1",
+      "name": "Appel Hub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        140,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json || {};\nconst prev = $('Valider action').first().json;\nif (prev && prev.ok === false) return [{ json: prev }];\nlet out = 'ok';\ntry { const s = typeof r.stdout==='string' ? r.stdout : JSON.stringify(r); out = s.slice(0,600); } catch(e){ out='retour hub illisible'; }\nreturn [{ json: { ok:true, result: out } }];"
+      },
+      "id": "fmt1",
+      "name": "Formater sortie",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Entree agent": {
+      "main": [
+        [
+          {
+            "node": "Valider action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valider action": {
+      "main": [
+        [
+          {
+            "node": "Appel Hub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Appel Hub": {
+      "main": [
+        [
+          {
+            "node": "Formater sortie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {}
+}
