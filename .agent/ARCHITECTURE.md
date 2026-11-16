@@ -111,18 +111,20 @@ parlent sans connaître ACP ni le WS :7477.
 | `GET /swats` | Catalogue des schémas SWAT + `activeSchemaId` |
 | `POST /swat/start`, `POST /swat/next`, `GET /missions/:id` | Missions SWAT dynamiques (graphe actif, workers `chat-*`) |
 | `POST /agent` | **Façade de l'agent IA n8n** — proxy authentifié vers le webhook ; trace chaque appel dans `comms.jsonl` (`kind: agent-call`) |
+| `GET /n8n/workflows` | Inventaire des workflows n8n actifs via l'API n8n serveur-side (clé `N8N_API_KEY` env ou `.agent/n8n-api.key` gitignorée ; URL `HPHE_N8N_API_URL`, loopback par défaut). Renvoie id, nom, triggers, webhookPath, `callable`, `callableContract` — jamais de secrets. |
+| `POST /n8n/workflows/:id/invoke` | Invocation contrôlée d'un workflow — allowlist `N8N_CALLABLE_WORKFLOWS`, secret webhook injecté côté passerelle, trace `kind: workflow-invoke`. 403 si non allowlisté. |
 
 Passerelle MCP : `supergateway` écoute `http://127.0.0.1:8767/mcp`
 (Streamable HTTP, health `/healthz`) et proxifie le shim `mcp-mux` en stdio —
 l'agent n8n y puise un sous-ensemble d'outils muxés via `mcpClientTool`
-(filtre `includeTools`, noms préfixés `serveur__outil`). Processus à
-relancer au boot comme `hphe-bridge-api`.
+(filtre `includeTools`, noms préfixés `serveur__outil`). Pérennisée au boot
+via `Startup\hphe-mcp-gateway.vbs` → `.agent\scripts\hphe-mcp-gateway.cmd`.
 
 Workflows n8n déclarés (`n8n` :5678, sources dans `.agent/agent-bridge/`) :
 
 | Workflow | ID | Entrée | Rôle |
 | --- | --- | --- | --- |
-| `Hephaistos2-Kit - Agent IA n8n` | `sy2KbjC2J9Xy52oj` | `POST /webhook/hephaistos-agent` ou façade `POST :7478/agent` | Agent conversationnel FR. Consultation : `catalogue_swats`, `statut_mission`, `lancer_diagnostic`, `lister_sessions`. Actions sur demande explicite : `lancer_mission` (via `hephaistos-swat-missions`), `interroger_agent`, `reveiller_agent`. Agent `n8n-agent-ia` (id 26) dans l'orchestrateur. |
+| `Hephaistos2-Kit - Agent IA n8n` | `sy2KbjC2J9Xy52oj` | `POST /webhook/hephaistos-agent` ou façade `POST :7478/agent` | Agent conversationnel FR **et orchestrateur de workflows**. Consultation : `catalogue_swats`, `statut_mission`, `lancer_diagnostic`, `lister_sessions`, `lister_workflows`. Actions sur demande explicite : `lancer_mission`, `interroger_agent`, `reveiller_agent`, `executer_workflow` (allowlist `N8N_CALLABLE_WORKFLOWS`). Agent `n8n-agent-ia` (id 26) dans l'orchestrateur. |
 | `Hephaistos2-Kit - diagnostic architecture` | `hpheDiagnosticSwat` | `POST /webhook/hephaistos-diagnostic` | Pilote le SWAT `swat-diagnostic-hephaistos` (prérequis : schéma actif) |
 | `Hephaistos2-Kit - SWAT missions` | `vyvBFDvUdt1hcFl9` | `POST /webhook/hephaistos-swat-missions` | Dispatch de missions SWAT dynamiques |
 

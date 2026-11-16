@@ -1,6 +1,5 @@
 {
   "name": "swat-plan-plugin",
-  "desc": "Flux de cadrage et planification de spécifications (PRD) : découpage des exigences fonctionnelles, normalisation des compétences et matrice de sécurité pour la création d'extensions ou plugins.",
   "graph": {
     "version": 1,
     "name": "swat-plan-plugin",
@@ -14,11 +13,13 @@
           "orchestrator",
           "plan-writing"
         ],
-        "title": "ionian-helicopter",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
           "x": -440,
           "y": 0
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvmw59wa",
@@ -28,11 +29,13 @@
           "architecture",
           "api-patterns"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
           "x": -110,
           "y": -220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvmw5chd",
@@ -42,11 +45,13 @@
           "clean-code",
           "plan-writing"
         ],
+        "mcps": [],
         "title": "amber-agent",
         "position": {
           "x": -110,
           "y": 0
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvmtldvy",
@@ -56,11 +61,13 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
           "x": -110,
           "y": 220
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvfqytbz",
@@ -69,11 +76,13 @@
         "skills": [
           "plan-writing"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
           "x": 330,
           "y": 0
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvflr6cn",
@@ -83,11 +92,13 @@
           "obsidian",
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
           "x": 660,
-          "y": -154
-        }
+          "y": -220
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvp0beacon",
@@ -97,11 +108,13 @@
           "vault-ingest",
           "obsidian"
         ],
-        "title": "beacon-agent",
+        "mcps": [],
+        "title": "onyx-agent",
         "position": {
           "x": 660,
           "y": 0
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
@@ -110,11 +123,13 @@
         "skills": [
           "lint-and-validate"
         ],
-        "title": "sugary-shoemaker",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
           "x": 660,
-          "y": 154
-        }
+          "y": 220
+        },
+        "provider": "devin-cli"
       }
     ],
     "edges": [

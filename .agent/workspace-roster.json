@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-16T00:40:39.044Z",
+  "updatedAt": "2026-11-16T15:31:05.538Z",
   "core": {
     "devin": [
       {
@@ -180,8 +180,16 @@
         "providerId": "antigravity-acp",
         "sessionId": "acp/antigravity-acp/6ba5a10a-4f43-4375-9735-6beb394c4829",
         "restore": "existing-only",
-        "role": "Antigravity",
-        "title": "Antigravity",
+        "role": "Cartographe-Vault",
+        "title": "lunar-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/adhesive-food",
+        "restore": "existing-only",
+        "role": "Orchestrateur-Vault",
+        "title": "daring-agent",
         "hidden": true
       }
     ],
@@ -199,8 +207,8 @@
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "role": "Codeur",
-        "hidden": false,
-        "model": "nvidia/nvidia/nemotron-3.5-lightning-30b-a3b",
+        "hidden": true,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
       },
       {
@@ -235,7 +243,7 @@
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
         "role": "Verif-Submodules",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-bolt-e4b",
         "title": "xenial-agent"
       },
@@ -253,7 +261,7 @@
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": false,
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "zealous-agent"
       },
@@ -261,7 +269,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
-        "model": "auto/best-fast",
+        "model": "groq/openai/gpt-oss-120b",
         "role": "Avocat-du-Diable",
         "hidden": true,
         "title": "keen-nova"
@@ -271,7 +279,7 @@
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "onyx-agent"
       },
@@ -280,7 +288,7 @@
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
         "role": "Sentinelle-Infra-Perf",
-        "hidden": false,
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "ionic-orbit"
       },
@@ -288,7 +296,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "role": "OpenRouter",
         "hidden": true
       },
@@ -323,8 +331,8 @@
         "providerId": "openrouter",
         "sessionId": "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
-        "role": "OpenRouter",
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "role": "Archiviste-Redacteur",
         "title": "xenial-yew",
         "hidden": true
       },
@@ -332,7 +340,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-fabb4d20-ebda-4e32-8da7-07392590dabe",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
         "role": "Codeur",
         "title": "brave-willow",
         "hidden": true
@@ -341,7 +349,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "nvidia/nemotron-3.5-super-vl:free",
         "role": "OpenRouter",
         "title": "young-agent",
         "hidden": true
@@ -350,7 +358,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "cohere/north-mini-code:free",
         "role": "OpenRouter",
         "title": "amber-agent",
         "hidden": true
@@ -359,7 +367,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "google/gemma-4-31b-it:free",
         "role": "Codeur",
         "title": "quiet-vault",
         "hidden": true
@@ -368,7 +376,7 @@
         "providerId": "openrouter",
         "sessionId": "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539",
         "restore": "open-or-reveal",
-        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
         "role": "OpenRouter",
         "title": "hardy-agent",
         "hidden": true
@@ -517,7 +525,7 @@
         "providerId": "nim",
         "sessionId": "chat-b33e6e23-c376-49a9-b82c-e23e0b15c686",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "NVIDIA NIM",
         "title": "hardy-agent",
         "hidden": true
@@ -536,7 +544,7 @@
         "sessionId": "chat-63b4fed9-370b-4e0d-9743-114d19d97e97",
         "restore": "open-or-reveal",
         "model": "swe-2-high",
-        "role": "Devin",
+        "role": "Gardien-Coherence",
         "title": "daring-agent",
         "hidden": true
       },
@@ -553,7 +561,7 @@
         "providerId": "nim",
         "sessionId": "chat-ebec625e-2d2b-4194-883b-46d1cff4cd2b",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "NVIDIA NIM",
         "title": "gentle-agent",
         "hidden": true
@@ -613,7 +621,7 @@
         "providerId": "nim",
         "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "NVIDIA NIM",
         "title": "young-ibis",
         "hidden": true
@@ -622,7 +630,7 @@
         "providerId": "nim2",
         "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
         "restore": "open-or-reveal",
-        "model": "opencode/nemotron-3-ultra-free",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "NVIDIA NIM 2",
         "title": "daring-agent",
         "hidden": true
@@ -1110,16 +1118,15 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-action-directe",
+    "name": "swat-telegram",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur",
-        "task": "Decompose la demande d'action en ordres directs et mesurables : un ordre code pour l'Executant, un ordre systeme pour l'Operateur. Chaque ordre doit etre concret, borne et verifiable.",
+        "role": "Orchestrateur-Flux",
+        "task": "Cadre la mission Telegram : precise l instruction et le chat cible, decompose en ordres bornes pour le Redacteur, puis tranche GO/NO-GO sur le verdict du Relecteur. Ne redige jamais le message lui-meme.",
         "skills": [
-          "orchestrator",
-          "plan-writing"
+          "orchestrator"
         ],
         "mcps": [],
         "title": "daring-agent",
@@ -1129,44 +1136,26 @@
         }
       },
       {
-        "sessionId": "chat-mvmw59wa",
-        "role": "Executant-Code",
-        "task": "Execute les ordres code : edits de fichiers, scripts, builds. Pour chaque action rend une preuve factuelle : chemin du fichier, commande lancee, extrait du resultat.",
-        "skills": [
-          "clean-code",
-          "nodejs-best-practices"
-        ],
+        "sessionId": "chat-mvp0beacon",
+        "role": "Redacteur-Telegram",
+        "task": "Redige le message Telegram demande par la mission : texte brut ou Markdown Telegram, 4096 caracteres max, ton clair, pas de secret ni de donnee personnelle. Rend UNIQUEMENT le texte final du message, sans commentaire.",
+        "skills": [],
         "mcps": [],
-        "title": "keen-agent",
+        "title": "onyx-agent",
         "position": {
           "x": 0,
           "y": -140
         }
       },
       {
-        "sessionId": "chat-mvpfinfra",
-        "role": "Operateur-Infra",
-        "task": "Execute les actions systeme et services : processus, endpoints HTTP, outils CLI locaux. Rend les preuves mesurees : status codes, PIDs, sorties de commande.",
+        "sessionId": "chat-mvfj773t",
+        "role": "Relecteur-Modo",
+        "task": "Relit le message du Redacteur : conformite Telegram (<=4096 chars, formatage valide), absence de secrets/credentials/donnees sensibles, coherence avec l instruction. Rend le texte final corrige pret a l envoi, precede de GO si conforme ou NO-GO suivi du motif si non conforme.",
         "skills": [
-          "systematic-debugging"
-        ],
-        "mcps": [],
-        "title": "ionic-orbit",
-        "position": {
-          "x": 0,
-          "y": 140
-        }
-      },
-      {
-        "sessionId": "chat-mvfj8b4m",
-        "role": "Verificateur",
-        "task": "Verifie que chaque action declaree a produit l'effet attendu : fichier present, endpoint qui repond, test qui passe. Signale tout ecart entre declare et mesure.",
-        "skills": [
-          "testing-patterns",
           "lint-and-validate"
         ],
         "mcps": [],
-        "title": "zealous-agent",
+        "title": "xenial-agent",
         "position": {
           "x": 330,
           "y": 0
@@ -1175,28 +1164,18 @@
     ],
     "edges": [
       {
-        "id": "edge:act-orch->exec",
+        "id": "e-orch-red",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvmw59wa"
+        "target": "chat-mvp0beacon"
       },
       {
-        "id": "edge:act-orch->ops",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvpfinfra"
-      },
-      {
-        "id": "edge:act-exec->verif",
-        "source": "chat-mvmw59wa",
-        "target": "chat-mvfj8b4m"
-      },
-      {
-        "id": "edge:act-ops->verif",
-        "source": "chat-mvpfinfra",
-        "target": "chat-mvfj8b4m"
+        "id": "e-red-rel",
+        "source": "chat-mvp0beacon",
+        "target": "chat-mvfj773t"
       }
     ],
-    "activeSchema": "swat-action-directe",
-    "activeSchemaId": "schema-mwiivx72-r74a4"
+    "activeSchema": "swat-telegram",
+    "activeSchemaId": "schema-mvr09niq-8yor8"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

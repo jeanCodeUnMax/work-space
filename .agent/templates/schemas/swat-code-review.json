@@ -1,6 +1,5 @@
 {
   "name": "swat-code-review",
-  "desc": "Flux d'audit qualité et revue de code : analyse statique, détection d'antipatrons, conformité de code, contrôle de sécurité et vérification git. À utiliser avant toute fusion de branche ou pour une inspection approfondie sans modification de code.",
   "graph": {
     "version": 1,
     "name": "swat-code-review",
@@ -14,11 +13,13 @@
           "orchestrator",
           "plan-writing"
         ],
-        "title": "ionian-helicopter",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
-          "x": -660,
+          "x": -682,
           "y": 0
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvmw5chd",
@@ -28,11 +29,13 @@
           "code-review-checklist",
           "clean-code"
         ],
+        "mcps": [],
         "title": "amber-agent",
         "position": {
           "x": -220,
           "y": -220
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvmtldvy",
@@ -42,11 +45,13 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
           "x": -220,
           "y": 0
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvpfinfra",
@@ -56,11 +61,13 @@
           "performance-profiling",
           "observability-specialist"
         ],
-        "title": "steady-agent",
+        "mcps": [],
+        "title": "ionic-orbit",
         "position": {
           "x": -220,
           "y": 220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvfqytbz",
@@ -70,11 +77,13 @@
           "vulnerability-scanner",
           "code-review-checklist"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
           "x": 220,
           "y": 0
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvfj773t",
@@ -84,11 +93,13 @@
           "git-history",
           "lint-and-validate"
         ],
+        "mcps": [],
         "title": "xenial-agent",
         "position": {
           "x": 550,
           "y": 0
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvflr6cn",
@@ -98,11 +109,13 @@
           "obsidian",
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
           "x": 880,
           "y": -110
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvp0beacon",
@@ -112,11 +125,13 @@
           "vault-ingest",
           "obsidian"
         ],
-        "title": "beacon-agent",
+        "mcps": [],
+        "title": "onyx-agent",
         "position": {
           "x": 880,
           "y": 110
-        }
+        },
+        "provider": "nim2"
       }
     ],
     "edges": [

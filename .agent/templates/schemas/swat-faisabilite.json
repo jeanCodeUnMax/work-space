@@ -1,6 +1,5 @@
 {
   "name": "swat-faisabilite",
-  "desc": "Flux d'étude de faisabilité et d'architecture : exploration de la surface d'attaque, analyse des APIs, évaluation des risques et cadrage technique avant lancement d'un gros chantier ou nouveau composant.",
   "graph": {
     "version": 1,
     "name": "swat-faisabilite",
@@ -14,11 +13,13 @@
           "orchestrator",
           "plan-writing"
         ],
-        "title": "ionian-helicopter",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
           "x": -440,
           "y": 0
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvmw59wa",
@@ -28,11 +29,13 @@
           "architecture",
           "api-patterns"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
           "x": -110,
           "y": -220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvmtldvy",
@@ -42,11 +45,13 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
           "x": -110,
           "y": 0
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvpfinfra",
@@ -56,11 +61,13 @@
           "performance-profiling",
           "observability-specialist"
         ],
-        "title": "steady-agent",
+        "mcps": [],
+        "title": "ionic-orbit",
         "position": {
           "x": -110,
           "y": 220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvfqytbz",
@@ -70,11 +77,13 @@
           "plan-writing",
           "architecture"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
           "x": 330,
           "y": 0
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvflr6cn",
@@ -84,11 +93,13 @@
           "obsidian",
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
           "x": 660,
-          "y": -154
-        }
+          "y": -198
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvp0beacon",
@@ -97,11 +108,13 @@
         "skills": [
           "vault-ingest"
         ],
-        "title": "beacon-agent",
+        "mcps": [],
+        "title": "onyx-agent",
         "position": {
           "x": 660,
           "y": 0
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
@@ -110,11 +123,13 @@
         "skills": [
           "lint-and-validate"
         ],
-        "title": "sugary-shoemaker",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
           "x": 660,
-          "y": 154
-        }
+          "y": 198
+        },
+        "provider": "devin-cli"
       }
     ],
     "edges": [

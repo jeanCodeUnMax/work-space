@@ -55,6 +55,7 @@ deny-write: **
 allow: <PROJECT_ROOT>/**
 allow: <INGEST_SCAN_ROOT>/**
 allow: <INSTALL_ROOT>/**
+allow: F:/doc_Obsidian/**
 deny: **/.ssh/**
 deny: **/.gnupg/**
 deny: **/.aws/**
