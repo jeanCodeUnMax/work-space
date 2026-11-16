@@ -155,3 +155,10 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Community node `n8n-nodes-obsidian@0.1.11` installe dans `~/.n8n/nodes` (`--ignore-scripts`, deps pures JS : chokidar+yaml — la dep transitive `isolated-vm` exige ClangCL et n'est pas requise au runtime).
 - Obsidian doit etre **ouvert** pour que l'API reponde ; l'ecriture disque via SWAT reste la voie qui marche a froid.
 - n8n 2.x exige `workflow_published_version` + `workflow_history` alignes sur `activeVersionId` pour servir le webhook ; le `respondToWebhook` exige `respondWith:json`+`responseBody` (le defaut = redirect URL).
+
+## n8n Assistant (instance-ai)
+
+- Actif : `instanceAi.settings.enabled=true` (settings DB) + `N8N_INSTANCE_AI_ENABLED=true` dans `n8n-run.cmd`. Les permissions restent `require_approval` partout sauf `mcpRead`/`createPreference`.
+- LLM : `N8N_INSTANCE_AI_MODEL_URL=https://integrate.api.nvidia.com/v1` (NIM, OpenAI-compatible), modele `deepseek-ai/deepseek-v4.1-flash`, utilitaire `openai/gpt-oss-20b`, clef lue depuis `%NVIDIA_API_KEY%` a l'execution (jamais en dur).
+- Sandbox : pas de Docker -> `sandboxEnabled=false`, le JS Task Runner local (broker :5679) sert de gateway. `N8N_INSTANCE_AI_SANDBOX_PROVIDER`/`n8nSandboxServiceUrl` a configurer si un vrai sandbox Docker devient disponible.
+- Reglages UI : Settings > Assistant permet d'overrider modele/credential par admin.
