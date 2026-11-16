@@ -10,8 +10,11 @@ REM Modele principal : Devin CLI (swe-1-7) via le bridge ACP OmniRoute (dva/*).
 REM Utilitaire : deepseek-v4.1-flash gratuit via le pool nvidia.
 set "N8N_INSTANCE_AI_ENABLED=true"
 set "N8N_INSTANCE_AI_MODEL_URL=http://127.0.0.1:20128/v1"
-set "N8N_INSTANCE_AI_MODEL=devin-cli-agentic/swe-1-7"
-set "N8N_INSTANCE_AI_UTILITY_MODEL=nvidia/deepseek-ai/deepseek-v4.1-flash"
+REM Le provider doit etre 'custom' (endpoint OpenAI-compatible) : n8n envoie
+REM tout ce qui suit le 1er '/' comme nom de modele a OmniRoute, qui resout
+REM ensuite son propre provider (devin-cli-agentic, nvidia...).
+set "N8N_INSTANCE_AI_MODEL=custom/devin-cli-agentic/swe-1-7"
+set "N8N_INSTANCE_AI_UTILITY_MODEL=custom/nvidia/deepseek-ai/deepseek-v4.1-flash"
 set "N8N_INSTANCE_AI_MODEL_API_KEY=%OMNIROUTE_API_KEY%"
 REM Recherche web du assistant : Brave Search API (cle d'environnement, jamais en repo).
 set "INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%"
