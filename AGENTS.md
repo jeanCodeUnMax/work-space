@@ -140,7 +140,7 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 ## Concile SWAT (mode council)
 
 - Graphe `mode: council` (schema-mvpjbchn-ijt6c) : chairman = `acp/devin-cli/ionian-helicopter` (non injectable : l'appelant synthetise), 6 membres `chat-*` (Premiers-Principes, Expansionniste, Executeur, Empirique, Contrariant, Outsider).
-- `POST /swat/start` avec ce schema : run auto-pilote — ronde 1 parallele (reponses isolees), ronde 2 parallele (peer-review anonymisee Membre A-F), puis `phase: done`. `wait` (ms, max 600000) bloque la reponse HTTP jusqu'au resultat.
+- `POST /swat/start` accepte tout schema du catalogue (`schemaGraphFor`) — pas seulement le schema actif. Missions paralleles autorisees si aucune session worker en commun (collision -> 409). Avec le schema council : run auto-pilote — ronde 1 parallele (reponses isolees), ronde 2 parallele (peer-review anonymisee Membre A-F), puis `phase: done`. `wait` (ms, max 600000) bloque la reponse HTTP jusqu'au resultat.
 - `/swat/next` et `/swat/step` refusent les runs council ; suivi via `GET /missions/:id` -> `council.replies`, `council.reviews`, `council.chairmanPrompt` (prompt de synthese pret pour le chairman).
 - Parallelisme : `acp-inject` accepte `lockKey` (lock par session, pas par provider). Echec membre tolere ; moins de 3 reponses ronde 1 = mission failed.
 - Workflow n8n `Hephaistos2-Kit - Concile SWAT` (`hpheConcileSwat`) : `POST /webhook/hphe-concile` (headerAuth) `{question|objective, missionId?, wait?}` -> `POST /swat/start` (wait<=540000) -> renvoie le missionStatus complet. Re-POST avec le meme missionId = poll (replay). Export : `.agent/agent-bridge/n8n-concile-workflow.json`.

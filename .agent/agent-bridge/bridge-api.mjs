@@ -28,6 +28,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { execFile, execFileSync } from 'node:child_process';
@@ -222,10 +223,7 @@ function savedMission(id) {
     return entry ? JSON.parse(entry.text) : null;
 }
 
-export function swatGraph(root = WS_ROOT) {
-    const roster = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'workspace-roster.json'), 'utf8'));
-    const graph = roster.workflow;
-    if (!graph?.activeSchemaId) throw new Error('Schema actif absent.');
+function finalizeSwatGraph(graph, root, allowHidden = false) {
     const council = graph.mode === 'council';
     const ids = graph.nodes.map((n) => n.sessionId);
     if (!ids.length || new Set(ids).size !== ids.length || !ids.includes(graph.entrySessionId)
@@ -233,41 +231,26 @@ export function swatGraph(root = WS_ROOT) {
         || graph.edges.some((e) => !ids.includes(e.source) || !ids.includes(e.target) || e.target === graph.entrySessionId)) {
         throw new Error('Graphe SWAT invalide : identites, missions ou liens incoherents.');
     }
-    if (council) {
-        const members = Object.values(roster.core).flat();
-        const sessions = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'chats', 'sessions.json'), 'utf8'));
-        const list = Array.isArray(sessions) ? sessions : sessions.sessions;
-        for (const id of ids.filter((id) => id !== graph.entrySessionId)) {
-            if (!id.startsWith('chat-')) throw new Error(`Transport worker non pris en charge : ${id}. Aucun fallback CLI.`);
-            const member = members.find((m) => m.sessionId === id && !m.hidden);
-            const session = Array.isArray(list) ? list.find((s) => s.id === id || s.sessionId === id) : null;
-            if (!member || !session) throw new Error(`Session exacte du SWAT absente : ${id}`);
-            if (session.provider !== member.providerId || session.model !== member.model) {
-                throw new Error(`Provider/modele divergent du roster pour ${id}`);
-            }
+    if (!council) {
+        const reached = new Set([graph.entrySessionId]);
+        const pending = new Set(ids.filter((id) => id !== graph.entrySessionId));
+        while (pending.size) {
+            const ready = [...pending].filter((id) => {
+                const parents = graph.edges.filter((e) => e.target === id);
+                return parents.length && parents.every((e) => reached.has(e.source));
+            });
+            if (!ready.length) throw new Error('Graphe SWAT cyclique ou noeud inaccessible depuis orchestrateur.');
+            for (const id of ready) { pending.delete(id); reached.add(id); }
         }
-        const semantic = { name: graph.name, activeSchemaId: graph.activeSchemaId, mode: 'council',
-            entrySessionId: graph.entrySessionId,
-            nodes: graph.nodes.map((n) => ({ sessionId: n.sessionId, role: n.role, task: n.task })) };
-        return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(semantic)).digest('hex') };
     }
-    const reached = new Set([graph.entrySessionId]);
-    const pending = new Set(ids.filter((id) => id !== graph.entrySessionId));
-    while (pending.size) {
-        const ready = [...pending].filter((id) => {
-            const parents = graph.edges.filter((e) => e.target === id);
-            return parents.length && parents.every((e) => reached.has(e.source));
-        });
-        if (!ready.length) throw new Error('Graphe SWAT cyclique ou noeud inaccessible depuis orchestrateur.');
-        for (const id of ready) { pending.delete(id); reached.add(id); }
-    }
+    const roster = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'workspace-roster.json'), 'utf8'));
     const members = Object.values(roster.core).flat();
     const sessions = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'chats', 'sessions.json'), 'utf8'));
     const list = Array.isArray(sessions) ? sessions : sessions.sessions;
     if (!Array.isArray(list)) throw new Error('Format sessions hephaistos-chats inconnu.');
     for (const id of ids.filter((id) => id !== graph.entrySessionId)) {
         if (!id.startsWith('chat-')) throw new Error(`Transport worker non pris en charge par ce runner : ${id}. Aucun fallback CLI.`);
-        const member = members.find((m) => m.sessionId === id && !m.hidden);
+        const member = members.find((m) => m.sessionId === id && (allowHidden || !m.hidden));
         const session = list.find((s) => s.id === id || s.sessionId === id);
         if (!member || !session) throw new Error(`Session exacte du SWAT absente : ${id}`);
         if (session.provider !== member.providerId || session.model !== member.model) {
@@ -275,10 +258,37 @@ export function swatGraph(root = WS_ROOT) {
         }
     }
     const semantic = { name: graph.name, activeSchemaId: graph.activeSchemaId,
-        entrySessionId: graph.entrySessionId,
+        ...(council ? { mode: 'council' } : {}), entrySessionId: graph.entrySessionId,
         nodes: graph.nodes.map((n) => ({ sessionId: n.sessionId, role: n.role, task: n.task })),
-        edges: graph.edges.map((e) => ({ source: e.source, target: e.target })) };
+        ...(council ? {} : { edges: graph.edges.map((e) => ({ source: e.source, target: e.target })) }) };
     return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(semantic)).digest('hex') };
+}
+
+export function swatGraph(root = WS_ROOT) {
+    const roster = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'workspace-roster.json'), 'utf8'));
+    const graph = roster.workflow;
+    if (!graph?.activeSchemaId) throw new Error('Schema actif absent.');
+    return finalizeSwatGraph(graph, root);
+}
+
+/* Charge un schema du catalogue (banque ~/.hephaistos-workflow-schemas.json)
+   en lecture seule — les missions paralleles utilisent n'importe quel schema
+   enregistre pour ce workspace, pas seulement le schema actif. */
+function schemaGraphFor(schemaId, root = WS_ROOT) {
+    const roster = JSON.parse(fs.readFileSync(path.join(root, '.agent', 'workspace-roster.json'), 'utf8'));
+    if (schemaId === roster.workflow?.activeSchemaId) return swatGraph(root);
+    const file = process.env.HPHE_SCHEMAS_FILE
+        || path.join(os.homedir(), '.hephaistos-workflow-schemas.json');
+    const list = JSON.parse(fs.readFileSync(file, 'utf8')).schemas || [];
+    const ws = path.resolve(root);
+    const entry = list.find((e) => e.id === schemaId
+        && (!e.workspace || path.resolve(e.workspace) === ws));
+    if (!entry?.graph) throw new Error(`Schema introuvable pour ce workspace : ${schemaId}`);
+    const graph = { ...entry.graph, name: entry.name, activeSchemaId: entry.id };
+    if (entry.mode === 'council' || rosterApi.isCouncilSchemaName?.(entry.name)) graph.mode = 'council';
+    /* Workers d'un schema non actif : le flag hidden (gere par l'UI selon
+       le schema courant) ne disqualifie pas — provider/modele restent verifies. */
+    return finalizeSwatGraph(graph, root, true);
 }
 
 async function swatTool(name, args) {
@@ -298,7 +308,7 @@ async function swatStep(b) {
     if (!run) throw new Error('Run SWAT inconnu ou service redemarre : ne pas rejouer automatiquement.');
     if (run.failed) throw new Error(`Run arrete : ${run.failed}`);
     try {
-        if (run.digest !== swatGraph().digest) throw new Error('Schema modifie pendant le run : arret.');
+        if (run.digest !== schemaGraphFor(run.contract.schemaId).digest) throw new Error('Schema modifie pendant le run : arret.');
     } catch (error) {
         run.failed = error.message;
         recordMission(run);
@@ -386,6 +396,9 @@ async function councilRun(run) {
         if (answered.length < 3) throw new Error(`Concile degrade : ${answered.length}/6 reponses en ronde 1 (minimum 3).`);
         const repliesText = answered.map((o) => `=== ${anon.get(o.sessionId)} ===\n${o.reply}`).join('\n\n');
         const voters = members.filter((n) => answered.some((o) => o.sessionId === n.sessionId));
+        if (run.digest !== schemaGraphFor(run.contract.schemaId).digest) {
+            throw new Error('Schema modifie pendant le run : arret entre les rondes.');
+        }
         run.council.phase = 'round2';
         recordMission(run);
         const r2 = await Promise.all(voters.map((n) => councilMemberStep(run, n, '2',
@@ -486,7 +499,7 @@ const server = http.createServer(async (req, res) => {
                 } catch { /* ignorer les entrees mal formees */ }
             }
             for (const run of swatRuns.values()) {
-                if (run.contract?.missionId) byMission.set(run.contract.missionId, { ts: null, live: true, ...missionStatus(run) });
+                if (run.contract?.missionId) byMission.set(run.contract.missionId, { ts: new Date().toISOString(), live: true, ...missionStatus(run) });
             }
             const missions = [...byMission.entries()]
                 .sort((a, b) => String(b[1].ts || '').localeCompare(String(a[1].ts || '')))
@@ -608,12 +621,17 @@ const server = http.createServer(async (req, res) => {
                 return json(res, 200, { ...missionStatus(existing), replay: true });
             }
             if (savedMission(contract.missionId)) return json(res, 409, { ok: false, error: 'Mission deja enregistree : consulter GET /missions/:id, aucun rejeu apres redemarrage.' });
-            if ([...swatRuns.values()].some((r) => missionStatus(r).state === 'in_progress')) {
-                return json(res, 409, { ok: false, error: 'Une mission est en cours. Reessayer apres son resultat.' });
-            }
-            const { graph, digest } = swatGraph();
-            if (contract.schemaId !== graph.activeSchemaId) return json(res, 409, { ok: false,
-                error: 'SWAT non actif : selectionner explicitement ce schema dans extension avant lancement.', activeSchemaId: graph.activeSchemaId });
+            let graph, digest;
+            try { ({ graph, digest } = schemaGraphFor(contract.schemaId)); }
+            catch (error) { return json(res, 409, { ok: false, error: error.message }); }
+            /* Verrou leve : missions paralleles autorisees si les schemas
+               n'ont pas de session worker en commun (un chat-* ne peut pas
+               faire deux tours ACP a la fois — collision rejetee ici). */
+            const wanted = new Set(graph.nodes.map((n) => n.sessionId).filter((id) => id !== graph.entrySessionId));
+            const conflict = [...swatRuns.values()].find((r) => missionStatus(r).state === 'in_progress'
+                && r.graph.nodes.some((n) => n.sessionId !== r.graph.entrySessionId && wanted.has(n.sessionId)));
+            if (conflict) return json(res, 409, { ok: false,
+                error: `Un agent de ce schema est deja mobilise par la mission ${conflict.contract?.missionId}. Reessayer apres son resultat.` });
             if (swatRuns.size >= 100) return json(res, 409, { ok: false, error: 'Limite de runs atteinte : redemarrer hors execution.' });
             const mission = `${contract.objective}\n\nEntrees : ${JSON.stringify(contract.inputs)}\nContraintes : ${contract.constraints.join('; ')}\nLivrable attendu : ${contract.expectedDeliverable}`;
             const runId = crypto.randomUUID();
