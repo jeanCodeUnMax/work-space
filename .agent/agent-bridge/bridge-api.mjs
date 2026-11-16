@@ -407,7 +407,7 @@ const server = http.createServer(async (req, res) => {
                 'nvidia-nim': { ref: 'nim' },
                 nim2: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY_2', model: 'nvidia/nemotron-3.5-lightning-30b-a3b' },
                 'nvidia-nim2': { ref: 'nim2' },
-                omniroute: { url: 'http://localhost:20128/v1/chat/completions', key: 'OMNIROUTE_API_KEY', model: 'groq/openai/gpt-oss-120b' },
+                omniroute: { url: 'http://127.0.0.1:20128/v1/chat/completions', key: 'OMNIROUTE_API_KEY', model: 'groq/openai/gpt-oss-120b' },
                 ollama: { url: 'http://localhost:11434/v1/chat/completions', key: null, model: 'qwen3:8b' },
                 'ollama-cloud': { url: 'https://ollama.com/v1/chat/completions', key: 'OLLAMA_API_KEY', model: 'qwen3:32b' },
                 openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', key: 'OPENROUTER_API_KEY', model: 'nvidia/nemotron-3.5-lightning:free' },
@@ -435,6 +435,29 @@ const server = http.createServer(async (req, res) => {
                 } catch (e) { errors.push(name + ': ' + String(e.message).slice(0, 80)); }
             }
             return json(res, 502, { ok: false, error: 'chaine epuisee: ' + errors.join(' | ') });
+        }
+        if (req.method === 'POST' && url.pathname === '/tg/poll') {
+            const b = await readBody(req).catch(() => ({}));
+            const chat = String(b.chat || 'caverne');
+            const limit = Math.min(Number(b.limit) || 20, 50);
+            const TG_CLI = process.env.TG_CLI || 'F:/Promgramation-teste/CLI-Anything/.venv/Scripts/cli-anything-telegram.exe';
+            const seenFile = path.join(WS_ROOT, '.agent', 'state', 'tg-seen.json');
+            const run = globalThis.__tgPollLock = (globalThis.__tgPollLock || Promise.resolve()).catch(() => {}).then(async () => {
+                const now = Date.now();
+                let seen = new Map();
+                try { seen = new Map(Object.entries(JSON.parse(fs.readFileSync(seenFile, 'utf8')))); } catch { /* neuf */ }
+                for (const [k, t] of seen) if (now - t > 6 * 3600000) seen.delete(k);
+                const out = execFileSync(TG_CLI, ['--json', '--chat', chat, 'updates', '--limit', String(limit)],
+                    { encoding: 'utf8', timeout: 60000 });
+                const parsed = JSON.parse(out);
+                const fresh = (parsed.messages || []).filter((m) => (m.message_id ?? m.id) != null && !seen.has(String(m.message_id ?? m.id)));
+                for (const m of fresh) seen.set(String(m.message_id ?? m.id), now);
+                fs.mkdirSync(path.dirname(seenFile), { recursive: true });
+                fs.writeFileSync(seenFile, JSON.stringify(Object.fromEntries(seen)));
+                return { ok: true, count: fresh.length, messages: fresh, offset: parsed.offset };
+            });
+            try { return json(res, 200, await run); }
+            catch (e) { return json(res, 502, { ok: false, error: String(e.message).slice(0, 300) }); }
         }
         if (req.method === 'POST' && url.pathname === '/swat/start') {
             let contract;
