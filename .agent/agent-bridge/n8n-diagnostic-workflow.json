@@ -1,25 +1,327 @@
 {
-  "id": "hpheDiagnosticSwat",
   "name": "Hephaistos2-Kit - diagnostic architecture",
-  "active": false,
-  "settings": { "executionOrder": "v1" },
   "nodes": [
-    { "id": "trigger", "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [0, 100], "parameters": {} },
-    { "id": "webhook", "name": "Demande diagnostic authentifiee", "type": "n8n-nodes-base.webhook", "typeVersion": 2, "webhookId": "hphe-diagnostic", "position": [0, 360], "parameters": { "httpMethod": "POST", "path": "hephaistos-diagnostic", "authentication": "headerAuth", "responseMode": "lastNode", "responseData": "firstEntryJson", "options": {} }, "credentials": { "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" } } },
-    { "id": "collect", "name": "Collecte des preuves", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [260, 200], "notesInFlow": true, "notes": "Sondes mesurees : services, MCP, roster, sessions, ACP, bus et versions. Aucune reparation ni spawn worker CLI.", "parameters": { "method": "POST", "url": "http://127.0.0.1:7478/diagnostics/collect", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "options": { "timeout": 120000 } }, "credentials": { "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" } } },
-    { "id": "mission", "name": "Mission diagnostic", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [510, 200], "parameters": { "jsCode": "if ($json.activeSchemaName !== 'swat-diagnostic-hephaistos') throw new Error('Selectionner swat-diagnostic-hephaistos dans extension avant ce diagnostic');\nreturn [{json: {missionId: 'diagnostic-' + $execution.id, swatId: $json.activeSchemaId, objective: 'Diagnostique uniquement les preuves mesurees transmises. Chacun analyse son domaine en cinq points maximum. Cite les IDs des checks ; distingue cause prouvee, hypothese et non teste. Ne jamais inventer de fichier ou de verification. Aucun outil ni modification.', inputs: {diagnosticId: $json.diagnosticId, evidence: {collectedAt: $json.collectedAt, checks: $json.checks, verdict: $json.verdict}}, constraints: ['Aucune reparation, aucun redemarrage, aucune ecriture ni appel externe par les agents', 'Les statuts mesures ne peuvent pas etre remplaces par un avis agent'], expectedDeliverable: 'Anomalies prioritaires, preuves, limites de couverture et recommandations sans execution.'}}];" } },
-    { "id": "start", "name": "Attribuer au staff diagnostic", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [760, 200], "parameters": { "method": "POST", "url": "http://127.0.0.1:7478/swat/start", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ $json }}", "options": { "timeout": 30000 } }, "credentials": { "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" } } },
-    { "id": "step", "name": "Executer prochain diagnosticien", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1010, 200], "notesInFlow": true, "notes": "Runtime-Comms, Roster-Identites, Architecture puis Synthese : identites et dependances lues dans schema actif.", "parameters": { "method": "POST", "url": "http://127.0.0.1:7478/swat/next", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ { runId: $json.runId } }}", "options": { "timeout": 360000 } }, "credentials": { "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" } } },
-    { "id": "done", "name": "Diagnostic termine", "type": "n8n-nodes-base.if", "typeVersion": 2.2, "position": [1260, 200], "parameters": { "conditions": { "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 }, "conditions": [{ "id": "done-condition", "leftValue": "={{ $json.done }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }], "combinator": "and" }, "options": {} } },
-    { "id": "report", "name": "Rapport diagnostic", "type": "n8n-nodes-base.httpRequest", "typeVersion": 4.2, "position": [1510, 120], "notesInFlow": true, "notes": "Rapport JSON persiste dans .agent/reports. Verdict calcule sur les sondes, pas sur les affirmations des agents. Exécution reussie ne signifie pas infrastructure saine.", "parameters": { "method": "POST", "url": "http://127.0.0.1:7478/diagnostics/report", "authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth", "sendBody": true, "specifyBody": "json", "jsonBody": "={{ { missionId: $json.missionId, diagnosticId: $('Mission diagnostic').first().json.inputs.diagnosticId } }}", "options": { "timeout": 15000 } }, "credentials": { "httpHeaderAuth": { "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce", "name": "Hephaistos Bridge" } } }
+    {
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        100
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "webhook",
+      "name": "Demande diagnostic authentifiee",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "hphe-diagnostic",
+      "position": [
+        0,
+        360
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hephaistos-diagnostic",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "collect",
+      "name": "Collecte des preuves",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        200
+      ],
+      "notesInFlow": true,
+      "notes": "Sondes mesurees : services, MCP, roster, sessions, ACP, bus et versions. Aucune reparation ni spawn worker CLI.",
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/diagnostics/collect",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "mission",
+      "name": "Mission diagnostic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        510,
+        200
+      ],
+      "parameters": {
+        "jsCode": "if ($json.activeSchemaName !== 'swat-diagnostic-hephaistos') throw new Error('Selectionner swat-diagnostic-hephaistos dans extension avant ce diagnostic');\nreturn [{json: {missionId: 'diagnostic-' + $execution.id, swatId: $json.activeSchemaId, objective: 'Diagnostique uniquement les preuves mesurees transmises. Chacun analyse son domaine en cinq points maximum. Cite les IDs des checks ; distingue cause prouvee, hypothese et non teste. Ne jamais inventer de fichier ou de verification. Aucun outil ni modification.', inputs: {diagnosticId: $json.diagnosticId, evidence: {collectedAt: $json.collectedAt, checks: $json.checks, verdict: $json.verdict}}, constraints: ['Aucune reparation, aucun redemarrage, aucune ecriture ni appel externe par les agents', 'Les statuts mesures ne peuvent pas etre remplaces par un avis agent'], expectedDeliverable: 'Anomalies prioritaires, preuves, limites de couverture et recommandations sans execution.'}}];"
+      }
+    },
+    {
+      "id": "start",
+      "name": "Attribuer au staff diagnostic",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/swat/start",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "step",
+      "name": "Executer prochain diagnosticien",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1010,
+        200
+      ],
+      "notesInFlow": true,
+      "notes": "Runtime-Comms, Roster-Identites, Architecture puis Synthese : identites et dependances lues dans schema actif.",
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/swat/next",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { runId: $json.runId } }}",
+        "options": {
+          "timeout": 360000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "done",
+      "name": "Diagnostic termine",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "done-condition",
+              "leftValue": "={{ $json.done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "report",
+      "name": "Rapport diagnostic",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1510,
+        120
+      ],
+      "notesInFlow": true,
+      "notes": "Rapport JSON persiste dans .agent/reports. Verdict calcule sur les sondes, pas sur les affirmations des agents. Exécution reussie ne signifie pas infrastructure saine.",
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/diagnostics/report",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { missionId: $json.missionId, diagnosticId: $('Mission diagnostic').first().json.inputs.diagnosticId } }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hephaistos-diagnostic-async",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "wh-async",
+      "name": "Demande diagnostic async",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      },
+      "webhookId": "36fc0b91-546b-4f8e-977a-3d71b8582a10"
+    }
   ],
   "connections": {
-    "Manual Trigger": { "main": [[{ "node": "Collecte des preuves", "type": "main", "index": 0 }]] },
-    "Demande diagnostic authentifiee": { "main": [[{ "node": "Collecte des preuves", "type": "main", "index": 0 }]] },
-    "Collecte des preuves": { "main": [[{ "node": "Mission diagnostic", "type": "main", "index": 0 }]] },
-    "Mission diagnostic": { "main": [[{ "node": "Attribuer au staff diagnostic", "type": "main", "index": 0 }]] },
-    "Attribuer au staff diagnostic": { "main": [[{ "node": "Executer prochain diagnosticien", "type": "main", "index": 0 }]] },
-    "Executer prochain diagnosticien": { "main": [[{ "node": "Diagnostic termine", "type": "main", "index": 0 }]] },
-    "Diagnostic termine": { "main": [[{ "node": "Rapport diagnostic", "type": "main", "index": 0 }], [{ "node": "Executer prochain diagnosticien", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Collecte des preuves",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demande diagnostic authentifiee": {
+      "main": [
+        [
+          {
+            "node": "Collecte des preuves",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collecte des preuves": {
+      "main": [
+        [
+          {
+            "node": "Mission diagnostic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mission diagnostic": {
+      "main": [
+        [
+          {
+            "node": "Attribuer au staff diagnostic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attribuer au staff diagnostic": {
+      "main": [
+        [
+          {
+            "node": "Executer prochain diagnosticien",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executer prochain diagnosticien": {
+      "main": [
+        [
+          {
+            "node": "Diagnostic termine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diagnostic termine": {
+      "main": [
+        [
+          {
+            "node": "Rapport diagnostic",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executer prochain diagnosticien",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Demande diagnostic async": {
+      "main": [
+        [
+          {
+            "node": "Collecte des preuves",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
   }
 }

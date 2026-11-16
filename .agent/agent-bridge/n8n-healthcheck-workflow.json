@@ -430,6 +430,35 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/hephaistos-diagnostic-async",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ source: 'healthcheck-alert', verdict: $json.verdict || 'unknown' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "trig-diag",
+      "name": "Trigger Diagnostic",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -730,6 +759,11 @@
         [
           {
             "node": "Create Task Orch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger Diagnostic",
             "type": "main",
             "index": 0
           }
