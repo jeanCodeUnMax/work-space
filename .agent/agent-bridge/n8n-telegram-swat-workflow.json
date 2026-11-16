@@ -1,0 +1,353 @@
+{
+  "name": "Hephaistos2-Kit - Telegram SWAT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hephaistos-telegram",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "n1",
+      "name": "Demande message authentifiee",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ],
+      "webhookId": "hephaistos-telegram",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const b = $json.body ?? $json;\nconst instruction = String(b.instruction ?? b.text ?? b.objective ?? '').trim();\nif (!instruction) throw new Error('instruction (ou text/objective) requis');\nconst missionId = typeof b.missionId === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(b.missionId) ? b.missionId : 'telegram-' + Date.now().toString(36);\nconst chat = String(b.chat ?? 'caverne');\nreturn [{ json: { chat, contract: { missionId, swatId: 'schema-mwjes81q-lsrr4', objective: 'Rediger et valider un message Telegram pour le chat ' + chat + ' selon l instruction fournie.', inputs: { instruction, chat }, constraints: ['Texte final <= 4096 caracteres', 'Aucun secret ni donnee personnelle', 'Format Telegram (texte ou Markdown)'], expectedDeliverable: 'GO + texte final du message Telegram dans la reponse du Relecteur-Modo.' } } }];"
+      },
+      "id": "n2",
+      "name": "Contrat message telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -580,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/swat/bind",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: \"swat-telegram\" }) }}",
+        "options": {
+          "timeout": 40000
+        }
+      },
+      "id": "n3",
+      "name": "Attribuer Bleubites du pool",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -360,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bind-ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n4",
+      "name": "Binding OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/hephaistos-swat-missions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Contrat message telegram').item.json.contract) }}",
+        "options": {
+          "timeout": 390000
+        }
+      },
+      "id": "n5",
+      "name": "Rediger via SWAT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        -80
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $json;\nconst chat = $('Contrat message telegram').item.json.chat;\nconst steps = r.steps || (r.result && r.result.steps) || [];\nconst last = steps[steps.length - 1];\nconst reply = String(last?.reply ?? '').trim();\nconst go = /^GO\b/i.test(reply);\nconst text = reply.replace(/^GOs*[:-]?s*/i, '').trim();\nif (!go || !text) return [{ json: { send: false, chat, state: r.state, verdict: reply.slice(0, 500) } }];\nreturn [{ json: { send: true, chat, text, state: r.state } }];"
+      },
+      "id": "n6",
+      "name": "Verdict et texte final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "send-ok",
+              "leftValue": "={{ $json.send }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "n7",
+      "name": "GO envoi ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5678/webhook/swat-telegram-hub",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'send', chat: $json.chat, text: $json.text }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "n8",
+      "name": "Envoyer via Hub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        -160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, sent: true, chat: $('GO envoi ?').item.json.chat, telegram: $json } }];"
+      },
+      "id": "n9",
+      "name": "Rapport envoi",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const v = $('Verdict et texte final').item.json;\nreturn [{ json: { ok: false, sent: false, chat: v.chat, state: v.state, reason: 'Verdict NO-GO ou texte vide', verdict: v.verdict } }];"
+      },
+      "id": "n10",
+      "name": "Rapport refus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = $('Attribuer Bleubites du pool').item.json;\nreturn [{ json: { ok: false, sent: false, stage: 'bind', error: out.error || out } }];"
+      },
+      "id": "n11",
+      "name": "Echec binding",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        140
+      ]
+    }
+  ],
+  "connections": {
+    "Demande message authentifiee": {
+      "main": [
+        [
+          {
+            "node": "Contrat message telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrat message telegram": {
+      "main": [
+        [
+          {
+            "node": "Attribuer Bleubites du pool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attribuer Bleubites du pool": {
+      "main": [
+        [
+          {
+            "node": "Binding OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Binding OK ?": {
+      "main": [
+        [
+          {
+            "node": "Rediger via SWAT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Echec binding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rediger via SWAT": {
+      "main": [
+        [
+          {
+            "node": "Verdict et texte final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verdict et texte final": {
+      "main": [
+        [
+          {
+            "node": "GO envoi ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GO envoi ?": {
+      "main": [
+        [
+          {
+            "node": "Envoyer via Hub",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rapport refus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer via Hub": {
+      "main": [
+        [
+          {
+            "node": "Rapport envoi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {}
+}

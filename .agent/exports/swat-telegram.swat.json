@@ -1,0 +1,78 @@
+{
+  "format": "hephaistos-swat-schema@1",
+  "name": "swat-telegram",
+  "mode": "swat",
+  "graph": {
+    "version": 1,
+    "name": "swat-telegram",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Orchestrateur-Flux",
+        "task": "Cadre la mission Telegram : precise l instruction et le chat cible, decompose en ordres bornes pour le Redacteur, puis tranche GO/NO-GO sur le verdict du Relecteur. Ne redige jamais le message lui-meme.",
+        "skills": [
+          "orchestrator"
+        ],
+        "mcps": [],
+        "title": "Orchestrateur",
+        "position": {
+          "x": -330,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Redacteur-Telegram",
+        "task": "Redige le message Telegram demande par la mission : texte brut ou Markdown Telegram, 4096 caracteres max, ton clair, pas de secret ni de donnee personnelle. Rend UNIQUEMENT le texte final du message, sans commentaire.",
+        "skills": [],
+        "mcps": [],
+        "title": "Redacteur",
+        "position": {
+          "x": 0,
+          "y": -140
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Relecteur-Modo",
+        "task": "Relit le message du Redacteur : conformite Telegram (<=4096 chars, formatage valide), absence de secrets/credentials/donnees sensibles, coherence avec l instruction. Rend le texte final corrige pret a l envoi, precede de GO si conforme ou NO-GO suivi du motif si non conforme.",
+        "skills": [
+          "lint-and-validate"
+        ],
+        "mcps": [],
+        "title": "Relecteur",
+        "position": {
+          "x": 330,
+          "y": 0
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "e-orch-red",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "e-red-rel",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfj8b4m"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "sessionId": "chat-mvmw59wa",
+      "providerId": "nim2",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "role": "Redacteur-Telegram"
+    },
+    {
+      "sessionId": "chat-mvfj8b4m",
+      "providerId": "nim2",
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "role": "Relecteur-Modo"
+    }
+  ]
+}

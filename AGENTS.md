@@ -66,6 +66,18 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Sondes et rapports : `.agent/agent-bridge/diagnostics.mjs`, preuves et analyses separees dans `.agent/reports/diagnostic-<uuid>-final.json`. Les verdicts mesures ne peuvent pas etre remplaces par une opinion agent. Execution SWAT completed ne signifie pas architecture healthy.
 - Tests : `node --test .agent/agent-bridge/diagnostics.test.mjs .agent/agent-bridge/bridge-api-swat.test.mjs`. Les versions installees ne prouvent pas le rechargement ou le comportement GUI. Les contraintes donnees aux agents ne constituent pas une sandbox.
 
+## Réattribution dynamique des Bleubites (providers + modèles)
+
+- **Commande canonique** à lancer AVANT chaque mission SWAT et APRES chaque changement de roster/provider :
+  `node .agent/scripts/swat-bind.mjs --name <schema>` (ex. `--name swat-obsidian`). Équivalent API bridge : `POST http://127.0.0.1:7478/swat/bind` `{ "name": "<schema>" }` (token `ws-bridge` habituel).
+- Toujours faire `--dry` d'abord pour inspecter les bindings (provider + model + modelFixed par rôle).
+- Le script attribue workers ET modèles **à l'usage** : pool = membres `chat-*` du roster ∩ sessions ouvertes, un provider distinct par rôle selon la chaîne `provider_prefs` (orchestrator.db), rotation persistée dans `.agent/state/swat-bind.json`.
+- Modèles tirés des catalogues **live** : `available_models` hphe-mcp (ex-model-discovery) + `GET /v1/models` pour omniroute/groq/xai ; cache `.agent/state/model-catalog.json` (TTL 5 min). Un modèle hors catalogue est réparé à l'attribution (`modelFixed: true`).
+- Providers pilotables par acp-server : `nim, nim2, omniroute, ollama, openrouter, groq` (DRIVABLE ; `devin-cli`/`antigravity-acp` exclus — identités ACP, pas des Bleubites interchangeables). Le provider `grok` (api.x.ai direct) est retire — team sans credits ; Grok se consomme via les modeles omniroute `pol/grok`, `pol/grok-large`, `pollinations/grok`, `pollinations/grok-large` (necessitent une clef pollinations gratuite dans OMNIROUTE, sinon 401).
+- OmniRoute : privilégier les canaux gratuits vérifiés (`groq/`, `cf/`, `cloudflare-ai/`, `ddgw/`, `openrouter/*:free`) ; `auto/*`, `gemini/`, `mistral/` BYOK et les image/vidéo sont exclus (cf. `OMNI_CHANNEL_RANK`/`OMNI_BAD` dans le script).
+- Ne JAMAIS binder pendant un run actif (`/swat/bind` refuse si une mission tourne — évite `Schema modifie pendant le run`).
+- Knobs : `SWAT_BIND_ROTATE_MODELS=1` force la rotation des modèles même valides ; `SWAT_BIND_PROVIDERS` restreint le set ; `SWAT_BIND_CATALOG_TTL_MS` ajuste le cache.
+
 ## Missions SWAT dynamiques dans n8n
 
 - Workflow existant : `vyvBFDvUdt1hcFl9`, source `.agent/agent-bridge/n8n-swat-workflow.json`. Mettre à jour cet ID, ne pas multiplier les imports anonymes.
@@ -83,9 +95,17 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Entrée canonique : **`POST http://127.0.0.1:7478/agent` `{prompt}`** — façade de la bridge, auth = token `ws-bridge` habituel ; l'auth n8n est injectée côté passerelle et chaque appel est tracé dans `comms.jsonl` (`kind: agent-call`). Entrée directe : `POST http://127.0.0.1:5678/webhook/hephaistos-agent` (Header Auth `Hephaistos Bridge`).
 - Outils de consultation : `catalogue_swats`, `statut_mission` (`missionId` exact requis), `lancer_diagnostic` (prérequis : schéma actif `swat-diagnostic-hephaistos`), `lister_sessions` (fenêtres ACP ouvertes).
 - Outils d'action (sur demande explicite uniquement) : `lancer_mission` → webhook `hephaistos-swat-missions` qui pilote la mission de bout en bout (`/swat/start` + boucle `/swat/next`), `interroger_agent` → `/ask`, `reveiller_agent` → `/wake`. Le schéma dédié `swat-action-directe` (`schema-mwiivx72-r74a4`) n'emploie que des workers `chat-*` — les nœuds `acp/*` natifs hors entry font échouer le runner (`Transport worker non pris en charge`).
+- Orchestration de workflows n8n : `lister_workflows` → `GET :7478/n8n/workflows` (inventaire via l'API n8n serveur-side, clé `N8N_API_KEY` ou `.agent/n8n-api.key` gitignorée ; renvoie id, nom, triggers, webhookPath, `callable`, `callableContract`). `executer_workflow` → `POST :7478/n8n/workflows/{workflowId}/invoke` — allowlist serveur `N8N_CALLABLE_WORKFLOWS` dans `bridge-api.mjs`, le secret webhook reste côté passerelle ; non-allowlisté → 403 ; chaque appel tracé (`kind: workflow-invoke`). Ne jamais invoquer un workflow à effets externes (Telegram, mail) sans demande explicite.
 - Outils MCP (`mcp_hephaistos`) : passerelle `supergateway` sur `http://127.0.0.1:8767/mcp` (stdio → Streamable HTTP devant le shim mcp-mux). 14 outils exposés : recherches (`everything_search`, `content_search`, `hybrid_search`, `semantic_search`, `memory_search`, `hphe_health`) + orchestrateur (`list_agents`, `agent_status`, `suggest_agent`, `list_tasks`, `get_next_task`, `create_task`, `dispatch_task`, `update_task`). Pérennisée au démarrage via `Startup\hphe-mcp-gateway.vbs` → `.agent\scripts\hphe-mcp-gateway.cmd` (relance manuelle : exécuter le `.cmd` ; log `.agent/mcp-gateway.log`). Loopback sans auth — comme hphe-rest.
 - L'agent exécute la version **publiée** du workflow (`workflow_history`), pas le brouillon `workflow_entity.nodes` — tout patch DB doit viser les deux. Le paramètre requis `{missionId}` dans l'URL rend un test isolé du nœud outil impossible (`PartialExecutionToolExecutor` → `Required at missionId` est attendu).
 - Après modification du bridge, redémarrer `hphe-bridge-api` ; après publication CLI d'un webhook, redémarrer n8n.
+
+## Missions SWAT Telegram
+
+- Schema `swat-telegram` (`schema-mwjes81q-lsrr4`) : entry `acp/devin-cli` Orchestrateur-Flux + workers `chat-*` Redacteur-Telegram puis Relecteur-Modo (verdict `GO` + texte final). Les Bleubites n'ont que des outils fs_* : **aucun worker ne peut envoyer** — l'envoi est fait par n8n apres la mission.
+- Workflow `Hephaistos2-Kit - Telegram SWAT` (`Z07C5VZbpHaSwdxn`), source `.agent/agent-bridge/n8n-telegram-swat-workflow.json`. Entree `POST /webhook/hephaistos-telegram` (Header Auth `Hephaistos Bridge`), contrat `{instruction|text, chat?, missionId?}` — pipeline : bind `swat-telegram` -> mission `hephaistos-swat-missions` -> verdict GO/NO-GO du Relecteur -> envoi via `swat-telegram-hub` seulement si GO.
+- Envoi unique : `SWAT - Telegram Hub` (`RAp6qBCMGOcauYmK`, webhook `swat-telegram-hub`) route `action` (send/send-file/image/pin/unpin/poll/delete/edit/admins/members/stats/chat/topics/history/read/search/updates) + `chat` parametrable vers le proxy `:5680`. Les workflows `SWAT - Telegram Post` et `SWAT - Telegram Image` sont desactives — sous-ensembles en dur du Hub, ne pas les reactiver.
+- Pont CLI : `node .agent/flux/telegram.mjs <action> [--chat X] [--text T]` (chemin `swat-telegram-hub` par defaut, override `N8N_TELEGRAM_PATH`).
 
 ## Vérifications diagnostic, worker NIM et passerelle native
 
