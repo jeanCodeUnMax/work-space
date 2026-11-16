@@ -106,6 +106,7 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Workflow `Hephaistos2-Kit - Telegram SWAT` (`Z07C5VZbpHaSwdxn`), source `.agent/agent-bridge/n8n-telegram-swat-workflow.json`. Entree `POST /webhook/hephaistos-telegram` (Header Auth `Hephaistos Bridge`), contrat `{instruction|text, chat?, missionId?}` — pipeline : bind `swat-telegram` -> mission `hephaistos-swat-missions` -> verdict GO/NO-GO du Relecteur -> envoi via `swat-telegram-hub` seulement si GO.
 - Envoi unique : `SWAT - Telegram Hub` (`RAp6qBCMGOcauYmK`, webhook `swat-telegram-hub`) route `action` (send/send-file/image/pin/unpin/poll/delete/edit/admins/members/stats/chat/topics/history/read/search/updates) + `chat` parametrable vers le proxy `:5680`. Les workflows `SWAT - Telegram Post` et `SWAT - Telegram Image` sont desactives — sous-ensembles en dur du Hub, ne pas les reactiver.
 - Pont CLI : `node .agent/flux/telegram.mjs <action> [--chat X] [--text T]` (chemin `swat-telegram-hub` par defaut, override `N8N_TELEGRAM_PATH`).
+- Commandes `/` du bot (`Moi_Hermes_bot`, gateway Hermes) : inventaire via `node .agent/flux/telegram-commands.mjs [--json]` (getMyCommands, ~60 commandes) ; invocation via `action:botcmd` du Hub (`{action:"botcmd", cmd:"status", bot:"Moi_Hermes_bot", args:"..."}` — `bot` ajoute le suffixe @ requis en groupe) puis `action:history`/`read` pour la reponse. **Le bot ne repond que si le gateway Hermes tourne** — un silence = gateway down, pas un echec du Hub.
 
 ## Vérifications diagnostic, worker NIM et passerelle native
 

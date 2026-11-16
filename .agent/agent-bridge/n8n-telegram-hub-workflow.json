@@ -1,0 +1,110 @@
+{
+  "nodes": [
+    {
+      "id": "h1",
+      "name": "Webhook",
+      "webhookId": "swat-telegram-hub",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "swat-telegram-hub",
+        "responseMode": "lastNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "id": "h2",
+      "name": "Build Args",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\nconst a = (b.action || 'send').toLowerCase();\nconst chat = String(b.chat || b.contact || 'caverne');\nif (a === 'image' || a === 'photo') {\n  return [{ json: { route: 'file', imageUrl: b.imageUrl || b.url || '', caption: b.caption || b.text || '', chat } }];\n}\nconst args = ['--chat', chat];\nif (a === 'send') args.push('send', '--text', b.text || '', '--as-user');\nelse if (a === 'send-file') args.push('send-file', '--path', b.path || '', '--caption', b.caption || '', '--kind', b.kind || 'photo', '--as-user');\nelse if (a === 'pin') args.push('pin', String(b.messageId));\nelse if (a === 'unpin') args.push('unpin', String(b.messageId || 'all'));\nelse if (a === 'poll') args.push('poll', '--question', b.question || '', '--options', (b.options || []).join(','));\nelse if (a === 'delete') args.push('delete', String(b.messageId));\nelse if (a === 'edit') args.push('edit', String(b.messageId), '--text', b.text || '');\nelse if (a === 'admins') args.push('admins');\nelse if (a === 'members') args.push('members');\nelse if (a === 'stats') args.push('stats');\nelse if (a === 'chat') args.push('chat');\nelse if (a === 'topics') args.push('topics', 'list');\nelse if (a === 'history') args.push('history', '--limit', String(b.limit || 10));\nelse if (a === 'read') args.push('read', '--limit', String(b.limit || 10));\nelse if (a === 'search') args.push('search', '--query', b.query || '', '--limit', String(b.limit || 10));\nelse if (a === 'updates') args.push('updates');\nelse if (a === 'botcmd') args.push('send', '--text', '/' + String(b.cmd || 'help') + (b.bot ? '@' + b.bot : '') + (b.args ? ' ' + b.args : ''), '--as-user');\nelse args.push('send', '--text', '[hub] action inconnue: ' + a, '--as-user');\nif (b.topic) args.push('--topic', String(b.topic));\nif (b.reply) args.push('--reply', String(b.reply));\nreturn [{ json: { route: 'cli', command: 'cli-anything-telegram', args, timeoutMs: 60000 } }];"
+      }
+    },
+    {
+      "id": "h3",
+      "name": "Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "file",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "h4",
+      "name": "Send File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        -80
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5680/x-send-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({imageUrl:$json.imageUrl,caption:$json.caption,chat:$json.chat}) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "h5",
+      "name": "Exec CLI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        80
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5680/x-run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({command:$json.command,args:$json.args,timeoutMs:$json.timeoutMs}) }}",
+        "options": {}
+      }
+    }
+  ]
+}

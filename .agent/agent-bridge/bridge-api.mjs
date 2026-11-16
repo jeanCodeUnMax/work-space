@@ -58,7 +58,7 @@ const N8N_CALLABLE_WORKFLOWS = {
     'W4itU2f4OuOGUQKV': { name: 'SWAT - OCR Histoires Presse', webhookPath: 'swat-ocr-histoires', timeoutSec: 300,
         contract: '{prompt|objective|texte}' },
     'RAp6qBCMGOcauYmK': { name: 'SWAT - Telegram Hub', webhookPath: 'swat-telegram-hub', timeoutSec: 300,
-        contract: '{action?|chat?|text|texte|imageUrl|path|messageId|question|options|topic|reply|limit|query}' },
+        contract: '{action?|chat?|text|texte|imageUrl|path|messageId|question|options|topic|reply|limit|query|cmd|bot|args}' },
 };
 const N8N_API_KEY = process.env.N8N_API_KEY?.trim()
     || (() => { try { return fs.readFileSync(path.join(WS_ROOT, '.agent', 'n8n-api.key'), 'utf8').trim(); } catch { return ''; } })();

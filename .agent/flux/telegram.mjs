@@ -2,7 +2,7 @@
 // Usage : node .agent/flux/telegram.mjs <action> [--chat X] [--text T]
 //   [--imageUrl U] [--caption C] [--messageId N] [--topic N] [--reply N]
 //   [--path F] [--kind K] [--question Q] [--options a,b,c] [--query Q]
-//   [--limit N] [--deep]
+//   [--limit N] [--deep] [--cmd C] [--args A]
 // chat : nom configure (caverne, canal) ou id numerique (contact prive).
 import fs from 'node:fs';
 const BASE = process.env.N8N_WEBHOOK_BASE || 'http://127.0.0.1:5678/webhook';
