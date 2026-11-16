@@ -322,6 +322,31 @@ async function swatStep(b) {
 const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const seg = url.pathname.split('/').filter(Boolean);
+
+    /* Routes publiques loopback-only : sondes healthcheck n8n (sans token). */
+    if (req.method === 'GET' && url.pathname === '/healthz') {
+        return json(res, 200, { ok: true, bridgeConnected: wsReady });
+    }
+    if (req.method === 'POST' && url.pathname === '/tools/call') {
+        /* Compat ancienne passerelle :5682 — forward JSON-RPC vers le mux :8767/mcp.
+           Reponse normalisee { result: { content:[{text}], isError } } comme tools/call. */
+        try {
+            const b = await readBody(req);
+            let name = String(b.name || '');
+            name = name.replace(/^hephaistos-everything-search__/i, 'Hephaistos-everything-search__');
+            const rpc = await fetch('http://127.0.0.1:8767/mcp', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: b.arguments || {} } }),
+                signal: AbortSignal.timeout(20000),
+            });
+            const raw = await rpc.text();
+            const dataLine = raw.split('\n').find((l) => l.startsWith('data: '));
+            const payload = dataLine ? JSON.parse(dataLine.slice(6)) : JSON.parse(raw);
+            if (payload.error) return json(res, 200, { result: { content: [{ type: 'text', text: String(payload.error.message || payload.error) }], isError: true } });
+            return json(res, 200, payload.result ? { result: payload.result } : payload);
+        } catch (e) { return json(res, 200, { result: { content: [{ type: 'text', text: 'proxy error: ' + e.message }], isError: true } }); }
+    }
     if (!authorized(req)) return json(res, 401, { ok: false, error: 'unauthorized' });
 
     try {
