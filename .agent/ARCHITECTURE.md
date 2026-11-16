@@ -112,6 +112,12 @@ parlent sans connaître ACP ni le WS :7477.
 | `POST /swat/start`, `POST /swat/next`, `GET /missions/:id` | Missions SWAT dynamiques (graphe actif, workers `chat-*`) |
 | `POST /agent` | **Façade de l'agent IA n8n** — proxy authentifié vers le webhook ; trace chaque appel dans `comms.jsonl` (`kind: agent-call`) |
 
+Passerelle MCP : `supergateway` écoute `http://127.0.0.1:8767/mcp`
+(Streamable HTTP, health `/healthz`) et proxifie le shim `mcp-mux` en stdio —
+l'agent n8n y puise un sous-ensemble d'outils muxés via `mcpClientTool`
+(filtre `includeTools`, noms préfixés `serveur__outil`). Processus à
+relancer au boot comme `hphe-bridge-api`.
+
 Workflows n8n déclarés (`n8n` :5678, sources dans `.agent/agent-bridge/`) :
 
 | Workflow | ID | Entrée | Rôle |

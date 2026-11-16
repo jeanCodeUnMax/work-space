@@ -39,7 +39,7 @@
         "promptType": "define",
         "text": "={{ $json.body?.prompt || $json.body?.objective || $json.body?.message || $json.query?.prompt || 'Resume la demande recue.' }}",
         "options": {
-          "systemMessage": "Tu es l'agent natif n8n du kit Hephaistos2. Tu reponds en francais, de facon factuelle et concise. Outils de consultation : catalogue_swats (SWAT + schema actif), statut_mission (etat par missionId), lancer_diagnostic (audit architecture complet, prerequis schema actif swat-diagnostic-hephaistos), lister_sessions (fenetres agents ouvertes). Outils d'action, UNIQUEMENT sur demande explicite de l'utilisateur et jamais de ta propre initiative : lancer_mission (demarre une mission SWAT reelle sur le schema actif), interroger_agent (question avec reponse dans une fenetre), reveiller_agent (message sans attente). Regles : jamais d'action destructive ; avant lancer_mission confirme missionId, swatId et objective ; utilise catalogue_swats et lister_sessions pour obtenir les IDs exacts, jamais d'invention ; cite les IDs dans tes reponses ; si un outil echoue rapporte l'erreur brute ; si un parametre obligatoire manque, demande-le au lieu d'appeler l'outil a vide ; une session persistee n'est pas une fenetre ouverte.",
+          "systemMessage": "Tu es l'agent natif n8n du kit Hephaistos2. Tu reponds en francais, de facon factuelle et concise. Outils de consultation : catalogue_swats, statut_mission, lancer_diagnostic (prerequis schema actif swat-diagnostic-hephaistos), lister_sessions, et les outils MCP (mcp_hephaistos) : everything_search/content_search/hybrid_search/semantic_search pour chercher fichiers et code, memory_search pour les souvenirs, hphe_health pour la sante du moteur, list_agents/agent_status/suggest_agent/list_tasks/get_next_task pour l'orchestrateur. Outils d'action, UNIQUEMENT sur demande explicite et jamais de ta propre initiative : lancer_mission (mission SWAT complete), interroger_agent, reveiller_agent, create_task/dispatch_task/update_task (taches orchestrateur — dispatch_task lance un vrai worker CLI). Regles : jamais d'action destructive ; avant une action confirme les parametres ; utilise les outils de liste pour obtenir les IDs exacts ; cite les IDs ; si un outil echoue rapporte l'erreur brute ; parametre obligatoire manquant = demande-le ; session persistee != fenetre ouverte.",
           "maxIterations": 8,
           "returnIntermediateSteps": false
         }
@@ -321,6 +321,38 @@
           "name": "Hephaistos Bridge"
         }
       }
+    },
+    {
+      "id": "tool-mcp-hephaistos",
+      "name": "mcp_hephaistos",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        500,
+        940
+      ],
+      "parameters": {
+        "endpointUrl": "http://127.0.0.1:8767/mcp",
+        "serverTransport": "httpStreamable",
+        "authentication": "none",
+        "include": "selected",
+        "includeTools": [
+          "Hephaistos-everything-search__everything_search",
+          "Hephaistos-everything-search__content_search",
+          "Hephaistos-everything-search__hybrid_search",
+          "Hephaistos-everything-search__semantic_search",
+          "Hephaistos-everything-search__memory_search",
+          "Hephaistos-everything-search__hphe_health",
+          "Hephaistos-everything-search__list_agents",
+          "Hephaistos-everything-search__agent_status",
+          "Hephaistos-everything-search__suggest_agent",
+          "Hephaistos-everything-search__list_tasks",
+          "Hephaistos-everything-search__get_next_task",
+          "Hephaistos-everything-search__create_task",
+          "Hephaistos-everything-search__dispatch_task",
+          "Hephaistos-everything-search__update_task"
+        ]
+      }
     }
   ],
   "connections": {
@@ -413,6 +445,17 @@
       ]
     },
     "lister_sessions": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent IA Hephaistos",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mcp_hephaistos": {
       "ai_tool": [
         [
           {
