@@ -380,6 +380,62 @@ const server = http.createServer(async (req, res) => {
                 return json(res, 409, { ok: false, error: String(error.stderr || error.message) });
             }
         }
+        if (req.method === 'POST' && url.pathname === '/llm') {
+            const b = await readBody(req).catch(() => ({}));
+            const prompt = String(b.prompt || '').trim();
+            if (!prompt) return json(res, 400, { ok: false, error: 'prompt requis' });
+            const system = String(b.system || 'Tu es un assistant concis.').slice(0, 4000);
+            const maxTokens = Math.min(Number(b.max_tokens) || 420, 2000);
+            const envVar = (name) => {
+                if (process.env[name]?.trim()) return process.env[name].trim();
+                try {
+                    const line = fs.readFileSync(path.join(WS_ROOT, '.env'), 'utf8')
+                        .split(/\r?\n/).find((l) => l.startsWith(name + '='));
+                    if (line) return line.slice(name.length + 1).trim().replace(/^["']|["']$/g, '');
+                } catch { /* absent */ }
+                return '';
+            };
+            let chain = [];
+            try {
+                chain = execFileSync('sqlite3', [path.join('C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db'),
+                    'SELECT provider FROM provider_prefs WHERE enabled=1 ORDER BY position;'],
+                    { encoding: 'utf8', timeout: 5000 }).trim().split(/\r?\n/).filter(Boolean);
+            } catch { /* fallback */ }
+            if (!chain.length) chain = ['nim2', 'nim', 'omniroute', 'ollama'];
+            const SPECS = {
+                nim:  { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY',   model: 'nvidia/nemotron-3.5-lightning-30b-a3b' },
+                'nvidia-nim': { ref: 'nim' },
+                nim2: { url: 'https://integrate.api.nvidia.com/v1/chat/completions', key: 'NVIDIA_API_KEY_2', model: 'nvidia/nemotron-3.5-lightning-30b-a3b' },
+                'nvidia-nim2': { ref: 'nim2' },
+                omniroute: { url: 'http://localhost:20128/v1/chat/completions', key: 'OMNIROUTE_API_KEY', model: 'groq/openai/gpt-oss-120b' },
+                ollama: { url: 'http://localhost:11434/v1/chat/completions', key: null, model: 'qwen3:8b' },
+                'ollama-cloud': { url: 'https://ollama.com/v1/chat/completions', key: 'OLLAMA_API_KEY', model: 'qwen3:32b' },
+                openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions', key: 'OPENROUTER_API_KEY', model: 'nvidia/nemotron-3.5-lightning:free' },
+                'openrouter-free': { ref: 'openrouter' },
+                groq: { url: 'https://api.groq.com/openai/v1/chat/completions', key: 'GROQ_API_KEY', model: 'openai/gpt-oss-120b' },
+            };
+            const errors = [];
+            for (const name of chain) {
+                const spec = SPECS[name]?.ref ? SPECS[SPECS[name].ref] : SPECS[name];
+                if (!spec) { errors.push(name + ': non supporte'); continue; }
+                const key = spec.key ? envVar(spec.key) : 'ollama';
+                if (spec.key && !key) { errors.push(name + ': cle absente'); continue; }
+                try {
+                    const r = await fetch(spec.url, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json', ...(spec.key ? { authorization: `Bearer ${key}` } : {}) },
+                        body: JSON.stringify({ model: spec.model, max_tokens: maxTokens, stream: false,
+                            messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }),
+                        signal: AbortSignal.timeout(Number(b.timeoutMs) || 60000),
+                    });
+                    const data = await r.json().catch(() => ({}));
+                    const text = data?.choices?.[0]?.message?.content?.trim();
+                    if (!r.ok || !text) { errors.push(`${name}: HTTP ${r.status}`); continue; }
+                    return json(res, 200, { ok: true, text, provider: name, model: spec.model, tried: errors });
+                } catch (e) { errors.push(name + ': ' + String(e.message).slice(0, 80)); }
+            }
+            return json(res, 502, { ok: false, error: 'chaine epuisee: ' + errors.join(' | ') });
+        }
         if (req.method === 'POST' && url.pathname === '/swat/start') {
             let contract;
             try { contract = normalizeMission(await readBody(req)); }
