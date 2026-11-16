@@ -161,6 +161,6 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - Actif : `instanceAi.settings.enabled=true` (settings DB) + `N8N_INSTANCE_AI_ENABLED=true` dans `n8n-run.cmd`. Les permissions restent `require_approval` partout sauf `mcpRead`/`createPreference`.
 - LLM : `N8N_INSTANCE_AI_MODEL_URL=https://integrate.api.nvidia.com/v1` (NIM, OpenAI-compatible), modele `deepseek-ai/deepseek-v4.1-flash`, utilitaire `openai/gpt-oss-20b`, clef lue depuis `%NVIDIA_API_KEY%` a l'execution (jamais en dur).
 - Sandbox : pas de Docker -> `sandboxEnabled=false`, le JS Task Runner local (broker :5679) sert de gateway. `N8N_INSTANCE_AI_SANDBOX_PROVIDER`/`n8nSandboxServiceUrl` a configurer si un vrai sandbox Docker devient disponible.
-- Busqueda web : `INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%` (env, nunca en repo).
-- `setupCompleted` (UI) exige model+sandbox+search : model=env OK, search=env OK (Brave), **sandbox pendiente** — solo `daytona` (SaaS) o `n8n-sandbox` (servicio propio via `N8N_SANDBOX_SERVICE_URL`, exige Docker/K8s). Sin Docker no hay sandbox local posible; `workflowBuilderAvailable=false` hasta entonces. El endpoint de chat solo exige `isModelConfigured` (ya cubierto).
-- Reglages UI : Settings > Assistant permet d'overrider modele/credential par admin.
+- Recherche web : `INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%` (env, jamais dans le repo).
+- `setupCompleted` (UI) exige modèle+sandbox+recherche : modèle=env OK, recherche=env OK (Brave), **sandbox en attente** — seuls `daytona` (SaaS) ou `n8n-sandbox` (service propre via `N8N_SANDBOX_SERVICE_URL`, exige Docker/K8s). Sans Docker pas de sandbox local possible ; `workflowBuilderAvailable=false` jusque-là. L'endpoint de chat n'exige que `isModelConfigured` (déjà couvert).
+- Réglages UI : Settings > Assistant permet à l'admin d'overrider modèle/credential.
