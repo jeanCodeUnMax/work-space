@@ -15,4 +15,10 @@ set "N8N_INSTANCE_AI_UTILITY_MODEL=nvidia/deepseek-ai/deepseek-v4.1-flash"
 set "N8N_INSTANCE_AI_MODEL_API_KEY=%OMNIROUTE_API_KEY%"
 REM Recherche web du assistant : Brave Search API (cle d'environnement, jamais en repo).
 set "INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%"
+REM Sandbox : service local n8n-sandbox-local (:18080) - executions sur l'hote,
+REM NON isolees (pas de Docker). Cle lue depuis api-key.txt, jamais en dur.
+for /f "usebackq delims=" %%k in ("C:\Program Files\servers\n8n-sandbox-local\api-key.txt") do set "N8N_SANDBOX_SERVICE_API_KEY=%%k"
+set "N8N_SANDBOX_SERVICE_URL=http://127.0.0.1:18080"
+set "N8N_INSTANCE_AI_SANDBOX_ENABLED=true"
+set "N8N_INSTANCE_AI_SANDBOX_PROVIDER=n8n-sandbox"
 n8n.cmd start >> "%USERPROFILE%\.n8n\n8n-run.log" 2>&1
