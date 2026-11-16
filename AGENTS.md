@@ -127,3 +127,13 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 - La sonde REST utilise une connexion IPC distincte et bornée pour ne pas attendre le verrou des requêtes normales. Les processus MCP stdio déjà ouverts conservent leur ancien code après remplacement de l'exécutable : distinguer installation sur disque et rechargement des clients persistants.
 - Une erreur Google `401 deleted_client` signifie que le client OAuth a été supprimé côté Google. Réparer un encodage local ou relancer l'authentification ne restaure pas ce client ; ne jamais présenter ces actions comme une réparation OAuth.
 
+## Audit SWAT — comment verifier l'usage reel
+
+- `GET /swat` (bridge, Bearer) : schema actif, graphe workers, digest.
+- `GET /swat/audit?limit=N` : dernier etat par mission (state, roles, taskIds) — source `.agent/comms.jsonl` (`swat-status`).
+- `GET /missions/<missionId>` : etat detaille d'une mission (live ou dernier etat persiste).
+- `POST /tools/call` `list_tasks` : chaque etape SWAT = tache orchestrateur tracee (jamais d'acces direct a `orchestrator.db`).
+- Rapports : `.agent/reports/diagnostic-*-final.json` ; execs n8n : `execution_entity` par workflowId.
+- Garde-fous du runner : schema non actif = 409, worker non `chat-*` refuse, divergence roster/session = erreur, digest modifie = abort, une seule mission a la fois, pas de rejeu post-restart.
+- Healthcheck (`hphe-architecture-healthcheck`, 5 min) -> transition non-ok -> declenche le diagnostic SWAT via `hephaistos-diagnostic-async`.
+- 2026-11-16 : purge de 61 taches failed/cancelled via `delete_task` (canal MCP) ; `swatTool` maxBuffer porte a 16 Mo (la sonde `orchestrator-task-state` debordait a ~2,7 Mo). Publication n8n : la version executee suit `activeVersionId` + `workflow_published_version`, pas `versionId` seul ; un node webhook sans champ `webhookId` est enregistre sous un chemin prefixe.

@@ -264,7 +264,7 @@ async function swatTool(name, args) {
         || path.join(process.env.ProgramFiles || 'C:/Program Files', 'servers', 'hephaistos2-kit'),
         'extension', 'server', 'hphe-mcp.exe');
     const { stdout } = await execFileAsync(binary, ['--tool', name, '--args', JSON.stringify(args)], {
-        cwd: WS_ROOT, windowsHide: true, timeout: 20000, maxBuffer: 1024 * 1024,
+        cwd: WS_ROOT, windowsHide: true, timeout: 20000, maxBuffer: 16 * 1024 * 1024,
     });
     const result = JSON.parse(stdout);
     if (result.error) throw new Error(result.error);
@@ -386,6 +386,32 @@ const server = http.createServer(async (req, res) => {
             delete saved.fingerprint;
             if (saved.state === 'in_progress') { saved.state = 'interrupted'; saved.ok = false; saved.error = 'Service redemarre : pas de rejeu automatique.'; }
             return json(res, 200, saved);
+        }
+        if (req.method === 'GET' && url.pathname === '/swat/audit') {
+            /* Audit des missions : dernier etat connu par missionId (comms.jsonl = source verite).
+               Les reponses des workers sont tronquees pour garder le resume lisible. */
+            const limit = Math.min(Number(url.searchParams.get('limit')) || 10, 100);
+            const byMission = new Map();
+            for (const e of commsEntries()) {
+                if (e.src !== 'swat-runner' || e.kind !== 'swat-status') continue;
+                try {
+                    const st = JSON.parse(e.text);
+                    byMission.set(e.convId, { ts: e.ts, ...st });
+                } catch { /* ignorer les entrees mal formees */ }
+            }
+            for (const run of swatRuns.values()) {
+                if (run.contract?.missionId) byMission.set(run.contract.missionId, { ts: null, live: true, ...missionStatus(run) });
+            }
+            const missions = [...byMission.entries()]
+                .sort((a, b) => String(b[1].ts || '').localeCompare(String(a[1].ts || '')))
+                .slice(0, limit)
+                .map(([missionId, st]) => ({
+                    missionId, state: st.state, schemaId: st.schemaId, ts: st.ts, live: !!st.live,
+                    error: st.error || null,
+                    steps: (st.steps || []).map((s) => ({ sessionId: s.sessionId, role: s.role,
+                        taskId: s.taskId, ok: s.ok !== false, replyChars: String(s.reply || '').length })),
+                }));
+            return json(res, 200, { ok: true, count: missions.length, missions });
         }
         if (req.method === 'POST' && url.pathname === '/swat/bind') {
             const b = await readBody(req).catch(() => ({}));
