@@ -131,7 +131,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const r = $json;\nconst chat = $('Contrat message telegram').item.json.chat;\nconst steps = r.steps || (r.result && r.result.steps) || [];\nconst last = steps[steps.length - 1];\nconst reply = String(last?.reply ?? '').trim();\nconst go = /^GO\b/i.test(reply);\nconst text = reply.replace(/^GOs*[:-]?s*/i, '').trim();\nif (!go || !text) return [{ json: { send: false, chat, state: r.state, verdict: reply.slice(0, 500) } }];\nreturn [{ json: { send: true, chat, text, state: r.state } }];"
+        "jsCode": "const r = $json;\nconst chat = $('Contrat message telegram').item.json.chat;\nconst steps = r.steps || (r.result && r.result.steps) || [];\nconst last = steps[steps.length - 1];\nconst reply = String(last?.reply ?? '').trim();\nconst nogo = /^NO-GO\\b/i.test(reply);\nconst go = /^GO\\b/i.test(reply) && !nogo;\nconst text = reply.replace(/^GO\\s*[:\\-]?\\s*/i, '').trim();\nif (!go || !text) return [{ json: { send: false, chat, state: r.state, verdict: reply.slice(0, 500) } }];\nreturn [{ json: { send: true, chat, text, state: r.state } }];"
       },
       "id": "n6",
       "name": "Verdict et texte final",
