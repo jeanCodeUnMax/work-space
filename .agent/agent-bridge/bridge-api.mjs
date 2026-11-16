@@ -30,7 +30,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { collectDiagnostics, saveDiagnosticReport } from './diagnostics.mjs';
 const execFileAsync = promisify(execFile);
@@ -45,6 +45,23 @@ const PORT = Number(process.env.BRIDGE_API_PORT || 7478);
 const COMMS_LOG = process.env.COMMS_LOG || path.join(WS_ROOT, '.agent', 'comms.jsonl');
 const N8N_AGENT_URL = process.env.N8N_AGENT_URL || 'http://127.0.0.1:5678/webhook/hephaistos-agent';
 const N8N_AGENT_TIMEOUT_MS = Number(process.env.N8N_AGENT_TIMEOUT_MS || 900000);
+const N8N_API_URL = process.env.HPHE_N8N_API_URL || 'http://127.0.0.1:5678/api/v1';
+/* Workflows n8n invocables via POST /n8n/workflows/:id/invoke — allowlist explicite.
+   Le secret webhook (credential « Hephaistos Bridge » = token bridge) reste côté serveur. */
+const N8N_CALLABLE_WORKFLOWS = {
+    'vyvBFDvUdt1hcFl9': { name: 'missions SWAT dynamiques', webhookPath: 'hephaistos-swat-missions', timeoutSec: 600,
+        contract: '{missionId, swatId, objective, inputs?, constraints?, expectedDeliverable?}' },
+    'hpheDiagnosticSwat': { name: 'diagnostic architecture', webhookPath: 'hephaistos-diagnostic', timeoutSec: 600,
+        contract: '{} (prérequis : schéma actif swat-diagnostic-hephaistos)' },
+    'EgenrlEHmNKqN8Sq': { name: 'SWAT - Caverne Hermes', webhookPath: 'swat-caverne', timeoutSec: 300,
+        contract: '{prompt|objective|texte}' },
+    'W4itU2f4OuOGUQKV': { name: 'SWAT - OCR Histoires Presse', webhookPath: 'swat-ocr-histoires', timeoutSec: 300,
+        contract: '{prompt|objective|texte}' },
+    'RAp6qBCMGOcauYmK': { name: 'SWAT - Telegram Hub', webhookPath: 'swat-telegram-hub', timeoutSec: 300,
+        contract: '{action?|chat?|text|texte|imageUrl|path|messageId|question|options|topic|reply|limit|query}' },
+};
+const N8N_API_KEY = process.env.N8N_API_KEY?.trim()
+    || (() => { try { return fs.readFileSync(path.join(WS_ROOT, '.agent', 'n8n-api.key'), 'utf8').trim(); } catch { return ''; } })();
 const MAX_BODY = 64 * 1024;
 const DEFAULT_REPLY_TIMEOUT_S = 120;
 const REPLY_KINDS = new Set(['reply', 'chat-reply', 'agent-reply', 'agent-error']);
@@ -235,7 +252,11 @@ export function swatGraph(root = WS_ROOT) {
             throw new Error(`Provider/modele divergent du roster pour ${id}`);
         }
     }
-    return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(graph)).digest('hex') };
+    const semantic = { name: graph.name, activeSchemaId: graph.activeSchemaId,
+        entrySessionId: graph.entrySessionId,
+        nodes: graph.nodes.map((n) => ({ sessionId: n.sessionId, role: n.role, task: n.task })),
+        edges: graph.edges.map((e) => ({ source: e.source, target: e.target })) };
+    return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(semantic)).digest('hex') };
 }
 
 async function swatTool(name, args) {
@@ -341,6 +362,24 @@ const server = http.createServer(async (req, res) => {
             if (saved.state === 'in_progress') { saved.state = 'interrupted'; saved.ok = false; saved.error = 'Service redemarre : pas de rejeu automatique.'; }
             return json(res, 200, saved);
         }
+        if (req.method === 'POST' && url.pathname === '/swat/bind') {
+            const b = await readBody(req).catch(() => ({}));
+            const key = b.id || b.name;
+            if (typeof key !== 'string' || !key.trim()) {
+                return json(res, 400, { ok: false, error: 'name ou id de schema requis' });
+            }
+            if ([...swatRuns.values()].some((r) => missionStatus(r).state === 'in_progress')) {
+                return json(res, 409, { ok: false, error: 'Mission en cours : rebind refuserait le digest du run actif.' });
+            }
+            try {
+                const out = execFileSync(process.execPath,
+                    [path.join(WS_ROOT, '.agent', 'scripts', 'swat-bind.mjs'), '--' + (b.id ? 'id' : 'name'), String(key)],
+                    { cwd: WS_ROOT, encoding: 'utf8', timeout: 30000, windowsHide: true });
+                return json(res, 200, JSON.parse(out));
+            } catch (error) {
+                return json(res, 409, { ok: false, error: String(error.stderr || error.message) });
+            }
+        }
         if (req.method === 'POST' && url.pathname === '/swat/start') {
             let contract;
             try { contract = normalizeMission(await readBody(req)); }
@@ -422,6 +461,66 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET' && seg[0] === 'comms') {
             const n = Math.min(Number(url.searchParams.get('limit')) || 50, 500);
             return json(res, 200, { ok: true, entries: commsEntries().slice(-n) });
+        }
+        if (req.method === 'GET' && url.pathname === '/n8n/workflows') {
+            if (!N8N_API_KEY) return json(res, 503, { ok: false, error: 'N8N_API_KEY absent (env ou .agent/n8n-api.key)' });
+            let r;
+            try {
+                r = await fetch(`${N8N_API_URL}/workflows?active=true&limit=100`, {
+                    headers: { 'X-N8N-API-KEY': N8N_API_KEY }, signal: AbortSignal.timeout(10000),
+                });
+            } catch (err) {
+                return json(res, 502, { ok: false, error: `n8n API injoignable: ${err?.message}`,
+                    cause: err?.cause ? `${err.cause.code || ''} ${err.cause.message || ''}`.trim() : null });
+            }
+            const body = await r.json().catch(() => ({}));
+            const list = (body.data || []).map((w) => {
+                const nodes = Array.isArray(w.nodes) ? w.nodes : [];
+                const webhook = nodes.find((n) => n.type === 'n8n-nodes-base.webhook');
+                const triggers = [...new Set(nodes
+                    .filter((n) => /trigger|webhook/i.test(n.type))
+                    .map((n) => n.type.replace(/^n8n-nodes-base\./, '').replace(/^@n8n\/n8n-nodes-langchain\./, '')))];
+                return {
+                    id: w.id, name: w.name, active: w.active, updatedAt: w.updatedAt,
+                    triggers,
+                    webhookPath: webhook?.parameters?.path || null,
+                    callable: Boolean(N8N_CALLABLE_WORKFLOWS[w.id]),
+                    callableContract: N8N_CALLABLE_WORKFLOWS[w.id]?.contract || null,
+                };
+            });
+            return json(res, r.status, { ok: r.ok, count: list.length, workflows: list });
+        }
+
+        if (req.method === 'POST' && url.pathname.startsWith('/n8n/workflows/') && url.pathname.endsWith('/invoke')) {
+            const workflowId = decodeURIComponent(url.pathname.split('/')[3] || '');
+            const spec = N8N_CALLABLE_WORKFLOWS[workflowId];
+            if (!spec) {
+                return json(res, 403, { ok: false, error: `workflow ${workflowId} non allowlisté — voir GET /n8n/workflows (callable:true)` });
+            }
+            const payload = await readBody(req).catch(() => ({}));
+            const target = `http://127.0.0.1:5678/webhook/${spec.webhookPath}`;
+            let r;
+            const t0 = Date.now();
+            try {
+                r = await fetch(target, {
+                    method: spec.method || 'POST',
+                    headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) },
+                    body: JSON.stringify(payload && Object.keys(payload).length ? payload : {}),
+                    signal: AbortSignal.timeout((spec.timeoutSec || 300) * 1000),
+                });
+            } catch (err) {
+                fs.appendFileSync(COMMS_LOG, JSON.stringify({ ts: new Date().toISOString(), src: 'bridge-api',
+                    dst: `n8n:${workflowId}`, kind: 'workflow-invoke',
+                    text: JSON.stringify({ error: String(err?.message || err) }) }) + '\n');
+                return json(res, 502, { ok: false, error: `webhook injoignable: ${err?.message}` });
+            }
+            const text = await r.text();
+            let parsed; try { parsed = JSON.parse(text); } catch { parsed = text.slice(0, 4000); }
+            fs.appendFileSync(COMMS_LOG, JSON.stringify({ ts: new Date().toISOString(), src: 'bridge-api',
+                dst: `n8n:${workflowId}`, kind: 'workflow-invoke',
+                text: JSON.stringify({ name: spec.name, httpStatus: r.status, durationMs: Date.now() - t0,
+                    input: JSON.stringify(payload).slice(0, 300) }) }) + '\n');
+            return json(res, r.status === 200 ? 200 : r.status, { ok: r.ok, workflowId, name: spec.name, httpStatus: r.status, result: parsed });
         }
         if (req.method === 'POST' && url.pathname === '/agent') {
             const b = await readBody(req);
