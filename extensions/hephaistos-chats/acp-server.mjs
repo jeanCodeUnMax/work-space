@@ -645,6 +645,24 @@ async function completeTurnWithMcps(session, mcps) {
         };
     }
 
+    if (provider === 'groq') {
+        const apiKey = providerEnv('groq','GROQ_API_KEY');
+        if (!apiKey) throw new Error('GROQ_API_KEY absente.');
+        const { msg: gqMsg, trace } = await openAiToolsCompletion({
+            url: 'https://api.groq.com/openai/v1/chat/completions',
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: { model, messages: chatMessages, stream: false },
+            cwd: toolCwd,
+            label: 'Groq',
+            mcps,
+        });
+        return {
+            content: (gqMsg.content || '').trim(),
+            reasoning: (gqMsg.reasoning || gqMsg.reasoning_content || '').trim(),
+            toolTrace: trace,
+        };
+    }
+
     if (provider === 'omniroute') {
         const raw = providerEnv('omniroute','OMNIROUTE_BASE_URL') || `http://localhost:${process.env.PORT || '20128'}/v1`;
         const base = /\/v1$/i.test(raw.replace(/\/+$/, '')) ? raw.replace(/\/+$/, '') : `${raw.replace(/\/+$/, '')}/v1`;
@@ -694,7 +712,7 @@ async function completeTurnWithMcps(session, mcps) {
         };
     }
 
-    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim/omniroute).`);
+    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim/omniroute/groq).`);
 }
 
 /* ---------- client ACP imbriqué : les providers passent par l'agent réel ----------
