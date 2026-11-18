@@ -1080,21 +1080,32 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         if (message.type === 'add_svc') {
-            // Carte service n8n : bloc svc/n8n/carte-<ts> en attente de choix de
-            // workflow dans le panneau (sessionId = svc/n8n/<workflowId> ensuite).
+            // Cartes service : bloc svc/<kind>/carte-<ts>. n8n se configure
+            // ensuite dans le panneau (sessionId = svc/n8n/<workflowId>).
             const svc = (message as { svc?: { kind?: string } }).svc;
-            if (svc?.kind === 'n8n') {
+            const svcTypes: Record<string, { role: string; title: string; provider: string; task: string }> = {
+                n8n: {
+                    role: 'Service n8n', title: 'Service n8n (a configurer)', provider: 'n8n',
+                    task: 'Decris ce que ce workflow fournit (contexte outil) ou execute (etape).',
+                },
+                comfyui: {
+                    role: 'Service ComfyUI', title: 'Service ComfyUI', provider: 'comfyui',
+                    task: 'Decris ce que ce service fournit (contexte outil) ou execute (etape).',
+                },
+            };
+            const t = svc?.kind ? svcTypes[svc.kind] : undefined;
+            if (t) {
                 try {
                     const graph = workflowStore.load(store.list());
-                    const sessionId = `svc/n8n/carte-${Date.now().toString(36)}`;
+                    const sessionId = `svc/${svc!.kind}/carte-${Date.now().toString(36)}`;
                     const idx = graph.nodes.length;
                     graph.nodes.push({
                         sessionId,
-                        role: 'Service n8n',
-                        task: 'Decris ce que ce workflow fournit (contexte outil) ou execute (etape).',
+                        role: t.role,
+                        task: t.task,
                         skills: [],
-                        title: 'Service n8n (a configurer)',
-                        provider: 'n8n',
+                        title: t.title,
+                        provider: t.provider,
                         position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
                     });
                     FlowWorkspacePanel.update(view(workflowStore.save(graph)));

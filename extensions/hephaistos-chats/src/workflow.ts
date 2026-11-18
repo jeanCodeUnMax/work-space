@@ -167,7 +167,7 @@ export function createWorkflowView(
         const provider = session?.provider
             || (node as { provider?: string }).provider
             || (node.sessionId.startsWith('acp/') ? node.sessionId.split('/')[1] : null)
-            || (node.sessionId.startsWith('svc/') ? 'n8n'
+            || (node.sessionId.startsWith('svc/') ? node.sessionId.split('/')[1]
                 : node.sessionId.startsWith('local-') ? 'cerberos' : 'unknown');
         // Couleurs fixes : jaune = Devin ACP, bleu = Antigravity, vert = Bleubite.
         // Une fenêtre attachée (bound) décide ; sinon le provider de la session.
@@ -201,7 +201,7 @@ export function createWorkflowView(
                 // un drag et le bind ⤓ rattache la mauvaise fenêtre.
                 cardKind,
                 provider,
-                model: session?.model || (node.sessionId.startsWith('svc/') ? 'workflow' : external ? 'agent IDE' : ''),
+                model: session?.model || (node.sessionId.startsWith('svc/') ? 'service' : external ? 'agent IDE' : ''),
                 role: node.role,
                 task: node.task,
                 skills: node.skills || [],

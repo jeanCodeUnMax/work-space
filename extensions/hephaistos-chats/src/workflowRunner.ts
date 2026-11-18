@@ -676,6 +676,9 @@ export class WorkflowRunner {
        bridge (allowlist → webhookPath, secret injecté côté serveur). Un seul
        point de résolution : pas de secret n8n dans l'extension. */
     private async callN8nSvc(sessionId: string, payload: Record<string, unknown>): Promise<string> {
+        if (!sessionId.startsWith('svc/n8n/')) {
+            throw new Error(`Transport service non implémenté : ${sessionId} (seul svc/n8n/ est câblé).`);
+        }
         const suffix = sessionId.split('/')[2] || '';
         if (!suffix || !/^[a-zA-Z0-9_-]{1,100}$/.test(suffix)) {
             throw new Error(`svc/n8n invalide : ${sessionId} — choisis un workflow dans le panneau de la carte.`);

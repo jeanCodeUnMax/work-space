@@ -187,7 +187,17 @@ function onAgentIconError(event: React.SyntheticEvent<HTMLImageElement>): void {
     img.style.display = 'none';
 }
 
-const TOOL_EDGE_STYLE: React.CSSProperties = { strokeDasharray: '6 4', stroke: '#EA4B71' };
+const TOOL_EDGE_STYLES: Record<string, React.CSSProperties> = {
+    n8n: { strokeDasharray: '6 4', stroke: '#EA4B71' },
+    comfyui: { strokeDasharray: '6 4', stroke: '#F5A623' },
+    svc: { strokeDasharray: '6 4', stroke: '#9d7bff' },
+};
+
+function toolEdgeStyle(source: string): React.CSSProperties {
+    if (source.startsWith('svc/comfyui/')) return TOOL_EDGE_STYLES.comfyui;
+    if (source.startsWith('svc/n8n/')) return TOOL_EDGE_STYLES.n8n;
+    return TOOL_EDGE_STYLES.svc;
+}
 
 function toFlowEdge(edge: StoredEdge & { selectable?: boolean }): Edge {
     const tool = edge.type === 'tool';
@@ -197,7 +207,7 @@ function toFlowEdge(edge: StoredEdge & { selectable?: boolean }): Edge {
         selectable: true,
         ...(tool ? {
             data: { kind: 'tool' },
-            style: TOOL_EDGE_STYLE,
+            style: toolEdgeStyle(edge.source),
             animated: true,
             label: 'outil',
         } : {}),
@@ -217,11 +227,31 @@ function N8nLogo({ size = 20 }: { size?: number }): React.JSX.Element {
     );
 }
 
+/** Logo ComfyUI stylisé (générateur d'image) — inline, aucun asset réseau. */
+function ComfyUILogo({ size = 20 }: { size?: number }): React.JSX.Element {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <rect x="3" y="3" width="18" height="18" rx="5" fill="#F5A623" />
+            <circle cx="8.5" cy="10" r="1.6" fill="#1f2328" />
+            <circle cx="15.5" cy="10" r="1.6" fill="#1f2328" />
+            <path d="M8 14.5c1.4 1.8 6.6 1.8 8 0" stroke="#1f2328" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+            <path d="M12 6.2v-2M7 7.2 5.8 5.8M17 7.2l1.2-1.4" stroke="#1f2328" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+/** Logo + nom d'affichage par famille de service svc/<kind>/. */
+function svcMeta(sessionId: string): { logo: React.JSX.Element; label: string; kind: string } {
+    if (sessionId.startsWith('svc/comfyui/')) return { logo: <ComfyUILogo size={22} />, label: 'SERVICE COMFYUI', kind: 'comfyui' };
+    return { logo: <N8nLogo size={22} />, label: 'SERVICE N8N', kind: 'n8n' };
+}
+
 function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Element {
     const isSvc = data.sessionId.startsWith('svc/');
+    const svc = isSvc ? svcMeta(data.sessionId) : null;
     return (
         <div
-            className={'flow-node ' + data.tone + (isSvc ? ' svc' : '') + (selected ? ' selected' : '')}
+            className={'flow-node ' + data.tone + (isSvc ? ` svc svc-${svc!.kind}` : '') + (selected ? ' selected' : '')}
             onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('application/x-hph-skill')
                     || event.dataTransfer.types.includes('application/x-hph-agent')
@@ -272,7 +302,7 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 />
             )}
             <div className="flow-node-heading">
-                <span className="flow-node-kicker">{isSvc ? 'SERVICE N8N' : data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
+                <span className="flow-node-kicker">{isSvc ? svc!.label : data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
                 {!isSvc && (
                     <>
@@ -296,7 +326,7 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
                 )}
             </div>
             {isSvc
-                ? <N8nLogo size={22} />
+                ? svc!.logo
                 : (()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {data.bound && <span className="flow-node-bound" title={`Carte associée à une fenêtre ${data.bound.kind === 'agy' ? 'Antigravity' : 'Devin'}`}>● associée</span>}
@@ -724,9 +754,11 @@ function Workspace(): React.JSX.Element {
         return false;
     };
 
-    // Port 'tool' (cartes svc/*) → edge pointillé : le résultat du workflow
+    // Port 'tool' (cartes svc/*) → edge pointillé : le résultat du service
     // est pré-fetché par le runner et injecté en contexte à l'agent cible.
-    const toolEdgeProps = { data: { kind: 'tool' }, style: TOOL_EDGE_STYLE, animated: true, label: 'outil' };
+    const toolEdgeProps = (source: string) => ({
+        data: { kind: 'tool' }, style: toolEdgeStyle(source), animated: true, label: 'outil',
+    });
 
     const onConnect = useCallback((connection: Connection) => {
         const tool = connection.sourceHandle === 'tool';
@@ -744,7 +776,7 @@ function Workspace(): React.JSX.Element {
         const cycled = !tool && connection.source && connection.target
             ? createsCycle(connection.source, connection.target, edges)
             : false;
-        const nextEdges = addEdge({ ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps : {}) }, edges);
+        const nextEdges = addEdge({ ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps(String(connection.source)) : {}) }, edges);
         setEdges(nextEdges);
         setSelectedEdgeId(null);
         if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
@@ -769,7 +801,7 @@ function Workspace(): React.JSX.Element {
             ? createsCycle(connection.source, connection.target, pool)
             : false;
         const nextEdges = addEdge(
-            { ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps : {}) },
+            { ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps(String(connection.source)) : {}) },
             pool,
         );
         setEdges(nextEdges);
@@ -816,7 +848,7 @@ function Workspace(): React.JSX.Element {
 
     // Liste des workflows n8n demandée au host (bridge :7478) quand une carte
     // svc est sélectionnée — le webview ne peut pas fetch hors CSP.
-    const selectedIsSvc = !!selectedNode && selectedNode.data.sessionId.startsWith('svc/');
+    const selectedIsSvc = !!selectedNode && selectedNode.data.sessionId.startsWith('svc/n8n/');
     useEffect(() => {
         if (selectedIsSvc && n8nWorkflows === undefined) {
             vscode.postMessage({ type: 'n8n_workflows' });
@@ -960,8 +992,8 @@ function Workspace(): React.JSX.Element {
     };
 
     const addAgent = (): void => {
-        if (newProvider === 'svc-n8n') {
-            vscode.postMessage({ type: 'add_svc', svc: { kind: 'n8n' } });
+        if (newProvider === 'svc-n8n' || newProvider === 'svc-comfyui') {
+            vscode.postMessage({ type: 'add_svc', svc: { kind: newProvider.slice(4) } });
             return;
         }
         vscode.postMessage({ type: 'add_agent', provider: newProvider });
@@ -1029,6 +1061,7 @@ function Workspace(): React.JSX.Element {
                     >
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
                         <option value="svc-n8n">⛁ Service n8n</option>
+                        <option value="svc-comfyui">◆ Service ComfyUI</option>
                     </select>
                     <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc du type choisi — les cartes n8n se configurent ensuite dans le panneau">+ Bloc</button>
                 </div>
@@ -1294,10 +1327,33 @@ function Workspace(): React.JSX.Element {
                                 </button>
                             </div>
                             <h2 style={{display:"flex",alignItems:"center",gap:8}}>{selectedNode.data.sessionId.startsWith('svc/')
-                                ? <N8nLogo size={30} />
+                                ? svcMeta(selectedNode.data.sessionId).logo
                                 : (()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
                             <p className="inspector-provider">{selectedNode.data.provider} · {selectedNode.data.model}</p>
-                            {selectedNode.data.sessionId.startsWith('svc/') && (() => {
+                            {selectedNode.data.sessionId.startsWith('svc/comfyui/') && (
+                                <>
+                                    <label className="field-label">Service ComfyUI</label>
+                                    <p className="inspector-provider">
+                                        Carte service ComfyUI — génération image/vidéo locale (:8190) ou distante (tunnel Kaggle).
+                                        Paramètres avancés (workflow, prompt, seed, modèle) à venir.
+                                    </p>
+                                    <p className="inspector-provider">
+                                        Port ⛁ outil (haut) → agent ou entrée : résultat injecté en contexte.
+                                        Ports droite/bas → étape d'exécution normale.
+                                    </p>
+                                    <label className="field-label" htmlFor="svc-task">Mission de ce service</label>
+                                    <textarea
+                                        id="svc-task"
+                                        className="inspector-textarea"
+                                        value={selectedNode.data.task}
+                                        onChange={(event) => updateNode(selectedNode.id, { task: event.target.value })}
+                                        placeholder="Ce que ce service fournit (contexte outil) ou exécute (étape)…"
+                                        maxLength={6000}
+                                    />
+                                    <div className="inspector-session">Node : <code>{selectedNode.data.sessionId}</code></div>
+                                </>
+                            )}
+                            {selectedNode.data.sessionId.startsWith('svc/n8n/') && (() => {
                                 const wfId = selectedNode.data.sessionId.split('/')[2] || '';
                                 const current = (n8nWorkflows || []).find((w) => w.id === wfId);
                                 return (
@@ -1469,14 +1525,20 @@ function Workspace(): React.JSX.Element {
                                         onChange={(event) => palette.setQuery(event.target.value)}
                                     />
                                     <div className="skill-palette-list">
-                                        {palette.key === 'services' && (
+                                        {palette.key === 'services' && (<>
                                             <span
                                                 className="skill-chip draggable svc-chip"
                                                 title="Carte service n8n : pose-la, choisis le workflow dans le panneau, relie le port ⛁ outil à un agent ou à l'entrée"
                                                 draggable
                                                 onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-svc', JSON.stringify({ kind: 'n8n' })); event.dataTransfer.effectAllowed = 'copy'; }}
                                             >⛁ Workflow n8n</span>
-                                        )}
+                                            <span
+                                                className="skill-chip draggable svc-chip comfy-chip"
+                                                title="Carte service ComfyUI : pose-la, relie le port ⛁ outil à un agent ou à l'entrée — paramètres avancés à venir"
+                                                draggable
+                                                onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-svc', JSON.stringify({ kind: 'comfyui' })); event.dataTransfer.effectAllowed = 'copy'; }}
+                                            >◆ ComfyUI</span>
+                                        </>)}
                                         {palette.key === 'competences' && (<>
                                             {catalog.skills.length === 0 && <span className="skill-empty">Aucun skill dans .agent/skills</span>}
                                             {catalog.skills.filter((skill) => !palette.query || skill.toLowerCase().includes(palette.query.toLowerCase())).map((skill) => (

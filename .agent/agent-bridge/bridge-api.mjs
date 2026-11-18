@@ -289,7 +289,7 @@ function finalizeSwatGraph(graph, root, allowHidden = false) {
     const list = Array.isArray(sessions) ? sessions : sessions.sessions;
     if (!Array.isArray(list)) throw new Error('Format sessions hephaistos-chats inconnu.');
     for (const id of ids.filter((id) => id !== graph.entrySessionId)) {
-        if (id.startsWith('svc/n8n/')) continue; // nœud service n8n — exécuté via webhook, pas de roster/sessions.json
+        if (id.startsWith('svc/')) continue; // nœud service (n8n câblé ; autres familles = refus explicite à l'exécution)
         if (!id.startsWith('chat-')) throw new Error(`Transport worker non pris en charge par ce runner : ${id}. Aucun fallback CLI.`);
         const member = members.find((m) => m.sessionId === id && (allowHidden || !m.hidden));
         const session = list.find((s) => s.id === id || s.sessionId === id);
@@ -348,6 +348,9 @@ async function swatTool(name, args) {
    sessionId 'svc/n8n/<id>' — <id> résolu via l'allowlist (workflowId → webhookPath),
    sinon traité comme webhookPath littéral (compat). */
 async function callN8nSvc(sessionId, payload) {
+    if (!sessionId.startsWith('svc/n8n/')) {
+        throw new Error(`Transport service non implémenté : ${sessionId} (seul svc/n8n/ est câblé).`);
+    }
     const suffix = sessionId.split('/')[2];
     if (!suffix || !/^[a-zA-Z0-9_-]{1,100}$/.test(suffix)) throw new Error(`svc/n8n invalide : ${sessionId}`);
     const hook = N8N_CALLABLE_WORKFLOWS[suffix]?.webhookPath || suffix;
@@ -411,7 +414,7 @@ async function swatStep(b) {
         if (taskId == null) throw new Error('create_task sans identifiant : execution refusee.');
         await swatTool('update_task', { task_id: taskId, status: 'in_progress' });
         let reply;
-        if (node.sessionId.startsWith('svc/n8n/')) {
+        if (node.sessionId.startsWith('svc/')) {
             const parsed = await callN8nSvc(node.sessionId, { prompt, missionId: run.contract?.missionId });
             reply = parsed;
         } else {
