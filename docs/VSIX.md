@@ -1,6 +1,6 @@
 # Extensions VSIX — fiches techniques
 
-Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et installées côté client. Ce document est la fiche de référence de chacune.
+Le kit embarque quatre extensions IDE (Devin / Antigravity / Cursor), packagées en `.vsix` et installées côté client : `hephaistos-chats`, `hephaistos-kit-search`, `orchestrator-monitor` (sources = sous-modules ou in-repo) et `postdev` (VSIX packagé dans `extensions/vsix/`). Ce document est la fiche de référence de chacune.
 
 ---
 
@@ -28,7 +28,7 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 | Champ        | Valeur                                                                                          |
 | ------------ | ----------------------------------------------------------------------------------------------- |
 | ID           | `hephaistos.hephaistos-chats`                                                                 |
-| Version      | 0.2.0                                                                                           |
+| Version      | 0.3.59                                                                                           |
 | Nom affiche  | Hephaistos Chats                                                                                |
 | Source       | `extensions/hephaistos-chats/` (dossier local du repo)                                        |
 | Role         | Fenetres de chat multi-providers + canvas React Flow de composition de flux d'agents            |
@@ -38,6 +38,9 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 - **Chats** : onglets persistes (`.agent/chats/sessions.json`), transport canonique `completeTurn` (API directe, ACP, Devin via bridge ws :7477 + comms.jsonl).
 - **Espace de travail** : panneau React Flow ouvrable en onglet IDE ; nœuds = agents reels du roster `.agent/workspace-roster.json` (Bleubites chat-*, sessions Devin/AGY acp/*, Cerberos) ; roles, skills drag-drop, missions, positions et edges persistes dans le roster.
 - **Sync roster** : ajout/retrait de membre met a jour le graphe ; `hidden` retire un bloc sans sortir l'agent ; `double-clic` ouvre la fenetre de chat exacte ; schemas sauvegardables (`~/.hephaistos-workflow-schemas.json`, portee workspace, option tous-workspaces).
+- **Cartes service** : `svc/n8n/<workflowId>` (rouge `#EA4B71`, logo n8n, dropdown live des workflows dans l'inspecteur, rename + remap edges) et `svc/comfyui/<id>` (orange `#F5A623`, transport en attente) — palettes SERVICES + option `+ Bloc`.
+- **Edges outil** : port ⛁ dédié en haut de carte — edge pointillé `type:'tool'` exclu du DAG d'exécution ; le runner pré-fetche le service et injecte le résultat dans le prompt du worker cible (vers un agent = outil perso, vers l'entrée = contexte SWAT).
+- **Invocation n8n** : le secret reste côté bridge — l'extension appelle `POST /n8n/workflows/:id/invoke` sur `bridge-api` :7478 ; `svc/*` non implémenté = refus explicite.
 - **CLI agent** : `node .agent/agent-bridge/workspace-roster.js` - `add|hide|unhide|workflow connect|configure [--role --task --skills --entry]|schema save|list|load` : le meme outil pour l'utilisateur et pour l'agent orchestrateur.
 - **Build VSIX** : `npx @vscode/vsce package` dans `extensions/hephaistos-chats/` ; artefact `hephaistos-chats-<version>.vsix` a la racine de l'extension, committe avec `git add -f` (gitignore `*.vsix`).
 
@@ -72,12 +75,24 @@ Le kit embarque deux extensions IDE (Devin / VS Code), packagées en `.vsix` et 
 
 ---
 
-## Dépendances entre les deux
+## 4. `postdev` — utilitaires post-dev
+
+| Champ | Valeur |
+|---|---|
+| Version | 1.2.3 |
+| Source | externe — VSIX packagé `extensions/vsix/postdev-1.2.3.vsix` |
+| Rôle | utilitaires post-développement ; publication du repo source en cours |
+
+---
+
+## Dépendances entre extensions
 
 ```
+hephaistos-chats     ──► bridge-api :7478 (/swat/*, /n8n/*, acp-inject)
+                     └─► ws :7477 + comms.jsonl (transports chat)
 hephaistos-kit-search ──► hphe-index (pipe) ──► index NTFS
 orchestrator-monitor ──► orchestrator.db (WAL) ──► ws-bridge :7477
                      └──► agy --hub (RPC) + comms.jsonl
 ```
 
-Les deux sont autonomes : la recherche ne dépend pas du monitor, et le monitor ne dépend pas de la recherche (il lit `orchestrator.db` directement).
+Les extensions sont autonomes entre elles : la recherche ne dépend pas du monitor, et le monitor ne dépend pas de la recherche (il lit `orchestrator.db` directement).
