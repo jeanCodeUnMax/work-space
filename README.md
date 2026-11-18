@@ -1,223 +1,187 @@
 <p align="center">
-  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
+  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit" width="100%">
 </p>
 
 # Hephaistos2-Kit
 
-> **IDE visuel d'orchestration multi-agents** : définis ton équipe d'agents IA
-> sur un canvas (rôles, providers, modèles, skills, MCP, services), relie-les
-> par des dépendances d'exécution et des edges outils, lance le workflow —
-> l'agent chef n'a plus que la supervision à faire.
->
-> Moteur : indexation filesystem NTFS ultra-rapide en Rust (`$MFT` + USN),
-> serveur MCP unifié (**58 outils**), bridge HTTP/WS temps réel, bus
-> inter-agents — sans `Everything.exe`.
+**Visual multi-agent orchestration IDE for VS Code forks, backed by a unified
+Rust search engine.**
+
+Hephaistos2-Kit lets a user compose an agent team on a React Flow canvas —
+agents, roles, providers, models, skills, MCP tools, external services — wire
+execution dependencies between them, persist the workflow, and run it under a
+head agent connected through ACP.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![Backend](<https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange>)
 ![Canvas](<https://img.shields.io/badge/canvas-React%20Flow-61DAFB>)
-![Outils](https://img.shields.io/badge/outils_MCP-58-informational)
-![Statut](https://img.shields.io/badge/statut-beta%20publique-yellow)
-![Licence](https://img.shields.io/badge/licence-Proprietaire%20beta-red)
+![License](https://img.shields.io/badge/license-Proprietary%20beta-red)
 
-**Beta publique** — le kit est fonctionnel sur la machine de dev ; l'installation
-reproductible multi-machines est en cours (voir [État de la beta](#état-de-la-beta)).
+> **Public beta.** The kit is functional on the development machine;
+> reproducible multi-machine installation is in progress.
 
 ---
 
-## Sommaire
+## Features
 
-- [Ce que fait le kit](#ce-que-fait-le-kit)
-- [IDE visuel — hephaistos-chats](#ide-visuel--hephaistos-chats)
-- [Services externes](#services-externes)
-- [Couche agent](#couche-agent)
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Extensions VS Code](#extensions-vs-code)
-- [Gouvernance et sécurité machine](#gouvernance-et-sécurité-machine)
-- [Mémoire unifiée](#mémoire-unifiée)
-- [État de la beta](#état-de-la-beta)
-- [Documentation](#documentation)
-
-## Ce que fait le kit
-
-| Capacité | Détail |
+| Area | Description |
 |---|---|
-| **Orchestration visuelle** | Canvas React Flow : pose des cartes agent/service/skill/role, relie par edges exec ou outils |
-| **SWAT workflows** | Schémas persistés, switching live, DAG d'exécution **acyclique** (les boucles sont rejetées à la validation — feedback loops en roadmap) |
-| **Bleubites** | Workers `chat-*` outillés (fs read/write/list confinés workspace), providers free ou perso |
-| **Sessions ACP réelles** | Détection des agents IDE ouverts (Devin, Antigravity), injection de prompts, binding carte↔session |
-| **Recherche filesystem** | ~6,4M entrées indexées, <50 ms, `content_search`/`semantic_search`/`hybrid_search` |
-| **Mémoire unifiée** | KG + vector store + SQLite, outils `memory_*`, séparation workspace/global |
-| **Orchestrateur de tâches** | `create_task`/`dispatch_task`/`update_task`, bus `comms.jsonl`, wake-up IDE |
-| **Outils centralisés HPHE** | 1 seul serveur MCP `hphe-mcp` = 58 outils (recherche, contenu, vecteurs, mémoire, tâches, beacon) — plus de MCP dispersés |
-| **Beacon** | Journal d'activité agents → ingestion offset JSONL, **redaction de secrets** (bearer, api_key, nvapi-/sk-/ghp_), résumés en mémoire HPHE |
-| **Skill-mux** | Serveur MCP stdio — registre central des skills machine (`skill-registry.json` rebuild à la volée), racines configurables |
-| **MCP-mux** | Multiplexage des serveurs MCP par workspace via `setup-mcp-mux.mjs` |
-| **Multi-IDE** | Devin Desktop, Antigravity, Cursor — même couche `.agent` propagée par `sync-agent-layer.ps1` |
+| Visual orchestration | React Flow canvas with minimap: drag-and-drop agent, skill, role, provider and service cards; execution and tool edges |
+| SWAT workflows | Persisted schemas, live workflow switching, acyclic execution DAG, node-level roles and missions |
+| Bleubite workers | Tool-enabled `chat-*` workers (filesystem read/write/list confined to the workspace) on free or custom providers |
+| Real ACP binding | Detection of open IDE agent sessions (Devin, Antigravity), card-to-session binding, prompt injection |
+| Filesystem search | ~6.4M-entry NTFS `$MFT` index with live USN journal, sub-50 ms queries, BM25 + semantic + hybrid search |
+| Unified MCP server | One stdio server (`hphe-mcp`, 58 tools): search, content, vectors, memory, task orchestration, beacon |
+| Unified memory | Knowledge graph + 2048D vector store + SQLite via `memory_*` tools, workspace/global separation |
+| Task orchestrator | `create_task`/`dispatch_task`/`update_task`, append-only `comms.jsonl` bus, IDE wake-up |
+| Skill-mux | MCP stdio server exposing a central machine skill registry, rebuilt on the fly |
+| Beacon | Agent activity journal ingestion with built-in secret redaction into HPHE memory |
+| Multi-IDE | Devin Desktop, Antigravity, Cursor — shared `.agent` layer propagated by `sync-agent-layer.ps1` |
 
-## IDE visuel — hephaistos-chats
+## The workspace — `hephaistos-chats`
 
-Extension VS Code-fork (`extensions/hephaistos-chats`, VSIX `0.3.59`) :
+The `hephaistos-chats` extension provides the visual workspace:
 
-- **Canvas React Flow** avec minimap : les cartes sont les nœuds, les edges sont
-  le routing d'exécution — l'utilisateur définit manuellement l'orchestration.
-- **Palettes drag & drop** : agents, skills, rôles, providers, services, cartes préconfigurées.
-- **Deux types d'edges** :
-  - *exécution* (plein) : dépendances du DAG — l'étape n démarre quand ses parents ont rendu ;
-  - *outil* (pointillé, port dédié ⛁) : le service est pré-fetché et son résultat
-    injecté dans le prompt du worker (un outil perso pour un agent, ou vers
-    l'entrée = tout le SWAT).
-- **Inspecteur** : rôle, mission, provider/modèle, paramètres par type de carte.
-- **Persistance** : schémas sauvegardés (banque + roster actif), positions React Flow
-  conservées, switching de workflow à chaud.
-- **Binding ACP** : `workspace-roster` détecte les sessions vivantes (`acp-listed`)
-  et lie une carte à une vraie session ; `acp-inject` injecte les missions.
-- **Commandes** : `newChat`, `openChat`, `openWorkspace`, `openComfyUI`.
+- **Canvas** — cards are nodes, edges are execution routing; orchestration is
+  defined manually by the user, not improvised by a model.
+- **Palettes** — agents, skills, roles, providers, services, preconfigured cards.
+- **Two edge types**:
+  - *execution* (solid): DAG dependency — a step starts when its parents return;
+  - *tool* (dotted, dedicated ⛁ port): the service is pre-fetched once and its
+    result injected into the target worker's prompt (per-agent tool, or whole
+    team when wired to the entry node).
+- **Inspector** — role, mission, provider/model, per-card-type parameters.
+- **Persistence** — schema bank + active roster, preserved node positions,
+  hot workflow switching.
+- **ACP binding** — `workspace-roster` lists live sessions and binds a card to a
+  real session; `acp-inject` delivers the mission.
+- **Commands** — `newChat`, `openChat`, `openWorkspace`, `openComfyUI`.
 
-### Cartes service
+### Service cards
 
-| Carte | Couleur | Fonction |
+| Card | Appearance | Behavior |
 |---|---|---|
-| `svc/n8n/<workflowId>` | rouge `#EA4B71`, logo n8n | Dropdown **live** des workflows n8n dans l'inspecteur ; invocation via `POST /n8n/workflows/:id/invoke` (secret côté bridge, jamais dans l'extension) |
-| `svc/comfyui/<id>` | orange `#F5A623`, logo ComfyUI | Placeholder propre — transports `svc/*` non câblés refusés explicitement par le runner |
+| `svc/n8n/<workflowId>` | Red `#EA4B71`, n8n logo | Live n8n workflow dropdown in the inspector; invoked through `POST /n8n/workflows/:id/invoke` — the webhook secret stays on the bridge, never in the extension |
+| `svc/comfyui/<id>` | Orange `#F5A623`, ComfyUI logo | Service card scaffold; unwired `svc/*` transports are refused explicitly by the runner |
 
-## Services externes
+## External integrations
 
-- **n8n** (:5678) — workflows packagés (bot Telegram, hub Obsidian, génération
-  image, polling `/tg/poll`), lecture DB read-only pour lister les workflows.
-- **ComfyUI** — backend Desktop local *et* chemin distant GPU **Kaggle**
-  (`kaggle_push`, tunnel Cloudflare nommé, arrêt auto GPU après 10 min d'idle,
-  `kaggle-ctl.ps1`). Prompts/negative-prompts forwardés.
-- **Providers LLM** — NVIDIA NIM, OpenRouter, OmniRoute, devin-cli,
-  antigravity-acp, ollama-cloud : sélection par carte dans l'inspecteur.
-- **Obsidian** — intégration **explicite** (pas implicite) : `obsidian-cli.mjs`
-  (vault borné via `OBSIDIAN_VAULT_PATH` / `local-paths.json`, listage,
-  lecture, inventaire plugins), `obsidian-mcp-proxy.mjs`, skill
-  `antigravity-obsidian` (serveur MCP + sync-engine), et deux workflows n8n
-  packagés (*Obsidian Hub*, *SWAT Obsidian*). Sans vault configuré, la
-  fonctionnalité est simplement inactive — rien d'implicite ne touche un
-  vault.
-
-## Couche agent
-
-`.agent/` = architecture déclarative propagée aux workspaces :
-
-```
-.agent/
-├── agents/        # définitions d'agents (frontmatter triggers -> routing auto)
-├── skills/        # skills packagées (flux, binome, cli-anything, comfyui…)
-├── rules/         # global_rules.md — gouvernance (git, secrets, .agent pas une poubelle)
-├── workflows/     # schémas SWAT de référence
-├── agent-bridge/  # bridge HTTP/WS, runner SWAT, roster, acp-inject
-├── flux/          # /flux : vérifie schéma actif + pipeline revue/sécu/arbitrage/commit
-├── scripts/       # install, sync, health, watchers
-└── state/, chats/, queue/  # runtime (gitignoré)
-```
-
-Principes : secrets jamais commités (`.env`, `*.token`, `local-paths.json`
-gitignorés), chemins machine externalisés (`local-paths.js`), `.agent` n'est
-pas un dépôt d'artefacts projet.
+- **n8n** (:5678) — packaged workflows (Telegram bot, Obsidian hub, image
+  generation, `/tg/poll` polling); read-only DB access lists workflows
+  without depending on the n8n API.
+- **ComfyUI** — local Desktop backend and a remote GPU path on Kaggle
+  (`kaggle_push`, named Cloudflare tunnel, automatic GPU shutdown after
+  10 min idle, `kaggle-ctl.ps1`).
+- **Obsidian** — explicit, opt-in integration: `obsidian-cli.mjs` (vault
+  bounded by `OBSIDIAN_VAULT_PATH` / `local-paths.json`),
+  `obsidian-mcp-proxy.mjs`, the `antigravity-obsidian` skill, and two
+  packaged n8n workflows. Inactive when no vault is configured.
+- **LLM providers** — NVIDIA NIM, OpenRouter, OmniRoute, devin-cli,
+  antigravity-acp, ollama-cloud; selected per card in the inspector.
 
 ## Architecture
 
 ```
-IDE (Devin / AGY / Cursor)
+IDE (Devin / Antigravity / Cursor)
    │  hephaistos-chats (React Flow)          hephaistos-kit-search
    │        │                                     │
-   ├──HTTP──┼──► bridge-api :7478 ──┐   ──stdio──► hphe-mcp.exe (58 outils)
+   ├──HTTP──┼──► bridge-api :7478 ──┐   ──stdio──► hphe-mcp.exe (58 tools)
    ├──WS────┼──► bus        :7477  │            │
    │        │    ├─ /swat/* runner │            ├─► pipe \.\pipe\hphe-index
    │        │    ├─ /n8n/* svc     │            │     ► hphe-indexd (SYSTEM)
-   │        │    ├─ /tools/call    │            │     $MFT ~6,4M + USN + mmap
+   │        │    ├─ /tools/call    │            │     $MFT ~6.4M + USN + mmap
    │        │    └─ /diagnostics   │            ├─► Tantivy (content index)
-   │        └─► MCP gateway :8767  │            ├─► usearch (vec 2048D)
+   │        └─► MCP gateway :8767  │            ├─► usearch (2048D vectors)
    │                               │            └─► orchestrator.db + memory KG
-   └─ACP──► sessions IDE (devin/agy/chat-*) ◄── acp-inject + roster
+   └─ACP──► IDE sessions (devin/agy/chat-*) ◄── acp-inject + roster
 ```
 
-- **`hphe-indexd`** — tâche planifiée SYSTEM : scan `$MFT`, suit le journal USN,
-  expose l'index via named pipe.
-- **`hphe-mcp`** — serveur MCP stdio unique : recherche, contenu, vecteurs,
-  mémoire, orchestrateur, beacon. Absorbe les anciens MCP séparés.
-- **`hphe-rest`** (:8792) — REST des mêmes outils + boucle d'ingestion
-  (Mutex = sérialisation unique des écritures Tantivy).
-- **`agent-bridge`** (:7478 HTTP + :7477 WS) — runner SWAT (DAG + tool edges +
-  pre-fetch `svc/n8n`), roster live, injection ACP, diagnostics.
+- **`hphe-indexd`** — SYSTEM scheduled task: `$MFT` scan, live USN journal,
+  named-pipe index.
+- **`hphe-mcp`** — single stdio MCP server absorbing the former separate MCPs.
+- **`hphe-rest`** (:8792) — REST facade of the same tools plus the ingestion
+  loop (single-writer serialization for Tantivy).
+- **`agent-bridge`** (:7478 HTTP + :7477 WS) — SWAT runner (DAG + tool edges +
+  `svc/n8n` pre-fetch), live roster, ACP injection, diagnostics.
+
+## Agent layer
+
+`.agent/` is the declarative layer propagated to workspaces:
+
+```
+.agent/
+├── agents/        # agent definitions (frontmatter triggers -> routing)
+├── skills/        # packaged skills
+├── rules/         # governance rules
+├── workflows/     # reference SWAT schemas
+├── agent-bridge/  # HTTP/WS bridge, SWAT runner, roster, acp-inject
+├── flux/          # active-schema pipeline (review/security/arbitration/commit)
+├── scripts/       # install, sync, health, watchers
+└── state/, chats/, queue/  # runtime (gitignored)
+```
+
+Secrets are never committed: `.env`, `*.token`, `local-paths.json` are
+gitignored and machine paths are externalized through `local-paths.js`.
 
 ## Installation
 
 ```powershell
 git clone --recurse-submodules https://github.com/art-qalam-fr/hephaistos2-kit.git
 cd hephaistos2-kit
-pwsh -ExecutionPolicy Bypass -File install.ps1          # build + deploy runtime
+pwsh -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Prérequis : Windows 10/11 NTFS, PowerShell 7, Rust stable (`cargo`), Node ≥20,
-un VS Code-fork compatible ACP. Droits admin uniquement pour la tâche
-planifiée `hphe-indexd` (`-Elevated`). Détails : [INSTALL.md](INSTALL.md),
-manifeste déclaratif [kit.toml](kit.toml).
+Requirements: Windows 10/11 (NTFS), PowerShell 7, Rust stable, Node ≥ 20, an
+ACP-capable VS Code fork. Admin rights are only needed for the `hphe-indexd`
+scheduled task (`-Elevated`). Details: [INSTALL.md](INSTALL.md) and the
+declarative manifest [kit.toml](kit.toml).
 
 ## Configuration
 
-| Élément | Mécanisme |
+| Element | Mechanism |
 |---|---|
-| Secrets (clés API) | variables d'env / prompt — **jamais** en dur ; modèle [.env.example](.env.example) |
-| Chemins machine | `local-paths.json` gitignoré, lu par `local-paths.js` |
-| Accès MCP par profil | [.mcp-access](.mcp-access) — règles `allow`/`read`/`deny` à tokens `<INSTALL_ROOT>` |
-| Bridge | tokens `.agent/ws-bridge.token` / `HPHE_REST_TOKEN` (générés, gitignorés) |
+| API keys | Environment variables / prompt — never hardcoded; template [.env.example](.env.example) |
+| Machine paths | Gitignored `local-paths.json` read by `local-paths.js` |
+| MCP access profiles | [.mcp-access](.mcp-access) — `allow`/`read`/`deny` rules with `<INSTALL_ROOT>` tokens |
+| Bridge auth | Generated, gitignored `.agent/ws-bridge.token` / `HPHE_REST_TOKEN` |
 
+## Extensions
 
-## Extensions VS Code
-
-| Extension | Source | Rôle |
+| Extension | Source | Role |
 |---|---|---|
-| `hephaistos-chats` | `extensions/hephaistos-chats` (in-repo) | IDE visuel — canvas React Flow, cartes agents/services, SWAT, roster ACP |
-| `hephaistos-kit-search` | `extensions/search-ext` (sous-module) | Recherche NTFS dans l'IDE, embarque le MCP |
-| `orchestrator-monitor` | `extensions/orchestrator-monitor` (sous-module) | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
-| `postdev` | VSIX packagé (`extensions/vsix/postdev-1.2.3.vsix`) | Utilitaires post-dev ; source externe, publication en cours |
+| `hephaistos-chats` | `extensions/hephaistos-chats` | Visual workspace — canvas, cards, SWAT, ACP roster |
+| `hephaistos-kit-search` | `extensions/search-ext` (submodule) | NTFS search inside the IDE, ships the MCP server |
+| `orchestrator-monitor` | `extensions/orchestrator-monitor` (submodule) | Agents/tasks/providers panel, wake-up bridge, multi-workspace bus |
+| `postdev` | packaged VSIX (`extensions/vsix/`) | Post-dev utilities; source repository pending publication |
 
-Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
+Technical sheets: [docs/VSIX.md](docs/VSIX.md).
 
-## Gouvernance et sécurité machine
+## Stability notes
 
-- **Mutex Single-Flight ACP** — verrou par `providerId/sessionId` (TTL 120 s) : pas de cascades dupliquées.
-- **Throttle CLI** — 2 workers CLI max simultanés, priorité `BELOW_NORMAL`.
-- **Anti-zombies** — `tools/reap-and-reconcile.ps1` + `reconcile_tasks`/`reap_ghosts`.
-- **`.agent` n'est pas une poubelle** — artefacts projet hors du layer (règle gravée dans `global_rules.md`).
+- ACP single-flight mutex per `providerId/sessionId` (120 s TTL) prevents
+  duplicate session cascades.
+- CLI worker throttle
+ throttle (2 concurrent) with `BELOW_NORMAL` process priority.
+- `tools/reap-and-reconcile.ps1` reaps ghost tasks and reconciles orphans.
 
-## Mémoire unifiée
+## Known limitations
 
-Pilotée par **hphe-mcp** — la mémoire vit dans le même serveur que la
-recherche et l'orchestrateur, pas dans un MCP séparé : `memory_write`,
-`memory_search`, `memory_read`, KG (nodes/edges) + vector store usearch
-(2048D) + SQLite (`sqlite-node`). `AGENT_DB_ROOT` → racine mémoire
-(`<AGENT_DB_ROOT>\current_workspace\<projet>`) ; junction `memory-database/`
-créée par `start-workspace.ps1`. Toute écriture passe par les outils —
-jamais d'accès direct concurrent (voir `.agent/ARCHITECTURE.md`).
-
-## État de la beta
-
-✅ Orchestration visuelle, SWAT runner, edges outils, cartes n8n/ComfyUI, bridge, MCP 58 outils — fonctionnels et testés (16/16 bridge, 14/14 extension).
-
-⚠️ Limites connues : les sous-modules (`hphe`, `search-ext`, `orchestrator-monitor`, `postdev`) pointent des dépôts privés en cours de publication ; quelques chemins par défaut restent à paramétrer par machine ; install reproductible en cours de durcissement.
+- Machine-specific defaults remain to be parameterized per install.
+- Feedback loops are rejected at schema validation (the execution DAG is
+  acyclic); cyclic review flows are on the roadmap.
+- `postdev` ships as a packaged VSIX pending its source publication.
 
 ## Documentation
 
-| Doc | Contenu |
+| Doc | Content |
 |---|---|
-| [INSTALL.md](INSTALL.md) | Installation pas à pas |
-| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md) | Référence des 58 outils |
-| [docs/VSIX.md](docs/VSIX.md) | Extensions : build, version, install |
-| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence |
-| [docs/wiki/](docs/wiki/) | Wiki projet |
-| [AGENTS.md](AGENTS.md) | Protocole agents (Cash/Tango/Bleubites) |
+| [INSTALL.md](INSTALL.md) | Step-by-step installation |
+| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md) | MCP tools reference |
+| [docs/VSIX.md](docs/VSIX.md) | Extension build/version/install sheets |
+| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Reference architecture |
+| [docs/wiki/](docs/wiki/) | Project wiki |
+| [AGENTS.md](AGENTS.md) | Agent protocol |
 
-## Rollback
+## License
 
-Serveurs legacy archivés dans `_archive/` et `%ProgramFiles%\servers\servers_backup\`. Successeur de `everything-mcp` v1 et `Hephaistos-Kit` v1.
-
----
-
-*The Developer's Forge — forge ton équipe d'agents, supervise.*
+Proprietary beta license — evaluation use only. See [LICENSE](LICENSE).
