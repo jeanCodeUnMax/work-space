@@ -24,4 +24,10 @@ for /f "usebackq delims=" %%k in ("C:\Program Files\servers\n8n-sandbox-local\ap
 set "N8N_SANDBOX_SERVICE_URL=http://127.0.0.1:18080"
 set "N8N_INSTANCE_AI_SANDBOX_ENABLED=true"
 set "N8N_INSTANCE_AI_SANDBOX_PROVIDER=n8n-sandbox"
+REM Ops & Business Suite : re-application du patch UI (ecrase par les mises a jour npm).
+set "OPS_DIST=%APPDATA%\npm\node_modules\n8n\node_modules\n8n-editor-ui\dist"
+if exist "%OPS_DIST%\index.html" (
+  copy /y "C:\Program Files\servers\n8n-ops-suite\ops-menu.js" "%OPS_DIST%\static\ops-menu.js" >nul 2>&1
+  findstr /c:"ops-menu.js" "%OPS_DIST%\index.html" >nul || powershell -NoProfile -Command "(Get-Content '%OPS_DIST%\index.html' -Raw).Replace('</body>', '<script src="/static/ops-menu.js?v=2"></script></body>') | Set-Content '%OPS_DIST%\index.html' -NoNewline"
+)
 n8n.cmd start >> "%USERPROFILE%\.n8n\n8n-run.log" 2>&1
