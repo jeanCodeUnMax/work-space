@@ -18,7 +18,7 @@
 ![Canvas](<https://img.shields.io/badge/canvas-React%20Flow-61DAFB>)
 ![Outils](https://img.shields.io/badge/outils_MCP-58-informational)
 ![Statut](https://img.shields.io/badge/statut-beta%20publique-yellow)
-![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
+![Licence](https://img.shields.io/badge/licence-Proprietaire%20beta-red)
 
 **Beta publique** — le kit est fonctionnel sur la machine de dev ; l'installation
 reproductible multi-machines est en cours (voir [État de la beta](#état-de-la-beta)).
@@ -45,12 +45,16 @@ reproductible multi-machines est en cours (voir [État de la beta](#état-de-la-
 | Capacité | Détail |
 |---|---|
 | **Orchestration visuelle** | Canvas React Flow : pose des cartes agent/service/skill/role, relie par edges exec ou outils |
-| **SWAT workflows** | Schémas persistés, switching live, DAG d'exécution, boucles de feedback |
+| **SWAT workflows** | Schémas persistés, switching live, DAG d'exécution **acyclique** (les boucles sont rejetées à la validation — feedback loops en roadmap) |
 | **Bleubites** | Workers `chat-*` outillés (fs read/write/list confinés workspace), providers free ou perso |
 | **Sessions ACP réelles** | Détection des agents IDE ouverts (Devin, Antigravity), injection de prompts, binding carte↔session |
 | **Recherche filesystem** | ~6,4M entrées indexées, <50 ms, `content_search`/`semantic_search`/`hybrid_search` |
 | **Mémoire unifiée** | KG + vector store + SQLite, outils `memory_*`, séparation workspace/global |
 | **Orchestrateur de tâches** | `create_task`/`dispatch_task`/`update_task`, bus `comms.jsonl`, wake-up IDE |
+| **Outils centralisés HPHE** | 1 seul serveur MCP `hphe-mcp` = 58 outils (recherche, contenu, vecteurs, mémoire, tâches, beacon) — plus de MCP dispersés |
+| **Beacon** | Journal d'activité agents → ingestion offset JSONL, **redaction de secrets** (bearer, api_key, nvapi-/sk-/ghp_), résumés en mémoire HPHE |
+| **Skill-mux** | Serveur MCP stdio — registre central des skills machine (`skill-registry.json` rebuild à la volée), racines configurables |
+| **MCP-mux** | Multiplexage des serveurs MCP par workspace via `setup-mcp-mux.mjs` |
 | **Multi-IDE** | Devin Desktop, Antigravity, Cursor — même couche `.agent` propagée par `sync-agent-layer.ps1` |
 
 ## IDE visuel — hephaistos-chats
@@ -88,6 +92,13 @@ Extension VS Code-fork (`extensions/hephaistos-chats`, VSIX `0.3.59`) :
   `kaggle-ctl.ps1`). Prompts/negative-prompts forwardés.
 - **Providers LLM** — NVIDIA NIM, OpenRouter, OmniRoute, devin-cli,
   antigravity-acp, ollama-cloud : sélection par carte dans l'inspecteur.
+- **Obsidian** — intégration **explicite** (pas implicite) : `obsidian-cli.mjs`
+  (vault borné via `OBSIDIAN_VAULT_PATH` / `local-paths.json`, listage,
+  lecture, inventaire plugins), `obsidian-mcp-proxy.mjs`, skill
+  `antigravity-obsidian` (serveur MCP + sync-engine), et deux workflows n8n
+  packagés (*Obsidian Hub*, *SWAT Obsidian*). Sans vault configuré, la
+  fonctionnalité est simplement inactive — rien d'implicite ne touche un
+  vault.
 
 ## Couche agent
 
@@ -178,7 +189,13 @@ Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
 
 ## Mémoire unifiée
 
-`AGENT_DB_ROOT` → racine mémoire (`<AGENT_DB_ROOT>\current_workspace\<projet>`). Junction locale `memory-database/` créée par `start-workspace.ps1`. Écritures uniquement via outils `memory_*` / `sqlite-node`.
+Pilotée par **hphe-mcp** — la mémoire vit dans le même serveur que la
+recherche et l'orchestrateur, pas dans un MCP séparé : `memory_write`,
+`memory_search`, `memory_read`, KG (nodes/edges) + vector store usearch
+(2048D) + SQLite (`sqlite-node`). `AGENT_DB_ROOT` → racine mémoire
+(`<AGENT_DB_ROOT>\current_workspace\<projet>`) ; junction `memory-database/`
+créée par `start-workspace.ps1`. Toute écriture passe par les outils —
+jamais d'accès direct concurrent (voir `.agent/ARCHITECTURE.md`).
 
 ## État de la beta
 
