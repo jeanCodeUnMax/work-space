@@ -22,7 +22,7 @@ const DISCOVERY_TIMEOUT_MS = 10_000;
 export function logRuntime(...args: unknown[]): void {
     try {
         const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-            || 'C:/Program Files/Projet-complet/hephaistos2-kit';
+            || process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit';
         const dir = path.join(root, '.agent', 'chats');
         fs.mkdirSync(dir, { recursive: true });
         const line = args
@@ -125,8 +125,8 @@ function restToken(): string | undefined {
         return process.env.HPHE_REST_TOKEN.trim();
     }
     const candidates = [
-        'C:/Program Files/servers/hephaistos2-kit/data/hphe-rest.token',
-        path.join(process.env.HPHE_INSTALL || 'C:/Program Files/servers/hephaistos2-kit', 'data', 'hphe-rest.token'),
+        path.join(process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit', 'data', 'hphe-rest.token'),
+        path.join(process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit', 'data', 'hphe-rest.token'),
         path.join(process.env.ProgramFiles || 'C:/Program Files', 'servers', 'hephaistos2-kit', 'data', 'hphe-rest.token'),
     ];
     for (const c of candidates) {
@@ -659,7 +659,7 @@ async function runProviderTurn(
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/projet-temporaire/hephaistos2-kit',
+                'HTTP-Referer': 'https://github.com/art-qalam-fr/hephaistos2-kit',
                 'X-Title': 'Hephaistos Chats',
             },
             body: JSON.stringify({

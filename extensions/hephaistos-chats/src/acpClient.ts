@@ -28,7 +28,7 @@ interface ProviderSpec {
 }
 
 /** Serveur ACP stdio de la gateway OmniRoute locale (localhost:20128). */
-// omniroute.cmd (.local/bin) délègue 'acp' au harness C:\Program Files\servers\omni-routeur
+// omniroute.cmd (.local/bin) délègue 'acp' au harness %HPHE_INSTALL%\omni-routeur
 
 function opencodeProfile(cfg: string): ProviderSpec {
     return {

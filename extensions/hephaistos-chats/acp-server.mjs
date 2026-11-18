@@ -597,7 +597,7 @@ async function completeTurnWithMcps(session, mcps) {
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/projet-temporaire/hephaistos2-kit',
+                'HTTP-Referer': 'https://github.com/art-qalam-fr/hephaistos2-kit',
                 'X-Title': 'Hephaistos Chats ACP',
             },
             body: { model, messages: chatMessages, stream: false },

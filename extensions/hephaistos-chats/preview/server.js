@@ -7,7 +7,7 @@ const BASE_DIR = path.join(__dirname, '..');
 
 function getRestToken() {
     try {
-        const tokenFile = 'C:/Program Files/servers/hephaistos2-kit/data/hphe-rest.token';
+        const tokenFile = path.join(process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit', 'data', 'hphe-rest.token');
         if (fs.existsSync(tokenFile)) {
             return fs.readFileSync(tokenFile, 'utf8').trim();
         }
