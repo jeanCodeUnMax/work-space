@@ -1089,3 +1089,23 @@ textarea {
 .flow-node.amber .flow-node-kicker {
     color: #e2a65d;
 }
+
+/* Carte service n8n (svc/n8n/*) — teinte violette, distincte des agents. */
+.flow-node.svc {
+    border-color: rgba(234, 75, 113, 0.6);
+    border-style: dashed;
+}
+
+.flow-node.svc .flow-node-kicker {
+    color: #f2789a;
+}
+
+.flow-canvas .react-flow__handle.svc-tool-handle {
+    background: #EA4B71;
+    border-radius: 2px;
+}
+
+.svc-chip {
+    border-color: rgba(234, 75, 113, 0.6);
+    color: #f2789a;
+}

@@ -1079,6 +1079,53 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
+        if (message.type === 'add_svc') {
+            // Carte service n8n : bloc svc/n8n/carte-<ts> en attente de choix de
+            // workflow dans le panneau (sessionId = svc/n8n/<workflowId> ensuite).
+            const svc = (message as { svc?: { kind?: string } }).svc;
+            if (svc?.kind === 'n8n') {
+                try {
+                    const graph = workflowStore.load(store.list());
+                    const sessionId = `svc/n8n/carte-${Date.now().toString(36)}`;
+                    const idx = graph.nodes.length;
+                    graph.nodes.push({
+                        sessionId,
+                        role: 'Service n8n',
+                        task: 'Decris ce que ce workflow fournit (contexte outil) ou execute (etape).',
+                        skills: [],
+                        title: 'Service n8n (a configurer)',
+                        provider: 'n8n',
+                        position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                    });
+                    FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+                } catch (error) {
+                    FlowWorkspacePanel.error(String(error));
+                }
+            }
+            return;
+        }
+
+        if (message.type === 'n8n_workflows') {
+            // Inventaire live des workflows via la bridge :7478 — la clé reste
+            // côté serveur, le webview ne fait que relire la liste.
+            const token = (() => {
+                try { return fs.readFileSync(path.join(workspaceRoot || '', '.agent', 'ws-bridge.token'), 'utf8').trim(); }
+                catch { return ''; }
+            })();
+            void fetch('http://127.0.0.1:7478/n8n/workflows', {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                signal: AbortSignal.timeout(15000),
+            })
+                .then(async (r) => {
+                    const data = await r.json().catch(() => ({})) as { workflows?: unknown[]; error?: string };
+                    FlowWorkspacePanel.post({ type: 'n8n_workflows', workflows: data.workflows || [], error: data.error });
+                })
+                .catch((error) => {
+                    FlowWorkspacePanel.post({ type: 'n8n_workflows', workflows: [], error: String(error) });
+                });
+            return;
+        }
+
         if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
             const agent = (message as { agent?: PaletteAgent }).agent;
             if (agent?.sessionId) {

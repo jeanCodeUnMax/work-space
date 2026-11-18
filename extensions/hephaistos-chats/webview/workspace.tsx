@@ -73,6 +73,16 @@ interface StoredEdge {
     target: string;
     sourceHandle?: string | null;
     targetHandle?: string | null;
+    /** 'tool' = grant de contexte svc/* → agent (pointillé), sinon exécution. */
+    type?: string;
+}
+
+interface N8nWorkflowItem {
+    id: string;
+    name: string;
+    callable?: boolean;
+    callableContract?: string;
+    webhookPath?: string;
 }
 
 interface WorkflowGraph {
@@ -177,10 +187,41 @@ function onAgentIconError(event: React.SyntheticEvent<HTMLImageElement>): void {
     img.style.display = 'none';
 }
 
+const TOOL_EDGE_STYLE: React.CSSProperties = { strokeDasharray: '6 4', stroke: '#EA4B71' };
+
+function toFlowEdge(edge: StoredEdge & { selectable?: boolean }): Edge {
+    const tool = edge.type === 'tool';
+    return {
+        ...edge,
+        type: 'smoothstep',
+        selectable: true,
+        ...(tool ? {
+            data: { kind: 'tool' },
+            style: TOOL_EDGE_STYLE,
+            animated: true,
+            label: 'outil',
+        } : {}),
+    };
+}
+
+/** Logo n8n simplifié (trois nœuds reliés) — inline, aucun asset réseau. */
+function N8nLogo({ size = 20 }: { size?: number }): React.JSX.Element {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <circle cx="5" cy="12" r="2.6" fill="#EA4B71" />
+            <circle cx="12" cy="5.5" r="2.6" fill="#EA4B71" />
+            <circle cx="19" cy="12" r="2.6" fill="#EA4B71" />
+            <circle cx="12" cy="18.5" r="2.6" fill="#EA4B71" />
+            <path d="M7 10.5 10.2 7M13.8 7 17 10.5M10.2 17 7 13.5M13.8 17 17 13.5" stroke="#EA4B71" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+    );
+}
+
 function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Element {
+    const isSvc = data.sessionId.startsWith('svc/');
     return (
         <div
-            className={'flow-node ' + data.tone + (selected ? ' selected' : '')}
+            className={'flow-node ' + data.tone + (isSvc ? ' svc' : '') + (selected ? ' selected' : '')}
             onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('application/x-hph-skill')
                     || event.dataTransfer.types.includes('application/x-hph-agent')
@@ -221,27 +262,42 @@ function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Elem
         >
             <Handle type="target" position={Position.Left} id="target-left" title="Entrée latérale" />
             <Handle type="target" position={Position.Top} id="target-top" title="Entrée haute" />
+            {isSvc && (
+                <Handle
+                    type="source"
+                    position={Position.Top}
+                    id="tool"
+                    className="svc-tool-handle"
+                    title="Port outil — relie en pointillé à un agent ou à l'entrée : le résultat du workflow est injecté en contexte avant son étape"
+                />
+            )}
             <div className="flow-node-heading">
-                <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
+                <span className="flow-node-kicker">{isSvc ? 'SERVICE N8N' : data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
-                <button
-                    type="button"
-                    className="flow-node-point"
-                    title={`Pointer ${data.title} vers l'agent référent`}
-                    onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
-                >⌖</button>
-                <button
-                    type="button"
-                    className="flow-node-point"
-                    title={(data.cardKind || (data.provider === 'antigravity-acp' ? 'agy' : data.provider === 'devin-cli' ? 'devin' : undefined)) === 'agy'
-                        ? "Attacher la fenêtre Antigravity à ce bloc"
-                        : (data.cardKind || (data.provider === 'devin-cli' ? 'devin' : undefined)) === 'devin'
-                            ? "Attacher la fenêtre Devin à ce bloc"
-                            : "Prendre la fenêtre active et l'attacher à ce bloc"}
-                    onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
-                >⤓</button>
+                {!isSvc && (
+                    <>
+                        <button
+                            type="button"
+                            className="flow-node-point"
+                            title={`Pointer ${data.title} vers l'agent référent`}
+                            onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
+                        >⌖</button>
+                        <button
+                            type="button"
+                            className="flow-node-point"
+                            title={(data.cardKind || (data.provider === 'antigravity-acp' ? 'agy' : data.provider === 'devin-cli' ? 'devin' : undefined)) === 'agy'
+                                ? "Attacher la fenêtre Antigravity à ce bloc"
+                                : (data.cardKind || (data.provider === 'devin-cli' ? 'devin' : undefined)) === 'devin'
+                                    ? "Attacher la fenêtre Devin à ce bloc"
+                                    : "Prendre la fenêtre active et l'attacher à ce bloc"}
+                            onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
+                        >⤓</button>
+                    </>
+                )}
             </div>
-            {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
+            {isSvc
+                ? <N8nLogo size={22} />
+                : (()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {data.bound && <span className="flow-node-bound" title={`Carte associée à une fenêtre ${data.bound.kind === 'agy' ? 'Antigravity' : 'Devin'}`}>● associée</span>}
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
@@ -315,12 +371,13 @@ function toStoredGraph(
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
             bound: node.data.bound,
         })),
-        edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
+        edges: edges.map(({ id, source, target, sourceHandle, targetHandle, data }) => ({
             id,
             source,
             target,
             ...(sourceHandle ? { sourceHandle } : {}),
             ...(targetHandle ? { targetHandle } : {}),
+            ...(data?.kind === 'tool' ? { type: 'tool' } : {}),
         })),
     };
     if (activeSchema) graph.activeSchema = activeSchema;
@@ -383,6 +440,7 @@ function Workspace(): React.JSX.Element {
     };
     const [newProvider, setNewProvider] = useState('devin-cli');
     const [iconTheme, setIconTheme] = useState('commando');
+    const [n8nWorkflows, setN8nWorkflows] = useState<N8nWorkflowItem[] | undefined>(undefined);
     const saveTimer = useRef<number | undefined>(undefined);
     const deleteTimer = useRef<number | undefined>(undefined);
 
@@ -413,6 +471,10 @@ function Workspace(): React.JSX.Element {
             }
             if (message?.type === 'schemas_state') {
                 setSchemas(message.schemas || []);
+                return;
+            }
+            if (message?.type === 'n8n_workflows') {
+                setN8nWorkflows(Array.isArray(message.workflows) ? message.workflows : []);
                 return;
             }
             if (message?.type === 'icon_theme') {
@@ -455,7 +517,7 @@ function Workspace(): React.JSX.Element {
                         };
                     });
                 });
-                setEdges(view.edges.map(e=>({ ...e, selectable: true })));
+                setEdges(view.edges.map((e) => toFlowEdge(e as StoredEdge)));
                 setWorkflowName(view.graph.name);
                 setActiveSchema(view.graph.activeSchema);
                 setActiveSchemaId(view.graph.activeSchemaId);
@@ -631,19 +693,21 @@ function Workspace(): React.JSX.Element {
     // Un lien refusé par le roster (doublon, self-loop, endpoint absent)
     // échouait en silence au save : l'edge restait dessiné puis disparaissait
     // au changement de schéma. On refuse donc AVANT de le dessiner.
-    const edgeRejection = (source: string, target: string, pool: Edge[]): string | null => {
+    const edgeRejection = (source: string, target: string, pool: Edge[], kind: string): string | null => {
         if (source === target) return 'Connexion refusée : un bloc ne peut pas se lier à lui-même.';
-        if (pool.some((e) => e.source === source && e.target === target)) {
+        if (pool.some((e) => e.source === source && e.target === target && (e.data?.kind || 'exec') === kind)) {
             return 'Connexion refusée : ce lien existe déjà.';
         }
         return null;
     };
 
     // Les boucles sont autorisées au dessin (orchestration libre) ; seul le
-    // lancement automatique les refuse. On le signale sans bloquer.
+    // lancement automatique les refuse. On le signale sans bloquer. Les edges
+    // 'tool' ne sont pas des dépendances : ils ne créent jamais de cycle.
     const createsCycle = (source: string, target: string, pool: Edge[]): boolean => {
         const bySource = new Map<string, string[]>();
         for (const e of pool) {
+            if (e.data?.kind === 'tool') continue;
             const list = bySource.get(e.source) || [];
             list.push(e.target);
             bySource.set(e.source, list);
@@ -660,18 +724,27 @@ function Workspace(): React.JSX.Element {
         return false;
     };
 
+    // Port 'tool' (cartes svc/*) → edge pointillé : le résultat du workflow
+    // est pré-fetché par le runner et injecté en contexte à l'agent cible.
+    const toolEdgeProps = { data: { kind: 'tool' }, style: TOOL_EDGE_STYLE, animated: true, label: 'outil' };
+
     const onConnect = useCallback((connection: Connection) => {
+        const tool = connection.sourceHandle === 'tool';
+        if (tool && !String(connection.source || '').startsWith('svc/')) {
+            setRunSummary('Connexion refusée : le port outil ne part que des cartes service.');
+            return;
+        }
         const rejected = connection.source && connection.target
-            ? edgeRejection(connection.source, connection.target, edges)
+            ? edgeRejection(connection.source, connection.target, edges, tool ? 'tool' : 'exec')
             : 'Connexion refusée : lien incomplet.';
         if (rejected) {
             setRunSummary(rejected);
             return;
         }
-        const cycled = connection.source && connection.target
+        const cycled = !tool && connection.source && connection.target
             ? createsCycle(connection.source, connection.target, edges)
             : false;
-        const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, edges);
+        const nextEdges = addEdge({ ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps : {}) }, edges);
         setEdges(nextEdges);
         setSelectedEdgeId(null);
         if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
@@ -679,19 +752,24 @@ function Workspace(): React.JSX.Element {
     }, [edges, nodes, sendSave, setEdges]);
 
     const onReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
+        const tool = oldEdge.data?.kind === 'tool' || connection.sourceHandle === 'tool';
+        if (tool && !String(connection.source || '').startsWith('svc/')) {
+            setRunSummary('Connexion refusée : le port outil ne part que des cartes service.');
+            return;
+        }
         const pool = edges.filter((edge) => edge.id !== oldEdge.id);
         const rejected = connection.source && connection.target
-            ? edgeRejection(connection.source, connection.target, pool)
+            ? edgeRejection(connection.source, connection.target, pool, tool ? 'tool' : 'exec')
             : 'Connexion refusée : lien incomplet.';
         if (rejected) {
             setRunSummary(rejected);
             return;
         }
-        const cycled = connection.source && connection.target
+        const cycled = !tool && connection.source && connection.target
             ? createsCycle(connection.source, connection.target, pool)
             : false;
         const nextEdges = addEdge(
-            { ...connection, type: 'smoothstep' },
+            { ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps : {}) },
             pool,
         );
         setEdges(nextEdges);
@@ -713,6 +791,37 @@ function Workspace(): React.JSX.Element {
         setNodes(nextNodes);
         sendSave(nextNodes);
     };
+
+    // Carte service n8n : le workflow choisi EST le sessionId (svc/n8n/<id>) —
+    // le runner le résout via l'allowlist. Renommer = réécrire les edges.
+    const setSvcWorkflow = (nodeId: string, wf: N8nWorkflowItem): void => {
+        const nextId = `svc/n8n/${wf.id}`;
+        if (nodes.some((n) => n.id === nextId && n.id !== nodeId)) {
+            setRunSummary(`Le workflow « ${wf.name} » est déjà placé sur ce schéma.`);
+            return;
+        }
+        const nextNodes = nodes.map((n) => n.id === nodeId
+            ? { ...n, id: nextId, data: { ...n.data, sessionId: nextId, title: `n8n · ${wf.name}` } }
+            : n);
+        const nextEdges = edges.map((e) => ({
+            ...e,
+            source: e.source === nodeId ? nextId : e.source,
+            target: e.target === nodeId ? nextId : e.target,
+        }));
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+        setSelectedId(nextId);
+        sendSave(nextNodes, nextEdges);
+    };
+
+    // Liste des workflows n8n demandée au host (bridge :7478) quand une carte
+    // svc est sélectionnée — le webview ne peut pas fetch hors CSP.
+    const selectedIsSvc = !!selectedNode && selectedNode.data.sessionId.startsWith('svc/');
+    useEffect(() => {
+        if (selectedIsSvc && n8nWorkflows === undefined) {
+            vscode.postMessage({ type: 'n8n_workflows' });
+        }
+    }, [selectedIsSvc, n8nWorkflows]);
 
     const chooseEntry = (id: string): void => {
         const isCurrentExplicitEntry = entryIsExplicit && entrySessionId === id;
@@ -851,6 +960,10 @@ function Workspace(): React.JSX.Element {
     };
 
     const addAgent = (): void => {
+        if (newProvider === 'svc-n8n') {
+            vscode.postMessage({ type: 'add_svc', svc: { kind: 'n8n' } });
+            return;
+        }
         vscode.postMessage({ type: 'add_agent', provider: newProvider });
     };
 
@@ -915,8 +1028,9 @@ function Workspace(): React.JSX.Element {
                         onChange={(event) => setNewProvider(event.target.value)}
                     >
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
+                        <option value="svc-n8n">⛁ Service n8n</option>
                     </select>
-                    <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc vide du type choisi, à rattacher ensuite avec ⤓">+ Bloc</button>
+                    <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc du type choisi — les cartes n8n se configurent ensuite dans le panneau">+ Bloc</button>
                 </div>
             </header>
             <div className="workspace-content">
@@ -1105,12 +1219,19 @@ function Workspace(): React.JSX.Element {
                                 onDragOver={(event) => {
                                     if (event.dataTransfer.types.includes('application/x-hph-role')
                                         || event.dataTransfer.types.includes('application/x-hph-agent')
-                                        || event.dataTransfer.types.includes('application/x-hph-card')) {
+                                        || event.dataTransfer.types.includes('application/x-hph-card')
+                                        || event.dataTransfer.types.includes('application/x-hph-svc')) {
                                         event.preventDefault();
                                         event.dataTransfer.dropEffect = 'copy';
                                     }
                                 }}
                                 onDrop={(event) => {
+                                    const svcRaw = event.dataTransfer.getData('application/x-hph-svc');
+                                    if (svcRaw) {
+                                        event.preventDefault();
+                                        try { vscode.postMessage({ type: 'add_svc', svc: JSON.parse(svcRaw) }); } catch { /* carte invalide */ }
+                                        return;
+                                    }
                                     const agentRaw = event.dataTransfer.getData('application/x-hph-agent');
                                     if (agentRaw) {
                                         event.preventDefault();
@@ -1172,8 +1293,63 @@ function Workspace(): React.JSX.Element {
                                     Retirer du schéma
                                 </button>
                             </div>
-                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{(()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
+                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{selectedNode.data.sessionId.startsWith('svc/')
+                                ? <N8nLogo size={30} />
+                                : (()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
                             <p className="inspector-provider">{selectedNode.data.provider} · {selectedNode.data.model}</p>
+                            {selectedNode.data.sessionId.startsWith('svc/') && (() => {
+                                const wfId = selectedNode.data.sessionId.split('/')[2] || '';
+                                const current = (n8nWorkflows || []).find((w) => w.id === wfId);
+                                return (
+                                    <>
+                                        <label className="field-label" htmlFor="svc-workflow">Workflow n8n</label>
+                                        <select
+                                            id="svc-workflow"
+                                            className="inspector-input"
+                                            title="Workflow n8n appelé par cette carte — résolu via l'allowlist de la bridge"
+                                            value={current ? wfId : ''}
+                                            onChange={(event) => {
+                                                const wf = (n8nWorkflows || []).find((w) => w.id === event.target.value);
+                                                if (wf) setSvcWorkflow(selectedNode.id, wf);
+                                            }}
+                                        >
+                                            <option value="">{n8nWorkflows === undefined ? '— chargement… —' : '— choisir un workflow —'}</option>
+                                            {(n8nWorkflows || []).map((wf) => (
+                                                <option key={wf.id} value={wf.id} disabled={!wf.callable}>
+                                                    {wf.name}{wf.callable ? '' : ' (non invocable)'}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="schema-restore"
+                                            title="Recharger la liste des workflows depuis la bridge"
+                                            onClick={() => { setN8nWorkflows(undefined); vscode.postMessage({ type: 'n8n_workflows' }); }}
+                                        >⟳ Actualiser la liste</button>
+                                        {current?.callableContract && (
+                                            <p className="inspector-provider" title="Contrat d'entrée du webhook">contrat : {current.callableContract}</p>
+                                        )}
+                                        {current && !current.callable && (
+                                            <p className="inspector-provider">⚠ Non invocable — le runner refusera l'appel (allowlist bridge).</p>
+                                        )}
+                                        <p className="inspector-provider">
+                                            Port ⛁ outil (haut) → agent ou entrée : résultat injecté en contexte.
+                                            Ports droite/bas → étape d'exécution normale.
+                                        </p>
+                                        <label className="field-label" htmlFor="svc-task">Mission de ce service</label>
+                                        <textarea
+                                            id="svc-task"
+                                            className="inspector-textarea"
+                                            value={selectedNode.data.task}
+                                            onChange={(event) => updateNode(selectedNode.id, { task: event.target.value })}
+                                            placeholder="Ce que ce workflow fournit (contexte outil) ou exécute (étape)…"
+                                            maxLength={6000}
+                                        />
+                                        <div className="inspector-session">Node : <code>{selectedNode.data.sessionId}</code></div>
+                                    </>
+                                );
+                            })()}
+                            {!selectedNode.data.sessionId.startsWith('svc/') && (<>
                             <label className="field-label" htmlFor="icon-theme">Thème d'icônes</label>
                             <select
                                 id="icon-theme"
@@ -1249,6 +1425,7 @@ function Workspace(): React.JSX.Element {
                                     : 'Définir comme point d’entrée'}
                             </button>
                             <div className="inspector-session">Session : <code>{selectedNode.data.sessionId}</code></div>
+                            </>)}
                         </>
                     ) : (
                         <div className="inspector-empty">
@@ -1268,6 +1445,7 @@ function Workspace(): React.JSX.Element {
                     )}
                     {completedCount > 0 && <div className="run-summary">{completedCount} étape{completedCount > 1 ? 's' : ''} terminée{completedCount > 1 ? 's' : ''} dans cette exécution.</div>}
                     {([
+                        { key: 'services', label: 'SERVICES — glisser la carte n8n sur le canvas, puis choisir le workflow', query: '', setQuery: (_v: string) => undefined, placeholder: '' },
                         { key: 'cards', label: 'CARTES — glisser sur le canevas pour créer un bloc préconfiguré', query: cardQuery, setQuery: setCardQuery, placeholder: 'Filtrer les cartes…' },
                         { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
                         { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
@@ -1291,6 +1469,14 @@ function Workspace(): React.JSX.Element {
                                         onChange={(event) => palette.setQuery(event.target.value)}
                                     />
                                     <div className="skill-palette-list">
+                                        {palette.key === 'services' && (
+                                            <span
+                                                className="skill-chip draggable svc-chip"
+                                                title="Carte service n8n : pose-la, choisis le workflow dans le panneau, relie le port ⛁ outil à un agent ou à l'entrée"
+                                                draggable
+                                                onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-svc', JSON.stringify({ kind: 'n8n' })); event.dataTransfer.effectAllowed = 'copy'; }}
+                                            >⛁ Workflow n8n</span>
+                                        )}
                                         {palette.key === 'competences' && (<>
                                             {catalog.skills.length === 0 && <span className="skill-empty">Aucun skill dans .agent/skills</span>}
                                             {catalog.skills.filter((skill) => !palette.query || skill.toLowerCase().includes(palette.query.toLowerCase())).map((skill) => (

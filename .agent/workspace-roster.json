@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-16T15:31:05.538Z",
+  "updatedAt": "2026-11-18T13:52:52.623Z",
   "core": {
     "devin": [
       {
@@ -16,7 +16,7 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/sugary-shoemaker",
         "restore": "existing-only",
-        "role": "Integrateur-Git",
+        "role": "Orchestrateur",
         "hidden": true,
         "title": "daring-agent"
       },
@@ -188,7 +188,7 @@
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/adhesive-food",
         "restore": "existing-only",
-        "role": "Orchestrateur-Vault",
+        "role": "Chairman-Concil",
         "title": "daring-agent",
         "hidden": true
       }
@@ -206,7 +206,7 @@
         "providerId": "nim2",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
-        "role": "Codeur",
+        "role": "Premiers-Principes",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "keen-agent"
@@ -215,7 +215,7 @@
         "providerId": "omniroute",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Reviewer",
+        "role": "Outsider",
         "hidden": true,
         "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
         "title": "amber-agent"
@@ -224,7 +224,7 @@
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
-        "role": "Auditeur-securite",
+        "role": "Expansionniste",
         "hidden": true,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
         "title": "urban-agent"
@@ -242,8 +242,8 @@
         "providerId": "nim",
         "sessionId": "chat-mvfj773t",
         "restore": "open-or-reveal",
-        "role": "Verif-Submodules",
-        "hidden": false,
+        "role": "Redacteur-Caverne",
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-bolt-e4b",
         "title": "xenial-agent"
       },
@@ -260,8 +260,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
-        "role": "Testeur",
-        "hidden": true,
+        "role": "Analyste",
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "zealous-agent"
       },
@@ -270,7 +270,7 @@
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
         "model": "groq/openai/gpt-oss-120b",
-        "role": "Avocat-du-Diable",
+        "role": "Contrariant",
         "hidden": true,
         "title": "keen-nova"
       },
@@ -278,8 +278,8 @@
         "providerId": "nim2",
         "sessionId": "chat-mvp0beacon",
         "restore": "open-or-reveal",
-        "role": "Feedback-Beacon-Knowledge",
-        "hidden": false,
+        "role": "Collecteur-Caverne",
+        "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "onyx-agent"
       },
@@ -287,7 +287,7 @@
         "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Sentinelle-Infra-Perf",
+        "role": "Executeur",
         "hidden": true,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "title": "ionic-orbit"
@@ -323,7 +323,7 @@
         "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
         "restore": "open-or-reveal",
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
-        "role": "Expert-Faisabilite-Implementation",
+        "role": "Empirique",
         "title": "brave-ibis",
         "hidden": true
       },
@@ -690,7 +690,7 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "Diagnostic-Runtime-Comms",
-        "title": "Diagnostic-Runtime-Comms",
+        "title": "proud-tide",
         "hidden": true
       },
       {
@@ -699,7 +699,7 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "Diagnostic-Roster-Identites",
-        "title": "Diagnostic-Roster-Identites",
+        "title": "daring-robin",
         "hidden": true
       },
       {
@@ -708,7 +708,7 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "Diagnostic-Architecture",
-        "title": "Diagnostic-Architecture",
+        "title": "fair-shoemaker",
         "hidden": true
       },
       {
@@ -717,7 +717,7 @@
         "restore": "open-or-reveal",
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "role": "Diagnostic-Synthese",
-        "title": "Diagnostic-Synthese",
+        "title": "ionic-shoemaker",
         "hidden": true
       },
       {
@@ -783,6 +783,14 @@
         "role": "Antigravity",
         "title": "Antigravity",
         "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "svc/n8n/hephaistos-agent",
+        "restore": "open-or-reveal",
+        "role": "Outil-N8N",
+        "title": "n8n-tool",
+        "hidden": false
       }
     ],
     "antigravity": [
@@ -1118,64 +1126,67 @@
   },
   "workflow": {
     "version": 1,
-    "name": "swat-telegram",
+    "name": "swat-n8n-tools-demo",
     "entrySessionId": "acp/devin-cli/ionian-helicopter",
     "nodes": [
       {
         "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur-Flux",
-        "task": "Cadre la mission Telegram : precise l instruction et le chat cible, decompose en ordres bornes pour le Redacteur, puis tranche GO/NO-GO sur le verdict du Relecteur. Ne redige jamais le message lui-meme.",
+        "role": "Orchestrateur",
+        "task": "Transmets la demande a l Analyste.",
         "skills": [
           "orchestrator"
         ],
         "mcps": [],
         "title": "daring-agent",
         "position": {
-          "x": -330,
-          "y": 0
-        }
+          "x": -264,
+          "y": -44
+        },
+        "provider": "devin-cli"
       },
       {
-        "sessionId": "chat-mvp0beacon",
-        "role": "Redacteur-Telegram",
-        "task": "Redige le message Telegram demande par la mission : texte brut ou Markdown Telegram, 4096 caracteres max, ton clair, pas de secret ni de donnee personnelle. Rend UNIQUEMENT le texte final du message, sans commentaire.",
-        "skills": [],
-        "mcps": [],
-        "title": "onyx-agent",
-        "position": {
-          "x": 0,
-          "y": -140
-        }
-      },
-      {
-        "sessionId": "chat-mvfj773t",
-        "role": "Relecteur-Modo",
-        "task": "Relit le message du Redacteur : conformite Telegram (<=4096 chars, formatage valide), absence de secrets/credentials/donnees sensibles, coherence avec l instruction. Rend le texte final corrige pret a l envoi, precede de GO si conforme ou NO-GO suivi du motif si non conforme.",
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Analyste",
+        "task": "Reponds a la demande en utilisant le contexte outil n8n fourni ; cite les IDs recus.",
         "skills": [
-          "lint-and-validate"
+          "testing-patterns"
         ],
         "mcps": [],
-        "title": "xenial-agent",
+        "title": "zealous-agent",
         "position": {
-          "x": 330,
-          "y": 0
-        }
+          "x": 418,
+          "y": -44
+        },
+        "provider": "nim2"
+      },
+      {
+        "sessionId": "svc/n8n/hephaistos-agent",
+        "role": "Outil-N8N",
+        "task": "Carte outil : inventaire n8n injecte en contexte",
+        "skills": [],
+        "mcps": [],
+        "title": "n8n-tool",
+        "position": {
+          "x": 22,
+          "y": -374
+        },
+        "provider": "n8n"
       }
     ],
     "edges": [
       {
-        "id": "e-orch-red",
+        "id": "edge:orch->analyste",
         "source": "acp/devin-cli/ionian-helicopter",
-        "target": "chat-mvp0beacon"
+        "target": "chat-mvfj8b4m"
       },
       {
-        "id": "e-red-rel",
-        "source": "chat-mvp0beacon",
-        "target": "chat-mvfj773t"
+        "id": "tool:outil->analyste",
+        "source": "svc/n8n/hephaistos-agent",
+        "target": "chat-mvfj8b4m"
       }
     ],
-    "activeSchema": "swat-telegram",
-    "activeSchemaId": "schema-mvr09niq-8yor8"
+    "activeSchema": "swat-n8n-tools-demo",
+    "activeSchemaId": "schema-svc-n8n-tools"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

@@ -45,6 +45,8 @@ export interface WorkflowEdge {
     target: string;
     sourceHandle?: string | null;
     targetHandle?: string | null;
+    /** 'tool' = grant de contexte svc/* → agent (pas une dépendance d'exécution). */
+    type?: string;
 }
 
 export interface WorkflowGraph {
@@ -165,7 +167,8 @@ export function createWorkflowView(
         const provider = session?.provider
             || (node as { provider?: string }).provider
             || (node.sessionId.startsWith('acp/') ? node.sessionId.split('/')[1] : null)
-            || (node.sessionId.startsWith('local-') ? 'cerberos' : 'unknown');
+            || (node.sessionId.startsWith('svc/') ? 'n8n'
+                : node.sessionId.startsWith('local-') ? 'cerberos' : 'unknown');
         // Couleurs fixes : jaune = Devin ACP, bleu = Antigravity, vert = Bleubite.
         // Une fenêtre attachée (bound) décide ; sinon le provider de la session.
         const boundKind = (node as { bound?: { kind?: string } }).bound?.kind;
@@ -198,7 +201,7 @@ export function createWorkflowView(
                 // un drag et le bind ⤓ rattache la mauvaise fenêtre.
                 cardKind,
                 provider,
-                model: session?.model || (external ? 'agent IDE' : ''),
+                model: session?.model || (node.sessionId.startsWith('svc/') ? 'workflow' : external ? 'agent IDE' : ''),
                 role: node.role,
                 task: node.task,
                 skills: node.skills || [],
@@ -229,7 +232,9 @@ export function workflowOrder(graph: WorkflowGraph, entrySessionId: string): Wor
     const reachable = new Set<string>([entrySessionId]);
     const outgoing = new Map<string, string[]>();
     for (const node of graph.nodes) outgoing.set(node.sessionId, []);
-    for (const edge of graph.edges) {
+    // Edges 'tool' (svc/* -> agent) = grants de contexte, jamais des dépendances.
+    const execEdges = graph.edges.filter((edge) => edge.type !== 'tool');
+    for (const edge of execEdges) {
         outgoing.get(edge.source)?.push(edge.target);
     }
     const queue = [entrySessionId];
@@ -243,7 +248,7 @@ export function workflowOrder(graph: WorkflowGraph, entrySessionId: string): Wor
     }
 
     const indegree = new Map([...reachable].map((id) => [id, 0]));
-    for (const edge of graph.edges) {
+    for (const edge of execEdges) {
         if (reachable.has(edge.source) && reachable.has(edge.target)) {
             indegree.set(edge.target, indegree.get(edge.target)! + 1);
         }

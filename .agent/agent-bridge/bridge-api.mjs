@@ -46,7 +46,8 @@ const PORT = Number(process.env.BRIDGE_API_PORT || 7478);
 const COMMS_LOG = process.env.COMMS_LOG || path.join(WS_ROOT, '.agent', 'comms.jsonl');
 const N8N_AGENT_URL = process.env.N8N_AGENT_URL || 'http://127.0.0.1:5678/webhook/hephaistos-agent';
 const N8N_AGENT_TIMEOUT_MS = Number(process.env.N8N_AGENT_TIMEOUT_MS || 900000);
-const N8N_API_URL = process.env.HPHE_N8N_API_URL || 'http://127.0.0.1:5678/api/v1';
+const N8N_DB_PATH = process.env.N8N_DB_PATH
+    || path.join(process.env.USERPROFILE || process.env.HOME || '', '.n8n', 'database.sqlite');
 /* Workflows n8n invocables via POST /n8n/workflows/:id/invoke — allowlist explicite.
    Le secret webhook (credential « Hephaistos Bridge » = token bridge) reste côté serveur. */
 const N8N_CALLABLE_WORKFLOWS = {
@@ -55,14 +56,13 @@ const N8N_CALLABLE_WORKFLOWS = {
     'hpheDiagnosticSwat': { name: 'diagnostic architecture', webhookPath: 'hephaistos-diagnostic', timeoutSec: 600,
         contract: '{} (prérequis : schéma actif swat-diagnostic-hephaistos)' },
     'EgenrlEHmNKqN8Sq': { name: 'SWAT - Caverne Hermes', webhookPath: 'swat-caverne', timeoutSec: 300,
-        contract: '{prompt|objective|texte}' },
+        contract: '{missionId, swatId, objective} — swatId doit égaler le schéma actif (relais vers /swat/start) | ou {action|chat|text|texte|path|caption|kind|messageId|question|options|limit|topic} -> dispatcher telegram' },
     'W4itU2f4OuOGUQKV': { name: 'SWAT - OCR Histoires Presse', webhookPath: 'swat-ocr-histoires', timeoutSec: 300,
         contract: '{prompt|objective|texte}' },
     'RAp6qBCMGOcauYmK': { name: 'SWAT - Telegram Hub', webhookPath: 'swat-telegram-hub', timeoutSec: 300,
         contract: '{action?|chat?|text|texte|imageUrl|path|messageId|question|options|topic|reply|limit|query|cmd|bot|args}' },
 };
-const N8N_API_KEY = process.env.N8N_API_KEY?.trim()
-    || (() => { try { return fs.readFileSync(path.join(WS_ROOT, '.agent', 'n8n-api.key'), 'utf8').trim(); } catch { return ''; } })();
+const N8N_API_KEY = null; // plus utilisé — inventaire lu directement dans la DB n8n (readonly)
 const MAX_BODY = 64 * 1024;
 const DEFAULT_REPLY_TIMEOUT_S = 120;
 const REPLY_KINDS = new Set(['reply', 'chat-reply', 'agent-reply', 'agent-error']);
@@ -200,14 +200,48 @@ export function normalizeMission(body) {
         constraints: body.constraints || [], expectedDeliverable: body.expectedDeliverable || 'Synthese avec preuves et limites.' };
 }
 
+
+/* Ops & Business Suite (:5683) — cartes kanban des missions, fire-and-forget.
+   Jamais bloquant : echec silencieux, timeout 3s. Titre = missionId (dedup par
+   le find cote close). */
+const OPS_KANBAN = process.env.OPS_KANBAN_URL || 'http://127.0.0.1:5683';
+function opsKanban(mode, contract) {
+    if (!contract) return;
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 3000);
+    const done = () => clearTimeout(t);
+    if (mode === 'open') {
+        fetch(`${OPS_KANBAN}/api/cards`, { method: 'POST', signal: ctl.signal,
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ project_id: '55f6fb18-1675-4985-8c3a-e9e656d40085',
+                title: contract.missionId, description: String(contract.objective || '').slice(0, 500),
+                status: 'in_progress', priority: 'medium', assignee: contract.schemaId || 'swat',
+                workflow_id: 'bridge-api' }) })
+            .catch(() => {}).finally(done);
+    } else {
+        fetch(`${OPS_KANBAN}/api/kanban`, { signal: ctl.signal }).then((r) => r.json())
+            .then((kb) => {
+                const card = (kb.cards || []).find((c) => c.title === contract.missionId && c.status !== 'done');
+                if (!card) return;
+                return fetch(`${OPS_KANBAN}/api/cards/${card.id}`, { method: 'PATCH',
+                    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'done' }) });
+            }).catch(() => {}).finally(done);
+    }
+}
+
 function missionStatus(run) {
     const outputs = Object.values(run.outputs).filter((o) => o.sessionId);
+    /* Seuls les noeuds cibles d'un edge d'execution comptent comme etapes
+       attendues — les cartes svc/* cablees en 'tool' ne sont pas des steps. */
+    const expectedSteps = run.graph.nodes.filter((n) => n.sessionId !== run.graph.entrySessionId
+        && run.graph.edges.some((e) => e.target === n.sessionId && e.type !== 'tool')).length;
     const st = { ok: !run.failed, missionId: run.contract?.missionId, runId: run.runId,
         schemaId: run.graph.activeSchemaId, state: run.failed ? 'failed'
             : run.council ? (run.council.phase === 'done' ? 'completed' : 'in_progress')
-            : outputs.length === run.graph.nodes.length - 1 ? 'completed' : 'in_progress',
+            : outputs.length >= expectedSteps ? 'completed' : 'in_progress',
         steps: outputs, error: run.failed || null };
     if (run.council) st.council = run.council;
+    if (st.state === 'completed' && !run._kbDone) { run._kbDone = true; opsKanban('close', run.contract); }
     return st;
 }
 
@@ -228,15 +262,21 @@ function finalizeSwatGraph(graph, root, allowHidden = false) {
     const ids = graph.nodes.map((n) => n.sessionId);
     if (!ids.length || new Set(ids).size !== ids.length || !ids.includes(graph.entrySessionId)
         || graph.nodes.some((n) => !n.role?.trim() || !n.task?.trim())
-        || graph.edges.some((e) => !ids.includes(e.source) || !ids.includes(e.target) || e.target === graph.entrySessionId)) {
+        || graph.edges.some((e) => !ids.includes(e.source) || !ids.includes(e.target)
+            || (e.type !== 'tool' && e.target === graph.entrySessionId)
+            || (e.type === 'tool' && !String(e.source).startsWith('svc/')))) {
         throw new Error('Graphe SWAT invalide : identites, missions ou liens incoherents.');
     }
     if (!council) {
+        /* Edges d'exécution seuls ordonnancent les étapes ; les edges 'tool'
+           (svc/* -> agent) sont des grants de contexte, pas des dépendances. */
+        const execEdges = graph.edges.filter((e) => e.type !== 'tool');
+        const stepIds = new Set(execEdges.map((e) => e.target));
         const reached = new Set([graph.entrySessionId]);
-        const pending = new Set(ids.filter((id) => id !== graph.entrySessionId));
+        const pending = new Set(ids.filter((id) => id !== graph.entrySessionId && stepIds.has(id)));
         while (pending.size) {
             const ready = [...pending].filter((id) => {
-                const parents = graph.edges.filter((e) => e.target === id);
+                const parents = execEdges.filter((e) => e.target === id);
                 return parents.length && parents.every((e) => reached.has(e.source));
             });
             if (!ready.length) throw new Error('Graphe SWAT cyclique ou noeud inaccessible depuis orchestrateur.');
@@ -249,6 +289,7 @@ function finalizeSwatGraph(graph, root, allowHidden = false) {
     const list = Array.isArray(sessions) ? sessions : sessions.sessions;
     if (!Array.isArray(list)) throw new Error('Format sessions hephaistos-chats inconnu.');
     for (const id of ids.filter((id) => id !== graph.entrySessionId)) {
+        if (id.startsWith('svc/n8n/')) continue; // nœud service n8n — exécuté via webhook, pas de roster/sessions.json
         if (!id.startsWith('chat-')) throw new Error(`Transport worker non pris en charge par ce runner : ${id}. Aucun fallback CLI.`);
         const member = members.find((m) => m.sessionId === id && (allowHidden || !m.hidden));
         const session = list.find((s) => s.id === id || s.sessionId === id);
@@ -260,7 +301,7 @@ function finalizeSwatGraph(graph, root, allowHidden = false) {
     const semantic = { name: graph.name, activeSchemaId: graph.activeSchemaId,
         ...(council ? { mode: 'council' } : {}), entrySessionId: graph.entrySessionId,
         nodes: graph.nodes.map((n) => ({ sessionId: n.sessionId, role: n.role, task: n.task })),
-        ...(council ? {} : { edges: graph.edges.map((e) => ({ source: e.source, target: e.target })) }) };
+        ...(council ? {} : { edges: graph.edges.map((e) => ({ source: e.source, target: e.target, ...(e.type ? { type: e.type } : {}) })) }) };
     return { graph, digest: crypto.createHash('sha256').update(JSON.stringify(semantic)).digest('hex') };
 }
 
@@ -303,6 +344,27 @@ async function swatTool(name, args) {
     return result;
 }
 
+/* Nœud service n8n : POST webhook au lieu d'injection ACP.
+   sessionId 'svc/n8n/<id>' — <id> résolu via l'allowlist (workflowId → webhookPath),
+   sinon traité comme webhookPath littéral (compat). */
+async function callN8nSvc(sessionId, payload) {
+    const suffix = sessionId.split('/')[2];
+    if (!suffix || !/^[a-zA-Z0-9_-]{1,100}$/.test(suffix)) throw new Error(`svc/n8n invalide : ${sessionId}`);
+    const hook = N8N_CALLABLE_WORKFLOWS[suffix]?.webhookPath || suffix;
+    const r = await fetch(`http://127.0.0.1:5678/webhook/${hook}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(300000),
+    });
+    const rb = await r.text();
+    let parsed; try { parsed = JSON.parse(rb); } catch { parsed = { raw: rb.slice(0, 4000) }; }
+    if (!r.ok) throw new Error(`n8n ${hook} HTTP ${r.status}: ${JSON.stringify(parsed).slice(0, 300)}`);
+    const reply = String(parsed.output || parsed.response || rb).trim();
+    if (!reply) throw new Error('Reponse n8n vide.');
+    return reply;
+}
+
 async function swatStep(b) {
     const run = swatRuns.get(b.runId);
     if (!run) throw new Error('Run SWAT inconnu ou service redemarre : ne pas rejouer automatiquement.');
@@ -319,12 +381,28 @@ async function swatStep(b) {
     if (run.busy) throw new Error('Une etape est deja en cours pour ce run.');
     const node = run.graph.nodes.find((n) => n.sessionId === b.sessionId);
     if (!node || node.sessionId === run.graph.entrySessionId) throw new Error('Noeud worker absent du schema.');
-    const parents = run.graph.edges.filter((e) => e.target === node.sessionId).map((e) => e.source);
+    const parents = run.graph.edges.filter((e) => e.target === node.sessionId && e.type !== 'tool').map((e) => e.source);
     if (parents.some((id) => !run.outputs[id])) throw new Error('Dependances SWAT non terminees.');
     run.busy = true;
     let taskId;
     try {
-        const prompt = `Tu es ${node.role}, session exacte ${node.sessionId}.\nMission de role : ${node.task}\n\nDemande n8n :\n${run.mission}\n\nResultats amont :\n${parents.map((id) => run.outputs[id].reply).join('\n\n')}`;
+        /* Edges 'tool' : svc/* -> ce noeud, ou svc/* -> entry (= tout le SWAT).
+           Le workflow n8n est invoque une fois (cache par source) et son
+           resultat injecte en contexte dans le prompt de l'agent. */
+        run.toolResults ||= {};
+        const toolCtx = [];
+        for (const e of run.graph.edges.filter((e) => e.type === 'tool'
+            && (e.target === node.sessionId || e.target === run.graph.entrySessionId))) {
+            if (!run.toolResults[e.source]) {
+                run.toolResults[e.source] = await callN8nSvc(e.source, {
+                    missionId: run.contract?.missionId, objective: run.mission,
+                    prompt: run.mission, texte: run.mission,
+                });
+            }
+            toolCtx.push(`[outil n8n ${e.source}]\n${run.toolResults[e.source].slice(0, 4000)}`);
+        }
+        const prompt = `Tu es ${node.role}, session exacte ${node.sessionId}.\nMission de role : ${node.task}\n\nDemande n8n :\n${run.mission}\n\nResultats amont :\n${parents.map((id) => run.outputs[id].reply).join('\n\n')}`
+            + (toolCtx.length ? `\n\nContexte outils n8n (pre-fetch du runner) :\n${toolCtx.join('\n\n')}` : '');
         const task = await swatTool('create_task', {
             title: `[${run.graph.name || run.graph.activeSchemaId}] ${node.role}`, description: prompt,
             dispatcher: run.graph.entrySessionId,
@@ -332,12 +410,19 @@ async function swatStep(b) {
         taskId = task.task_id ?? task.id;
         if (taskId == null) throw new Error('create_task sans identifiant : execution refusee.');
         await swatTool('update_task', { task_id: taskId, status: 'in_progress' });
-        const result = await inject({ providerId: 'hephaistos', sessionId: node.sessionId,
-            cwd: WS_ROOT, text: prompt, wait: 'turn', timeoutMs: 300000, turnTimeoutMs: 300000 });
-        if (result.stopReason !== 'end_turn' || !result.reply?.trim()) throw new Error('Tour ACP incomplet ou sans reponse.');
-        await swatTool('update_task', { task_id: taskId, status: 'completed', result: result.reply });
+        let reply;
+        if (node.sessionId.startsWith('svc/n8n/')) {
+            const parsed = await callN8nSvc(node.sessionId, { prompt, missionId: run.contract?.missionId });
+            reply = parsed;
+        } else {
+            const result = await inject({ providerId: 'hephaistos', sessionId: node.sessionId,
+                cwd: WS_ROOT, text: prompt, wait: 'turn', timeoutMs: 300000, turnTimeoutMs: 300000 });
+            if (result.stopReason !== 'end_turn' || !result.reply?.trim()) throw new Error('Tour ACP incomplet ou sans reponse.');
+            reply = result.reply;
+        }
+        await swatTool('update_task', { task_id: taskId, status: 'completed', result: reply });
         const output = { ok: true, runId: b.runId, schemaId: run.graph.activeSchemaId,
-            sessionId: node.sessionId, role: node.role, taskId, reply: result.reply };
+            sessionId: node.sessionId, role: node.role, taskId, reply };
         run.outputs[node.sessionId] = output;
         recordMission(run);
         return { ...output, missionId: run.contract?.missionId, state: missionStatus(run).state };
@@ -638,6 +723,7 @@ const server = http.createServer(async (req, res) => {
             const run = { runId, graph, digest, contract, fingerprint, mission, busy: false,
                 outputs: { [graph.entrySessionId]: { reply: mission } } };
             swatRuns.set(runId, run);
+            opsKanban('open', contract);
             if (graph.mode === 'council') {
                 const done = councilRun(run);
                 const waitMs = Math.min(Number(rawBody.wait) || 0, 600000);
@@ -660,8 +746,11 @@ const server = http.createServer(async (req, res) => {
             if (run.graph.mode === 'council') return json(res, 409, { ok: false,
                 error: 'Run council auto-pilote : interroger GET /missions/:id, pas de pilotage par etapes.' });
             if (run.failed) return json(res, 409, missionStatus(run));
-            const next = run.graph.nodes.find((n) => !run.outputs[n.sessionId]
-                && run.graph.edges.filter((e) => e.target === n.sessionId).every((e) => run.outputs[e.source]));
+            const next = run.graph.nodes.find((n) => n.sessionId !== run.graph.entrySessionId
+                && run.graph.edges.some((e) => e.target === n.sessionId && e.type !== 'tool')
+                && !run.outputs[n.sessionId]
+                && run.graph.edges.filter((e) => e.target === n.sessionId && e.type !== 'tool')
+                    .every((e) => run.outputs[e.source]));
             if (!next) return json(res, 200, { ...missionStatus(run), done: true });
             const output = await swatStep({ runId: b.runId, sessionId: next.sessionId });
             return json(res, 200, { ...output, done: missionStatus(run).state === 'completed' });
@@ -711,32 +800,32 @@ const server = http.createServer(async (req, res) => {
             return json(res, 200, { ok: true, entries: commsEntries().slice(-n) });
         }
         if (req.method === 'GET' && url.pathname === '/n8n/workflows') {
-            if (!N8N_API_KEY) return json(res, 503, { ok: false, error: 'N8N_API_KEY absent (env ou .agent/n8n-api.key)' });
-            let r;
+            // Inventaire lu directement dans la DB n8n (readonly) — pas de dépendance à l'API publique n8n ni à sa config.
+            const { DatabaseSync } = require('node:sqlite');
+            let rows;
             try {
-                r = await fetch(`${N8N_API_URL}/workflows?active=true&limit=100`, {
-                    headers: { 'X-N8N-API-KEY': N8N_API_KEY }, signal: AbortSignal.timeout(10000),
-                });
+                const db = new DatabaseSync(N8N_DB_PATH, { readOnly: true });
+                rows = db.prepare('SELECT id, name, active, nodes, updatedAt FROM workflow_entity WHERE active = 1 LIMIT 200').all();
+                db.close();
             } catch (err) {
-                return json(res, 502, { ok: false, error: `n8n API injoignable: ${err?.message}`,
-                    cause: err?.cause ? `${err.cause.code || ''} ${err.cause.message || ''}`.trim() : null });
+                return json(res, 502, { ok: false, error: `DB n8n illisible: ${err?.message}` });
             }
-            const body = await r.json().catch(() => ({}));
-            const list = (body.data || []).map((w) => {
-                const nodes = Array.isArray(w.nodes) ? w.nodes : [];
+            const list = rows.map((w) => {
+                let nodes = [];
+                try { nodes = JSON.parse(w.nodes || '[]'); } catch { /* noop */ }
                 const webhook = nodes.find((n) => n.type === 'n8n-nodes-base.webhook');
                 const triggers = [...new Set(nodes
                     .filter((n) => /trigger|webhook/i.test(n.type))
                     .map((n) => n.type.replace(/^n8n-nodes-base\./, '').replace(/^@n8n\/n8n-nodes-langchain\./, '')))];
                 return {
-                    id: w.id, name: w.name, active: w.active, updatedAt: w.updatedAt,
+                    id: w.id, name: w.name, active: Boolean(w.active), updatedAt: w.updatedAt,
                     triggers,
                     webhookPath: webhook?.parameters?.path || null,
                     callable: Boolean(N8N_CALLABLE_WORKFLOWS[w.id]),
                     callableContract: N8N_CALLABLE_WORKFLOWS[w.id]?.contract || null,
                 };
             });
-            return json(res, r.status, { ok: r.ok, count: list.length, workflows: list });
+            return json(res, 200, { ok: true, count: list.length, workflows: list });
         }
 
         if (req.method === 'POST' && url.pathname.startsWith('/n8n/workflows/') && url.pathname.endsWith('/invoke')) {

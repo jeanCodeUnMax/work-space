@@ -108,7 +108,8 @@ function validateWorkflow(input) {
     const edges = input.edges.map((raw) => {
         const source = String(raw?.source || '');
         const target = String(raw?.target || '');
-        const key = `${source}\u0000${target}`;
+        const type = raw?.type ? String(raw.type) : '';
+        const key = `${source}\u0000${target}\u0000${type}`;
         if (!nodes.has(source) || !nodes.has(target) || source === target || edgeKeys.has(key)) {
             throw new Error(`connexion invalide: ${source} -> ${target}`);
         }
@@ -116,6 +117,7 @@ function validateWorkflow(input) {
         const edgeObj = { id: String(raw.id || `edge:${source}->${target}`), source, target };
         if (raw.sourceHandle) edgeObj.sourceHandle = String(raw.sourceHandle);
         if (raw.targetHandle) edgeObj.targetHandle = String(raw.targetHandle);
+        if (type) edgeObj.type = type;
         return edgeObj;
     });
 
