@@ -1374,3 +1374,24 @@ Pour tout outil `cli-anything-*` (mail, telegram, obsidian, 7zip, cerberos…), 
 - Restauration idempotente : réutiliser l'onglet/panneau existant, ouvrir uniquement les absents (`open_chat` → `ChatPanel.openById`), **jamais de doublon ni de conversation de remplacement**.
 - Après `restore` : `ping --write` obligatoire — `acp-inject --wait turn` exige `delivered` + `end_turn` + `PONG` ; `devin-cli` via `wake_acp_agent` (soumission seule). Résultats persistés dans `verification.results`.
 - Ne jamais traiter une session persistée comme preuve qu'une fenêtre est ouverte.
+
+
+## `.agent` N'EST PAS UNE POUBELLE (ordre utilisateur du 18/11/2026 — permanente)
+
+La racine `.agent/` et ses sous-dossiers ne reçoivent **que** l'infrastructure canonique du kit (agents, rules, skills, workflows, agent-bridge, scripts, cards, docs, templates, état runtime). **Interdiction formelle** d'y déposer des artefacts de projet :
+
+- **Notebooks / kernels Kaggle & Colab** → répertoire dédié `Projet-complet/Video_automatisation/kaggle-kernels/` (import 2026-11-18 : `hephaistos-import/`), jamais `.agent/kaggle*`.
+- **Outils/scripts réutilisables** → `.agent/scripts/`.
+- **Rapports, preuves, dumps d'analyse** → `.agent/reports/`.
+- **Exports n8n de référence** → `.agent/agent-bridge/` (sources `n8n-*-workflow.json`) ou `n8n-templates/` (états d'import).
+- **Artefacts temporaires / debugging** → ne pas commiter ; `.agent/` runtime local seulement si gitignoré.
+
+Un fichier trouvé hors de sa place = déplacé, pas documenté sur place. `sync-agent-layer.ps1` ($SkipDirs/$SkipFiles) fait foi pour ce qui ne doit jamais se propager aux workspaces injectés.
+
+### Répertoires canoniques hors-template
+
+| Contenu | Chemin canonique |
+|---|---|
+| Kernels/notebooks Kaggle & Colab (sources, manifests, patchs, push) | `C:\Program Files\Projet-complet\Video_automatisation\kaggle-kernels\` |
+| Contrôle kernels Kaggle | `.agent/scripts/kaggle-ctl.ps1` (kaggle CLI + opencli daemon) |
+| `kaggle_push` (extension) | résout `patch_tunnel.py` via `HPHE_KAGGLE_DIR` env → fallback `../Video_automatisation/kaggle-kernels/hephaistos-import/kaggle` → legacy `.agent/kaggle` |

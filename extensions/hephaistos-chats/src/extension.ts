@@ -1449,9 +1449,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
         if (message.type === 'kaggle_push') {
             const ws = workspaceRoot || process.cwd();
+            const kaggleDir = process.env.HPHE_KAGGLE_DIR
+                || path.join(ws, '..', 'Video_automatisation', 'kaggle-kernels', 'hephaistos-import', 'kaggle');
+            const script = fs.existsSync(path.join(kaggleDir, 'patch_tunnel.py'))
+                ? path.join(kaggleDir, 'patch_tunnel.py')
+                : path.join(ws, '.agent', 'kaggle', 'patch_tunnel.py');
             const t = vscode.window.createTerminal('Kaggle Push');
             t.show(true);
-            t.sendText('python "' + ws + '/.agent/kaggle/patch_tunnel.py"', true);
+            t.sendText('python "' + script + '"', true);
             FlowWorkspacePanel.post({ type: 'service_state', service: 'kaggle', ok: true, checking: true });
             return;
         }
