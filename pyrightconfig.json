@@ -1,0 +1,14 @@
+{
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "**/out",
+    "**/dist",
+    "**/*.vsix",
+    ".agent/kaggle",
+    "data",
+    "extensions.bak",
+    "Rapport de dysfonctionnement et correction"
+  ]
+}

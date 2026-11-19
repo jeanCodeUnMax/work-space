@@ -288,3 +288,9 @@ Outil : `node .agent/agent-bridge/workspace-roster.js status|restore|ping [--wri
 - `ping` : PING/PONG par transport — `acp-inject.js --wait turn` pour `hephaistos`/`cerberos` (exiger `delivered` + `stopReason: end_turn` + reply `PONG`), `wake_acp_agent` pour `devin-cli` (focus onglet existant ou ouverture unique, pas de texte de réponse attendu). **Ping rapide préféré** : 3 `acp-inject` en parallèle (sorties `/tmp/ping-<id>.json`) plutôt que le sweep séquentiel. **Observabilité** : le message user est flushé + `thoughtChunk` émis avant le tour → réception visible d'emblée ; surveiller `sessions.json`/`comms.jsonl`, jamais de shell en attente. **Inviolable** : provider/modèle/fenêtre = choix utilisateur — aucune migration ni changement sans demande explicite. Détail des pannes : skill `bleubite-dispatch`.
 - `--write` persiste `verification.lastPing` + `results` dans le manifeste.
 - Règles absolues : couple exact `providerId/sessionId`, vérification du workspace, entrée absente = `missing` jamais devinée, **jamais de conversation de remplacement**.
+
+## RÈGLE DURE — MAJ hephaistos (2026-10-30)
+
+- Tirer TOUS les modules (hphe, search-ext, orchestrator-monitor) sur la HEAD distante de leur repo `projet-temporaire` (ls-remote HEAD), jamais le gitlink enregistré s'il est en retard.
+- Push : JAMAIS vers projet-temporaire — push sur `jcum` (jeanCodeUnMax) uniquement.
+- Versions cibles : orchestrator-monitor 0.0.74 · hephaistos-chats 0.3.36.

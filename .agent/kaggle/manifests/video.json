@@ -1,0 +1,27 @@
+{
+  "profile": "video",
+  "description": "LTX-Video natif ComfyUI 0.7+ (t2v/i2v/multi-frame) - workflows officiels Comfy-Org + ckpts SDXL (profil complet)",
+  "checkpoints": {
+    "RealVisXL_V5.0_fp16.safetensors": "https://huggingface.co/SG161222/RealVisXL_V5.0/resolve/main/RealVisXL_V5.0_fp16.safetensors",
+    "DreamShaperXL_Turbo_v2.safetensors": "https://huggingface.co/Lykon/dreamshaper-xl-v2-turbo/resolve/main/DreamShaperXL_Turbo_v2.safetensors"
+  },
+  "loras": {},
+  "custom_nodes": [],
+  "models_extra": {
+    "ltxv_checkpoint": {
+      "dir": "checkpoints",
+      "files": {
+        "ltx-video-2b-v0.9.5.safetensors": "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors"
+      }
+    },
+    "ltxv_text_encoder": {
+      "dir": "text_encoders",
+      "files": {
+        "t5xxl_fp16.safetensors": "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp16.safetensors"
+      }
+    }
+  },
+  "workflows": [
+    "Comfy-Org templates: ltxv_text_to_video / ltxv_image_to_video (built-in Template Library)"
+  ]
+}
