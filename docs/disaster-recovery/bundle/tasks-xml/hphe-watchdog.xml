@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-16"?>
+
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+
+  <RegistrationInfo>
+
+    <Date>2026-10-18T23:38:35</Date>
+
+    <Author>WEBMAN_LABO\webma</Author>
+
+    <URI>\hphe-watchdog</URI>
+
+  </RegistrationInfo>
+
+  <Principals>
+
+    <Principal id="Author">
+
+      <UserId>S-1-5-21-857199196-2342092369-2002546096-1001</UserId>
+
+      <LogonType>InteractiveToken</LogonType>
+
+    </Principal>
+
+  </Principals>
+
+  <Settings>
+
+    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>
+
+    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>
+
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+
+    <IdleSettings>
+
+      <Duration>PT10M</Duration>
+
+      <WaitTimeout>PT1H</WaitTimeout>
+
+      <StopOnIdleEnd>true</StopOnIdleEnd>
+
+      <RestartOnIdle>false</RestartOnIdle>
+
+    </IdleSettings>
+
+  </Settings>
+
+  <Triggers>
+
+    <TimeTrigger>
+
+      <StartBoundary>2026-11-17T20:01:30+01:00</StartBoundary>
+
+      <Repetition>
+
+        <Interval>PT2M</Interval>
+
+        <StopAtDurationEnd>true</StopAtDurationEnd>
+
+      </Repetition>
+
+    </TimeTrigger>
+
+  </Triggers>
+
+  <Actions Context="Author">
+
+    <Exec>
+
+      <Command>wscript.exe</Command>
+
+      <Arguments>//nologo "C:\Users\webma\.hephaistos\scripts\run-hidden.vbs" "powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""C:\Users\webma\.hephaistos\scripts\hphe-watchdog.ps1"""</Arguments>
+
+    </Exec>
+
+  </Actions>
+
+</Task>

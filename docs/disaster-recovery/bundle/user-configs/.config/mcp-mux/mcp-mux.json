@@ -1,0 +1,171 @@
+{
+  "servers": {
+    "sqlite-node": {
+      "mode": "shared",
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/mcp-quick-sqlite3/dist/index.js"
+      ]
+    },
+    "context7": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "node",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/context7/node_modules/@upstash/context7-mcp/dist/index.js"
+      ]
+    },
+    "beacon": {
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/beacon-bridge/beacon-mcp-bridge.mjs"
+      ],
+      "lazy": true,
+      "env": {
+        "BEACON_MEMORY_DB": "C:/data-sys/Sqlite-DB/current_workspace/graph/memory_mcp.db",
+        "BEACON_BIN": "C:/Users/webma/.local/bin/beacon.exe"
+      }
+    },
+    "pencil": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/.pencil/mcp/devin/out/mcp-server-windows-x64.exe",
+      "args": [
+        "--app",
+        "devin"
+      ],
+      "env": {}
+    },
+    "time": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/.local/bin/mcp-server-time.exe",
+      "args": [
+        "--local-timezone",
+        "Europe/Paris"
+      ]
+    },
+    "hephaistos-everything-search": {
+      "mode": "shared",
+      "command": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-mcp.exe",
+      "args": [],
+      "env": {
+        "HPHE_CONTENT_DIR": "C:/Program Files/servers/hephaistos2-kit/data/content-index",
+        "HPHE_VEC_DIR": "C:/Program Files/servers/hephaistos2-kit/migrated-vec",
+        "HPHE_ORCH_DB": "C:/Program Files/servers/hephaistos2-kit/data/orchestrator.db",
+        "HPHE_MEMORY_ROOT": "C:/data-sys/Sqlite-DB",
+        "HPHE_PIPE_NAME": "\\\\.\\pipe\\hphe-index",
+        "EVERYTHING_MCP_AGENT": "external",
+        "EVERYTHING_MCP_ACCESS_FILE": "C:/Program Files/servers/hephaistos2-kit/extension/server/.mcp-access"
+      }
+    },
+    "antigravity-obsidian": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/obsidian-for-antigravity/src/mcp-server.js"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "C:/data-sys/cerveau-AI"
+      }
+    },
+    "github-mcp-server": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/github-mcp-server/github-mcp-launcher.cjs"
+      ]
+    },
+    "sequentialthinking": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "node",
+      "args": [
+        "C:/Users/webma/.hephaistos/servers/sequential-thinking-mcp/node_modules/@modelcontextprotocol/server-sequential-thinking/dist/index.js"
+      ]
+    },
+    "omniroute": {
+      "mode": "shared",
+      "lazy": true,
+      "initTimeoutMs": 120000,
+      "command": "node",
+      "args": [
+        "C:/data-sys/OmniRoute/bin/omniroute.mjs",
+        "--mcp"
+      ]
+    },
+    "cli-anything": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/AppData/Local/Programs/Python/Python313/python.exe",
+      "args": [
+        "-m",
+        "cli_anything_mcp"
+      ],
+      "env": {
+        "CLI_ANYTHING_ROOT": "C:/data-sys/CLI-Anything"
+      }
+    },
+    "opencli-mcp": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "node",
+      "args": [
+        "C:/data-sys/opencli-mcp/dist/src/main.js",
+        "stdio"
+      ]
+    },
+    "vault-pepites": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "node",
+      "args": [
+        "C:/data-sys/cerveau-AI/.agent/scripts/pepites-mcp.mjs"
+      ],
+      "env": {}
+    },
+    "kaggle-mcp": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/.hephaistos/servers/kaggle-mcp/.venv/Scripts/kaggle-mcp-server.exe",
+      "args": []
+    },
+    "colab-mcp": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "uvx",
+      "args": [
+        "colab-mcp"
+      ]
+    },
+    "rea": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/data-sys/rea/scripts/rea.mjs",
+        "mcp"
+      ]
+    },
+    "skill-mux": {
+      "command": "node",
+      "args": [
+        "C:/data-sys/n8n/.agent/skill-mux/server.mjs"
+      ],
+      "env": {}
+    },
+    "n8n": {
+      "mode": "shared",
+      "lazy": true,
+      "command": "C:/Users/webma/AppData/Local/nvm/nodejs/node.exe",
+      "args": [
+        "C:/data-sys/n8n/.agent/scripts/n8n-mcp-stdio-shim.mjs"
+      ],
+      "env": {
+        "N8N_MCP_TOKEN": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwNjk3MWFmZS02ZjBlLTRiM2QtOWQyMi0xZjkyZDkyMzE5OTYiLCJpc3MiOiJuOG4iLCJqdGkiOiIwZjA4YjA2OC0xYmYzLTQxODUtYjNmZC03ZDkxNzdiMzc2MmIiLCJpYXQiOjE3OTQ1MzcwMjcsImF1ZCI6Im1jcC1zZXJ2ZXItYXBpIn0.3yvjYH6wmmfY16XWXYZs_vQ7hDsb5byp8EPz-4bMRCU"
+      }
+    }
+  }
+}
