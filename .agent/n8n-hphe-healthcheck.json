@@ -1,0 +1,1731 @@
+{
+  "updatedAt": "2026-11-19T02:51:02.240Z",
+  "createdAt": "2026-11-15T20:28:33.476Z",
+  "id": "OBommGsrTbJ19hQp",
+  "name": "hphe-architecture-healthcheck",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "sched-5min",
+      "name": "Schedule 5min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -760,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "hook-manual",
+      "name": "Webhook Manuel",
+      "webhookId": "8c3eeb80-86ab-4da9-84ef-357623abbcb5",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        520
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hphe-diag",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "p-index",
+      "name": "Probe Index",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        -40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_index_stats\",\"arguments\":{}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-agents",
+      "name": "Probe Agents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        40
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__list_agents\",\"arguments\":{}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-tasks",
+      "name": "Probe Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__list_tasks\",\"arguments\":{}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-sessions",
+      "name": "Probe Sessions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_search\",\"arguments\":{\"query\":\"sessions.json\",\"max_results\":10}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-roster",
+      "name": "Probe Roster",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_search\",\"arguments\":{\"query\":\"workspace-roster.json\",\"max_results\":10}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-bridge",
+      "name": "Probe Bridge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        360
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:7478/health",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-memory",
+      "name": "Probe Memory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        440
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__memory_stats\",\"arguments\":{}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-vec",
+      "name": "Probe Vec",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        520
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__vec_stats\",\"arguments\":{}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-content",
+      "name": "Probe Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__content_search\",\"arguments\":{\"query\":\"hphe\",\"limit\":1}}",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-rest",
+      "name": "Probe REST",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        680
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:8792/health",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "p-n8n",
+      "name": "Probe n8n",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        -520,
+        760
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "http://127.0.0.1:5678/healthz",
+        "options": {
+          "timeout": 30000
+        }
+      }
+    },
+    {
+      "id": "aggregate",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const names = ['Probe Index','Probe Agents','Probe Tasks','Probe Sessions','Probe Roster','Probe Bridge','Probe Memory','Probe Vec','Probe Content','Probe REST','Probe n8n'];\nconst critical = new Set(['Probe Index','Probe Agents','Probe Tasks','Probe Sessions','Probe Roster']);\nconst probes = {};\nfor (const n of names) {\n  let j;\n  try { j = $(n).first().json; } catch (e) { j = { error: 'no data' }; }\n  let ok = false, detail = null;\n  if (j && j.result) {\n    const txt = j.result.content && j.result.content[0] && j.result.content[0].text;\n    let parsed; try { parsed = JSON.parse(txt); } catch { parsed = txt; }\n    ok = !j.result.isError;\n    detail = (typeof parsed === 'object') ? parsed : String(parsed || '').slice(0, 200);\n  } else if (j && (j.error || j.errorMessage || j.name === 'NodeApiError')) {\n    ok = false;\n    detail = String((j.error && j.error.message) || j.errorMessage || j.message || j.error || 'err').slice(0, 200);\n  } else if (j && Object.keys(j).length) {\n    ok = true;\n    detail = j;\n  } else {\n    detail = 'empty';\n  }\n  probes[n] = { critical: critical.has(n), ok, detail };\n}\nconst failedCritical = Object.entries(probes).filter(([, p]) => p.critical && !p.ok).map(([k]) => k);\nconst failedWarn = Object.entries(probes).filter(([, p]) => !p.critical && !p.ok).map(([k]) => k);\nconst verdict = failedCritical.length ? 'down' : (failedWarn.length ? 'degraded' : 'ok');\nreturn [{ json: { ts: new Date().toISOString(), source: 'n8n-hphe-healthcheck', verdict, failedCritical, failedWarn, probes } }];"
+      }
+    },
+    {
+      "id": "read-prev",
+      "name": "Read Prev",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        60,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__memory_read\",\"arguments\":{\"projectId\":\"hephaistos2-kit\",\"key\":\"diag/n8n-latest\"}}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "verdict",
+      "name": "Verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        280,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const report = $('Aggregate').first().json;\nlet prev = null, lastAlertAt = 0;\ntry {\n  const t = $('Read Prev').first().json;\n  const txt = t.result && t.result.content && t.result.content[0] && t.result.content[0].text;\n  if (txt) {\n    const m = JSON.parse(txt);\n    if (m.memory && m.memory.content) {\n      const c = JSON.parse(m.memory.content);\n      prev = c.verdict || null;\n      lastAlertAt = c.lastAlertAt || 0;\n    }\n  }\n} catch (e) {}\nreport.previousVerdict = prev;\nconst fc = report.failedCritical || [], fw = report.failedWarn || [];\nreport.alertCtx = report.verdict + ' | critical: ' + (fc.join(', ') || '-') + ' | warn: ' + (fw.join(', ') || '-');\nreport.failSig = fc.slice().sort().concat(fw.slice().sort()).join(',');\nconst COOLDOWN_MS = 30 * 60 * 1000;\nconst cooled = (Date.now() - lastAlertAt) > COOLDOWN_MS;\n// Cooldown pur : alerte si passage ok->incident (prev ok/null) OU rappel >30min\n// pendant un incident persistant. Le flap down<->degraded ne re-alerte PAS.\nreport.newAlert = report.verdict !== 'ok' && (prev === 'ok' || prev === null || cooled);\nreport.lastAlertAt = report.newAlert ? Date.now() : lastAlertAt;\nreturn [{ json: report }];"
+      }
+    },
+    {
+      "id": "store-latest",
+      "name": "Store Latest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'hephaistos-everything-search__memory_write', arguments: { projectId: 'hephaistos2-kit', key: 'diag/n8n-latest', type: 'procedure', content: JSON.stringify({ ts: $('Verdict').first().json.ts, verdict: $('Verdict').first().json.verdict, failedCritical: $('Verdict').first().json.failedCritical, failedWarn: $('Verdict').first().json.failedWarn, failSig: $('Verdict').first().json.failSig, lastAlertAt: $('Verdict').first().json.lastAlertAt, durationMs: $('Verdict').first().json.durationMs }) } }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "alert-if",
+      "name": "Alert ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        760,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-newalert",
+              "leftValue": "={{ $('Verdict').first().json.newAlert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "alert-task",
+      "name": "Create Task Orch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        1020,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'hephaistos-everything-search__create_task', arguments: { title: 'DIAG ' + $('Verdict').first().json.verdict + ' â€” ' + $('Verdict').first().json.alertCtx, description: 'Alerte automatique n8n hphe-healthcheck. Dernier verdict memoire: diag/n8n-latest (projet hephaistos2-kit).', priority: 'high', assigned_to: 'devin' } }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "ok-noop",
+      "name": "All Good",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1020,
+        420
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "fanout-build",
+      "name": "Build Fanout",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        420
+      ],
+      "parameters": {
+        "jsCode": "const report = $('Verdict').first().json;\nconst manual = (()=>{try{$('Webhook Manuel').first();return true}catch(e){return false}})();\nconst groups = {\n  'Sonde-MCP-Core': ['Probe Index'],\n  'Sonde-Orchestrateur': ['Probe Agents','Probe Tasks'],\n  'Sonde-Roster-Chats': ['Probe Sessions','Probe Roster'],\n  'Sonde-Bus-Flux': ['Probe Bridge'],\n  'Sonde-Memoire-Recherche': ['Probe Memory','Probe Vec','Probe Content'],\n  'Sonde-n8n-Gateways': ['Probe REST','Probe n8n']\n};\nconst ws = 'C:/data-sys/hephaistos2-kit';\nconst cards = {\n  'Sonde-MCP-Core': ['omniroute','chat-mvmw59wa'],\n  'Sonde-Orchestrateur': ['nim','chat-mvmtldvy'],\n  'Sonde-Roster-Chats': ['nim2','chat-mvpfinfra'],\n  'Sonde-Bus-Flux': ['nim2','chat-mvfj8b4m'],\n  'Sonde-Memoire-Recherche': ['omniroute','chat-mvmw5chd'],\n  'Sonde-n8n-Gateways': ['openrouter','chat-2dca1141-dfd6-4ae2-863f-72fea217eee3'],\n  'Sentinelle-Verdict': ['omniroute','chat-mvfqytbz']\n};\nconst items = [];\nconst short = d => String(typeof d==='object'?JSON.stringify(d):d).slice(0,240);\n// Fanout cartes : toujours si run manuel, seulement si incident en schedule\nif (manual || report.verdict !== 'ok') {\n  for (const [role, names] of Object.entries(groups)) {\n    const lines = names.map(n => { const p=(report.probes||{})[n]||{}; return n+' : '+(p.ok?'OK':'FAIL')+' — '+short(p.detail); });\n    items.push({ json: { workspaceRoot: ws, sessionId: cards[role][1], providerId: cards[role][0], timeoutSec: 60, text: '[SONDE n8n '+report.ts+']\\n'+lines.join('\\n') } });\n  }\n  const fails = [...(report.failedCritical||[]),...(report.failedWarn||[])];\n  items.push({ json: { workspaceRoot: ws, sessionId: cards['Sentinelle-Verdict'][1], providerId: cards['Sentinelle-Verdict'][0], timeoutSec: 60, text: '[VERDICT n8n '+report.ts+'] '+report.verdict.toUpperCase()+(fails.length?' | echecs: '+fails.join(', '):'')+' | transition prev: '+(report.previousVerdict||'aucun') } });\n}\n// Reponse finale toujours vers Devin\nitems.push({ json: { workspaceRoot: ws, sessionId: 'acp/devin-cli/gamy-freighter', providerId: 'devin-cli', timeoutSec: 90, text: 'HEALTHCHECK n8n — verdict: '+report.verdict.toUpperCase()+' | '+((report.failedCritical||[]).concat(report.failedWarn||[])).join(', ')+' | detail: '+short(report.alertCtx||report.verdict) } });\nreturn items;"
+      }
+    },
+    {
+      "id": "fanout-ask",
+      "name": "Fanout SWAT+Devin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueRegularOutput",
+      "position": [
+        1620,
+        420
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/ask",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "UuWfiN4yG6gFc677",
+          "name": "hphe-ws-bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5682/tools/call",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"name\":\"hephaistos-everything-search__list_tasks\",\"arguments\":{\"status\":\"pending\",\"limit\":500}}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "gate-backlog-01",
+      "name": "Diag Backlog ?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// gate: 0 task si une DIAG pending existe deja\nconst res=$input.first().json;let tasks=[];\ntry{tasks=JSON.parse(res.result.content[0].text)}catch(e){tasks=Array.isArray(res)?res:[]}\nconst backlog=tasks.filter(t=>/^DIAG /.test(t.title||'')).length;\nif(backlog>0)return[];\nreturn[{json:{proceed:true}}];"
+      },
+      "id": "gate-check-01",
+      "name": "Backlog Zero ?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule 5min": {
+      "main": [
+        [
+          {
+            "node": "Probe Index",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Agents",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Tasks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Sessions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Roster",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Bridge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Memory",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Vec",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe REST",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe n8n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Manuel": {
+      "main": [
+        [
+          {
+            "node": "Probe Index",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Agents",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Tasks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Sessions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Roster",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Bridge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Memory",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Vec",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe Content",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe REST",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Probe n8n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Index": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Agents": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Tasks": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Sessions": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Roster": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Bridge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Memory": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Vec": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe Content": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe REST": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Probe n8n": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Read Prev",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Prev": {
+      "main": [
+        [
+          {
+            "node": "Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verdict": {
+      "main": [
+        [
+          {
+            "node": "Store Latest",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Build Fanout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Latest": {
+      "main": [
+        [
+          {
+            "node": "Alert ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert ?": {
+      "main": [
+        [
+          {
+            "node": "Diag Backlog ?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "All Good",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fanout": {
+      "main": [
+        [
+          {
+            "node": "Fanout SWAT+Devin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diag Backlog ?": {
+      "main": [
+        [
+          {
+            "node": "Backlog Zero ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backlog Zero ?": {
+      "main": [
+        [
+          {
+            "node": "Create Task Orch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "timezone": "Europe/Paris",
+    "availableInMCP": true,
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "saveDataSuccessExecution": "none",
+    "saveExecutionProgress": false
+  },
+  "staticData": {
+    "node:Schedule 5min": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "5bd800aa-8b9c-44a8-be08-f6a0ac422287",
+  "activeVersionId": "5bd800aa-8b9c-44a8-be08-f6a0ac422287",
+  "versionCounter": 53,
+  "triggerCount": 2,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-11-15T20:28:33.479Z",
+      "createdAt": "2026-11-15T20:28:33.479Z",
+      "role": "workflow:owner",
+      "workflowId": "OBommGsrTbJ19hQp",
+      "projectId": "Pn4PS4KjgpbO5aC9",
+      "project": {
+        "updatedAt": "2026-10-29T00:26:05.761Z",
+        "createdAt": "2026-10-28T23:57:05.853Z",
+        "id": "Pn4PS4KjgpbO5aC9",
+        "name": "jean-seb webman <webmanhtc@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "06971afe-6f0e-4b3d-9d22-1f92d9231996"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": {
+    "updatedAt": "2026-11-19T02:51:02.244Z",
+    "createdAt": "2026-11-19T02:51:02.244Z",
+    "versionId": "5bd800aa-8b9c-44a8-be08-f6a0ac422287",
+    "workflowId": "OBommGsrTbJ19hQp",
+    "nodes": [
+      {
+        "id": "sched-5min",
+        "name": "Schedule 5min",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -760,
+          300
+        ],
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "minutes",
+                "minutesInterval": 5
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "hook-manual",
+        "name": "Webhook Manuel",
+        "webhookId": "8c3eeb80-86ab-4da9-84ef-357623abbcb5",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          -760,
+          520
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "hphe-diag",
+          "responseMode": "lastNode",
+          "options": {}
+        }
+      },
+      {
+        "id": "p-index",
+        "name": "Probe Index",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          -40
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_index_stats\",\"arguments\":{}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-agents",
+        "name": "Probe Agents",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          40
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__list_agents\",\"arguments\":{}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-tasks",
+        "name": "Probe Tasks",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          120
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__list_tasks\",\"arguments\":{}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-sessions",
+        "name": "Probe Sessions",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          200
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_search\",\"arguments\":{\"query\":\"sessions.json\",\"max_results\":10}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-roster",
+        "name": "Probe Roster",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          280
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__everything_search\",\"arguments\":{\"query\":\"workspace-roster.json\",\"max_results\":10}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-bridge",
+        "name": "Probe Bridge",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          360
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://127.0.0.1:7478/health",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-memory",
+        "name": "Probe Memory",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          440
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__memory_stats\",\"arguments\":{}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-vec",
+        "name": "Probe Vec",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          520
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__vec_stats\",\"arguments\":{}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-content",
+        "name": "Probe Content",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          600
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__content_search\",\"arguments\":{\"query\":\"hphe\",\"limit\":1}}",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-rest",
+        "name": "Probe REST",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          680
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://127.0.0.1:8792/health",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "p-n8n",
+        "name": "Probe n8n",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          -520,
+          760
+        ],
+        "parameters": {
+          "method": "GET",
+          "url": "http://127.0.0.1:5678/healthz",
+          "options": {
+            "timeout": 30000
+          }
+        }
+      },
+      {
+        "id": "aggregate",
+        "name": "Aggregate",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -160,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const names = ['Probe Index','Probe Agents','Probe Tasks','Probe Sessions','Probe Roster','Probe Bridge','Probe Memory','Probe Vec','Probe Content','Probe REST','Probe n8n'];\nconst critical = new Set(['Probe Index','Probe Agents','Probe Tasks','Probe Sessions','Probe Roster']);\nconst probes = {};\nfor (const n of names) {\n  let j;\n  try { j = $(n).first().json; } catch (e) { j = { error: 'no data' }; }\n  let ok = false, detail = null;\n  if (j && j.result) {\n    const txt = j.result.content && j.result.content[0] && j.result.content[0].text;\n    let parsed; try { parsed = JSON.parse(txt); } catch { parsed = txt; }\n    ok = !j.result.isError;\n    detail = (typeof parsed === 'object') ? parsed : String(parsed || '').slice(0, 200);\n  } else if (j && (j.error || j.errorMessage || j.name === 'NodeApiError')) {\n    ok = false;\n    detail = String((j.error && j.error.message) || j.errorMessage || j.message || j.error || 'err').slice(0, 200);\n  } else if (j && Object.keys(j).length) {\n    ok = true;\n    detail = j;\n  } else {\n    detail = 'empty';\n  }\n  probes[n] = { critical: critical.has(n), ok, detail };\n}\nconst failedCritical = Object.entries(probes).filter(([, p]) => p.critical && !p.ok).map(([k]) => k);\nconst failedWarn = Object.entries(probes).filter(([, p]) => !p.critical && !p.ok).map(([k]) => k);\nconst verdict = failedCritical.length ? 'down' : (failedWarn.length ? 'degraded' : 'ok');\nreturn [{ json: { ts: new Date().toISOString(), source: 'n8n-hphe-healthcheck', verdict, failedCritical, failedWarn, probes } }];"
+        }
+      },
+      {
+        "id": "read-prev",
+        "name": "Read Prev",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          60,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__memory_read\",\"arguments\":{\"projectId\":\"hephaistos2-kit\",\"key\":\"diag/n8n-latest\"}}",
+          "options": {
+            "timeout": 10000
+          }
+        }
+      },
+      {
+        "id": "verdict",
+        "name": "Verdict",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          280,
+          300
+        ],
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const report = $('Aggregate').first().json;\nlet prev = null, lastAlertAt = 0;\ntry {\n  const t = $('Read Prev').first().json;\n  const txt = t.result && t.result.content && t.result.content[0] && t.result.content[0].text;\n  if (txt) {\n    const m = JSON.parse(txt);\n    if (m.memory && m.memory.content) {\n      const c = JSON.parse(m.memory.content);\n      prev = c.verdict || null;\n      lastAlertAt = c.lastAlertAt || 0;\n    }\n  }\n} catch (e) {}\nreport.previousVerdict = prev;\nconst fc = report.failedCritical || [], fw = report.failedWarn || [];\nreport.alertCtx = report.verdict + ' | critical: ' + (fc.join(', ') || '-') + ' | warn: ' + (fw.join(', ') || '-');\nreport.failSig = fc.slice().sort().concat(fw.slice().sort()).join(',');\nconst COOLDOWN_MS = 30 * 60 * 1000;\nconst cooled = (Date.now() - lastAlertAt) > COOLDOWN_MS;\n// Cooldown pur : alerte si passage ok->incident (prev ok/null) OU rappel >30min\n// pendant un incident persistant. Le flap down<->degraded ne re-alerte PAS.\nreport.newAlert = report.verdict !== 'ok' && (prev === 'ok' || prev === null || cooled);\nreport.lastAlertAt = report.newAlert ? Date.now() : lastAlertAt;\nreturn [{ json: report }];"
+        }
+      },
+      {
+        "id": "store-latest",
+        "name": "Store Latest",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          520,
+          300
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ name: 'hephaistos-everything-search__memory_write', arguments: { projectId: 'hephaistos2-kit', key: 'diag/n8n-latest', type: 'procedure', content: JSON.stringify({ ts: $('Verdict').first().json.ts, verdict: $('Verdict').first().json.verdict, failedCritical: $('Verdict').first().json.failedCritical, failedWarn: $('Verdict').first().json.failedWarn, failSig: $('Verdict').first().json.failSig, lastAlertAt: $('Verdict').first().json.lastAlertAt, durationMs: $('Verdict').first().json.durationMs }) } }) }}",
+          "options": {
+            "timeout": 10000
+          }
+        }
+      },
+      {
+        "id": "alert-if",
+        "name": "Alert ?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          760,
+          300
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "cond-newalert",
+                "leftValue": "={{ $('Verdict').first().json.newAlert }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "alert-task",
+        "name": "Create Task Orch",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          1020,
+          220
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ name: 'hephaistos-everything-search__create_task', arguments: { title: 'DIAG ' + $('Verdict').first().json.verdict + ' â€” ' + $('Verdict').first().json.alertCtx, description: 'Alerte automatique n8n hphe-healthcheck. Dernier verdict memoire: diag/n8n-latest (projet hephaistos2-kit).', priority: 'high', assigned_to: 'devin' } }) }}",
+          "options": {
+            "timeout": 10000
+          }
+        }
+      },
+      {
+        "id": "ok-noop",
+        "name": "All Good",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
+        "position": [
+          1020,
+          420
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "fanout-build",
+        "name": "Build Fanout",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1400,
+          420
+        ],
+        "parameters": {
+          "jsCode": "const report = $('Verdict').first().json;\nconst manual = (()=>{try{$('Webhook Manuel').first();return true}catch(e){return false}})();\nconst groups = {\n  'Sonde-MCP-Core': ['Probe Index'],\n  'Sonde-Orchestrateur': ['Probe Agents','Probe Tasks'],\n  'Sonde-Roster-Chats': ['Probe Sessions','Probe Roster'],\n  'Sonde-Bus-Flux': ['Probe Bridge'],\n  'Sonde-Memoire-Recherche': ['Probe Memory','Probe Vec','Probe Content'],\n  'Sonde-n8n-Gateways': ['Probe REST','Probe n8n']\n};\nconst ws = 'C:/data-sys/hephaistos2-kit';\nconst cards = {\n  'Sonde-MCP-Core': ['omniroute','chat-mvmw59wa'],\n  'Sonde-Orchestrateur': ['nim','chat-mvmtldvy'],\n  'Sonde-Roster-Chats': ['nim2','chat-mvpfinfra'],\n  'Sonde-Bus-Flux': ['nim2','chat-mvfj8b4m'],\n  'Sonde-Memoire-Recherche': ['omniroute','chat-mvmw5chd'],\n  'Sonde-n8n-Gateways': ['openrouter','chat-2dca1141-dfd6-4ae2-863f-72fea217eee3'],\n  'Sentinelle-Verdict': ['omniroute','chat-mvfqytbz']\n};\nconst items = [];\nconst short = d => String(typeof d==='object'?JSON.stringify(d):d).slice(0,240);\n// Fanout cartes : toujours si run manuel, seulement si incident en schedule\nif (manual || report.verdict !== 'ok') {\n  for (const [role, names] of Object.entries(groups)) {\n    const lines = names.map(n => { const p=(report.probes||{})[n]||{}; return n+' : '+(p.ok?'OK':'FAIL')+' — '+short(p.detail); });\n    items.push({ json: { workspaceRoot: ws, sessionId: cards[role][1], providerId: cards[role][0], timeoutSec: 60, text: '[SONDE n8n '+report.ts+']\\n'+lines.join('\\n') } });\n  }\n  const fails = [...(report.failedCritical||[]),...(report.failedWarn||[])];\n  items.push({ json: { workspaceRoot: ws, sessionId: cards['Sentinelle-Verdict'][1], providerId: cards['Sentinelle-Verdict'][0], timeoutSec: 60, text: '[VERDICT n8n '+report.ts+'] '+report.verdict.toUpperCase()+(fails.length?' | echecs: '+fails.join(', '):'')+' | transition prev: '+(report.previousVerdict||'aucun') } });\n}\n// Reponse finale toujours vers Devin\nitems.push({ json: { workspaceRoot: ws, sessionId: 'acp/devin-cli/gamy-freighter', providerId: 'devin-cli', timeoutSec: 90, text: 'HEALTHCHECK n8n — verdict: '+report.verdict.toUpperCase()+' | '+((report.failedCritical||[]).concat(report.failedWarn||[])).join(', ')+' | detail: '+short(report.alertCtx||report.verdict) } });\nreturn items;"
+        }
+      },
+      {
+        "id": "fanout-ask",
+        "name": "Fanout SWAT+Devin",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "onError": "continueRegularOutput",
+        "position": [
+          1620,
+          420
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:7478/ask",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json) }}",
+          "options": {
+            "timeout": 15000
+          }
+        },
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "UuWfiN4yG6gFc677",
+            "name": "hphe-ws-bridge"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5682/tools/call",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "{\"name\":\"hephaistos-everything-search__list_tasks\",\"arguments\":{\"status\":\"pending\",\"limit\":500}}",
+          "options": {
+            "timeout": 15000
+          }
+        },
+        "id": "gate-backlog-01",
+        "name": "Diag Backlog ?",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          0,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// gate: 0 task si une DIAG pending existe deja\nconst res=$input.first().json;let tasks=[];\ntry{tasks=JSON.parse(res.result.content[0].text)}catch(e){tasks=Array.isArray(res)?res:[]}\nconst backlog=tasks.filter(t=>/^DIAG /.test(t.title||'')).length;\nif(backlog>0)return[];\nreturn[{json:{proceed:true}}];"
+        },
+        "id": "gate-check-01",
+        "name": "Backlog Zero ?",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Schedule 5min": {
+        "main": [
+          [
+            {
+              "node": "Probe Index",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Agents",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Tasks",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Sessions",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Roster",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Bridge",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Memory",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Vec",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Content",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe REST",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe n8n",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook Manuel": {
+        "main": [
+          [
+            {
+              "node": "Probe Index",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Agents",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Tasks",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Sessions",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Roster",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Bridge",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Memory",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Vec",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe Content",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe REST",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Probe n8n",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Index": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Agents": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Tasks": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Sessions": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Roster": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Bridge": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Memory": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Vec": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe Content": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe REST": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Probe n8n": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate": {
+        "main": [
+          [
+            {
+              "node": "Read Prev",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Read Prev": {
+        "main": [
+          [
+            {
+              "node": "Verdict",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verdict": {
+        "main": [
+          [
+            {
+              "node": "Store Latest",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Build Fanout",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Store Latest": {
+        "main": [
+          [
+            {
+              "node": "Alert ?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Alert ?": {
+        "main": [
+          [
+            {
+              "node": "Diag Backlog ?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "All Good",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Fanout": {
+        "main": [
+          [
+            {
+              "node": "Fanout SWAT+Devin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Diag Backlog ?": {
+        "main": [
+          [
+            {
+              "node": "Backlog Zero ?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Backlog Zero ?": {
+        "main": [
+          [
+            {
+              "node": "Create Task Orch",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "jean-seb webman",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-11-19T02:51:13.687Z",
+        "id": 36,
+        "workflowId": "OBommGsrTbJ19hQp",
+        "versionId": "5bd800aa-8b9c-44a8-be08-f6a0ac422287",
+        "event": "activated",
+        "userId": "06971afe-6f0e-4b3d-9d22-1f92d9231996"
+      }
+    ]
+  },
+  "scopes": [
+    "execution:delete",
+    "execution:list",
+    "execution:read",
+    "execution:reveal",
+    "workflow:create",
+    "workflow:delete",
+    "workflow:disableRedaction",
+    "workflow:enableRedaction",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:export",
+    "workflow:import",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:unshare",
+    "workflow:update"
+  ],
+  "checksum": "b4a9c7fccedd3d80a10e3d9ce407188592af9642ee51c1d2479b0a993852504f"
+}

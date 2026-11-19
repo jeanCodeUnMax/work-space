@@ -1,6 +1,6 @@
 ---
 name: boost
-description: Mode Boost — Parallélisation maximale, délégation agressive via orchestrateur Hephaistos (dispatch_task) + subagents, cadrage Hephaistos et vérification continue
+description: Mode Boost — Parallélisation maximale, délégation agressive via Bleubites et orchestrateur Hephaistos (dispatch_task), cadrage Hephaistos et vérification continue
 triggers:
   - user
 ---
@@ -26,9 +26,9 @@ Active le mode d'ingénierie avancée : parallélisation, délégation et autono
 ## 3. Phase 1 : Exécution & Délégation
 
 ### 3.1 Choix du canal de délégation (dans l'ordre)
-1. **`run_subagent` (IDE)** — explorations/lectures/audits parallèles : profil `subagent_explore` (read-only) ou `subagent_general` (écriture). Lancer en `is_background` pour la parallélisation vraie.
+1. **Bleubites / SWAT** — fenêtres `hephaistos-chats`, injection via `acp-inject.js --provider hephaistos`, sessions résolues par `.agent/workspace-roster.json`. `run_subagent` est interdit sauf autorisation explicite de l'utilisateur.
 2. **`dispatch_task` (hphe-mcp orchestrateur)** — exécution CLI externe : `title, task_type, context, files, workspace, [agent_name], [priority]`. `task_type` ∈ `code|debug|review|docs|test|explore` détermine le prompt de rôle.
-3. **Fallback one-shot** si orchestrateur down : `agy --print "<prompt>"` ou `hermes -z "<prompt>"`.
+3. **Exécution locale** — directement dans la session courante. Orchestrateur down → réparer ou escalader, pas contourner ; jamais d'appel direct à `agy --print`, `hermes -z` ou un autre provider externe.
 
 ### 3.2 Agents enregistrés (`.agent/REGISTRY.md` = source de vérité)
 - **`agy`** — Antigravity CLI, skills `*`, abonnement (toujours dispo). **Défaut** — non muxé, MCP en direct.

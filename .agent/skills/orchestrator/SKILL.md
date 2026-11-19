@@ -40,7 +40,7 @@ Convention obligatoire : **chaque mission dispatchée doit exiger dans son promp
 
 - Prompt de mission : terminer par `... puis termine ta réponse par DONE:<id>` (ex. `DONE:744`).
 - Ne jamais clore une tâche à la place du worker : laisser `pending` jusqu'au DONE, sauf annulation explicite (`delete_task`).
-- `status: done` (pas `completed`) : la porte `expected_artifact` rejette `completed` quand l'artefact n'est pas un fichier existant.
+- `status: done` et `completed` sont acceptés par `update_task` (runtime vérifié 19/11) — `done` reste la convention du signal DONE:id.
 
 ## Procédure de délégation
 
@@ -64,6 +64,7 @@ dispatch_task(title, task_type, context, files, workspace, [agent_name], [priori
 
 ## Règles d'Exécution et Tolérance Zéro Déchets
 
+- **Exécution externe = orchestrateur uniquement** : toute délégation passe par `dispatch_task` ; jamais d'appel direct aux providers externes (`agy --print`, `hermes -z`, `kilo run`, `opencode run`, API NIM/OpenRouter/Ollama en direct). Orchestrateur down → réparer ou escalader, pas contourner.
 - **Modèles gratuits uniquement** pour les délégations CLI (sauf `agy` : abonnement inclus).
 - **Jamais de SQL direct** sur orchestrator.db — uniquement les outils MCP.
 - **`full_prompt:true`** dans la config agent = le CLI reçoit le prompt complet (ex: `agy --print`).

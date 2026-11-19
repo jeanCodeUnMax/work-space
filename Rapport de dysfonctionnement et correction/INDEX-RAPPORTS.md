@@ -29,6 +29,7 @@ Periode couverte : nuit 18-19/10/2026.
 | 21 | Restauration du token du bridge WebSocket; distinction entre refus 401 et EADDRINUSE | transverse | orchestrator-monitor, bridge WS :7477 | Moyenne (panne du chat Hephaistos) | Token provisionne et connexion testee; procedure documentee |
 
 | 23 | extension hephaistos-chats : onglets ComfyUI gris + n8n 401 (creds vides, proxy jamais spawne, iframe :8188 en dur, deploiement .cursor au lieu de .devin) | transverse | `extension.ts`, `workspace.tsx`, `proxies/` | Haute (2 onglets HS + deploy croise) | Corrige (0.3.46, verifie runtime) |
+| 24 | onglet ComfyUI : iframe vide / backend introuvable — launcher dev :8188 au lieu de Comfy Desktop :8000 (launchArgs, killPort stale, doublon proxy :8189) | transverse | `extension.ts`, `installations.json`, `run_comfyui.bat` | Moyenne | Corrige (:8000 verifie 200, out/ recompile) |
 
 ### Verification de cloture C - 2026-10-19
 

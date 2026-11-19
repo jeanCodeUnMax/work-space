@@ -41,10 +41,23 @@ const PROVIDERS = {
     // Fenêtres hephaistos-chats (extension VS Code) : serveur ACP stdio adossé à .agent/chats/sessions.json
     'hephaistos': {
         cmd: process.execPath,
-        args: [process.env.HPHE_ACP_SERVER
-                || (fs.existsSync(path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs'))
-                    ? path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs')
-                    : 'C:/Program Files/Projet-complet/hephaistos2-kit/extensions/hephaistos-chats/acp-server.mjs')],
+        args: [process.env.HPHE_ACP_SERVER || (() => {
+            const home = process.env.USERPROFILE || '';
+            const candidates = [
+                path.join(__dirname, '..', '..', 'extensions', 'hephaistos-chats', 'acp-server.mjs'),
+                'C:/data-sys/hephaistos2-kit/extensions/hephaistos-chats/acp-server.mjs',
+                'C:/Program Files/Projet-complet/hephaistos2-kit/extensions/hephaistos-chats/acp-server.mjs',
+            ];
+            try {
+                for (const name of fs.readdirSync(path.join(home, '.devin', 'extensions'))) {
+                    if (name.startsWith('hephaistos.hephaistos-chats-')) {
+                        candidates.unshift(path.join(home, '.devin', 'extensions', name, 'acp-server.mjs'));
+                        break;
+                    }
+                }
+            } catch { /* profil absent */ }
+            return candidates.find((p) => fs.existsSync(p)) || candidates[0];
+        })()],
     },
     // Cerberos : pont SSH vers `hermes acp` sur le laptop Herald OS —
     // même spawn que la distribution Devin (acp/registry.json).

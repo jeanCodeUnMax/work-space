@@ -358,16 +358,20 @@ const CHAT_TOOLS = [
  * <USER_PROFILE> substitués par install.ps1 ; en dev brut, les tokens ne
  * matchent rien → fail-closed workspace seul, c'est voulu).
  * HEPHAISTOS_EXTRA_ROOTS reste un appoint local (pas de chemin en dur). */
-function mcpAccessRoots() {
-    const file = path.join(workspace, '.mcp-access');
-    if (!fs.existsSync(file)) return [];
-    const tokens = {
+function mcpAccessTokens() {
+    return {
         '<INGEST_SCAN_ROOT>': process.env.HPHE_INGEST_ROOTS || '',
         '<INSTALL_ROOT>': process.env.HPHE_INSTALL || '',
         '<PROJECT_ROOT>': workspace,
         '<USER_PROFILE>': process.env.USERPROFILE || process.env.HOME || '',
         '<MEMORY_ROOT>': process.env.HPHE_MEMORY_ROOT || '',
     };
+}
+
+function mcpAccessRoots() {
+    const file = path.join(workspace, '.mcp-access');
+    if (!fs.existsSync(file)) return [];
+    const tokens = mcpAccessTokens();
     const roots = [];
     let profile = null;
     for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
@@ -377,10 +381,48 @@ function mcpAccessRoots() {
         if (!rule || profile !== 'bleubite') continue;
         let pat = rule[2].trim();
         for (const [k, v] of Object.entries(tokens)) pat = pat.split(k).join(v);
+        if (pat.includes('<')) continue;
         pat = pat.replace(/\/\*\*.*$/, '');
-        if (pat && !pat.includes('*')) roots.push(pat);
+        // Token non substitué (env vide) → '/' : NE PAS pousser comme racine,
+        // sinon tout le FS devient lisible (fail-open).
+        if (pat && !pat.includes('*') && pat !== '/') roots.push(pat);
     }
     return roots;
+}
+
+/* Glob to RegExp, semantique .gitignore : `**` traverse les dossiers,
+ * etoile et question-mark matchent dans un segment, insensible casse.
+ * Un motif relatif est prefixe par double-etoile-slash (matche le nom
+ * ou qu'il soit, ex. env-file). */
+function globToRegex(pat) {
+    let p = String(pat).replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+    if (!/^(?:[A-Za-z]:)?\//.test(p) && !p.startsWith('**')) p = '**/' + p;
+    p = p.replace(/\*\*\//g, '\u0001').replace(/\*\*/g, '\u0002').replace(/\*/g, '\u0003').replace(/\?/g, '\u0004');
+    p = p.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    p = p.split('\u0001').join('(?:.*/)?').split('\u0002').join('.*').split('\u0003').join('[^/]*').split('\u0004').join('[^/]');
+    return new RegExp('^' + p + '$', 'i');
+}
+
+/* Règles ordonnées du profil [bleubite], deny inclus (dernier match gagne).
+ * Niveau d'accès : deny=0, deny-write/read=1, write/allow=2. */
+const ACCESS_LEVEL = { deny: 0, 'deny-write': 1, read: 1, write: 2, allow: 2 };
+function mcpAccessRules() {
+    const file = path.join(workspace, '.mcp-access');
+    if (!fs.existsSync(file)) return [];
+    const tokens = mcpAccessTokens();
+    const rules = [];
+    let profile = null;
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+        const m = line.trim().match(/^\[(.+)\]$/);
+        if (m) { profile = m[1]; continue; }
+        const rule = line.trim().match(/^(allow|write|read|deny-write|deny)\s*:\s*(.+)$/);
+        if (!rule || profile !== 'bleubite') continue;
+        let pat = rule[2].trim();
+        for (const [k, v] of Object.entries(tokens)) pat = pat.split(k).join(v);
+        if (!pat || pat.includes('<')) continue;
+        try { rules.push({ level: ACCESS_LEVEL[rule[1]], re: globToRegex(pat) }); } catch { /* glob invalide */ }
+    }
+    return rules;
 }
 
 function bleubiteRoots(cwd) {
@@ -390,9 +432,16 @@ function bleubiteRoots(cwd) {
     return [...roots];
 }
 
-function resolveWorkspacePath(p, cwd) {
+function resolveWorkspacePath(p, cwd, op = 'read') {
     const raw = String(p || '');
     const abs = path.isAbsolute(raw) ? path.resolve(raw) : path.resolve(cwd || workspace, raw);
+    const norm = abs.replace(/\\/g, '/');
+    let level = -1;
+    for (const r of mcpAccessRules()) if (r.re.test(norm)) level = r.level;
+    if (level >= 0) {
+        if (level >= (op === 'write' ? 2 : 1)) return abs;
+        throw new Error(`accès refusé par .mcp-access: ${p}`);
+    }
     for (const root of bleubiteRoots(cwd)) {
         const rel = path.relative(root, abs);
         if (!rel.startsWith('..') && !path.isAbsolute(rel)) return abs;
@@ -427,7 +476,7 @@ function runLocalTool(name, argsJson, cwd) {
     }
     switch (name) {
         case 'fs_write_text_file': {
-            const target = resolveWorkspacePath(args.path, cwd);
+            const target = resolveWorkspacePath(args.path, cwd, 'write');
             const content = String(args.content ?? '');
             const append = (args.append === true || target.endsWith('.jsonl')) && args.overwrite !== true;
             fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -435,14 +484,14 @@ function runLocalTool(name, argsJson, cwd) {
             return `ok: ${append ? 'ajoute' : 'ecrit'} ${target} (${Buffer.byteLength(content)} octets)`;
         }
         case 'fs_read_text_file': {
-            const raw = fs.readFileSync(resolveWorkspacePath(args.path, cwd), 'utf8');
+            const raw = fs.readFileSync(resolveWorkspacePath(args.path, cwd, 'read'), 'utf8');
             const off = Math.max(0, Number(args.offset) || 0);
             const cap = Math.min(Math.max(1, Number(args.max_chars) || 8000), 50_000);
             const slice = raw.slice(off, off + cap);
             return off + slice.length < raw.length ? `${slice}\n[tronqué ${raw.length - off - slice.length} chars — offset=${off + slice.length}]` : slice;
         }
         case 'fs_list_directory':
-            return fs.readdirSync(resolveWorkspacePath(args.path || '.', cwd), { withFileTypes: true })
+            return fs.readdirSync(resolveWorkspacePath(args.path || '.', cwd, 'read'), { withFileTypes: true })
                 .map((e) => `${e.isDirectory() ? 'd' : 'f'} ${e.name}`)
                 .join('\n')
                 .slice(0, 50_000);

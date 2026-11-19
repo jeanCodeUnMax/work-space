@@ -70,6 +70,20 @@ d'ingestion automatique** (`HPHE_INGEST_ROOTS`, intervalle `HPHE_INGEST_INTERVAL
 **CLI** : `hphe-mcp.exe --tool <name> --args '<json>'` — ex. update force :
 `hphe-mcp.exe --tool hephaistos_update --args '{"root":".","force":true,"embed":false}'`
 
+**Supervision** : la tâche planifiée `hphe-watchdog` (utilisateur, toutes les
+10 min, `~/.hephaistos/scripts/hphe-watchdog.ps1`, log
+`~/.hephaistos/logs/watchdog.log`) surveille et relance : `hphe-indexd`,
+REST `:8792`, ws-hub `:7477`, mux MCP `:5682`, shim `/ask` `:7478`,
+OmniRoute `:20128`, n8n `:5678`, n8n-ai-gateway `:11435`
+(passerelle OpenAI-compatible pour les nœuds AI Agent de n8n :
+`auto/*` = routeur multi-providers avec rotation sur erreur/latence +
+confiance persistante `~/.hephaistos/n8n-ai-gateway-stats.json`,
+`devin/*` whitelisté `swe-2-high`/`swe-2-max`, `agy/*`, `omni/*` →
+OmniRoute 1109 modèles, `ollama-*/*`, `GET /v1/confidence`,
+model discovery hphe-mcp via mux :5682). **Directive agents** : un `ECONNREFUSED`
+sur l'un de ces ports n'appelle pas de relance manuelle ad-hoc — le watchdog
+le rattrape en ≤10 min ; pour forcer : exécuter le script directement.
+
 **Scripts remplacés** : `.agent/rag/*.py` (cli/pipeline/chunker/embedder/router/
 rag_rest_bridge) → voir `_archive/agent-rag/DEPRECATED-BY-RUST.md` ;
 `ingest-workspace.ps1`/`auto-ingest.ps1` → wrappers fins vers le binaire.
