@@ -1,0 +1,71 @@
+{
+  "id": "hpheConcileSwat",
+  "name": "Hephaistos2-Kit - Concile SWAT",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hphe-concile",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "607ed50a-d76a-4e28-a7ca-e39092ecc1ed",
+      "name": "Demande concile authentifiee",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        300
+      ],
+      "webhookId": "e0c55bc8-4cf4-4a0b-83ce-d575f6767171",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:7478/swat/start",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { missionId: ($json.body && $json.body.missionId) ? String($json.body.missionId).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,90) : ('concile-' + $execution.id), schemaId: 'schema-mvpjbchn-ijt6c', objective: ($json.body && ($json.body.question || $json.body.objective)) || '', expectedDeliverable: ($json.body && $json.body.expectedDeliverable) || 'Synthese avec preuves et limites.', wait: Math.min(Number(($json.body && $json.body.wait) || 540000), 540000) } }}",
+        "options": {
+          "timeout": 580000
+        }
+      },
+      "id": "a3568d02-437c-4200-9c37-bc400640b711",
+      "name": "Lancer concile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "4ae21b16-46a3-40d9-9635-28717f0e0fce",
+          "name": "Hephaistos Bridge"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Demande concile authentifiee": {
+      "main": [
+        [
+          {
+            "node": "Lancer concile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

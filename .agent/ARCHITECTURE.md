@@ -114,7 +114,64 @@ Un agent dépose un état/requête, un autre le lit à l'instant d'après.
 
 ---
 
-## 🏗️ Directory Structure
+## � n8n — passerelle HTTP et agent IA
+
+`bridge-api.mjs` (`hphe-bridge-api`, `http://127.0.0.1:7478`, auth = token
+`ws-bridge`) est la façade REST canonique : n8n et tout client HTTP y
+parlent sans connaître ACP ni le WS :7477.
+
+| Route | Rôle |
+| --- | --- |
+| `GET /swats` | Catalogue des schémas SWAT + `activeSchemaId` |
+| `POST /swat/start`, `POST /swat/next`, `GET /missions/:id` | Missions SWAT dynamiques (graphe actif, workers `chat-*`). Graphe `mode: council` → run auto-piloté : ronde 1 (réponses isolées, parallèle), ronde 2 (peer-review anonyme A-F, parallèle), `council.replies`/`reviews`/`chairmanPrompt` rendus à l'appelant-chairman. Option `wait` (ms, ≤600000) pour une réponse synchrone ; `/swat/next`/`/swat/step` refusent les runs council. Échec membre toléré, <3 réponses ronde 1 = `failed`. |
+| `GET /swat/audit?limit=N` | Audit des missions : dernier état `swat-status` par `missionId` (état, rôles, taskIds, erreur) depuis `comms.jsonl` |
+| `POST /agent` | **Façade de l'agent IA n8n** — proxy authentifié vers le webhook ; trace chaque appel dans `comms.jsonl` (`kind: agent-call`) |
+| `GET /n8n/workflows` | Inventaire des workflows n8n actifs lu directement dans `~/.n8n/database.sqlite` (readonly, `node:sqlite`, chemin `N8N_DB_PATH`) — indépendant de l'API publique n8n. Renvoie id, nom, triggers, webhookPath, `callable`, `callableContract` — jamais de secrets. |
+| `POST /n8n/workflows/:id/invoke` | Invocation contrôlée d'un workflow — allowlist `N8N_CALLABLE_WORKFLOWS`, secret webhook injecté côté passerelle, trace `kind: workflow-invoke`. 403 si non allowlisté. |
+
+Passerelle MCP : `supergateway` écoute `http://127.0.0.1:8767/mcp`
+(Streamable HTTP, health `/healthz`) et proxifie le shim `mcp-mux` en stdio —
+l'agent n8n y puise un sous-ensemble d'outils muxés via `mcpClientTool`
+(filtre `includeTools`, noms préfixés `serveur__outil`). Pérennisée au boot
+via `Startup\hphe-mcp-gateway.vbs` → `.agent\scripts\hphe-mcp-gateway.cmd`.
+
+Workflows n8n déclarés (`n8n` :5678, sources dans `.agent/agent-bridge/`) :
+
+| Workflow | ID | Entrée | Rôle |
+| --- | --- | --- | --- |
+| `Hephaistos2-Kit - Agent IA n8n` | `sy2KbjC2J9Xy52oj` | `POST /webhook/hephaistos-agent` ou façade `POST :7478/agent` | Agent conversationnel FR **et orchestrateur de workflows**. Consultation : `catalogue_swats`, `statut_mission`, `lancer_diagnostic`, `lister_sessions`, `lister_workflows`. Actions sur demande explicite : `lancer_mission`, `interroger_agent`, `reveiller_agent`, `executer_workflow` (allowlist `N8N_CALLABLE_WORKFLOWS`). Agent `n8n-agent-ia` (id 26) dans l'orchestrateur. |
+| `Hephaistos2-Kit - diagnostic architecture` | `hpheDiagnosticSwat` | `POST /webhook/hephaistos-diagnostic` | Pilote le SWAT `swat-diagnostic-hephaistos` (prérequis : schéma actif) |
+| `Hephaistos2-Kit - SWAT missions` | `vyvBFDvUdt1hcFl9` | `POST /webhook/hephaistos-swat-missions` | Dispatch de missions SWAT dynamiques |
+| `Hephaistos2-Kit - Concile SWAT` | `hpheConcileSwat` | `POST /webhook/hphe-concile` `{question\|objective, missionId?, wait?}` | Lance le concile (schéma `mode: council` du roster) et renvoie le résultat complet ; re-POST même `missionId` = poll |
+| `hphe-architecture-healthcheck` | `lPBsC3w00z33ZkVv` | schedule 5 min + `POST /webhook/hphe-diag` | 11 sondes (mux `:8767`, bridge, REST…) → verdict stocké en mémoire ; transition non-ok → tâche orchestrateur + diagnostic async (`hephaistos-diagnostic-async`) |
+| `Hephaistos2-Kit - diagnostic architecture` | `hpheDiagnosticSwat` | `POST /webhook/hephaistos-diagnostic` (sync) / `-async` | Collecte 15 checks → staff diagnosticiens SWAT → rapport `.agent/reports/` |
+
+**Nœuds service n8n dans les schémas SWAT** — `sessionId = svc/n8n/<id>`
+(`<id>` = workflowId résolu via `N8N_CALLABLE_WORKFLOWS`, sinon webhookPath
+littéral). Deux sémantiques d'edge : exécution (étape dont le résultat de
+webhook alimente la chaîne) et `type:'tool'` (pointillé, svc→agent ou
+svc→entry = SWAT entier) — le runner invoque le workflow une fois par run et
+injecte le résultat dans le prompt de la cible (`Contexte outils n8n`).
+Les edges `tool` sont exclus du DAG (validation, readiness, `/swat/next`,
+`missionStatus`) mais inclus dans le digest sémantique. Extension
+hephaistos-chats ≥0.3.57 : carte rouge n8n (`#EA4B71`) à port outil dédié,
+dropdown live `GET /n8n/workflows`, palette « SERVICES » + option « ⛁
+Service n8n » de `+ Bloc`. Doc : vault `10_Projets_Docs/Hephaistos/2026-11-18
+- Cartes service n8n et edges outils dans les SWAT.md`.
+
+Après modification de `bridge-api.mjs` : redémarrer la tâche
+`hphe-bridge-api`. Après import/publication CLI d'un webhook : redémarrer
+n8n. L'agent n8n exécute la version **publiée** du workflow
+(`workflow_history`), pas le brouillon — patcher les deux. Une
+insertion manuelle de workflow actif exige : `active=1`,
+`activeVersionId` + ligne `workflow_history` correspondante (sinon
+« no activeVersion nodes » au boot), `workflow_published_version`,
+`webhook_entity` avec le `webhookId` du node (sinon chemin préfixé),
+`shared_workflow` (propriétaire).
+
+---
+
+## �🏗️ Directory Structure
 
 ```plaintext
 .agent/

@@ -14,7 +14,7 @@ import { OrchWsClient } from './orchWs';
 import { callHpheTool, loadProviderFlags, pingModels, setOrchTracker, setRemoteProviders } from './runtime';
 import { SessionStore } from './sessionStore';
 import { ACP_PROVIDERS, ChatSession, normalizeIconTheme, sessionTitle } from './types';
-import { createWorkflowView, defaultRoleForProvider, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
+import { createWorkflowView, defaultRoleForProvider, focusedIdeSessionId, ideSessionChoices, PaletteAgent, preferredEntrySession, WorkflowCatalog, WorkflowGraph, WorkflowView } from './workflow';
 import { WorkflowRunner } from './workflowRunner';
 import { WorkflowStore } from './workflowStore';
 
@@ -340,7 +340,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // jamais de doublon : ChatPanel.open révèle le panel s'il existe déjà.
     orchWs.on('message', (data: any) => {
         if (data?.type === 'open_chat' && typeof data.sessionId === 'string') {
-            openSession(data.sessionId);
+            openSession(data.sessionId, true);
         }
     });
 
@@ -1095,6 +1095,64 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
             return;
         }
 
+        if (message.type === 'add_svc') {
+            // Cartes service : bloc svc/<kind>/carte-<ts>. n8n se configure
+            // ensuite dans le panneau (sessionId = svc/n8n/<workflowId>).
+            const svc = (message as { svc?: { kind?: string } }).svc;
+            const svcTypes: Record<string, { role: string; title: string; provider: string; task: string }> = {
+                n8n: {
+                    role: 'Service n8n', title: 'Service n8n (a configurer)', provider: 'n8n',
+                    task: 'Decris ce que ce workflow fournit (contexte outil) ou execute (etape).',
+                },
+                comfyui: {
+                    role: 'Service ComfyUI', title: 'Service ComfyUI', provider: 'comfyui',
+                    task: 'Decris ce que ce service fournit (contexte outil) ou execute (etape).',
+                },
+            };
+            const t = svc?.kind ? svcTypes[svc.kind] : undefined;
+            if (t) {
+                try {
+                    const graph = workflowStore.load(store.list());
+                    const sessionId = `svc/${svc!.kind}/carte-${Date.now().toString(36)}`;
+                    const idx = graph.nodes.length;
+                    graph.nodes.push({
+                        sessionId,
+                        role: t.role,
+                        task: t.task,
+                        skills: [],
+                        title: t.title,
+                        provider: t.provider,
+                        position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                    });
+                    FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+                } catch (error) {
+                    FlowWorkspacePanel.error(String(error));
+                }
+            }
+            return;
+        }
+
+        if (message.type === 'n8n_workflows') {
+            // Inventaire live des workflows via la bridge :7478 — la clé reste
+            // côté serveur, le webview ne fait que relire la liste.
+            const token = (() => {
+                try { return fs.readFileSync(path.join(workspaceRoot || '', '.agent', 'ws-bridge.token'), 'utf8').trim(); }
+                catch { return ''; }
+            })();
+            void fetch('http://127.0.0.1:7478/n8n/workflows', {
+                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                signal: AbortSignal.timeout(15000),
+            })
+                .then(async (r) => {
+                    const data = await r.json().catch(() => ({})) as { workflows?: unknown[]; error?: string };
+                    FlowWorkspacePanel.post({ type: 'n8n_workflows', workflows: data.workflows || [], error: data.error });
+                })
+                .catch((error) => {
+                    FlowWorkspacePanel.post({ type: 'n8n_workflows', workflows: [], error: String(error) });
+                });
+            return;
+        }
+
         if (message.type === 'add_agent' && typeof (message as { provider?: string }).provider === 'string') {
             const agent = (message as { agent?: PaletteAgent }).agent;
             if (agent?.sessionId) {
@@ -1225,17 +1283,28 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
                 const pickLive = async (providerId: string): Promise<string> => {
                     try {
                         const live = await ideAgentSessions(providerId, wsRoot);
-                        const s = live.find((x) => x.focused) || live[0];
-                        return s?.sessionId ? `acp/${providerId}/${s.sessionId}` : '';
+                        return focusedIdeSessionId(providerId, live);
                     } catch { return ''; }
                 };
-                const agyCurrent = (): string => {
-                    try {
-                        const cur = require('child_process').execFileSync('node', [
-                            path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
-                        ], { encoding: 'utf8', timeout: 20000 }).trim();
-                        return cur ? `acp/antigravity-acp/${cur}` : '';
-                    } catch { return ''; }
+                const pickIdeSession = async (providerId: string): Promise<string> => {
+                    // La fenêtre active prime ; sinon proposer les conversations
+                    // live plutôt que deviner une session persistée.
+                    const focusedId = await pickLive(providerId);
+                    if (focusedId) return focusedId;
+                    const live = await ideAgentSessions(providerId, wsRoot);
+                    const choices = ideSessionChoices(providerId, live);
+                    if (!choices.length) return '';
+                    if (choices.length === 1) return choices[0].sessionId;
+                    const picked = await vscode.window.showQuickPick(
+                        choices.map((session) => ({
+                            label: session.title || session.sessionId.split('/').pop() || session.sessionId,
+                            description: session.sessionId,
+                            detail: session.focused ? 'Fenêtre active' : undefined,
+                            sessionId: session.sessionId,
+                        })),
+                        { placeHolder: 'Fenêtre agent à associer à ce bloc' },
+                    );
+                    return picked?.sessionId || '';
                 };
                 let kind: 'devin' | 'agy' | 'bleubite' | 'serveros';
                 let newId = '';
@@ -1244,14 +1313,24 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
                     // chat Devin a le focus.
                     newId = focused.startsWith('acp/antigravity-acp/')
                         ? focused
-                        : (await pickLive('antigravity-acp')) || agyCurrent();
+                        : await pickIdeSession('antigravity-acp');
+                    if (!newId) {
+                        // Repli historique : la cascade AGY active via le hub
+                        // (agy-hub.js lit le daemon — indépendant du monitor).
+                        try {
+                            const cur = require('child_process').execFileSync('node', [
+                                path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                            ], { encoding: 'utf8', timeout: 20000 }).trim();
+                            if (cur) newId = `acp/antigravity-acp/${cur}`;
+                        } catch { /* hub AGY indisponible */ }
+                    }
                     kind = 'agy';
                 } else if (want === 'devin') {
                     // Carte Devin -> la session Devin live, même si c'est une
                     // conversation Antigravity qui a le focus.
                     newId = focused.startsWith('acp/devin-cli/')
                         ? focused
-                        : await pickLive('devin-cli');
+                        : await pickIdeSession('devin-cli');
                     kind = 'devin';
                 } else {
                     // Sans type imposé : la fenêtre focalisée, puis repli AGY.
@@ -1259,7 +1338,15 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
                     newId = focused;
                     if (!focused) {
                         kind = 'agy';
-                        newId = agyCurrent();
+                        newId = await pickIdeSession('antigravity-acp');
+                        if (!newId) {
+                            try {
+                                const cur = require('child_process').execFileSync('node', [
+                                    path.join(wsRoot, '.agent', 'agent-bridge', 'agy-hub.js'), 'current',
+                                ], { encoding: 'utf8', timeout: 20000 }).trim();
+                                if (cur) newId = `acp/antigravity-acp/${cur}`;
+                            } catch { /* hub AGY indisponible */ }
+                        }
                     }
                     // Garde : une carte typée n'accepte que la fenêtre du bon
                     // type (ex. CerberOS refuse une conversation Devin).
@@ -1374,7 +1461,8 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
         if (message.type === 'schema_save') {
             try {
                 const graphToSave = message.graph ? workflowStore.save(message.graph) : workflowStore.load(store.list());
-                workflowStore.saveSchema(String((message as { name?: string }).name || graphToSave.name || 'Schema'), graphToSave);
+                const saveId = typeof (message as { id?: string }).id === 'string' && (message as { id?: string }).id ? { id: String((message as { id?: string }).id) } : undefined;
+                workflowStore.saveSchema(String((message as { name?: string }).name || graphToSave.name || 'Schema'), graphToSave, saveId);
                 const refreshed = workflowStore.load(store.list());
                 FlowWorkspacePanel.syncCache(view(refreshed));
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
@@ -1415,9 +1503,14 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
 
         if (message.type === 'kaggle_push') {
             const ws = workspaceRoot || process.cwd();
+            const kaggleDir = process.env.HPHE_KAGGLE_DIR
+                || path.join(ws, '..', 'Video_automatisation', 'kaggle-kernels', 'hephaistos-import', 'kaggle');
+            const script = fs.existsSync(path.join(kaggleDir, 'patch_tunnel.py'))
+                ? path.join(kaggleDir, 'patch_tunnel.py')
+                : path.join(ws, '.agent', 'kaggle', 'patch_tunnel.py');
             const t = vscode.window.createTerminal('Kaggle Push');
             t.show(true);
-            t.sendText('python "' + ws + '/.agent/kaggle/patch_tunnel.py"', true);
+            t.sendText('python "' + script + '"', true);
             FlowWorkspacePanel.post({ type: 'service_state', service: 'kaggle', ok: true, checking: true });
             return;
         }
@@ -1494,7 +1587,11 @@ function findFreeNodePosition(existingNodes: { position?: { x: number; y: number
 
         if (message.type === 'schema_delete') {
             try {
-                workflowStore.deleteSchema(String((message as { id?: string }).id || ''));
+                const deletedSchemaId = String((message as { id?: string }).id || '');
+                const res = workflowStore.deleteSchema(deletedSchemaId);
+                if (res && res.protected) {
+                    FlowWorkspacePanel.error(`Le schema "${res.name || deletedSchemaId}" est un schema standard du kit : sa suppression est refusee (restauration via les gabarits).`);
+                }
                 FlowWorkspacePanel.post({ type: 'schemas_state', schemas: workflowStore.listSchemas(Boolean((message as { all?: boolean }).all)) });
                 FlowWorkspacePanel.update(view(workflowStore.load(store.list())));
             } catch (error) {

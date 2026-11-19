@@ -1106,3 +1106,48 @@ textarea {
 .flow-node.amber .flow-node-kicker {
     color: #e2a65d;
 }
+
+/* Carte service n8n (svc/n8n/*) — teinte violette, distincte des agents. */
+.flow-node.svc {
+    border-color: rgba(234, 75, 113, 0.6);
+    border-style: dashed;
+}
+
+.flow-node.svc .flow-node-kicker {
+    color: #f2789a;
+}
+
+.flow-canvas .react-flow__handle.svc-tool-handle {
+    background: #EA4B71;
+    border-radius: 2px;
+}
+
+.svc-chip {
+    border-color: rgba(234, 75, 113, 0.6);
+    color: #f2789a;
+}
+
+/* Carte service ComfyUI (svc/comfyui/*) — orange, distincte du rouge n8n. */
+.flow-node.svc-comfyui {
+    border-color: rgba(245, 166, 35, 0.65);
+}
+
+.flow-node.svc-comfyui .flow-node-kicker {
+    color: #f5b942;
+}
+
+.flow-node.svc-comfyui .flow-node-provider,
+.flow-node.svc-comfyui .flow-node-model,
+.flow-node.svc-comfyui .flow-node-title {
+    color: #f5d9a8;
+}
+
+.flow-node.svc-comfyui .react-flow__handle.svc-tool-handle,
+.flow-node.svc-comfyui .svc-tool-handle {
+    background: #F5A623;
+}
+
+.comfy-chip {
+    border-color: rgba(245, 166, 35, 0.6) !important;
+    color: #f5b942 !important;
+}

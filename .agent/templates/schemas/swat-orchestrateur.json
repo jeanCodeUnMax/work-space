@@ -1,6 +1,5 @@
 {
   "name": "swat-orchestrateur",
-  "desc": "Flux maître généraliste tout-terrain (12 nœuds) : cadrage, conception architecturale (Devin), production, tests TDD, triple audit parallèle (revue, sécurité, infra/perf), arbitrage Sentinelle, contrôle Git, documentation Vault et capitalisation de l'apprentissage (Beacon/Knowledge).",
   "graph": {
     "version": 1,
     "name": "swat-orchestrateur",
@@ -14,11 +13,13 @@
           "orchestrator",
           "plan-writing"
         ],
-        "title": "ionian-helicopter",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
-          "x": -176,
+          "x": -660,
           "y": -220
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "acp/devin-cli/bloom-settee",
@@ -29,11 +30,13 @@
           "api-patterns",
           "plan-writing"
         ],
+        "mcps": [],
         "title": "bloom-settee",
         "position": {
-          "x": 88,
+          "x": -330,
           "y": -220
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvmw59wa",
@@ -43,11 +46,13 @@
           "clean-code",
           "nodejs-best-practices"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
-          "x": 352,
+          "x": 0,
           "y": -220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvfj8b4m",
@@ -57,11 +62,13 @@
           "testing-patterns",
           "tdd-workflow"
         ],
+        "mcps": [],
         "title": "zealous-agent",
         "position": {
-          "x": 616,
+          "x": 330,
           "y": -220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvmw5chd",
@@ -71,11 +78,13 @@
           "code-review-checklist",
           "clean-code"
         ],
+        "mcps": [],
         "title": "amber-agent",
         "position": {
-          "x": 880,
-          "y": -484
-        }
+          "x": 660,
+          "y": -440
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvmtldvy",
@@ -85,11 +94,13 @@
           "vulnerability-scanner",
           "mcp-security-audit"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
-          "x": 880,
+          "x": 660,
           "y": -220
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvpfinfra",
@@ -99,11 +110,13 @@
           "performance-profiling",
           "observability-specialist"
         ],
-        "title": "steady-agent",
+        "mcps": [],
+        "title": "ionic-orbit",
         "position": {
-          "x": 880,
-          "y": 44
-        }
+          "x": 660,
+          "y": 0
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvfqytbz",
@@ -113,11 +126,13 @@
           "vulnerability-scanner",
           "code-review-checklist"
         ],
+        "mcps": [],
         "title": "keen-agent",
         "position": {
-          "x": 1144,
+          "x": 990,
           "y": -220
-        }
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvfj773t",
@@ -127,11 +142,13 @@
           "git-history",
           "lint-and-validate"
         ],
+        "mcps": [],
         "title": "xenial-agent",
         "position": {
-          "x": 1408,
+          "x": 1320,
           "y": -220
-        }
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "acp/devin-cli/sugary-shoemaker",
@@ -141,11 +158,13 @@
           "testing-patterns",
           "lint-and-validate"
         ],
-        "title": "sugary-shoemaker",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
-          "x": 1672,
+          "x": 1650,
           "y": -220
-        }
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvflr6cn",
@@ -155,11 +174,13 @@
           "obsidian",
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
-          "x": 1936,
-          "y": -418
-        }
+          "x": 1980,
+          "y": -330
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvp0beacon",
@@ -169,11 +190,13 @@
           "vault-ingest",
           "obsidian"
         ],
-        "title": "beacon-agent",
+        "mcps": [],
+        "title": "onyx-agent",
         "position": {
-          "x": 1936,
-          "y": -22
-        }
+          "x": 1980,
+          "y": -110
+        },
+        "provider": "nim2"
       }
     ],
     "edges": [

@@ -29,6 +29,21 @@ Toute création/dispatch/mise à jour de tâche passe par les outils `hphe-mcp` 
 
 **Cash = Devin** (`acp/devin-cli/quiet-comb`) · **Tango = AGY** (Antigravity, cascade `721750ab-…`) · **Bleubites** = workers ACP/CLI subordonnés. Résultat de tâche → `dispatcher` exact. Bus `.agent/comms.jsonl`, tunnel `ws://127.0.0.1:7477`.
 
+## Livraison des extensions — VSIX obligatoire
+
+Dans ce projet, les extensions utilisées sont installées depuis un **VSIX**. Modifier les sources ou compiler ne met PAS à jour l’extension active. Ne jamais supposer une jonction vers les sources.
+
+Pour chaque correction d’extension destinée à l’utilisateur :
+1. Identifier l’IDE cible et vérifier la version réellement installée avant intervention.
+2. Incrémenter la version du `package.json` et synchroniser le lockfile, sans créer automatiquement de commit ni de tag.
+3. Exécuter la compilation et les tests pertinents, puis générer un VSIX portant cette version. Exclure les anciens VSIX et leurs archives du paquet.
+4. Installer ce VSIX dans l’IDE réellement utilisé. Pour Devin Desktop : `devin-desktop --install-extension "<chemin-du-vsix>"` ; ne pas utiliser par défaut le CLI d’un autre IDE.
+5. Vérifier la version déployée avec `devin-desktop --list-extensions --show-versions` (ou l’équivalent de l’IDE cible).
+6. Recharger l’extension/la fenêtre pour activer la nouvelle version. Si ce rechargement ne peut pas être effectué par l’agent, le dire explicitement et indiquer `Developer: Reload Window` ; ne jamais prétendre qu’il a eu lieu.
+7. Vérifier le comportement corrigé dans l’interface après rechargement. Les tests automatisés ne prouvent ni l’activation de la nouvelle version ni le résultat du clic utilisateur.
+
+Le compte rendu distingue obligatoirement : **sources modifiées**, **tests passés**, **VSIX généré**, **version installée vérifiée**, **rechargement effectué ou restant**, **validation dans l’interface effectuée ou restante**. Toute étape bloquée ou restante doit être annoncée ; ne pas présenter une compilation seule comme une livraison terminée. Aucun commit/push sans demande.
+
 ## 5. Auto-connaissance Cursor IDE
 
 Questions sur **Cursor** (UI, raccourcis, extensions, MCP, skills, rules, CLI, cloud agents) : ne pas inventer. Consulter le mirror Obsidian `Documentation/Cursor/` (skill `.agent/skills/cursor-ide-docs/`) ou `content_search` sur ce dossier. Resync : `scripts/sync-cursor-official-docs.ps1`.
@@ -44,30 +59,111 @@ Les fenêtres/conversations d'agents du workspace sont déclarées dans `.agent/
 2. **Fallback sans consigne explicite** : si aucun schéma n'est actif (`activeSchemaId` absent), interroger `listSchemas` et adopter automatiquement le schéma de workspace le plus adapté (ex. `swat-orchestrateur` pour un cycle complet, `swat-fix-rapide` pour un correctif urgent).
 3. **Dispatch formel via l'orchestrateur hphe-mcp** : interdiction formelle d'exécuter un workflow uniquement en simulation textuelle ou en simples commandes shell. Toute tâche déléguée d'un nœud SWAT doit être matérialisée par `create_task` / `dispatch_task` et close par `update_task` sur `Hephaistos-everything-search`.
 
+## Diagnostic Hephaistos2-Kit
 
-## 4quinquies. Visibilité des chats Bleubites — GRAVÉ DANS LE MARBRE (2026-11-04)
+- SWAT `swat-diagnostic-hephaistos` : schema `schema-mwi80bsc-5frlh`, quatre workers dedies (Runtime-Comms, Roster-Identites, Architecture, Synthese). Selectionner explicitement ce schema avant lancement ; un changement de schema pendant le run provoque un arret, jamais un fallback.
+- Workflow n8n `hpheDiagnosticSwat`, nom `Hephaistos2-Kit - diagnostic architecture`, source `.agent/agent-bridge/n8n-diagnostic-workflow.json`. Webhook authentifie `POST /webhook/hephaistos-diagnostic` sur n8n, credential `Hephaistos Bridge`.
+- Sondes et rapports : `.agent/agent-bridge/diagnostics.mjs`, preuves et analyses separees dans `.agent/reports/diagnostic-<uuid>-final.json`. Les verdicts mesures ne peuvent pas etre remplaces par une opinion agent. Execution SWAT completed ne signifie pas architecture healthy.
+- Tests : `node --test .agent/agent-bridge/diagnostics.test.mjs .agent/agent-bridge/bridge-api-swat.test.mjs`. Les versions installees ne prouvent pas le rechargement ou le comportement GUI. Les contraintes donnees aux agents ne constituent pas une sandbox.
 
-**Le webview hephaistos-chats ne surveille que `workspaceFolders[0]/.agent/chats/sessions.json`.** Une injection ACP est un client stdio séparé : elle écrit le store, exécute les outils, mais ne notifie PAS le panneau ouvert. Conséquences obligatoires :
+## Réattribution dynamique des Bleubites (providers + modèles)
 
-1. **Toujours injecter depuis le workspace qui possède les sessions** (`--cwd C:/data-sys/hephaistos2-kit`) — un inject depuis un autre root échoue `session introuvable`.
-2. **Synchroniser le store vers le workspace où l'utilisateur regarde** : `node .agent/scripts/sync-sessions.mjs` (watcher fs, debounce 250 ms, miroir sessions.json src → dst).
-3. **Rendu** : si le panneau n'affiche rien après sync → `workspace-roster.js restore` (réouverture = rechargement depuis le disque).
-4. Preuve de livraison = `delivered:true` + fichier écrit + ligne bus `comms.jsonl` — jamais la déclaration du modèle ni le silence du panneau.
+- **Commande canonique** à lancer AVANT chaque mission SWAT et APRES chaque changement de roster/provider :
+  `node .agent/scripts/swat-bind.mjs --name <schema>` (ex. `--name swat-obsidian`). Équivalent API bridge : `POST http://127.0.0.1:7478/swat/bind` `{ "name": "<schema>" }` (token `ws-bridge` habituel).
+- Toujours faire `--dry` d'abord pour inspecter les bindings (provider + model + modelFixed par rôle).
+- Le script attribue workers ET modèles **à l'usage** : pool = membres `chat-*` du roster ∩ sessions ouvertes, un provider distinct par rôle selon la chaîne `provider_prefs` (orchestrator.db), rotation persistée dans `.agent/state/swat-bind.json`.
+- Modèles tirés des catalogues **live** : `available_models` hphe-mcp (ex-model-discovery) + `GET /v1/models` pour omniroute/groq/xai ; cache `.agent/state/model-catalog.json` (TTL 5 min). Un modèle hors catalogue est réparé à l'attribution (`modelFixed: true`).
+- Providers pilotables par acp-server : `nim, nim2, omniroute, ollama, openrouter, groq` (DRIVABLE ; `devin-cli`/`antigravity-acp` exclus — identités ACP, pas des Bleubites interchangeables). Le provider `grok` (api.x.ai direct) est retire — team sans credits ; Grok se consomme via les modeles omniroute `pol/grok`, `pol/grok-large`, `pollinations/grok`, `pollinations/grok-large` (necessitent une clef pollinations gratuite dans OMNIROUTE, sinon 401).
+- OmniRoute : privilégier les canaux gratuits vérifiés (`groq/`, `cf/`, `cloudflare-ai/`, `ddgw/`, `openrouter/*:free`) ; `auto/*`, `gemini/`, `mistral/` BYOK et les image/vidéo sont exclus (cf. `OMNI_CHANNEL_RANK`/`OMNI_BAD` dans le script).
+- Ne JAMAIS binder pendant un run actif (`/swat/bind` refuse si une mission tourne — évite `Schema modifie pendant le run`).
+- Knobs : `SWAT_BIND_ROTATE_MODELS=1` force la rotation des modèles même valides ; `SWAT_BIND_PROVIDERS` restreint le set ; `SWAT_BIND_CATALOG_TTL_MS` ajuste le cache.
 
-## 4sexies. Sub-agents internes INTERDITS — GRAVÉ DANS LE MARBRE (2026-11-05)
+## Missions SWAT dynamiques dans n8n
 
-**Il est INTERDIT à Devin de lancer ses propres sub-agents (`run_subagent`, `subagent_*`, ou tout équivalent interne/invisible) sauf demande EXPLICITE de l'utilisateur.**
+- Workflow existant : `vyvBFDvUdt1hcFl9`, source `.agent/agent-bridge/n8n-swat-workflow.json`. Mettre à jour cet ID, ne pas multiplier les imports anonymes.
+- Entrée publiée : `POST http://127.0.0.1:5678/webhook/hephaistos-swat-missions`, Header Auth via la credential `Hephaistos Bridge`. Ne jamais écrire son secret dans un workflow ou un exemple.
+- Contrat : `missionId` unique et stable pour les retries, `swatId` exact, `objective`, `inputs`, `constraints`, `expectedDeliverable`. L'exemple manuel est distinct de l'entrée dynamique.
+- Catalogue canonique : `GET http://127.0.0.1:7478/swats`. Suivi authentifié : `GET /missions/<missionId>` sur la même passerelle. Historique des états : événements `swat-status` corrélés dans `.agent/comms.jsonl`.
+- Le runner lit le schéma actif et ses dépendances ; `swatId` différent du schéma actif est refusé. Sélectionner explicitement le schéma via les outils du roster ou l'extension, jamais de fallback ni de remplacement de session. Support actuel : graphes acycliques avec workers `chat-*` existants, pas les conciles ni les workers ACP natifs.
+- `constraints` est une consigne transmise aux agents, pas un sandbox ni une autorisation d'action destructive. Une réponse textuelle et un état `completed` ne prouvent pas qu'un artefact demandé existe.
+- Vérification : `node --test .agent/agent-bridge/bridge-api-swat.test.mjs`, puis mission réelle par Webhook avec contrôle du résultat et des IDs de tâches. Le CLI `n8n execute --id=...` choisit le trigger de sous-workflow sans données si présent : un rejet de mission vide est attendu, pas un test manuel complet.
+- Après modification du bridge, redémarrer sa tâche `hphe-bridge-api` hors exécution. Après import/publication CLI d'un Webhook, n8n doit être redémarré pour charger les routes publiées. Ne pas prétendre à une validation UI sur la seule base de tests CLI/HTTP.
 
-1. **Toute exécution déléguée visible** passe par les Bleubites : fenêtres `hephaistos-chats` (inject via `acp-inject.js --provider hephaistos`, sessions résolues par `.agent/workspace-roster.json`) ou par l'orchestrateur `hphe-mcp` (`dispatch_task` pour les workers CLI).
-2. **Un sub-agent interne est invisible** pour l'utilisateur : rien dans les chats, rien sur le bus, aucune preuve observable. C'est une violation de la règle de livraison vérifiable.
-3. **Concils inclus** : les advisors sont les sessions Bleubites de `.agent/council/advisors.json` via `.agent/council/supervise.mjs` — jamais des sub-agents.
-4. En cas de besoin d'un sub-agent interne → demander l'autorisation explicitement, ne jamais l'assumer.
+## Agent IA n8n (passerelle conversationnelle)
 
-## 🪟 VISIBILITÉ DU CONCILE SWAT & HEPHAISTOS-CHATS (GRAVÉ DANS LE MARBRE - 2026-11-12)
-- Le webview Hephaistos-Chats surveille EXCLUSIVEMENT `workspaceFolders[0]/.agent/chats/sessions.json`.
-- En cas de non-affichage des actions d'un agent dans sa fenêtre respective :
-  1. Synchroniser immédiatement `sessions.json` depuis le workspace maître (`C:/data-sys/hephaistos2-kit/.agent/chats/sessions.json` -> `.agent/chats/sessions.json`).
-  2. S'assurer que `.agent/agent-bridge/node_modules` est rattaché par jonction NTFS vers `C:/data-sys/hephaistos2-kit/.agent/agent-bridge/node_modules`.
-  3. Exécuter impérativement `node .agent/agent-bridge/workspace-roster.js restore` pour forcer le rechargement des webviews existantes (aucun doublon de chat).
-  4. Lancer le miroir automatique en arrière-plan : `node .agent/scripts/sync-sessions.mjs`.
-  5. Preuve de fonctionnement = sessions.json écrit + statut `open-requested` sur chaque session dans le retour du roster.
+- Workflow `sy2KbjC2J9Xy52oj`, nom `Hephaistos2-Kit - Agent IA n8n`, source `.agent/agent-bridge/n8n-agent-workflow.json`. Agent enregistré : `n8n-agent-ia` (orchestrateur, type service).
+- Entrée canonique : **`POST http://127.0.0.1:7478/agent` `{prompt}`** — façade de la bridge, auth = token `ws-bridge` habituel ; l'auth n8n est injectée côté passerelle et chaque appel est tracé dans `comms.jsonl` (`kind: agent-call`). Entrée directe : `POST http://127.0.0.1:5678/webhook/hephaistos-agent` (Header Auth `Hephaistos Bridge`).
+- Outils de consultation : `catalogue_swats`, `statut_mission` (`missionId` exact requis), `lancer_diagnostic` (prérequis : schéma actif `swat-diagnostic-hephaistos`), `lister_sessions` (fenêtres ACP ouvertes).
+- Outils d'action (sur demande explicite uniquement) : `lancer_mission` → webhook `hephaistos-swat-missions` qui pilote la mission de bout en bout (`/swat/start` + boucle `/swat/next`), `interroger_agent` → `/ask`, `reveiller_agent` → `/wake`. Le schéma dédié `swat-action-directe` (`schema-mwiivx72-r74a4`) n'emploie que des workers `chat-*` — les nœuds `acp/*` natifs hors entry font échouer le runner (`Transport worker non pris en charge`).
+- Nœud worker SWAT : le runner accepte `svc/n8n/<webhookPath>` comme sessionId — le prompt de l'étape est POSTé au webhook n8n (auth Bearer injectée), la réponse devient le résultat d'étape. Schéma dédié `swat-n8n-delegation` (`schema-svc-n8n-delegation`) : Orchestrateur → Delegue-n8n (agent n8n) → Verificateur. Testé : mission `n8n-node-001` → 200 completed, l'agent a réellement appelé `lister_workflows`.
+- Carte service n8n + edges `tool` : `svc/n8n/<workflowId>` est résolu via l'allowlist `N8N_CALLABLE_WORKFLOWS` (workflowId → webhookPath). Un edge `type:'tool'` svc→agent (ou svc→entry = tout le SWAT) n'est **pas** une dépendance : le runner invoque le workflow une fois et injecte le résultat dans le prompt de la cible (`Contexte outils n8n`), cache par source et par run. Exclus du DAG (validation, readiness, `/swat/next`, `missionStatus`) mais inclus dans le digest sémantique. La sanitization du roster préserve `edge.type` (clé de dédup source+target+type). Extension : palette « SERVICES » + option « ⛁ Service n8n » du dropdown `+ Bloc`, carte rouge `#EA4B71` à logo n8n, port **outil** dédié (haut) → edges pointillés animés, dropdown live des workflows dans l'inspecteur. Runner extension (`workflowRunner.ts`) : même sémantique via `POST /n8n/workflows/:id/invoke`. Schéma démo `swat-n8n-tools` (`schema-svc-n8n-tools`). Testé : mission `n8n-tool-003` → completed, contexte réellement injecté (15 workflows). Doc : vault `10_Projets_Docs/Hephaistos/2026-11-18 - Cartes service n8n et edges outils dans les SWAT.md`.
+- Orchestration de workflows n8n : `lister_workflows` → `GET :7478/n8n/workflows` (inventaire lu directement dans `~/.n8n/database.sqlite` en readonly via `node:sqlite` — pas de dépendance à l'API publique n8n qui peut être désactivée ; renvoie id, nom, triggers, webhookPath, `callable`, `callableContract`). `executer_workflow` → `POST :7478/n8n/workflows/{workflowId}/invoke` — allowlist serveur `N8N_CALLABLE_WORKFLOWS` dans `bridge-api.mjs`, le secret webhook reste côté passerelle ; non-allowlisté → 403 ; chaque appel tracé (`kind: workflow-invoke`). Ne jamais invoquer un workflow à effets externes (Telegram, mail) sans demande explicite.
+- Outils MCP (`mcp_hephaistos`) : passerelle `supergateway` sur `http://127.0.0.1:8767/mcp` (stdio → Streamable HTTP devant le shim mcp-mux). 14 outils exposés : recherches (`everything_search`, `content_search`, `hybrid_search`, `semantic_search`, `memory_search`, `hphe_health`) + orchestrateur (`list_agents`, `agent_status`, `suggest_agent`, `list_tasks`, `get_next_task`, `create_task`, `dispatch_task`, `update_task`). Pérennisée au démarrage via `Startup\hphe-mcp-gateway.vbs` → `.agent\scripts\hphe-mcp-gateway.cmd` (relance manuelle : exécuter le `.cmd` ; log `.agent/mcp-gateway.log`). Loopback sans auth — comme hphe-rest.
+- L'agent exécute la version **publiée** du workflow (`workflow_history`), pas le brouillon `workflow_entity.nodes` — tout patch DB doit viser les deux. Le paramètre requis `{missionId}` dans l'URL rend un test isolé du nœud outil impossible (`PartialExecutionToolExecutor` → `Required at missionId` est attendu).
+- Après modification du bridge, redémarrer `hphe-bridge-api` ; après publication CLI d'un webhook, redémarrer n8n.
+
+## Missions SWAT Telegram
+
+- Schema `swat-telegram` (`schema-mvr09niq-8yor8`) : entry `acp/devin-cli` Orchestrateur-Flux + workers `chat-*` Redacteur-Telegram puis Relecteur-Modo (verdict `GO` + texte final). Les Bleubites n'ont que des outils fs_* : **aucun worker ne peut envoyer** — l'envoi est fait par n8n apres la mission.
+- Workflow `Hephaistos2-Kit - Telegram SWAT` (`Z07C5VZbpHaSwdxn`), source `.agent/agent-bridge/n8n-telegram-swat-workflow.json`. Entree `POST /webhook/hephaistos-telegram` (Header Auth `Hephaistos Bridge`), contrat `{instruction|text, chat?, missionId?}` — pipeline : bind `swat-telegram` -> mission `hephaistos-swat-missions` -> verdict GO/NO-GO du Relecteur -> envoi via `swat-telegram-hub` seulement si GO.
+- Envoi unique : `SWAT - Telegram Hub` (`RAp6qBCMGOcauYmK`, webhook `swat-telegram-hub`) route `action` (send/send-file/image/pin/unpin/poll/delete/edit/admins/members/stats/chat/topics/history/read/search/updates) + `chat` parametrable vers le proxy `:5680`. Les workflows `SWAT - Telegram Post` et `SWAT - Telegram Image` sont desactives — sous-ensembles en dur du Hub, ne pas les reactiver.
+- Pont CLI : `node .agent/flux/telegram.mjs <action> [--chat X] [--text T]` (chemin `swat-telegram-hub` par defaut, override `N8N_TELEGRAM_PATH`).
+- **Bot API vs MTProto** : les actions Hub partent `--as-user` (session MTProto) sauf `asUser:false`. Le Bot API `deleteMessage` est **aveugle aux messages « as user » en chat prive** (`message to delete not found`) : `delete` route par defaut sur `delete --as-user` (Telethon `delete_messages`, revoke pour les deux) ; `asUser:false` retombe sur le chemin bot (messages du bot / groupes). Meme logique pour `edit` si un `--as-user` y est ajoute plus tard.
+- Commandes `/` du bot `Moi_Hermes_bot` (menu ~60 commandes expose) : inventaire via `node .agent/flux/telegram-commands.mjs [--json]` ; invocation via `action:botcmd` du Hub. **Le nom "Hermes" du bot est une persona Telegram — il n'est PAS gere par l'application `hermes.exe`.**
+
+## Bot Hermes — workflow n8n (repondeur + taches de groupe)
+
+- Workflow `Hephaistos2-Kit - Hermes Bot` (`BJFnZVJpzQxQKCb6`), source `.agent/agent-bridge/n8n-hermes-bot-workflow.json` — gere le bot `Moi_Hermes_bot` **sans l'application Hermes** : trigger 20 s -> `POST :7478/tg/poll` (route bridge : mutex + dedup `message_id` persistant dans `.agent/state/tg-seen.json`, appelle `updates --json` en interne — consomme l'offset `getUpdates`) -> `Router messages` (ignore les messages du bot, filtre `from` + Telegram n'echo pas les envois du bot) -> `Mode ?` (switch : `llm` | `hub` | fallback `send`).
+- Questions libres -> **noeud AI Agent** (`@n8n/n8n-nodes-langchain.agent` v3.1, persona Hermes) + **OpenAI Chat Model** branche sur la credential `OmniRoute (env)` (`4IwKxCZi0dRMavS5`, `http://127.0.0.1:20128/v1`, modele `groq/openai/gpt-oss-120b`, route free). Erreur agent -> fallback `POST :7478/llm` (bridge : chaine `provider_prefs` — nim2 > nim > omniroute > ollama... — clefs lues cote serveur, jamais dans le workflow).
+- **Outils MCP** : noeud `MCP Hephaistos` (`mcpClientTool`, SSE `http://127.0.0.1:8400/sse`) expose a l'agent les outils selectionnes `memory_search`, `memory_read`, `memory_write` + recherches Hephaistos — la memoire unifiee `agentmemory` est donc accessible au bot (projectId `caverne` impose par le prompt ; les ecrits sont verifies dans `F:\Sqlite-DB\agentmemory\caverne\agentmemory\data.json`). Passerelle : `supergateway` stdio `hphe-mcp.exe` -> SSE, durable via tache planifiee `hphe-mcp-sse` (script `.agent/scripts/hphe-mcp-sse.cmd`, log `%USERPROFILE%\.n8n\hphe-mcp-sse.log`). Second noeud `MCP Beacon (mux)` (`mcpClientTool`, `httpStreamable` -> `http://127.0.0.1:8767/mcp`, passerelle `.agent/scripts/hphe-mcp-gateway.cmd`) : whitelist lecture seule `beacon__search_memory/get_memory/get_memory_context/search_activity/summarize_activity/get_activity_event/list_activity_filters/candidates_list` — aucun outil d'ecriture du mux (kaggle/rea/puppeteer) n'est expose au bot de groupe.
+- **Memoire session** : `Memoire session` (`memoryBufferWindow` v1.4, `sessionIdType: customKey`, cle par chat+auteur Telegram) pour le court terme ; la memoire unifiee passe par les outils MCP.
+- Taches de groupe : slash `/poll Q | A | B` `/membres` `/admins` `/stats` `/topics` ET **langage naturel deterministe** (Router, pas de LLM -> pas d'hallucination) : « liste les membres », « admins », « stats », « derniers messages », « infos du groupe » -> `Action Hub` ; « epingle ca » / « desepingle ca » / « supprime ca » **en reponse** a un message -> `pin`/`unpin`/`delete` (champ `reply_to` = id entier). Outil `actions_telegram` (`toolWorkflow` -> sous-workflow `TGtoolb35e356f1a35`) expose a l'agent : poll, image, send-file, read, history, search, chatinfo, members, admins, stats, topics — jamais pin/unpin/delete/edit (reserves au canal reponse+admin). Whitelist + `chat` force a `caverne` dans `Valider action`.
+- **ACL** : `from_id` Telegram (ajoute a `_norm` du CLI, source `C:\Program Files\servers\cli-anything-telegram\...`) identifie l'expediteur ; `ADMIN_IDS={630047399}` (Ibn lascard, createur) dans le Router + prompt — moderation et `memory_write` reserves a l'admin, refus poli sinon. Les actions `pin`/`unpin`/`delete`/`edit` du Hub exigent `--id` (et `--yes` pour delete) ; elles echoueront tant que `Moi_Hermes_bot` n'est pas admin du groupe avec les droits correspondants (a accorder dans Telegram par le createur).
+- **Un seul consommateur `updates` a la fois** — `getUpdates` consomme l'offset cote serveur : ne jamais lancer un autre poller (ex : `.agent/flux/telegram-respond.legacy.mjs`, DEPRECATED) en parallele, sinon il vole les messages du workflow. Le poll passe uniquement par `/tg/poll` (le mutex du bridge serialise les fires concurrents du trigger, cause des doubles reponses corrigee). `getWorkflowStaticData` n'est PAS disponible dans le sandbox Code de cette version n8n — le dedup vit dans le bridge.
+
+## Vérifications diagnostic, worker NIM et passerelle native
+
+- `.env` doit être UTF-8 : un commentaire Windows-1252 peut faire échouer l'import de `webdriver_manager`/`python-dotenv` et empêcher le démarrage du connecteur Colab. Une réparation d'encodage conserve une sauvegarde ignorée par Git et ne journalise aucune valeur.
+- Un chemin cité dans un prompt n'est pas un contrat de livrable. Pour une tâche formelle, seul `expected_artifact` autorise la destination du worker NIM ; contrôler le confinement avant toute écriture. Lire et clôturer les tâches via les outils canoniques, jamais par SQLite direct.
+- Régression JS : `node --test .agent/scripts/nim-worker-contract.test.mjs .agent/agent-bridge/diagnostics.test.mjs .agent/agent-bridge/bridge-api-swat.test.mjs .agent/agent-bridge/binome-handshake.test.cjs`.
+- Depuis `hphe/` : `cargo test -p hphe-kit --lib` et `cargo test -p hphe-mcp --bin hphe-rest`. Compilation native : `cargo build --release -p hphe-mcp --bin hphe-mcp --bin hphe-rest`.
+- La sonde REST utilise une connexion IPC distincte et bornée pour ne pas attendre le verrou des requêtes normales. Les processus MCP stdio déjà ouverts conservent leur ancien code après remplacement de l'exécutable : distinguer installation sur disque et rechargement des clients persistants.
+- Une erreur Google `401 deleted_client` signifie que le client OAuth a été supprimé côté Google. Réparer un encodage local ou relancer l'authentification ne restaure pas ce client ; ne jamais présenter ces actions comme une réparation OAuth.
+
+## Audit SWAT — comment verifier l'usage reel
+
+- `GET /swat` (bridge, Bearer) : schema actif, graphe workers, digest.
+- `GET /swat/audit?limit=N` : dernier etat par mission (state, roles, taskIds) — source `.agent/comms.jsonl` (`swat-status`).
+- `GET /missions/<missionId>` : etat detaille d'une mission (live ou dernier etat persiste).
+- `POST /tools/call` `list_tasks` : chaque etape SWAT = tache orchestrateur tracee (jamais d'acces direct a `orchestrator.db`).
+- Rapports : `.agent/reports/diagnostic-*-final.json` ; execs n8n : `execution_entity` par workflowId.
+- Garde-fous du runner : schema non actif = 409, worker non `chat-*` refuse, divergence roster/session = erreur, digest modifie = abort, une seule mission a la fois, pas de rejeu post-restart.
+- Healthcheck (`hphe-architecture-healthcheck`, 5 min) -> transition non-ok -> declenche le diagnostic SWAT via `hephaistos-diagnostic-async`.
+- 2026-11-16 : purge de 61 taches failed/cancelled via `delete_task` (canal MCP) ; `swatTool` maxBuffer porte a 16 Mo (la sonde `orchestrator-task-state` debordait a ~2,7 Mo). Publication n8n : la version executee suit `activeVersionId` + `workflow_published_version`, pas `versionId` seul ; un node webhook sans champ `webhookId` est enregistre sous un chemin prefixe.
+## Concile SWAT (mode council)
+
+- Graphe `mode: council` (schema-mvpjbchn-ijt6c) : chairman = `acp/devin-cli/ionian-helicopter` (non injectable : l'appelant synthetise), 6 membres `chat-*` (Premiers-Principes, Expansionniste, Executeur, Empirique, Contrariant, Outsider).
+- `POST /swat/start` accepte tout schema du catalogue (`schemaGraphFor`) — pas seulement le schema actif. Missions paralleles autorisees si aucune session worker en commun (collision -> 409). Avec le schema council : run auto-pilote — ronde 1 parallele (reponses isolees), ronde 2 parallele (peer-review anonymisee Membre A-F), puis `phase: done`. `wait` (ms, max 600000) bloque la reponse HTTP jusqu'au resultat.
+- `/swat/next` et `/swat/step` refusent les runs council ; suivi via `GET /missions/:id` -> `council.replies`, `council.reviews`, `council.chairmanPrompt` (prompt de synthese pret pour le chairman).
+- Parallelisme : `acp-inject` accepte `lockKey` (lock par session, pas par provider). Echec membre tolere ; moins de 3 reponses ronde 1 = mission failed.
+- Workflow n8n `Hephaistos2-Kit - Concile SWAT` (`hpheConcileSwat`) : `POST /webhook/hphe-concile` (headerAuth) `{question|objective, missionId?, wait?}` -> `POST /swat/start` (wait<=540000) -> renvoie le missionStatus complet. Re-POST avec le meme missionId = poll (replay). Export : `.agent/agent-bridge/n8n-concile-workflow.json`.
+- Insertion manuelle n8n : un workflow actif exige `workflow_entity.active=1` + `activeVersionId` + `workflow_published_version` + `workflow_history` (versionId doit exister la, sinon 'no activeVersion nodes') + `webhook_entity` (avec `webhookId` du node) + `shared_workflow`.
+
+## Obsidian Hub (Local REST API)
+
+- Workflow `Hephaistos2-Kit - Obsidian Hub` (`obsidiandd22f48b5b`), source `.agent/agent-bridge/n8n-obsidian-hub-workflow.json`. Entree `POST /webhook/hphe-obsidian` (Header Auth `Hephaistos Bridge`).
+- Cible : plugin **Local REST API 5.5.0** du vault `F:\doc_Obsidian\Doc` — `https://127.0.0.1:27124` (HTTPS auto-signe, `allowUnauthorizedCerts`). Clef stockee chiffree dans le credential n8n `Obsidian REST API` (`obsidian-11280beb32a3`), jamais dans le JSON du workflow.
+- Actions routees par un noeud Code vers un httpRequest dynamique : `status`, `list`, `read`, `write`, `append`, `delete`, `patch` (headers Operation/Target), `search` (POST `/search/simple/`), `search-json`, `commands`, `command`, `active`, `open`, `periodic`.
+- **Fallback disque** : httpRequest en `continueRegularOutput` ; en cas d'echec REST (Obsidian ferme), le noeud `Fallback Disk` execute `status/list/read/write/append/delete` directement sur `F:\doc_Obsidian\Doc` (requiert `NODE_FUNCTION_ALLOW_BUILTIN=fs,path,os` dans `n8n-run.cmd`). Les actions REST-only (`patch`, `search*`, `commands`, `command`, `active`, `open`, `periodic`) renvoient une erreur explicite. La reponse porte `via: rest|disk`.
+- Community node `n8n-nodes-obsidian@0.1.11` installe dans `~/.n8n/nodes` (`--ignore-scripts`, deps pures JS : chokidar+yaml — la dep transitive `isolated-vm` exige ClangCL et n'est pas requise au runtime).
+- Obsidian doit etre **ouvert** pour que l'API reponde ; l'ecriture disque via SWAT reste la voie qui marche a froid.
+- n8n 2.x exige `workflow_published_version` + `workflow_history` alignes sur `activeVersionId` pour servir le webhook ; le `respondToWebhook` exige `respondWith:json`+`responseBody` (le defaut = redirect URL).
+
+## n8n Assistant (instance-ai)
+
+- Actif : `instanceAi.settings.enabled=true` (settings DB) + `N8N_INSTANCE_AI_ENABLED=true` dans `n8n-run.cmd`. Les permissions restent `require_approval` partout sauf `mcpRead`/`createPreference`.
+- LLM : `N8N_INSTANCE_AI_MODEL_URL=http://127.0.0.1:20128/v1` (**OmniRoute local**, OpenAI-compatible), modele `auto` (routing dynamique sur tout le pool : nvidia, openrouter, groq, mistral, gemini, ollama-cloud, hf, aihorde, pollinations, kilo-gateway...), utilitaire `auto`, clef `%OMNIROUTE_API_KEY%` lue a l'execution (jamais en dur). Les combos `auto/best-*` et les `:free` openrouter sont en partie morts (provider uncloseai ferme, clefs free ratees) — `auto` simple verifie. Devin CLI existe comme bridge OmniRoute (`devin-cli-agentic/swe-1-7`) mais provider non actif dans le pool.
+- Sandbox : pas de Docker -> `sandboxEnabled=false`, le JS Task Runner local (broker :5679) sert de gateway. `N8N_INSTANCE_AI_SANDBOX_PROVIDER`/`n8nSandboxServiceUrl` a configurer si un vrai sandbox Docker devient disponible.
+- Recherche web : `INSTANCE_AI_BRAVE_SEARCH_API_KEY=%BRAVE_API_KEY%` (env, jamais dans le repo).
+- `setupCompleted` (UI) exige modèle+sandbox+recherche : modèle=env OK, recherche=env OK (Brave), **sandbox en attente** — seuls `daytona` (SaaS) ou `n8n-sandbox` (service propre via `N8N_SANDBOX_SERVICE_URL`, exige Docker/K8s). Sans Docker pas de sandbox local possible ; `workflowBuilderAvailable=false` jusque-là. L'endpoint de chat n'exige que `isModelConfigured` (déjà couvert).
+- Réglages UI : Settings > Assistant permet à l'admin d'overrider modèle/credential.

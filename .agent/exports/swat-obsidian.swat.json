@@ -1,0 +1,59 @@
+{
+  "format": "hephaistos-swat-schema@1",
+  "name": "swat-obsidian",
+  "mode": "swat",
+  "graph": {
+    "version": 1,
+    "name": "swat-obsidian",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Orchestrateur-Vault",
+        "task": "Cadre la mission vault : precise le vaultPath cible (defaut F:\\doc_Obsidian\\Doc), decompose la demande en ordres bornes et verifiables pour le Cartographe et l'Archiviste, puis tranche le GO/NO-GO final sur le verdict du Gardien.",
+        "skills": ["orchestrator", "plan-writing"],
+        "mcps": [],
+        "title": "Orchestrateur",
+        "position": { "x": -330, "y": 0 }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Cartographe-Vault",
+        "task": "Lecture seule sur le vault indique dans la mission (fs_list_directory, fs_read_text_file uniquement) : cartographie l arborescence demandee, releve les notes concernees, les liens [[...]], les tags et le frontmatter. Rend un inventaire factuel : chemins exacts, liens casses, orphelines, doublons. Aucune ecriture.",
+        "skills": ["code-review-checklist"],
+        "mcps": [],
+        "title": "Cartographe",
+        "position": { "x": 0, "y": -140 }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Archiviste-Redacteur",
+        "task": "Ecriture sur le vault indique dans la mission (fs_write uniquement, uniquement les fichiers valides par le Cartographe ou l Orchestrateur) : cree ou met a jour les notes .md en respectant les conventions Obsidian du vault (frontmatter YAML, tags, liens wiki, nommage, dossier cible). Ne touche jamais hors vaultPath. Liste chaque fichier ecrit avec son chemin exact.",
+        "skills": ["clean-code"],
+        "mcps": [],
+        "title": "Archiviste",
+        "position": { "x": 0, "y": 140 }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Gardien-Coherence",
+        "task": "Controle final lecture seule : relit les fichiers ecrits par l Archiviste, verifie que les liens [[...]] resolvent, que le frontmatter est valide, qu aucun fichier n a ete cree hors arborescence, que les conventions du vault sont respectees. Rend GO ou NO-GO motive avec la liste exacte des ecarts.",
+        "skills": ["lint-and-validate"],
+        "mcps": [],
+        "title": "Gardien",
+        "position": { "x": 330, "y": 0 }
+      }
+    ],
+    "edges": [
+      { "id": "e-orch-carto", "source": "acp/devin-cli/ionian-helicopter", "target": "chat-mvmw59wa" },
+      { "id": "e-orch-arch", "source": "acp/devin-cli/ionian-helicopter", "target": "chat-mvpfinfra" },
+      { "id": "e-carto-gard", "source": "chat-mvmw59wa", "target": "chat-mvfj8b4m" },
+      { "id": "e-arch-gard", "source": "chat-mvpfinfra", "target": "chat-mvfj8b4m" }
+    ]
+  },
+  "agents": [
+    { "sessionId": "chat-mvmw59wa", "providerId": "nim2", "model": "nvidia/nemotron-3.5-lightning-30b-a3b", "role": "Cartographe-Vault" },
+    { "sessionId": "chat-mvpfinfra", "providerId": "nim2", "model": "nvidia/nemotron-3.5-lightning-30b-a3b", "role": "Archiviste-Redacteur" },
+    { "sessionId": "chat-mvfj8b4m", "providerId": "nim2", "model": "nvidia/nemotron-3.5-lightning-30b-a3b", "role": "Gardien-Coherence" }
+  ]
+}

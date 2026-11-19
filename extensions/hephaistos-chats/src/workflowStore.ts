@@ -11,7 +11,7 @@ interface RosterWorkflowApi {
     upsertCoreAgent(root: string, group: string, agent: { providerId: string; sessionId: string; role?: string; title?: string; restore?: string }): WorkflowGraph;
     removeChatAgent(root: string, sessionId: string): WorkflowGraph;
     setMemberHidden(root: string, sessionId: string, hidden: boolean): void;
-    saveSchema(root: string, name: string, graph: WorkflowGraph): unknown;
+    saveSchema(root: string, name: string, graph: WorkflowGraph, opts?: { id?: string }): unknown;
     listSchemas(root: string, all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>;
     loadSchema(root: string, id: string): WorkflowGraph;
     deleteSchema(root: string, id: string): unknown;
@@ -70,8 +70,8 @@ export class WorkflowStore {
         return this.api.syncRosterWorkflow(this.workspaceRoot, sessions);
     }
 
-    saveSchema(name: string, graph: WorkflowGraph): void {
-        this.api.saveSchema(this.workspaceRoot, name, graph);
+    saveSchema(name: string, graph: WorkflowGraph, opts?: { id?: string }): void {
+        this.api.saveSchema(this.workspaceRoot, name, graph, opts);
     }
 
     listSchemas(all: boolean): Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }> {
@@ -90,8 +90,8 @@ export class WorkflowStore {
         return this.api.loadSchema(this.workspaceRoot, id);
     }
 
-    deleteSchema(id: string): void {
-        this.api.deleteSchema(this.workspaceRoot, id);
+    deleteSchema(id: string): { deleted?: number; protected?: boolean; name?: string } {
+        return this.api.deleteSchema(this.workspaceRoot, id) as { deleted?: number; protected?: boolean; name?: string };
     }
 
     renameSchema(id: string, name: string): { renamed?: boolean; protected?: boolean; name?: string; error?: string } {

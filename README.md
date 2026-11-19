@@ -1,213 +1,187 @@
-  
-
 <p align="center">
-  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit — The Developer's Forge" width="100%">
+  <img src="media/hephaistos-kit_banderole.jpg" alt="Hephaistos2-Kit" width="100%">
 </p>
 
 # Hephaistos2-Kit
 
-> Plateforme unifiée de recherche filesystem **ultra-rapide** pour agents IA :
-> indexation NTFS native en Rust (`$MFT` + journal USN), serveur MCP unique
-> (**58 outils dans la source**) et boucle d'ingestion REST — **sans `Everything.exe`**.
->
-> Le runtime installé reste à 57 outils; par décision utilisateur, le nouveau binaire n'est pas déployé et Beacon reste désactivé.
+**Visual multi-agent orchestration IDE for VS Code forks, backed by a unified
+Rust search engine.**
+
+Hephaistos2-Kit lets a user compose an agent team on a React Flow canvas —
+agents, roles, providers, models, skills, MCP tools, external services — wire
+execution dependencies between them, persist the workflow, and run it under a
+head agent connected through ACP.
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D6?logo=windows&logoColor=white)
 ![Backend](<https://img.shields.io/badge/backend-Rust%20%24MFT%2BUSN-orange>)
-![Protocole](<https://img.shields.io/badge/protocole-MCP%20stdio%20%2F%20REST%208792-blueviolet>)
-![Outils](https://img.shields.io/badge/outils-58-informational)
-![Index](<https://img.shields.io/badge/index%20NTFS-~6%2C4M%20entr%C3%A9es-success>)
-![Licence](https://img.shields.io/badge/licence-MIT-lightgrey)
+![Canvas](<https://img.shields.io/badge/canvas-React%20Flow-61DAFB>)
+![License](https://img.shields.io/badge/license-Proprietary%20beta-red)
 
-| Chiffres clés       | Valeur                                              |
-| -------------------- | --------------------------------------------------- |
-| Entrées indexées   | ~6,4 M (démon`hphe-indexd`, 4 volumes NTFS)      |
-| Latence de recherche | **< 50 ms** typique, snapshot mmap + USN live |
-| Backend              | Rust — aucune dépendance à Everything.exe        |
-| Index contenu        | Tantivy (incrémental, file d'attente sérialisée) |
-| Transport            | stdio MCP + named pipe + REST`127.0.0.1:8792`     |
-
-Successeur direct de `everything-mcp` v1 (thin client Python sur Everything.exe)
-et de `Hephaistos-Kit` v1. Les anciens serveurs sont archivés, pas supprimés —
-voir [Rollback](#rollback).
+> **Public beta.** The kit is functional on the development machine;
+> reproducible multi-machine installation is in progress.
 
 ---
 
-## Sommaire
+## Features
 
-- [Architecture](#architecture)
-- [Layout PROJET / INSTALL](#layout-projet--install)
-- [Installation](#installation)
-- [Configuration MCP](#configuration-mcp)
-- [Ingestion](#ingestion)
-- [Extensions VS Code](#extensions-vs-code)
-- [Orchestrateur et providers](#orchestrateur-et-providers)
-- [Gouvernance et sécurité machine modeste](#gouvernance-et-sécurité-machine-modeste)
-- [Mémoire unifiée](#mémoire-unifiée)
-- [Rollback](#rollback)
-- [Documentation](#documentation)
+| Area | Description |
+|---|---|
+| Visual orchestration | React Flow canvas with minimap: drag-and-drop agent, skill, role, provider and service cards; execution and tool edges |
+| SWAT workflows | Persisted schemas, live workflow switching, acyclic execution DAG, node-level roles and missions |
+| Bleubite workers | Tool-enabled `chat-*` workers (filesystem read/write/list confined to the workspace) on free or custom providers |
+| Real ACP binding | Detection of open IDE agent sessions (Devin, Antigravity), card-to-session binding, prompt injection |
+| Filesystem search | ~6.4M-entry NTFS `$MFT` index with live USN journal, sub-50 ms queries, BM25 + semantic + hybrid search |
+| Unified MCP server | One stdio server (`hphe-mcp`, 58 tools): search, content, vectors, memory, task orchestration, beacon |
+| Unified memory | Knowledge graph + 2048D vector store + SQLite via `memory_*` tools, workspace/global separation |
+| Task orchestrator | `create_task`/`dispatch_task`/`update_task`, append-only `comms.jsonl` bus, IDE wake-up |
+| Skill-mux | MCP stdio server exposing a central machine skill registry, rebuilt on the fly |
+| Beacon | Agent activity journal ingestion with built-in secret redaction into HPHE memory |
+| Multi-IDE | Devin Desktop, Antigravity, Cursor — shared `.agent` layer propagated by `sync-agent-layer.ps1` |
+
+## The workspace — `hephaistos-chats`
+
+The `hephaistos-chats` extension provides the visual workspace:
+
+- **Canvas** — cards are nodes, edges are execution routing; orchestration is
+  defined manually by the user, not improvised by a model.
+- **Palettes** — agents, skills, roles, providers, services, preconfigured cards.
+- **Two edge types**:
+  - *execution* (solid): DAG dependency — a step starts when its parents return;
+  - *tool* (dotted, dedicated ⛁ port): the service is pre-fetched once and its
+    result injected into the target worker's prompt (per-agent tool, or whole
+    team when wired to the entry node).
+- **Inspector** — role, mission, provider/model, per-card-type parameters.
+- **Persistence** — schema bank + active roster, preserved node positions,
+  hot workflow switching.
+- **ACP binding** — `workspace-roster` lists live sessions and binds a card to a
+  real session; `acp-inject` delivers the mission.
+- **Commands** — `newChat`, `openChat`, `openWorkspace`, `openComfyUI`.
+
+### Service cards
+
+| Card | Appearance | Behavior |
+|---|---|---|
+| `svc/n8n/<workflowId>` | Red `#EA4B71`, n8n logo | Live n8n workflow dropdown in the inspector; invoked through `POST /n8n/workflows/:id/invoke` — the webhook secret stays on the bridge, never in the extension |
+| `svc/comfyui/<id>` | Orange `#F5A623`, ComfyUI logo | Service card scaffold; unwired `svc/*` transports are refused explicitly by the runner |
+
+## External integrations
+
+- **n8n** (:5678) — packaged workflows (Telegram bot, Obsidian hub, image
+  generation, `/tg/poll` polling); read-only DB access lists workflows
+  without depending on the n8n API.
+- **ComfyUI** — local Desktop backend and a remote GPU path on Kaggle
+  (`kaggle_push`, named Cloudflare tunnel, automatic GPU shutdown after
+  10 min idle, `kaggle-ctl.ps1`).
+- **Obsidian** — explicit, opt-in integration: `obsidian-cli.mjs` (vault
+  bounded by `OBSIDIAN_VAULT_PATH` / `local-paths.json`),
+  `obsidian-mcp-proxy.mjs`, the `antigravity-obsidian` skill, and two
+  packaged n8n workflows. Inactive when no vault is configured.
+- **LLM providers** — NVIDIA NIM, OpenRouter, OmniRoute, devin-cli,
+  antigravity-acp, ollama-cloud; selected per card in the inspector.
 
 ## Architecture
 
 ```
-Devin / IDE ──stdio──► hphe-mcp.exe      (58 outils MCP unifiés)
-                    ──REST:8792──► hphe-rest.exe   (mêmes outils + /health
-                                   + boucle d'ingestion + gate d'écriture)
-                                   │
-                                   ├─► pipe \\.\pipe\hphe-index ──► hphe-indexd (SYSTEM)
-                                   │      $MFT ~6,4M entrées + USN live + mmap snapshot
-                                   ├─► Tantivy  INSTALL\data\content-index
-                                   ├─► usearch   INSTALL\migrated-vec (2048D)
-                                   ├─► orchestrator.db / memory KG
-                                   └─► registre ingest-roots.txt (racines persistantes)
+IDE (Devin / Antigravity / Cursor)
+   │  hephaistos-chats (React Flow)          hephaistos-kit-search
+   │        │                                     │
+   ├──HTTP──┼──► bridge-api :7478 ──┐   ──stdio──► hphe-mcp.exe (58 tools)
+   ├──WS────┼──► bus        :7477  │            │
+   │        │    ├─ /swat/* runner │            ├─► pipe \.\pipe\hphe-index
+   │        │    ├─ /n8n/* svc     │            │     ► hphe-indexd (SYSTEM)
+   │        │    ├─ /tools/call    │            │     $MFT ~6.4M + USN + mmap
+   │        │    └─ /diagnostics   │            ├─► Tantivy (content index)
+   │        └─► MCP gateway :8767  │            ├─► usearch (2048D vectors)
+   │                               │            └─► orchestrator.db + memory KG
+   └─ACP──► IDE sessions (devin/agy/chat-*) ◄── acp-inject + roster
 ```
 
-- **`hphe-indexd`** — tâche planifiée SYSTEM : scan `$MFT`, suit le journal
-  USN en direct, expose l'index via named pipe. C'est la source de la
-  vélocité de recherche.
-- **`hphe-mcp`** — serveur MCP stdio unique. Remplace les anciens MCP
-  `orchestrator`, `nim-router`, `model-discovery`, `agentmemory`, `qdrant`,
-  `zvec` (tous absorbés en Rust).
-- **`hphe-rest`** — passerelle HTTP des mêmes outils + boucle d'ingestion
-  automatique. **Point de sérialisation unique** : un `Mutex` interne met
-  en file les écritures d'index (`ingest_busy` exposé par `/health`),
-  ce qui rend les `LockBusy` Tantivy impossibles.
+- **`hphe-indexd`** — SYSTEM scheduled task: `$MFT` scan, live USN journal,
+  named-pipe index.
+- **`hphe-mcp`** — single stdio MCP server absorbing the former separate MCPs.
+- **`hphe-rest`** (:8792) — REST facade of the same tools plus the ingestion
+  loop (single-writer serialization for Tantivy).
+- **`agent-bridge`** (:7478 HTTP + :7477 WS) — SWAT runner (DAG + tool edges +
+  `svc/n8n` pre-fetch), live roster, ACP injection, diagnostics.
 
-## Layout PROJET / INSTALL
+## Agent layer
+
+`.agent/` is the declarative layer propagated to workspaces:
 
 ```
-PROJET (dev)  : <repo>/  (dossier du clone — emplacement libre)
-├── hphe/                    # workspace Rust (crates hphe-*)
-│   └── crates/hphe-kit/     # orch + models + nim + memory + ingest
-├── extension/               # ext VS Code "Hephaistos-Kit Search" (VSIX 1.0.3)
-│   └── server/              # binaires déployés (miroir de l'install)
-├── extensions/
-│   └── orchestrator-monitor/# ext monitor (VSIX 0.0.59)
-├── .agent/                  # agents, skills, workflows, scripts — LE KIT
-├── memory-database ->       # jonction/dossier vers la mémoire ($AGENT_DB_ROOT)
-├── install.ps1              # deploy PROJET -> INSTALL (chemins auto-détectés)
-└── tests/ docs/ tools/ bench/ _archive/ (héritage v1, non chargé)
-
-INSTALL (runtime) : %ProgramFiles%\servers\hephaistos2-kit\  (défaut;
-├── extension/server/        #   surcharge : -InstallRoot / HPHE_INSTALL)
-│                            # hphe-mcp.exe, hphe-rest.exe, hphe-indexd.exe + .cmd
-├── data/                    # content-index Tantivy + orchestrator.db + logs
-│                            #   + ingest-roots.txt (registre persistant)
-├── migrated-vec/            # collections usearch 2048D
-└── memory-database ->       # jonction/dossier mémoire ($HPHE_MEMORY_ROOT)
+.agent/
+├── agents/        # agent definitions (frontmatter triggers -> routing)
+├── skills/        # packaged skills
+├── rules/         # governance rules
+├── workflows/     # reference SWAT schemas
+├── agent-bridge/  # HTTP/WS bridge, SWAT runner, roster, acp-inject
+├── flux/          # active-schema pipeline (review/security/arbitration/commit)
+├── scripts/       # install, sync, health, watchers
+└── state/, chats/, queue/  # runtime (gitignored)
 ```
+
+Secrets are never committed: `.env`, `*.token`, `local-paths.json` are
+gitignored and machine paths are externalized through `local-paths.js`.
 
 ## Installation
 
 ```powershell
-pwsh -ExecutionPolicy Bypass -File install.ps1            # build + deploy
-pwsh -ExecutionPolicy Bypass -File install.ps1 -Elevated  # + tâche hphe-indexd SYSTEM
-pwsh -ExecutionPolicy Bypass -File install.ps1 -SkipBuild # redeploy sans rebuild
+git clone --recurse-submodules https://github.com/art-qalam-fr/hephaistos2-kit.git
+cd hephaistos2-kit
+pwsh -ExecutionPolicy Bypass -File install.ps1
 ```
 
-Étapes détaillées : [INSTALL.md](INSTALL.md). Vérification :
+Requirements: Windows 10/11 (NTFS), PowerShell 7, Rust stable, Node ≥ 20, an
+ACP-capable VS Code fork. Admin rights are only needed for the `hphe-indexd`
+scheduled task (`-Elevated`). Details: [INSTALL.md](INSTALL.md) and the
+declarative manifest [kit.toml](kit.toml).
 
-```powershell
-curl http://127.0.0.1:8792/health
-# {"status":"healthy","pipe_connected":true,"ingest_busy":false,...}
-schtasks /query /tn hphe-indexd
-```
+## Configuration
 
-## Configuration MCP
+| Element | Mechanism |
+|---|---|
+| API keys | Environment variables / prompt — never hardcoded; template [.env.example](.env.example) |
+| Machine paths | Gitignored `local-paths.json` read by `local-paths.js` |
+| MCP access profiles | [.mcp-access](.mcp-access) — `allow`/`read`/`deny` rules with `<INSTALL_ROOT>` tokens |
+| Bridge auth | Generated, gitignored `.agent/ws-bridge.token` / `HPHE_REST_TOKEN` |
 
-Nom canonique : **`Hephaistos-everything-search`** (unifié dans Devin).
+## Extensions
 
-```json
-{
-  "mcpServers": {
-    "Hephaistos-everything-search": {
-      "command": "<INSTALL>\\extension\\server\\hphe-mcp.exe",
-      "env": {
-        "HPHE_CONTENT_DIR": "<INSTALL>\\data\\content-index",
-        "HPHE_VEC_DIR":     "<INSTALL>\\migrated-vec",
-        "HPHE_ORCH_DB":     "<INSTALL>\\data\\orchestrator.db",
-        "HPHE_MEMORY_ROOT": "<MEMORY_ROOT>",
-        "HPHE_PIPE":        "\\\\.\\pipe\\hphe-index"
-      }
-    }
-  }
-}
-```
+| Extension | Source | Role |
+|---|---|---|
+| `hephaistos-chats` | `extensions/hephaistos-chats` | Visual workspace — canvas, cards, SWAT, ACP roster |
+| `hephaistos-kit-search` | `extensions/search-ext` (submodule) | NTFS search inside the IDE, ships the MCP server |
+| `orchestrator-monitor` | `extensions/orchestrator-monitor` (submodule) | Agents/tasks/providers panel, wake-up bridge, multi-workspace bus |
+| `postdev` | packaged VSIX (`extensions/vsix/`) | Post-dev utilities; source repository pending publication |
 
-(`<INSTALL>` = `%ProgramFiles%\servers\hephaistos2-kit` par défaut ;
-`<MEMORY_ROOT>` = `<INSTALL>\data\agentmemory` par défaut.)
+Technical sheets: [docs/VSIX.md](docs/VSIX.md).
 
-`install.ps1` écrit cette entrée automatiquement dans
-`%APPDATA%\devin\mcp_config.json` et retire l'ancienne `everything-search`.
+## Stability notes
 
-Les 58 outils par famille : [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md).
+- ACP single-flight mutex per `providerId/sessionId` (120 s TTL) prevents
+  duplicate session cascades.
+- CLI worker throttle
+ throttle (2 concurrent) with `BELOW_NORMAL` process priority.
+- `tools/reap-and-reconcile.ps1` reaps ghost tasks and reconciles orphans.
 
-## Ingestion
+## Known limitations
 
-- **Boucle auto** (`hphe-rest`) : `HPHE_INGEST_ROOTS` + registre persistant
-  `data/ingest-roots.txt` + découverte `HPHE_INGEST_SCAN` (marqueur `.agent/`),
-  cycle `HPHE_INGEST_INTERVAL_S` = 900 s.
-- **Démarrage IDE** : `.agent/scripts/start-workspace.ps1` appelle
-  `ingest-workspace.ps1` → `POST /tools/content_ingest`. L'appel **attend son
-  tour** derrière la boucle (gate Rust) — le script affiche
-  *« appel en file d'attente, patience »* au lieu de paraître gelé.
-- **Manuel** : `hphe-ingest.cmd`, ou `hephaistos_update` /
-  `hephaistos_update_force` via MCP/REST.
-
-Jamais deux writers Tantivy en parallèle : tout passe par `hphe-rest`.
-
-- **Beacon** : `hphe-mcp beacon_ingest` lit le journal JSONL par offset, filtre au workspace et écrit des résumés redacted dans la mémoire HPHE. `beacon.enabled` reste désactivé jusqu’au déploiement du binaire et à l’accord d’activation.
-
-## Extensions VS Code
-
-| Extension                                   | VSIX                                                                 | Rôle                                                                |
-| ------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `projet-temporaire.hephaistos-kit-search` | `extension/hephaistos-kit-search-1.0.3.vsix`                       | Recherche NTFS dans l'IDE, embarque le MCP                           |
-| `hephaistos.orchestrator-monitor`         | `extensions/orchestrator-monitor/orchestrator-monitor-0.0.59.vsix` | Panel agents/tâches/providers, wake-up bridge, bus multi-workspaces |
-
-Fiches techniques : [docs/VSIX.md](docs/VSIX.md).
-
-## Orchestrateur et providers
-
-L'orchestrateur (`orchestrator.db` + outils `list_agents`/`create_task`/
-`dispatch_task`/…) chaîne les providers dans l'ordre :
-**antigravity-subscription → mistral-vibe → nvidia-nim → ollama-cloud**.
-Le monitor (extension + `ws-bridge` :7477) réveille Devin et Antigravity
-à chaque événement de tâche.
-
-## Gouvernance et sécurité machine modeste
-
-Pour préserver les performances sur machine modeste (CPU/RAM/GPU) et éliminer les dérives de workers et cascades orphelines :
-
-- **Mutex Single-Flight ACP** : verrou mémoire par couple `providerId/sessionId` dans `agent-adapters.js` avec TTL absolu de 120 s. Empêche strictement l'instanciation de cascades dupliquées dans l'IDE.
-- **Throttle CLI** : limitation stricte à 2 workers CLI simultanés maximum au niveau de l'orchestrateur.
-- **Priorité Système** : exécution de tous les sous-processus CLI sous la classe de priorité `BELOW_NORMAL_PRIORITY_CLASS`.
-- **Maintenance Réactive Anti-Zombies** : script d'exploitation `tools/reap-and-reconcile.ps1` combinant les outils natifs `reconcile_tasks` et `reap_ghosts` pour purger les fantômes et requalifier les tâches orphelines.
-- **Étude de référence** : [docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md](docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md).
-
-## Mémoire unifiée
-
-`AGENT_DB_ROOT` (`.env` ou variable utilisateur HKCU) → racine mémoire de
-votre choix (`<AGENT_DB_ROOT>\current_workspace\<projet>\agentmemory`).
-Junction locale `memory-database/` créée par `start-workspace.ps1`. Toute
-donnée mémoire passe par les outils `memory_*` / `sqlite-node` — jamais
-d'écriture directe concurrente (voir `.agent/ARCHITECTURE.md`).
-
-## Rollback
-
-`%ProgramFiles%\servers\servers_backup\` contient les serveurs legacy
-complets (orchestrator Node, agentMemory, nim-router, model-discovery,
-qdrant, zvec, pont RAG Python) s'ils ont été déployés sur la machine.
-`_archive/` dans le projet conserve les scripts et configurations supprimés
-de l'arbre v2.
+- Machine-specific defaults remain to be parameterized per install.
+- Feedback loops are rejected at schema validation (the execution DAG is
+  acyclic); cyclic review flows are on the roadmap.
+- `postdev` ships as a packaged VSIX pending its source publication.
 
 ## Documentation
 
-| Doc                                             | Contenu                            |
-| ----------------------------------------------- | ---------------------------------- |
-| [INSTALL.md](INSTALL.md)                         | Tutoriel d'installation pas à pas |
-| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md)           | Référence des 58 outils          |
-| [docs/VSIX.md](docs/VSIX.md)                     | Fiches techniques des extensions   |
-| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Architecture de référence        |
-| [docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md](docs/architecture/ETUDE-FAISABILITE-ANTI-ZOMBIES-ACP-CLI.md) | Gouvernance anti-zombies et processus légers |
-| [docs/wiki/](docs/wiki/)                         | Wiki projet                        |
+| Doc | Content |
+|---|---|
+| [INSTALL.md](INSTALL.md) | Step-by-step installation |
+| [docs/MCP-TOOLS.md](docs/MCP-TOOLS.md) | MCP tools reference |
+| [docs/VSIX.md](docs/VSIX.md) | Extension build/version/install sheets |
+| [.agent/ARCHITECTURE.md](.agent/ARCHITECTURE.md) | Reference architecture |
+| [docs/wiki/](docs/wiki/) | Project wiki |
+| [AGENTS.md](AGENTS.md) | Agent protocol |
+
+## License
+
+Proprietary beta license — evaluation use only. See [LICENSE](LICENSE).

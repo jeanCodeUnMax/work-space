@@ -103,3 +103,8 @@ devin-crash-logs-*.zip
 /nul
 .env
 *.local.json
+.agent/creds-matrix.json
+.agent/handoff/
+.agent/state/
+.agent/reports/diagnostic-*.json
+.agent/flux/*.state.json

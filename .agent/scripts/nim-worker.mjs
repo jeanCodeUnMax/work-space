@@ -15,7 +15,7 @@
  */
 import { writeFileSync, readFileSync, mkdirSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { dirname, join, isAbsolute, relative, resolve } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { callOrchestrator, confinedDestination, selectDeliverable } from './nim-worker-contract.mjs';
 
 // Résolution DB : env explicite > HPHE_INSTALL > install standard (%ProgramFiles%\servers) >
 // profil user. Aucun chemin machine en dur : sans candidat existant, on abort.
@@ -36,12 +36,10 @@ if (!DB) {
 // DB — le prompt ne suffit pas toujours à transporter le contrat complet.
 function readTask(taskId) {
   if (!taskId) return null;
-  try {
-    const db = new DatabaseSync(DB);
-    const row = db.prepare("SELECT title, description, expected_artifact, created_at, workspace FROM tasks_todo WHERE id=?").get(+taskId);
-    db.close();
-    return row || null;
-  } catch { return null; }
+  const tasks = callOrchestrator('list_tasks', {}, DB);
+  const row = tasks.find((task) => String(task.id) === String(taskId));
+  if (!row) throw new Error(`Tache ${taskId} introuvable dans orchestrateur canonique`);
+  return row;
 }
 
 // Gate anti-livrable-factice (audit F3/C1) : completed n'est autorisé que si
@@ -50,12 +48,7 @@ function readTask(taskId) {
 // après le dispatch (mtime > created_at). Tout le reste => failed.
 function gateArtifact(taskId, writtenPath) {
   if (!taskId) return { ok: true };
-  let row = null;
-  try {
-    const db = new DatabaseSync(DB);
-    row = db.prepare("SELECT expected_artifact, created_at, workspace FROM tasks_todo WHERE id=?").get(+taskId);
-    db.close();
-  } catch { /* best-effort */ }
+  const row = readTask(taskId); /* best-effort */
   const artifact = (row?.expected_artifact && String(row.expected_artifact).trim()) || writtenPath;
   if (!artifact) return { ok: true };
   const root = (row?.workspace && String(row.workspace).trim()) || process.cwd();
@@ -72,8 +65,10 @@ function gateArtifact(taskId, writtenPath) {
       return { ok: false, err: `artifact hors workspace (path traversal refuse): ${pReal}` };
     }
     if (row?.created_at) {
-      const createdMs = Date.parse(String(row.created_at).replace(' ', 'T') + 'Z');
-      if (!isNaN(createdMs) && st.mtimeMs <= createdMs) {
+      const timestamp = String(row.created_at).replace(' ', 'T');
+      const createdMs = Date.parse(/(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp) ? timestamp : `${timestamp}Z`);
+      if (!Number.isFinite(createdMs)) return { ok: false, err: 'date de dispatch invalide' };
+      if (st.mtimeMs <= createdMs) {
         return { ok: false, err: `artifact anterieur au dispatch (mtime <= created_at): ${p}` };
       }
     }
@@ -86,11 +81,7 @@ function gateArtifact(taskId, writtenPath) {
 function closeTask(taskId, status, result) {
   if (!taskId) return;
   try {
-    const db = new DatabaseSync(DB);
-    db.prepare("UPDATE tasks_todo SET status=?, result=? WHERE id=?").run(status, String(result).slice(0, 4000), +taskId);
-    db.prepare("INSERT INTO task_events(task_id,event,detail,ts) VALUES(?,?,?,datetime('now'))")
-      .run(String(taskId), status === 'completed' ? 'completed' : 'failed', `nim-worker: ${String(result).slice(0, 500)}`);
-    db.close();
+    callOrchestrator('update_task', { task_id: String(taskId), status, result: String(result).slice(0, 4000) }, DB);
   } catch (e) { console.error(`[nim-worker] closeTask ${taskId}: ${e.message}`); }
 }
 
@@ -138,7 +129,8 @@ const msgForDeliverable = fileMatch ? rawMessage.replace(fileMatch[0], '') : raw
 const m = msgForDeliverable.match(/\.agent[\\/][\w.\\/\\-]+\.(?:md|txt|json|js|ts|rs|py|yaml|yml)/i);
 const fromMessage = m ? m[0].replace(/\\/g, '/') : null;
 const fromTask = taskRow?.expected_artifact ? String(taskRow.expected_artifact).trim() : '';
-const deliverable = fromMessage || fromTask || null;
+const deliverable = selectDeliverable(taskId, taskRow, fromMessage);
+const deliveryPath = deliverable ? confinedDestination(deliverable, taskRow?.workspace || process.cwd()) : null;
 if (taskRow) {
   message += `\n\n## TACHE ORCHESTRATEUR #${taskId}\nTITRE: ${taskRow.title || ''}\nDESCRIPTION:\n${taskRow.description || ''}\nEXPECTED_ARTIFACT: ${taskRow.expected_artifact || deliverable || '(aucun)'}`;
 }
@@ -186,7 +178,7 @@ try {
   const ms = Date.now() - started;
   console.log(`[nim-worker] nim${account} ${model} — ${ms}ms`);
   if (deliverable) {
-    const path = isAbsolute(deliverable) ? deliverable : join(process.cwd(), deliverable);
+    const path = deliveryPath;
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, content.trim() + '\n');
     console.log(`[nim-worker] livrable écrit: ${path} (${content.trim().length} chars)`);

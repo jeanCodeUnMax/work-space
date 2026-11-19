@@ -1,6 +1,5 @@
 {
   "name": "swat-cli-anything",
-  "desc": "Flux de démo SWAT — pilotage des harness CLI-Anything : extraction mails, publication Telegram, listing contacts, avec audit sécurité et capitalisation Vault. Chaîne : Orchestrateur -> 3 workers CLI en parallèle -> Auditeur sécurité -> Documentaliste Vault.",
   "graph": {
     "version": 1,
     "name": "swat-cli-anything",
@@ -14,11 +13,13 @@
           "orchestrator",
           "plan-writing"
         ],
-        "title": "ionian-helicopter",
+        "mcps": [],
+        "title": "daring-agent",
         "position": {
-          "x": -176,
-          "y": -220
-        }
+          "x": -660,
+          "y": 0
+        },
+        "provider": "devin-cli"
       },
       {
         "sessionId": "chat-mvmw59wa",
@@ -32,9 +33,10 @@
         ],
         "title": "keen-agent",
         "position": {
-          "x": 308,
+          "x": -220,
           "y": -220
-        }
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvfj8b4m",
@@ -48,9 +50,10 @@
         ],
         "title": "zealous-agent",
         "position": {
-          "x": 308,
-          "y": -484
-        }
+          "x": -220,
+          "y": 0
+        },
+        "provider": "nim2"
       },
       {
         "sessionId": "chat-mvmw5chd",
@@ -65,9 +68,10 @@
         ],
         "title": "amber-agent",
         "position": {
-          "x": 308,
-          "y": 44
-        }
+          "x": -220,
+          "y": 220
+        },
+        "provider": "omniroute"
       },
       {
         "sessionId": "chat-mvmtldvy",
@@ -77,11 +81,13 @@
           "vulnerability-scanner",
           "code-review-checklist"
         ],
+        "mcps": [],
         "title": "urban-agent",
         "position": {
-          "x": 682,
-          "y": -220
-        }
+          "x": 220,
+          "y": 0
+        },
+        "provider": "nim"
       },
       {
         "sessionId": "chat-mvflr6cn",
@@ -90,11 +96,13 @@
         "skills": [
           "vault-ingest"
         ],
+        "mcps": [],
         "title": "rapid-agent",
         "position": {
-          "x": 946,
-          "y": -220
-        }
+          "x": 660,
+          "y": 0
+        },
+        "provider": "omniroute"
       }
     ],
     "edges": [

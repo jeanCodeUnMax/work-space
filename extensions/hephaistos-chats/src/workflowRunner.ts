@@ -161,6 +161,7 @@ interface WorkflowTask {
 export class WorkflowRunner {
     private readonly rosterScript: string;
     private activeRun = false;
+    private cachedBridgeToken?: string;
 
     constructor(
         private readonly workspaceRoot: string,
@@ -216,14 +217,17 @@ export class WorkflowRunner {
         const tasks = await this.createTasks(graph, orderedNodes, rosterIds, runId);
 
         const outputs = new Map<string, string>();
+        // Résultats des outils n8n pré-fetchés — un appel par carte svc et par run.
+        const toolResults = new Map<string, string>();
         let failedSession: string | undefined;
         let failureError: unknown;
         const pending = new Set(tasks);
 
         while (pending.size > 0 && !failedSession) {
-            // Un nœud est prêt si TOUTES ses dépendances amont (parents dans graph.edges) ont produit leur sortie
+            // Un nœud est prêt si TOUTES ses dépendances amont ont produit leur
+            // sortie. Les edges 'tool' sont des grants de contexte, jamais des deps.
             const readyTasks = [...pending].filter((task) => {
-                const parentEdges = graph.edges.filter((e) => e.target === task.node.sessionId);
+                const parentEdges = graph.edges.filter((e) => e.target === task.node.sessionId && e.type !== 'tool');
                 return parentEdges.every((e) => outputs.has(e.source));
             });
 
@@ -244,15 +248,34 @@ export class WorkflowRunner {
                     this.onProgress({ runId, sessionId: sid, taskId, state: 'running' });
                     await callHpheTool('update_task', { task_id: taskId, status: 'in_progress' });
                     const upstream = graph.edges
-                        .filter((edge) => edge.target === sid && outputs.has(edge.source))
+                        .filter((edge) => edge.target === sid && edge.type !== 'tool' && outputs.has(edge.source))
                         .map((edge) => ({
                             role: this.nodeFor(graph, edge.source).role,
                             output: outputs.get(edge.source)!,
                         }));
-                    const prompt = buildWorkflowPrompt(node, upstream, graph);
+                    /* Edges 'tool' : svc/* -> ce noeud, ou svc/* -> entry (= tout
+                       le SWAT). Le workflow est invoqué via la bridge (allowlist
+                       + secret côté serveur) et son résultat injecté en contexte. */
+                    const toolCtx: string[] = [];
+                    for (const te of graph.edges.filter((e) => e.type === 'tool'
+                        && (e.target === sid || e.target === entrySessionId))) {
+                        if (!toolResults.has(te.source)) {
+                            toolResults.set(te.source, await this.callN8nSvc(te.source, {
+                                missionId: runId,
+                                objective: this.nodeFor(graph, entrySessionId).task || graph.name,
+                                prompt: `Contexte demandé par l'étape ${node.role} (${sid})`,
+                                texte: `Contexte demandé par l'étape ${node.role} (${sid})`,
+                            }));
+                        }
+                        toolCtx.push(`[outil n8n ${te.source}]\n${toolResults.get(te.source)!.slice(0, 4000)}`);
+                    }
+                    const prompt = buildWorkflowPrompt(node, upstream, graph)
+                        + (toolCtx.length ? `\n\nContexte outils n8n (pre-fetch du runner) :\n${toolCtx.join('\n\n')}` : '');
                     const result = session
                         ? await this.runSessionTurn(session, prompt)
-                        : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' };
+                        : sid.startsWith('svc/')
+                            ? { reply: await this.callN8nSvc(sid, { prompt, missionId: runId }), stopReason: 'end_turn' as const }
+                            : { reply: await runIdeAgentTurn(node.sessionId.split('/')[1], node.sessionId, 'agent', prompt, (m) => logRuntime(m)), stopReason: 'end_turn' as const };
                     const output = result.reply.trim().slice(0, MAX_OUTPUT_CHARS);
                     if (!output) throw new Error('L’agent a terminé sans réponse textuelle.');
 
@@ -543,6 +566,9 @@ export class WorkflowRunner {
         for (const node of nodes) {
             if (!node.role.trim()) throw new Error(`Le rôle de ${node.sessionId} est vide.`);
             if (!node.task.trim()) throw new Error(`Ajoute une mission au bloc « ${node.role} » avant de lancer le flux.`);
+            // Nœud service n8n (svc/n8n/<workflowId>) : exécuté via la bridge
+            // HTTP, jamais une session chat — pas de contrôle roster/provider.
+            if (node.sessionId.startsWith('svc/')) continue;
             const session = this.sessions.get(node.sessionId);
             if (!session) {
                 if (!node.sessionId.startsWith('acp/')) {
@@ -582,15 +608,16 @@ export class WorkflowRunner {
         try {
             for (const node of nodes) {
                 const session = this.sessions.get(node.sessionId);
+                const isSvc = node.sessionId.startsWith('svc/');
                 const external = !session && node.sessionId.startsWith('acp/');
-                if (!external && !rosterIds.has(node.sessionId)) {
+                if (!isSvc && !external && !rosterIds.has(node.sessionId)) {
                     throw new Error(`L'agent ${node.sessionId} n'est pas présent dans le roster live.`);
                 }
-                if (!session && !external) throw new Error(`Session absente: ${node.sessionId}`);
+                if (!isSvc && !session && !external) throw new Error(`Session absente: ${node.sessionId}`);
 
                 await this.registerAgent(node, session);
                 const dependencies = graph.edges
-                    .filter((edge) => edge.target === node.sessionId)
+                    .filter((edge) => edge.target === node.sessionId && edge.type !== 'tool')
                     .map((edge) => idBySession.get(edge.source))
                     .filter((id): id is string => !!id);
                 const prompt = buildWorkflowPrompt(node, [], graph);
@@ -643,6 +670,46 @@ export class WorkflowRunner {
         const node = graph.nodes.find((item) => item.sessionId === sessionId);
         if (!node) throw new Error(`Nœud de workflow inconnu: ${sessionId}`);
         return node;
+    }
+
+    /* Nœud service n8n : le suffixe svc/n8n/<workflowId> est résolu par la
+       bridge (allowlist → webhookPath, secret injecté côté serveur). Un seul
+       point de résolution : pas de secret n8n dans l'extension. */
+    private async callN8nSvc(sessionId: string, payload: Record<string, unknown>): Promise<string> {
+        if (!sessionId.startsWith('svc/n8n/')) {
+            throw new Error(`Transport service non implémenté : ${sessionId} (seul svc/n8n/ est câblé).`);
+        }
+        const suffix = sessionId.split('/')[2] || '';
+        if (!suffix || !/^[a-zA-Z0-9_-]{1,100}$/.test(suffix)) {
+            throw new Error(`svc/n8n invalide : ${sessionId} — choisis un workflow dans le panneau de la carte.`);
+        }
+        const token = this.bridgeToken();
+        const r = await fetch(`http://127.0.0.1:7478/n8n/workflows/${encodeURIComponent(suffix)}/invoke`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(300_000),
+        });
+        const data = await r.json().catch(() => ({})) as { ok?: boolean; result?: unknown; error?: string; httpStatus?: number };
+        if (!r.ok || data.ok === false) {
+            throw new Error(`svc n8n ${suffix} HTTP ${data.httpStatus || r.status} : ${String(data.error || JSON.stringify(data.result ?? data)).slice(0, 300)}`);
+        }
+        const res = data.result;
+        const reply = typeof res === 'string' ? res
+            : (res && typeof res === 'object'
+                ? String((res as Record<string, unknown>).output || (res as Record<string, unknown>).response || JSON.stringify(res))
+                : '');
+        if (!reply.trim()) throw new Error(`Reponse n8n vide (${suffix}).`);
+        return reply.trim();
+    }
+
+    private bridgeToken(): string {
+        if (this.cachedBridgeToken === undefined) {
+            try {
+                this.cachedBridgeToken = fs.readFileSync(path.join(this.workspaceRoot, '.agent', 'ws-bridge.token'), 'utf8').trim();
+            } catch { this.cachedBridgeToken = ''; }
+        }
+        return this.cachedBridgeToken;
     }
 
     private async updateTaskFailure(taskId: string, message: string): Promise<void> {

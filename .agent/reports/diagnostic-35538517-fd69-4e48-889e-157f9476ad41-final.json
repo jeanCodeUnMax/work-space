@@ -1,0 +1,215 @@
+{
+  "diagnosticId": "35538517-fd69-4e48-889e-157f9476ad41",
+  "collectedAt": "2026-11-15T19:26:52.047Z",
+  "activeSchemaId": "schema-mwi80bsc-5frlh",
+  "activeSchemaName": "swat-diagnostic-hephaistos",
+  "checks": [
+    {
+      "id": "roster-json",
+      "status": "pass",
+      "evidence": {
+        "activeSchemaId": "schema-mwi80bsc-5frlh",
+        "entrySessionId": "acp/devin-cli/sugary-shoemaker",
+        "nodeCount": 5,
+        "edgeCount": 6
+      },
+      "durationMs": 0
+    },
+    {
+      "id": "chat-session-bindings",
+      "status": "pass",
+      "evidence": [
+        {
+          "sessionId": "chat-mwi80brw",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs2",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs4",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-mwi80bs7",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        }
+      ],
+      "limitation": "Presence et coherence disque uniquement ; pas une preuve de fenetre ouverte.",
+      "durationMs": 1
+    },
+    {
+      "id": "architecture-canonical-reference",
+      "status": "pass",
+      "evidence": {
+        "file": ".agent/ARCHITECTURE.md",
+        "sha256": "6ff4a732164a8b43bbcc6b3cfee6fd76b33b196a5a3df584b23fd09df32d4394"
+      },
+      "limitation": "Reference canonique presente ; pas une validation exhaustive de architecture.",
+      "durationMs": 0
+    },
+    {
+      "id": "n8n-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "ok"
+      },
+      "durationMs": 3
+    },
+    {
+      "id": "rest-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "healthy",
+        "pipeConnected": true,
+        "ingestBusy": false
+      },
+      "durationMs": 28
+    },
+    {
+      "id": "bridge-websocket",
+      "status": "pass",
+      "evidence": {
+        "connected": true
+      },
+      "limitation": "Connexion du bridge ; pas un ACK de livraison agent."
+    },
+    {
+      "id": "native-acp-enumeration",
+      "status": "pass",
+      "evidence": {
+        "sessionCount": 152
+      },
+      "limitation": "Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants.",
+      "durationMs": 1601
+    },
+    {
+      "id": "canonical-mcp-health",
+      "status": "pass",
+      "evidence": {
+        "status": "healthy",
+        "pipeConnected": true
+      },
+      "limitation": "Sonde du serveur canonique, pas de tous ses outils.",
+      "durationMs": 32
+    },
+    {
+      "id": "orchestrator-task-state",
+      "status": "pass",
+      "evidence": {
+        "readable": true,
+        "taskCount": 132,
+        "states": {
+          "completed": 67,
+          "failed": 41,
+          "pending": 10,
+          "cancelled": 4,
+          "done": 10
+        }
+      },
+      "limitation": "Lecture seule : ne teste pas le spawn des workers CLI ni ne reconcilie les taches.",
+      "durationMs": 36
+    },
+    {
+      "id": "comms-jsonl-integrity",
+      "status": "fail",
+      "evidence": {
+        "entries": 2506,
+        "malformed": 1
+      },
+      "limitation": "Integrite du journal uniquement ; aucun contenu de message expose.",
+      "durationMs": 3
+    },
+    {
+      "id": "installed-extensions",
+      "status": "pass",
+      "evidence": {
+        "versions": [
+          "hephaistos.hephaistos-chats@0.3.48",
+          "hephaistos.orchestrator-monitor@0.0.75"
+        ]
+      },
+      "limitation": "Versions installees seulement ; activation et rechargement non prouves.",
+      "durationMs": 235
+    },
+    {
+      "id": "ide-ui-interaction",
+      "status": "not_tested",
+      "evidence": "Aucun clic utilisateur, association de carte ou affichage de panneau teste par cette sonde."
+    },
+    {
+      "id": "cli-worker-execution",
+      "status": "not_tested",
+      "evidence": "Aucun worker CLI lance : pas de consommation ni de modification pour simuler un test."
+    },
+    {
+      "id": "cloud-and-external-services",
+      "status": "not_tested",
+      "evidence": "Kaggle, Colab, ComfyUI et autres integrations externes non testes."
+    }
+  ],
+  "counts": {
+    "pass": 10,
+    "fail": 1,
+    "warn": 0,
+    "not_tested": 3
+  },
+  "verdict": "degraded",
+  "repairsPerformed": false,
+  "missionId": "diagnostic-436",
+  "swatExecutionState": "completed",
+  "agentAnalyses": [
+    {
+      "ok": true,
+      "runId": "c3cac0e8-7bab-4a43-9f4f-e0450c2ef432",
+      "schemaId": "schema-mwi80bsc-5frlh",
+      "sessionId": "chat-mwi80brw",
+      "role": "Diagnostic-Runtime-Comms",
+      "taskId": 841,
+      "reply": "**Diagnostic‑Runtime‑Comms – Session chat‑mwi80brw**  \n*Seules les checks contenus dans `inputs.evidence` sont analysés. Aucune modification, aucun outil, aucun redémarrage.*  \n\n---\n\n## 1. Vue par check (IDs, preuves, classification)\n\n| ID check | Domaine | Status | Preuves (extraits) | Classification* | Limitation (telle que fournie) |\n|----------|---------|--------|--------------------|-----------------|--------------------------------|\n| **roster‑json** | Services (roster) | **pass** | `activeSchemaId: schema‑mwi80bsc‑5frlh`, `entrySessionId: acp/devin‑cli/sugary‑shoemaker`, `nodeCount:5`, `edgeCount:6` | **Cause proven** – schéma et comptage conformes. | – |\n| **chat‑session‑bindings** | Services (bus de sessions) | **pass** | 4 sessions présentes : `chat‑mwi80brw`, `chat‑mwi80bs2`, `chat‑mwi80bs4`, `chat‑mwi80bs7` ; `providerMatches:true`, `modelMatches:true` | **Cause proven** – sessions disque‑présentes et cohérentes. | *Limitation* : « Présence et cohérence disque uniquement ; pas une preuve de fenetre ouverte. » |\n| **architecture‑canonical‑reference** | Services (référence architecture) | **pass** | Fichier `.agent/ARCHITECTURE.md`, SHA‑256 `6ff4a732164a8b43bbcc6b3cfee6fd76b33b196a5a3df584b23fd09df32d4394` | **Cause proven** – fichier de référence existant avec hash attendu. | *Limitation* : « Reference canonique presente ; pas une validation exhaustive de architecture. » |\n| **n8n‑health** | Services (gateway HTTP) | **pass** | `httpStatus:200`, `status:ok` | **Cause proven** – gateway répond 200 OK. | – |\n| **rest‑health** | Services (pipe REST) | **pass** | `httpStatus:200`, `status:healthy`, `pipeConnected:true`, `ingestBusy:false` | **Cause proven** – pipe REST en bon état et non saturé. | – |\n| **bridge‑websocket** | **WS** | **pass** | `connected:true` | **Cause proven** – connexion WebSocket établie. | *Limitation* : « Connexion du bridge ; pas un ACK de livraison agent. » |\n| **native‑acp‑enumeration** | **ACP** | **pass** | `sessionCount:152` | **Cause proven** – 152 sessions ACP natives dénombrées. | *Limitation* : « Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants. » |\n| **canonical‑mcp‑health** | **MCP** | **pass** | `status:healthy`, `pipeConnected:true` | **Cause proven** – pipe MCP canonique sain et connecté. | *Limitation* : « Sonde du serveur canonique, pas de tous ses outils. » |\n| **orchestrator‑task‑state** | Services (orchestrateur) | **pass** | `readable:true`, `taskCount:132`, états (completed 67, failed 41, pending 10, cancelled 4, done 10) | **Cause proven** – base de tâches lisible et compte correct. | *Limitation* : « Lecture seule : ne teste pas le spawn des workers CLI ni ne reconcilie les taches. » |\n| **comms‑jsonl‑integrity** | **Bus (JSON‑L)** | **fail** | `entries:2506`, `malformed:1` | **Hypothesis** – 1 entrée sur 2 506 est défectuelle ; origine non identifiée à partir des seules données. | *Limitation* : « Integrité du journal uniquement ; aucun contenu de message expose. » |\n| **installed‑extensions** | Services (extensions) | **pass** | Versions `hephaistos.hephaistos‑chats@0.3.48`, `hephaistos.orchestrator‑monitor@0.0.75` | **Cause proven** – extensions installées. | *Limitation* : « Versions installees seulement ; activation et rechargement non prouves. » |\n| **ide‑ui‑interaction** | – | **not_tested** | « Aucun clic utilisateur, association de carte ou affichage de panneau teste par cette sonde. » | **Not tested** | – |\n| **cli‑worker‑execution** | – | **not_tested** | « Aucun worker CLI lancé : pas de consommation ni de modification pour simuler un test. » | **Not tested** | – |\n| **cloud-and-external‑services** | – | **not_tested** | « Kaggle, Colab, ComfyUI et autres intégrations externes non testes. » | **Not tested** | – |\n\n\\* **Classification key** (telle que demandée) :  \n- **Cause proven** – les preuves vérifient directement l’objet du check.  \n- **Hypothesis** – une anomalie est détectée (ici le journal mal formé) mais sa cause profonde n’est pas établie par les preuves.  \n- **Not tested** – la sonde n’a apporté aucune mesure dans ce domaine.\n\n---\n\n## 2. Anomalies prioritaires (5 points maximum)\n\n| # | Check ID | Pourquoi prioritaire | Type |\n|---|----------|----------------------|------|\n| 1 | **comms‑jsonl‑integrity** | C’est le **seul check échoué** (1 entrée malformed sur 2 506). Cela peut compromettre la garantie de intégrité du bus. | **Hypothesis** (cause inconnue). |\n| 2 | **bridge‑websocket** | Connexion OK, mais absence d’ACK de livraison signifie que l’on ne peut pas affirmer que les messages parviennent aux agents. | **Hypothesis** (confirmation de delivery manquante). |\n| 3 | **native‑acp‑enumeration** | Bien que 152 sessions soient comptées, la limite explicite (« ne pas traiter les fenetres chat-* comme ACP natives ») laisse ouvert un éventuel manque de visibilité sur les ACP « purs ». | **Hypothesis** (couverture ACP partielle). |\n| 4 | **installed‑extensions** | Version installée connue, mais on ne sait pas si elles sont actives ou peuvent être rechargées sans problème. | **Hypothesis** (activation non prouvée). |\n| 5 | **ide‑ui‑interaction**, **cli‑worker‑execution**, **cloud‑and‑external‑services** | Tous trois sont **non testés**; ils figurent dans le verdict « degraded » mais n’altèrent pas les checks mesurés. Ils représentent des **blind‑spots** pour une santé globale. | **Not tested** |\n\n---\n\n## 3. Limites de couverture (ce qui n’est pas prouvé par les preuves actuelles)\n\n| Domaine | Élément non vérifié | Source de la limite |\n|---------|--------------------|---------------------|\n| **Interface utilisateur** | Aucun clic, carte ou affichage de panneau capturé. | `ide-ui-interaction` (not_tested) |\n| **Workers CLI** | Aucun worker CLI lancé, donc consommation/modification impossible à vérifier. | `cli-worker-execution` (not_tested) |\n| **Services externes** | Intégrations Kaggle, Colab, ComfyUI, etc., jamais sollicitées. | `cloud-and-external-services` (not_tested) |\n| **Livraison agente (WS)** | Pas d’ACK de confirmation de réception par l’agent. | `bridge‑websocket` limitation |\n| **ACP vs fenêtres chat** | Risque de confondre fenêtres chat‑* avec sessions ACP natives. | `native‑acp‑enumeration` limitation |\n| **Activation des extensions** | Seules les versions installées sont connues ; chargement ou rechargement non testé. | `installed‑extensions` limitation |\n| **Journal de bus** | Seule la malformabilité est comptée ; contenu des messages opaque. | `comms‑jsonl‑integrity` limitation |\n| **Architecture complète** | Fichier de référence présent, mais pas de validation exhaustive des liens, dépendances, etc. | `architecture‑canonical‑reference` limitation |\n\n---\n\n## 4. Recommandations (conseillers uniquement, pas d’exécution)\n\n| Recommendation | Check(s) concerné | Rationale |\n|----------------|-------------------|-----------|\n| **Identifier la source de l’entrée malformed du journal JSON‑L** | `comms‑jsonl‑integrity` | Déterminer si c’est une erreur d’écriture, un problème de encodage ou une corruption en cours de lecture. |\n| **Mettre en place un ACK de fin‑de‑message pour le bridge WebSocket** | `bridge‑websocket` | Ajouter un échange ping/pong ou un accusé de réception signé par l’agent pour certifier la livraison. |\n| **Réaliser une découverte ACP en excluant les fenêtres chat‑*** | `native‑acp‑enumeration` | Lancer une sonde ACP qui ignore explicitement les sessions chat‑* afin de s’assurer qu’aucune session ACP native n’est négligée. |\n| **Tester le chargement/rechargement des extensions listées** | `installed‑extensions` | Exécuter l’API de gestion d’extensions pour activer/désactiver les deux versions et vérifier qu’elles deviennent actives. |\n| **Enregistrer une interaction utilisateur minimale (ex. : ouverture/fermeture de panneau)** | `ide‑ui‑interaction` | Effectuer un clic ou un geste clavier unique et noter que la sonde capture l’événement. |\n| **Lancer un worker CLI en mode secousse (dry‑run) sans modifier l’état** | `cli-worker-execution` | Exécuter une commande `hephaistos --list` et constater le résultat sans écrire dans le système. |\n| **Effectuer un health‑check basique contre un service externe (ex. : HTTP GET vers un endpoint connu)** | `cloud-and-external-services` | Valider que le mécanisme de test peut atteindre des services externes, même si ce n’est pas la pleine intégration. |\n| **Documenter la distinction “presence disque” ↔ “fenêtre ouverte” pour les sessions chat** | `chat‑session‑bindings` | Communiquer aux parties prenantes que la preuve actuelle ne garantit pas l’affichage UI. |\n| **Considérer un examen plus poussé du fichier ARCHITECTURE.md (diff, validation de dépendances)** | `architecture‑canonical‑reference` | Si besoin d’une couverture accrue, réaliser un diff ou une analyse de dépendances supplémentaires. |\n\n*Toutes les recommandations respectent la contrainte « aucun outil, aucune écriture, aucun redémarrage » pour la session de diagnostic en cours ; elles sont destinées à des actions de suivi ultérieures.*\n\n---\n\n**En résumé** – Le diagnostic révèle une seule anomalie avérée (`comms‑jsonl‑integrity`), plusieurs limites significatives (bridge ACK, ACP vs fenêtres chat, activation extensions) et trois domaines restés inexplorés (UI, workers CLI, services externes). Les priorités sont axées sur la résolution de l’intégrité du bus et la confirmation de la livraison messages, suivies des vérifications de couverture manquantes. Aucune modification ni exécution n’a été effectuée dans le cadre de cette analyse."
+    },
+    {
+      "ok": true,
+      "runId": "c3cac0e8-7bab-4a43-9f4f-e0450c2ef432",
+      "schemaId": "schema-mwi80bsc-5frlh",
+      "sessionId": "chat-mwi80bs2",
+      "role": "Diagnostic-Roster-Identites",
+      "taskId": 842,
+      "reply": "# Diagnostic Session mwi80bs2 - Roster & Session Analysis\n\n**Diagnostic ID:** 35538517-fd69-4e48-889e-157f9476ad41  \n**Collected At:** 2026-11-15T19:26:52.047Z  \n**Verdict:** degraded\n\n---\n\n## 1. Roster JSON Check (`roster-json`)\n- **Status:** pass\n- **Evidence:** activeSchemaId: schema-mwi80bsc-5frlh, entrySessionId: acp/devin-cli/sugary-shoemaker, nodeCount: 5, edgeCount: 6\n- **Cause prouvée:** Schema actif présent avec structure valide (5 nœuds, 6 arêtes)\n- **Hypothèse:** Le schéma mwi80bsc-5frlh correspond bien à la session en cours\n- **Non testé:** Aucune vérification de cohérence temps réel entre nœuds/arêtes et état fenêtrage\n\n## 2. Chat Session Bindings (`chat-session-bindings`)\n- **Status:** pass\n- **Evidence:** chat-mwi80bs2 present: true, hidden: false, providerMatches: true, modelMatches: true (plus chat-mwi80brw, chat-mwi80bs4, chat-mwi80bs7)\n- **Cause prouvée:** Session mwi80bs2 bien enregistrée sur disque, non cachée, avec providers/models concordants\n- **Limitation (explicit):** \"Presence et coherence disque uniquement ; pas une preuve de fenetre ouverte\"\n- **Hypothèse:** La visibilité fenêtre correspond à l'état disque (non vérifié)\n- **Non testé:** État fenètre ouverte/active, ACK agent vers fenêtre\n\n## 3. Bridge WebSocket (`bridge-websocket`)\n- **Status:** pass\n- **Evidence:** connected: true\n- **Cause prouvée:** Connexion bridge établie\n- **Limitation (explicit):** \"Connexion du bridge ; pas un ACK de livraison agent\"\n- **Hypothèse:** Connexion stable implique ACK agent (non prouvé)\n- **Non tested:** ACK de livraison agent, réception fenêtre côté agent\n\n## 4. Native ACP Enumeration (`native-acp-enumeration`)\n- **Status:** pass\n- **Evidence:** sessionCount: 152\n- **Limitation (explicit):** \"Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants\"\n- **Cause prouvée:** 152 sessions ACP natives enregistrées\n- **Hypothèse:** Session chat-mwi80bs2 comptée dans ces 152 (non vérifié individuellement)\n- **Non testé:** Détail de chaque session fenètre vs ACP natif, état visibilité fenètre\n\n## 5. Comm JSONL Integrity (`comms-jsonl-integrity`)\n- **Status:** **fail**\n- **Evidence:** entries: 2506, malformed: 1\n- **Cause prouvée:** 1 entrée malformée sur 2506 dans le journal commutateur\n- **Hypothèse:** L'entrée malformée provient peut-être des échanges session chat-mwi80bs2 (non identifiée)\n- **Non testé:** Contenu précis de l'entrée malformée, impact sur livraison agent\n\n---\n\n## Couverture Limits Summary\n| Check ID | Status | Couverage Type |\n|----------|--------|----------------|\n| roster-json | pass | Structure schema uniquement |\n| chat-session-bindings | pass | Disque seulement pas fenêtre |\n| bridge-websocket | pass | Connexion pas ACK agent |\n| native-acp-enumeration | pass | Enumeration ACP pas fenètre |\n| comms-jsonl-integrity | **fail** | Intégrité journal 1 malformed/2506 |\n| architecture-canonical-reference | pass | Fichier référence uniquement |\n| n8n-health | pass | Health HTTP 200 |\n| rest-health | pass | Pipe connectée pas exhaustif |\n| orchestrator-task-state | pass | Lecture seule état taches |\n| installed-extensions | pass | Versions seulement activation non prouvée |\n| ide-ui-interaction | not_tested | Aucun test utilisateur |\n| cli-worker-execution | not_tested | Aucun worker CLI lancé |\n| cloud-and-external-services | not_tested | Intégrations externes non testées |\n\n---\n\n## Priority Anomalies\n1. **comms-jsonl-integrity (fail):** 1 malformed entry in 2506 journal entries — requires content inspection\n2. **Verdict degraded:** Multiple \"not_tested\" and \"limitation\" domains create diagnostic gaps\n3. **Session visibility gap:** chat-session-bindings confirms disque presence but explicitly excludes fenêtre open verification\n\n## Recommendations (without execution/modification)\n1. **Inspect entry malformée** comms-jsonl-integrity for root cause — may indicate session binding corruption\n2. **Validate fenêtre état** for chat-mwi80bs2 via agent ACK separately — not covered by current evidence\n3. **Extend native-acp-enumeration** to map chat-* sessionIds vs ACP native count explicitly\n4. **Document window visibility** as separate diagnostic domain — current roster excludes it by design\n5. **Review not_tested checks** ide-ui-interaction, cli-worker-execution, cloud-and-external-services for future test scope\n\n---\n*Analysis confined to transmitted measured evidence only. No files invented, no verifications executed, no modifications performed.*"
+    },
+    {
+      "ok": true,
+      "runId": "c3cac0e8-7bab-4a43-9f4f-e0450c2ef432",
+      "schemaId": "schema-mwi80bsc-5frlh",
+      "sessionId": "chat-mwi80bs4",
+      "role": "Diagnostic-Architecture",
+      "taskId": 843,
+      "reply": "**Diagnostic Architecture – Session chat-mwi80bs4**  \nIdentifiant diagnostic : `35538517-fd69-4e48-889e-157f9476ad41`  \nVerdict mesuré : **dégradé** (1 check échoué, 3 non testés, 10 passants avec limitations)\n\n---\n\n## Analyse par check (max 5 points/check)\n\n### 1. `roster-json` (status: **pass**)\n- **Cause prouvée** : schéma actif `schema-mwi80bsc-5frlh`, session entrée `acp/devin-cli/sugary-shoemaker`, 5 nœuds, 6 arêtes présents et cohérents. Durée 0 ms.\n- **Hypothèse** : aucune (données structurelles complètes).\n- **Non testé** : comportement runtime du roster.\n- **Limitation couverte** - seule la structure roster est vérifiée, pas d’interaction.\n\n### 2. `chat-session-bindings` (status: **pass**)\n- **Cause prouvée** : 4 sessions chat (`chat-mwi80brw`, `chat-mwi80bs2`, `chat-mwi80bs4`, `chat-mwi80bs7`) présentes, non cachées, provider et modèle matches.\n- **Hypothèse** - présence disque ≠ fenêtre ouverte ou active.\n- **Non testé** - aucune.\n- **Limitation** - “présence et cohérence disque uniquement ; pas une preuve de fenetre ouverte”.\n\n### 3. `architecture-canonical-reference` (status: **pass**)\n- **Cause prouvée** - fichier `.agent/ARCHITECTURE.md` présent, empreinte SHA256 `6ff4a732164a8b43bbcc6b3cfee6fd76b33b196a5a3df584b23fd09df32d4394`.\n- **Hypothèse** - référence présente ≠ validation exhaustive d’architecture.\n- **Non testé** - réconciliation ou comparaison dynamique.\n- **Limitation** - mentionnée dans l’évidence.\n\n### 4. `n8n-health` (status: **pass**)\n- **Cause prouvée** - statut HTTP 200, répondeur “ok”.\n- **Hypothèse** - check superficiel (status seule).\n- **Non testé** - aucune.\n- **Limitation** - non spécifiée au-delà du HTTP.\n\n### 5. `rest-health` (status: **pass**)\n- **Cause prouvée** - HTTP 200, status “healthy”, pipeConnected true, ingestBusy false.\n- **Hypothèse** - état pipe/ingest peut ne pas refléter charge réelle.\n- **Non testé** - aucune.\n- **Limitation** - énoncée dans l’évidence.\n\n### 6. `bridge-websocket` (status: **pass**)\n- **Cause prouvée** - `connected: true`.\n- **Hypothèse** - connexion ≠ ACK de livraison agent.\n- **Non testé** - ACK de livraison.\n- **Limitation** - “Connexion du bridge ; pas un ACK de livraison agent.”\n\n### 7. `native-acp-enumeration` (status: **pass**)\n- **Cause prouvée** - 152 sessions ACP natives comptabilisées.\n- **Hypothèse** - fenêtres `chat-*` ne comptent pas comme ACP natifs manquants (note de limitation).\n- **Non testé** - traitement des fenêtrres chat comme ACP.\n- **Limitation** - “Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants.”\n\n### 8. `canonical-mcp-health` (status: **pass**)\n- **Cause prouvée** - status “healthy”, pipeConnected true.\n- **Hypothèse** - sonde serveur canonique, pas couverture de tous ses outils.\n- **Non testé** - intégralité des outils du serveur.\n- **Limitation** - “Sonde du serveur canonique, pas de tous ses outils.”\n\n### 9. `orchestrator-task-state` (status: **pass**)\n- **Cause prouvée** - lecture possible, 132 tâches, états : 67 complétées, 41 échouées, 10 en attente, 4 annulées, 10 terminées.\n- **Hypothèse** - lecture seule ; ne teste pas spawn workers CLI ni réconciliation.\n- **Non testé** - spawn workers, réconciliation de tâches.\n- **Limitation** - “Lecture seule : ne teste pas le spawn des workers CLI ni ne reconcilie les taches.”\n\n### 10. `comms-jsonl-integrity` (status: **fail**)\n- **Cause prouvée** - 2 506 entrées du journal, 1 malformée détectée.\n- **Hypothèse** - entrée malformée pourrait affecter le flux de messages, mais contenu non exposé.\n- **Non testé** - contenu ou impact sémantique des messages.\n- **Limitation** - “Integrite du journal uniquement ; aucun contenu de message expose.”\n- **Anomalie prioritaire** → échec unique dans la série.\n\n### 11. `installed-extensions` (status: **pass**)\n- **Cause prouvée** - versions installées : `hephaistos.hephaistos-chats@0.3.48`, `hephaistos.orchestrator-monitor@0.0.75`.\n- **Hypothèse** - installation ≠ activation ou rechargement effectif.\n- **Non testé** - activation,reload.\n- **Limitation** - “Versions installees seulement ; activation et rechargement non prouves.”\n\n### 12. `ide-ui-interaction` (status: **not_tested**)\n- **Cause prouvée** - aucun (check non testé).\n- **Hypothèse** - N/A.\n- **Non testé** - “Aucun clic utilisateur, association de carte ou affichage de panneau teste par cette sonde.”\n- **Limitation** - évidence explicite.\n\n### 13. `cli-worker-execution` (status: **not_tested**)\n- **Cause prouvée** - aucun (check non testé).\n- **Hypothèse** - N/A.\n- **Non testé** - “Aucun worker CLI lance : pas de consommation ni de modification pour simuler un test.”\n- **Limitation** - évidence explicite.\n\n### 14. `cloud-and-external-services` (status: **not_tested**)\n- **Cause prouvée** - aucun (check non testé).\n- **Hypothèse** - N/A.\n- **Non testé** - “Kaggle, Colab, ComfyUI et autres integrations externes non testes.”\n- **Limitation** - évidence explicite.\n\n---\n\n## Anomalies prioritaires\n1. **`comms-jsonl-integrity` (fail)** : 1 entrée malformée sur 2 506. Cause racine inconnue sans contenu de message. Risque de corruption silencieuse dans le flux JSONL.\n2. **Trous de couverture `not_tested`** : 3 checks (`ide-ui-interaction`, `cli-worker-execution`, `cloud-and-external-services`) ne disposent d’aucune donnée mesurée. Ils représentent des domaines entièrement non validés.\n3. **Dépendances de statut “pass” avec limitations fortes** : 10 checks sur 14 affichent `pass`, mais chaque preuve porte une limitation explicite qui restreint la portée du diagnostic (présence vs fonctionnement, disque vs fenètre ouverte, installation vs activation, etc.).\n\n---\n\n## Limites de couverture (non exhaustives)\n- **Preuves de connexion uniquement** : bridge-websocket, canonical-mcp-health, rest-health se basent sur des indicateurs de connexion (`connected`, `pipeConnected`) sans ACK ou ACK de livraison.\n- **Structure vs comportement** : roster-json, architecture-canonical-reference, installed-extensions valident la présence ou les versions, mais pas l’état actif ou le fonctionnement.\n- **Portée disque vs runtime** : chat-session-bindings, native-acp-enumeration, architecture-canonical-reference ne couvrent que l’état statique ou disque.\n- **Intégration externe absente** : cloud-and-external-services totalement non testé.\n- **Workers et exécution** : cli-worker-execution non testé ; orchestrator-task-state limité à la lecture d’état.\n\n---\n\n## Recommandations (guidance uniquement, pas d’exécution, pas de modification)\n1. **Prioriser la résolution de `comms-jsonl-integrity`** : identifier la source de l’entrée malformée (position, pattern, source de génération) et ajouter une validation de schéma au niveau de l’ingestion JSONL.\n2. **Remplir les trous de couverture `not_tested`** : concevoir des sondes non GUI/CLI qui extraient des indicateurs existants (existence de fichiers de état, métriques d’activité) sans créer de nouveaux tests utilisateurs.\n3. **Documenter les limitations** : adjoindre à chaque check passante une note de limitation explicite (déjà présente) dans la base de preuves, afin d’éviter toute interprétation exhaustive non justifiée.\n4. **Séparer “installé” de “actif”** : pour `installed-extensions`, ajouter un indicateur d’activation ou de chargement si possible depuis les métriques internes, ou clarifier que seules les versions sont garanties.\n5. **Affiner les checks de santé “pass”** : compléter les checks currently basés uniquement sur HTTP/état de connexion par des indicateurs de consommation/rétroaction (ex. : compteurs de messages traités, temps de réponse effectif) si la architecture le permet sans modification code.\n\n---\n*Toute analyse s’en tient strictly aux preuves transmises. Aucune réparation, redémarrage, écriture ou appel externe n’a été effectué. Les statuts mesurés ne sont pas remplacés par un avis agent.*"
+    },
+    {
+      "ok": true,
+      "runId": "c3cac0e8-7bab-4a43-9f4f-e0450c2ef432",
+      "schemaId": "schema-mwi80bsc-5frlh",
+      "sessionId": "chat-mwi80bs7",
+      "role": "Diagnostic-Synthese",
+      "taskId": 844,
+      "reply": "**Diagnostic synthèse – session exacte chat‑mwi80bs7**  \n*ID diagnostic : 35538517‑fd69‑4e48‑889e‑157f9476ad41*  \n*Collecté le 2026‑11‑15 T19:26:52.047Z*  \n*Verdict : **dégradé***  \n\n---\n\n## 1. Résumé des trois analyses amont (5 points maximum chacune)\n\n| Analyse | Points clés (ID check – status – cause/provo/hypothèse/non testé) |\n|---|---|\n| **Diagnostic‑Runtime‑Comms – Session chat‑mwi80brw** | 1️⃣ **roster‑json** – *pass* : schéma actif `schema‑mwi80bsc‑5frlh`, 5 noeuds/6 arêtes – **cause prouvée**.<br>2️⃣ **chat‑session‑bindings** – *pass* : 4 sessions présentes dont `chat‑mwi80brw` – **cause prouvée** (disque uniquement).<br>3️⃣ **bridge‑websocket** – *pass* : `connected:true` – **cause prouvée**, mais **hypothèse** d’absence d’ACK agent.<br>4️⃣ **native‑acp‑enumeration** – *pass* : 152 sessions ACP – **cause prouvée**, limite : ne pas compter les fenêtres `chat‑*`.<br>5️⃣ **comms‑jsonl‑integrity** – *fail* : 1 entrée malformée sur 2506 – **hypothèse** d’origine inconnue. |\n| **Diagnostic Session mwi80bs2 – Roster & Session** | 1️⃣ **roster‑json** – *pass* : même schéma actif, **cause prouvée**.<br>2️⃣ **chat‑session‑bindings** – *pass* : `chat‑mwi80bs2` présent, non caché, provider/model match – **cause prouvée**, limitation : pas preuve de fenêtre ouverte.<br>3️⃣ **bridge‑websocket** – *pass* : connexion établie – **cause prouvée**, **hypothèse** pas d’ACK.<br>4️⃣ **native‑acp‑enumeration** – *pass* : 152 ACP – **cause prouvée**, limitation explicite.<br>5️⃣ **comms‑jsonl‑integrity** – *fail* : 1 malformed/2506 – **hypothèse** source non identifiée. |\n| **Diagnostic Architecture – Session chat‑mwi80bs4** | 1️⃣ **roster‑json** – *pass* : schéma présent, **cause prouvée**.<br>2️⃣ **chat‑session‑bindings** – *pass* : 4 sessions dont `chat‑mwi80bs4` – **cause prouvée**, limitation “présence disque seulement”.<br>3️⃣ **bridge‑websocket** – *pass* : `connected:true` – **cause prouvée**, **hypothèse** pas d’ACK agent.<br>4️⃣ **native‑acp‑enumeration** – *pass* : 152 ACP – **cause prouvée**, limite : pas de traitement fenètre `chat‑*`.<br>5️⃣ **comms‑jsonl‑integrity** – *fail* : 1 entrée malformée sur 2506 – **hypothèse** origine inconnue. |\n\n*Toutes les analyses se Bornent aux preuves transmises ; aucune modification, aucun outil, aucun redémarrage n’a été effectué.*\n\n---\n\n## 2. Anomalies prioritaires (5 points maximum)\n\n| # | Check ID | Pourquoi prioritaire | Classification |\n|---|----------|----------------------|----------------|\n| 1 | **comms‑jsonl‑integrity** | Seul check **fail** : 1 entrée malformée sur 2 506 → risque de corruption silencieuse du bus JSONL. | **Hypothèse** (cause inconnue à ce stade) |\n| 2 | **bridge‑websocket** | Connexion OK, mais pas d’ACK de livraison agent → on ne peut pas garantir que les messages parviennent aux workers. | **Hypothèse** (confirmation de delivery manquante) |\n| 3 | **native‑acp‑enumeration** | 152 sessions ACP comptées, mais la limite explicite *« ne pas traiter les fenetres chat‑* comme ACP natives manquants »* laisse un aveuglement sur les ACP « purs ». | **Hypothèse** (couverture ACP partielle) |\n| 4 | **installed‑extensions** | Versions connues, mais on ignore si elles sont activées ou peuvent être rechargées sans problème. | **Hypothèse** (activation non prouvée) |\n| 5 | **ide‑ui‑interaction**, **cli‑worker‑execution**, **cloud‑and‑external‑services** | Tous trois **not_tested** → représentent des « blind‑spots » qui figurent dans le verdict dégradé mais n’altèrent pas les checks mesurés. | **Not tested** |\n\n---\n\n## 3. Causes établies vs hypotheses vs non testé\n\n| Domaine | Cause **prouvée** | Hypothèse (non prouvée) | Non testé |\n|---|---|---|---|\n| **Roster structure** | `roster‑json` : schéma actif, nœuds/arêtes valides | – | – |\n| **Session présence** | `chat‑session‑bindings` : sessions disque‑présentes, non cachées, provider/model concordants | – | – |\n| **Bridge connexion** | `bridge‑websocket` : `connected:true` | Absence d’ACK agent (non observée) | – |\n| **ACP enumeration** | `native‑acp‑enumeration` : 152 sessions ACP réelles | Risque de confondre fenêtres `chat‑*` avec ACP natives | – |\n| **Intégrité journal** | 2 506 entrées, 1 malformée détectée | Origine de la malformation (erreur écriture, encodage, corruption) | – |\n| **Extensions** | Versions installées listées | Activation ou rechargement effectif inconnu | – |\n| **UI interaction** | – | – | Aucun clic/affichage testé |\n| **Worker CLI** | – | – | Aucun worker lancé |\n| **Services externes** | – | – | Intégrations Kaggle/Colab/ComfyUI non testées |\n\n---\n\n## 4. Limites de couverture (ce qui n’est pas prouvé par les preuves actuelles)\n\n| Domaine | Élément non vérifié | Source de la limite |\n|---|---|---|\n| **Interface utilisateur** | Aucun clic, carte ou affichage de panneau capturé | `ide‑ui‑interaction` (not_tested) |\n| **Workers CLI** | Aucun worker lancé, donc consommation/modification impossible à vérifier | `cli‑worker‑execution` (not_tested) |\n| **Services externes** | Intégrations Kaggle, Colab, ComfyUI, etc. jamais sollicitées | `cloud‑and‑external‑services` (not_tested) |\n| **Livraison agente (WS)** | Pas d’ACK de confirmation de réception par l’agent | `bridge‑websocket` limitation |\n| **ACP vs fenêtres chat** | Risque de confondre les sessions chat‑* avec les ACP natives | `native‑acp‑enumeration` limitation |\n| **Activation extensions** | Seules les versions installées sont connues ; chargement/rechargement non testé | `installed‑extensions` limitation |\n| **Journal de bus** | Seule la malformabilité est comptée ; contenu des messages opaque | `comms‑jsonl‑integrity` limitation |\n| **Architecture complète** | Fichier de référence présent, mais pas validation exhaustive des liens/dépendances | `architecture‑canonical‑reference` limitation |\n\n---\n\n## 5. Recommandations (conseillers uniquement – pas d’exécution, pas de modification)\n\n| Recommendation | Check(s) concerné | Rationale |\n|---|---|---|\n| **Identifier la source de l’entrée malformée du journal JSON‑L** | `comms‑jsonl‑integrity` | Déterminer si c’est une erreur d’écriture, un problème d’encodage ou une corruption en cours de lecture. |\n| **Mettre en place un ACK de fin‑de‑message pour le bridge WebSocket** | `bridge‑websocket` | Ajouter un échange ping/pong ou un accusé de réception signé par l’agent pour certifier la livraison. |\n| **Réaliser une découverte ACP en excluant les fenêtres chat‑*** | `native‑acp‑enumeration` | Lancer une sonde ACP qui ignore explicitement les sessions `chat‑*` afin de s’assurer qu’aucune session ACP native n’est négligée. |\n| **Tester le chargement/rechargement des extensions listées** | `installed‑extensions` | Exécuter l’API de gestion d’extensions pour activer/désactiver les deux versions et vérifier qu’elles deviennent actives. |\n| **Enregistrer une interaction utilisateur minimale (ex. : ouverture/fermeture de panneau)** | `ide‑ui‑interaction` | Effectuer un clic ou un geste clavier unique et noter que la sonde capture l’événement. |\n| **Lancer un worker CLI en mode secousse (dry‑run) sans modifier l’état** | `cli‑worker‑execution` | Exécuter une commande `hephaistos --list` et constater le résultat sans écrire dans le système. |\n| **Effectuer un health‑check basique contre un service externe (ex. : HTTP GET vers un endpoint connu)** | `cloud‑and‑external‑services` | Valider que le mécanisme de test peut atteindre des services externes, même si ce n’est pas la pleine intégration. |\n| **Documenter la distinction “presence disque” ↔ “fenêtre ouverte” pour les sessions chat** | `chat‑session‑bindings` | Communiquer aux parties prenantes que la preuve actuelle ne garantit pas l’affichage UI. |\n| **Considérer un examen plus poussé du fichier ARCHITECTURE.md (diff, validation de dépendances)** | `architecture‑canonical‑reference` | Si besoin d’une couverture accrue, réaliser un diff ou une analyse de dépendances supplémentaires. |\n\n*Toutes les recommandations respectent la contrainte « aucun outil, aucun redémarrage, aucune écriture » pour la session de diagnostic en cours ; elles sont destinées à des actions de suivi ultérieures.*\n\n---\n\n**En résumé** – Le diagnostic révèle une seule anomalie avérée (`comms‑jsonl‑integrity`), plusieurs limites significatives (bridge ACK, ACP vs fenêtres chat, activation extensions) et trois domaines restés inexplorés (UI, workers CLI, services externes). Les priorités sont axées sur la résolution de l’intégrité du bus et la confirmation de la livraison messages, suivies des vérifications de couverture manquantes. Aucune modification ni exécution n’a été effectuée dans le cadre de cette analyse."
+    }
+  ],
+  "analysisWarning": "Analyses agents non probantes seules : les checks mesures restent la source des verdicts."
+}

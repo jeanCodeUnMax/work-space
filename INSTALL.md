@@ -20,7 +20,7 @@ Tutoriel d'installation complet. Séparation stricte :
 ### 1. Cloner
 
 ```powershell
-git clone --recurse-submodules https://github.com/projet-temporaire/hephaistos2-kit.git <dossier-de-votre-choix>
+git clone --recurse-submodules https://github.com/art-qalam-fr/hephaistos2-kit.git <dossier-de-votre-choix>
 cd <dossier-de-votre-choix>
 ```
 

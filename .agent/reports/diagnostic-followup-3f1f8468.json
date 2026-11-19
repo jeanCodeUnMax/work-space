@@ -1,0 +1,101 @@
+{
+  "reportType": "targeted-diagnostic-followup",
+  "sourceDiagnosticId": "3f1f8468-ce9b-4eae-a61c-de92c10edc82",
+  "scope": "Recontrole des deux echecs et test des trois domaines auparavant non testes. Ce rapport ne certifie pas les calculs GPU ni toutes les integrations cloud.",
+  "verdict": "degraded",
+  "counts": { "pass": 2, "fail": 1, "warn": 2, "not_tested": 0 },
+  "checks": [
+    {
+      "id": "rest-health",
+      "status": "warn",
+      "evidence": {
+        "initialAttempts": [
+          { "durationMs": 3014, "error": "TimeoutError" },
+          { "durationMs": 3006, "error": "TimeoutError" },
+          { "durationMs": 3009, "error": "TimeoutError" }
+        ],
+        "laterProbe": { "httpStatus": 200, "status": "healthy", "pipeConnected": true, "ingestBusy": false, "durationMs": 48 },
+        "processId": 9320,
+        "processStartTime": "2026-11-15T19:06:10.5333596+01:00",
+        "restartPerformed": false,
+        "restartAttempt": "Stop-Process non execute : confirmation indisponible en mode non interactif. PID et heure de demarrage inchanges apres retour a healthy."
+      },
+      "limitation": "Service revenu sans redemarrage ; indisponibilite intermittente reproduite, cause racine et correction durable non etablies."
+    },
+    {
+      "id": "comms-jsonl-integrity",
+      "status": "pass",
+      "evidence": {
+        "repairExplicitlyAuthorizedByUser": true,
+        "correctedLine": 2399,
+        "originalLineSha256": "82f0489c9a6288cd4038f1bf342be51849d595a26e496cbb66a4814b19bf1087",
+        "backupFile": "C:\\Program Files\\Projet-complet\\hephaistos2-kit\\.agent\\reports\\comms-before-repair-2399-3f1f8468.7z",
+        "backupArchiveTestPassed": true,
+        "backupComparisonPassed": true,
+        "unchangedArchivedLines": 2541,
+        "messageAndConversationPreserved": true,
+        "malformedAfterRepair": 0,
+        "archiveExcludedFromGit": true
+      }
+    },
+    {
+      "id": "ide-ui-interaction",
+      "status": "pass",
+      "evidence": {
+        "method": "Interaction PyAutoGUI reelle avec la fenetre Devin du workspace, puis verification visuelle des captures.",
+        "activeSchemaObserved": "swat-diagnostic-hephaistos",
+        "initialInspector": "Diagnostic-Roster-Identites",
+        "clickedCard": "Diagnostic-Runtime-Comms",
+        "observedInspectorAfterClick": "Diagnostic-Runtime-Comms, role et mission correspondants",
+        "beforeScreenshot": "C:\\Program Files\\Projet-complet\\hephaistos2-kit\\.agent\\reports\\diagnostic-ui-before.png",
+        "afterScreenshot": "C:\\Program Files\\Projet-complet\\hephaistos2-kit\\.agent\\reports\\diagnostic-ui-after.png"
+      },
+      "limitation": "Smoke test de selection et inspection d'une carte ; ne couvre pas toutes les interactions du canvas ni tous les IDE."
+    },
+    {
+      "id": "cli-worker-execution",
+      "status": "fail",
+      "evidence": {
+        "dispatchTool": "Hephaistos-everything-search.dispatch_task",
+        "selection": "Selection canonique par skill test, sans forcer agent, provider ou modele.",
+        "taskId": 849,
+        "agent": "nim1",
+        "provider": "nvidia-nim",
+        "model": "nvidia/nemotron-3-super-120b-a12b",
+        "notified": true,
+        "spawnedPid": 23224,
+        "taskStatus": "failed",
+        "error": "HTTP 404 : fonction de modele introuvable pour le compte fournisseur.",
+        "expectedMarker": "CLI-DIAG-20261115",
+        "markerProduced": false
+      },
+      "limitation": "Le lancement Windows fonctionne. L'inference fournisseur echoue. Aucun changement de provider, de modele ou de preference n'a ete effectue pour masquer ce resultat."
+    },
+    {
+      "id": "cloud-and-external-services",
+      "status": "warn",
+      "evidence": {
+        "kaggle": { "status": "pass", "method": "kaggle kernels list --mine --page-size 1", "authenticatedReadSucceeded": true, "computeStarted": false },
+        "colab": {
+          "status": "blocked",
+          "method": "mcp-mux.colab-mcp__check_auth_status puis tentative OAuth explicitement autorisee",
+          "authenticated": false,
+          "credentialsFileExists": true,
+          "tokenFileExists": true,
+          "oauthError": "401 deleted_client",
+          "oauthErrorSource": "Message de la page Google rapporte par utilisateur pendant la reconnexion",
+          "requiredAction": "Le proprietaire du projet Google Cloud doit restaurer le client OAuth supprime si possible, sinon creer un nouveau client Application de bureau et reconfigurer le connecteur sans communiquer de secrets dans le chat.",
+          "notebookExecutionVerified": false
+        },
+        "comfyui": { "status": "fail", "method": "cli-anything-comfyui --json system info", "testedEndpoint": "http://localhost:8188", "result": "Connexion impossible", "remoteCloudEndpointVerified": false, "computeStarted": false }
+      },
+      "limitation": "Lecture Kaggle reelle, authentification Colab negative et acces au point configure par defaut ComfyUI en echec. Aucun runtime GPU, notebook Colab ni endpoint distant ComfyUI n'est certifie par ces tests."
+    }
+  ],
+  "pending": [
+    "Retablir le client OAuth Google supprime avec le proprietaire du projet.",
+    "Diagnostiquer l'indisponibilite intermittente REST sans la masquer par un timeout plus long.",
+    "Verifier l'acces du compte NIM au modele choisi par le routeur avant un nouveau test CLI.",
+    "Raccorder et verifier le vrai runtime ComfyUI distant avant tout test de generation."
+  ]
+}

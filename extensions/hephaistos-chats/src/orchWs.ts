@@ -40,8 +40,8 @@ export class OrchWsClient extends EventEmitter {
         }
         const candidates = [
             this.workspaceRoot ? path.join(this.workspaceRoot, '.agent', 'ws-bridge.token') : undefined,
-            path.join('C:', 'Program Files', 'Projet-complet', 'hephaistos2-kit', '.agent', 'ws-bridge.token'),
-            path.join('C:', 'Program Files', 'servers', 'hephaistos2-kit', 'data', 'hphe-rest.token'),
+            path.join(process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit', '.agent', 'ws-bridge.token'),
+            path.join(process.env.HPHE_INSTALL || 'C:/ProgramData/hephaistos2-kit', 'data', 'hphe-rest.token'),
         ].filter((f): f is string => !!f);
 
         for (const file of candidates) {

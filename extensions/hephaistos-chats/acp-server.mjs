@@ -649,7 +649,7 @@ async function completeTurnWithMcps(session, mcps) {
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://github.com/projet-temporaire/hephaistos2-kit',
+                'HTTP-Referer': 'https://github.com/art-qalam-fr/hephaistos2-kit',
                 'X-Title': 'Hephaistos Chats ACP',
             },
             body: { model, messages: chatMessages, stream: false },
@@ -694,6 +694,24 @@ async function completeTurnWithMcps(session, mcps) {
         return {
             content: (json.message?.content || '').trim(),
             reasoning: (json.message?.thinking || '').trim(),
+        };
+    }
+
+    if (provider === 'groq') {
+        const apiKey = providerEnv('groq','GROQ_API_KEY');
+        if (!apiKey) throw new Error('GROQ_API_KEY absente.');
+        const { msg: gqMsg, trace } = await openAiToolsCompletion({
+            url: 'https://api.groq.com/openai/v1/chat/completions',
+            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: { model, messages: chatMessages, stream: false },
+            cwd: toolCwd,
+            label: 'Groq',
+            mcps,
+        });
+        return {
+            content: (gqMsg.content || '').trim(),
+            reasoning: (gqMsg.reasoning || gqMsg.reasoning_content || '').trim(),
+            toolTrace: trace,
         };
     }
 
@@ -746,7 +764,7 @@ async function completeTurnWithMcps(session, mcps) {
         };
     }
 
-    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim/omniroute).`);
+    throw new Error(`Provider "${provider}" non pilotable par acp-server (utilise ollama/openrouter/nim/omniroute/groq).`);
 }
 
 /* ---------- client ACP imbriqué : les providers passent par l'agent réel ----------

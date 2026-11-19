@@ -1,4 +1,3 @@
-import { useWfStore, wfRef } from './store';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -13,7 +12,8 @@ import {
     Position,
     ReactFlow,
     SelectionMode,
-    useUpdateNodeInternals,
+    useEdgesState,
+    useNodesState,
     type Connection,
     type Edge,
     type Node,
@@ -27,7 +27,7 @@ import './workspace.css';
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
-export interface AgentData extends Record<string, unknown> {
+interface AgentData extends Record<string, unknown> {
     sessionId: string;
     title: string;
     provider: string;
@@ -43,8 +43,6 @@ export interface AgentData extends Record<string, unknown> {
     onMcpDrop?: (mcp: string) => void;
     onAgentDrop?: (agent: PaletteAgent) => void;
     onRoleDrop?: (role: string) => void;
-    onSkillRemove?: (skill: string) => void;
-    onMcpRemove?: (mcp: string) => void;
     onPoint?: () => void;
     onBind?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
@@ -54,7 +52,7 @@ export interface AgentData extends Record<string, unknown> {
     tone: 'amber' | 'blue' | 'green';
 }
 
-export type AgentNode = Node<AgentData, 'agent'>;
+type AgentNode = Node<AgentData, 'agent'>;
 
 interface StoredNode {
     title?: string;
@@ -75,6 +73,16 @@ interface StoredEdge {
     target: string;
     sourceHandle?: string | null;
     targetHandle?: string | null;
+    /** 'tool' = grant de contexte svc/* → agent (pointillé), sinon exécution. */
+    type?: string;
+}
+
+interface N8nWorkflowItem {
+    id: string;
+    name: string;
+    callable?: boolean;
+    callableContract?: string;
+    webhookPath?: string;
 }
 
 interface WorkflowGraph {
@@ -86,7 +94,6 @@ interface WorkflowGraph {
     nodes: StoredNode[];
     edges: StoredEdge[];
     mode?: 'council';
-    locked?: boolean;
 }
 
 interface PaletteAgent {
@@ -126,103 +133,6 @@ interface WorkflowView {
     entrySessionId: string | null;
     catalog?: WorkflowCatalog;
 }
-
-interface SchemaListEntry {
-    id: string;
-    name: string;
-    workspace: string;
-    savedAt: string;
-    nodes: number;
-    desc?: string;
-    builtin?: boolean;
-    mode?: 'council';
-}
-
-/** Contrat host→webview : le type discrimine, plus de casts par branche. */
-type HostMessage =
-    | { type: 'service_state'; service?: string; ok?: boolean; checking?: boolean }
-    | { type: 'schemas_state'; schemas?: SchemaListEntry[] }
-    | {
-        type: 'icon_theme'; theme?: string; agentsUri?: string; fallbackUri?: string;
-        iconFiles?: string[]; fallbackFiles?: string[];
-    }
-    | { type: 'workflow_state'; workflow: WorkflowView }
-    | { type: 'workflow_run_finished'; runId?: string; success?: boolean; message?: string }
-    | { type: 'workflow_error'; message?: string }
-    | { type: 'workflow_progress'; status: Progress }
-    | { type: 'flow_settings'; smartRefresh?: boolean; preserveLocalProps?: boolean; alwaysFitView?: boolean };
-
-/** Props injectees par le webview — exclues de la comparaison structurelle. */
-const CALLBACK_PROPS = new Set(['onSkillDrop', 'onMcpDrop', 'onAgentDrop', 'onRoleDrop', 'onSkillRemove', 'onMcpRemove', 'onPoint', 'onBind']);
-const dataFingerprint = (data: AgentData | undefined): string => {
-    if (!data) return '';
-    const rest: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-        if (!CALLBACK_PROPS.has(key) && typeof value !== 'function') rest[key] = value;
-    }
-    return JSON.stringify(rest);
-};
-const sameNode = (a: AgentNode, b: AgentNode): boolean =>
-    a.id === b.id
-    && a.position.x === b.position.x && a.position.y === b.position.y
-    && Boolean(a.selected) === Boolean(b.selected)
-    && Boolean(a.dragging) === Boolean(b.dragging)
-    && dataFingerprint(a.data) === dataFingerprint(b.data);
-const sameEdge = (a: Edge, b: Edge): boolean =>
-    a.id === b.id && a.source === b.source && a.target === b.target
-    && (a.sourceHandle ?? null) === (b.sourceHandle ?? null)
-    && (a.targetHandle ?? null) === (b.targetHandle ?? null)
-    && (a.type ?? 'smoothstep') === (b.type ?? 'smoothstep')
-    && Boolean(a.animated) === Boolean(b.animated)
-    && Boolean(a.selected) === Boolean(b.selected)
-    && a.label === b.label;
-
-// Expulsion : aucune carte ne se touche ni ne se superpose. Le noeud ancre
-// (celui qu'on vient de deposer) ne bouge pas ; tout noeud qui penetre sa zone
-// est pousse dehors le long de l'axe de moindre penetration, snappe grille 22.
-const CARD_W = 236, CARD_H = 176, SNAP = 22, CLEAR = 44;
-const snapGrid22 = (v: number): number => Math.round(v / SNAP) * SNAP;
-const repelOverlaps = (list: AgentNode[], anchorIds: Set<string>): AgentNode[] => {
-    const pos = new Map<string, { x: number; y: number }>(list.map((n) => [n.id, { x: n.position.x, y: n.position.y }]));
-    for (let pass = 0; pass < 32; pass++) {
-        let moved = false;
-        for (let i = 0; i < list.length; i++) {
-            for (let j = i + 1; j < list.length; j++) {
-                const a = pos.get(list[i].id)!;
-                const b = pos.get(list[j].id)!;
-                const dx = b.x - a.x;
-                const dy = b.y - a.y;
-                const ox = CARD_W + CLEAR - Math.abs(dx);
-                const oy = CARD_H + CLEAR - Math.abs(dy);
-                if (ox <= 0 || oy <= 0) continue;
-                const aFree = !anchorIds.has(list[i].id);
-                const bFree = !anchorIds.has(list[j].id);
-                if (!aFree && !bFree) continue;
-                const sep = Math.min(ox, oy);
-                const sgn = (ox <= oy ? dx : dy) >= 0 ? 1 : -1;
-                const share = aFree && bFree ? sep / 2 : sep;
-                const push = (p: { x: number; y: number }, s: number): void => {
-                    if (ox <= oy) p.x += s; else p.y += s;
-                };
-                if (aFree) push(a, -sgn * share);
-                if (bFree) push(b, sgn * share);
-                moved = true;
-            }
-        }
-        if (!moved) break;
-    }
-    let changed = false;
-    const next = list.map((n) => {
-        if (anchorIds.has(n.id)) return n;
-        const p = pos.get(n.id)!;
-        const x = snapGrid22(p.x);
-        const y = snapGrid22(p.y);
-        if (x === n.position.x && y === n.position.y) return n;
-        changed = true;
-        return { ...n, position: { x, y } };
-    });
-    return changed ? next : list;
-};
 
 interface Progress {
     runId: string;
@@ -277,16 +187,71 @@ function onAgentIconError(event: React.SyntheticEvent<HTMLImageElement>): void {
     img.style.display = 'none';
 }
 
-function AgentNodeCard({ id, data, selected }: NodeProps<AgentNode>): React.JSX.Element {
-    const updateNodeInternals = useUpdateNodeInternals();
-    const skillsKey = (data.skills || []).join(',');
-    const mcpsKey = (data.mcps || []).join(',');
-    useEffect(() => {
-        updateNodeInternals(id);
-    }, [id, updateNodeInternals, skillsKey, mcpsKey, data.role, data.bound, data.isEntry]);
+const TOOL_EDGE_STYLES: Record<string, React.CSSProperties> = {
+    n8n: { strokeDasharray: '6 4', stroke: '#EA4B71' },
+    comfyui: { strokeDasharray: '6 4', stroke: '#F5A623' },
+    svc: { strokeDasharray: '6 4', stroke: '#9d7bff' },
+};
+
+function toolEdgeStyle(source: string): React.CSSProperties {
+    if (source.startsWith('svc/comfyui/')) return TOOL_EDGE_STYLES.comfyui;
+    if (source.startsWith('svc/n8n/')) return TOOL_EDGE_STYLES.n8n;
+    return TOOL_EDGE_STYLES.svc;
+}
+
+function toFlowEdge(edge: StoredEdge & { selectable?: boolean }): Edge {
+    const tool = edge.type === 'tool';
+    return {
+        ...edge,
+        type: 'smoothstep',
+        selectable: true,
+        ...(tool ? {
+            data: { kind: 'tool' },
+            style: toolEdgeStyle(edge.source),
+            animated: true,
+            label: 'outil',
+        } : {}),
+    };
+}
+
+/** Logo n8n simplifié (trois nœuds reliés) — inline, aucun asset réseau. */
+function N8nLogo({ size = 20 }: { size?: number }): React.JSX.Element {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <circle cx="5" cy="12" r="2.6" fill="#EA4B71" />
+            <circle cx="12" cy="5.5" r="2.6" fill="#EA4B71" />
+            <circle cx="19" cy="12" r="2.6" fill="#EA4B71" />
+            <circle cx="12" cy="18.5" r="2.6" fill="#EA4B71" />
+            <path d="M7 10.5 10.2 7M13.8 7 17 10.5M10.2 17 7 13.5M13.8 17 17 13.5" stroke="#EA4B71" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+/** Logo ComfyUI stylisé (générateur d'image) — inline, aucun asset réseau. */
+function ComfyUILogo({ size = 20 }: { size?: number }): React.JSX.Element {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <rect x="3" y="3" width="18" height="18" rx="5" fill="#F5A623" />
+            <circle cx="8.5" cy="10" r="1.6" fill="#1f2328" />
+            <circle cx="15.5" cy="10" r="1.6" fill="#1f2328" />
+            <path d="M8 14.5c1.4 1.8 6.6 1.8 8 0" stroke="#1f2328" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+            <path d="M12 6.2v-2M7 7.2 5.8 5.8M17 7.2l1.2-1.4" stroke="#1f2328" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+    );
+}
+
+/** Logo + nom d'affichage par famille de service svc/<kind>/. */
+function svcMeta(sessionId: string): { logo: React.JSX.Element; label: string; kind: string } {
+    if (sessionId.startsWith('svc/comfyui/')) return { logo: <ComfyUILogo size={22} />, label: 'SERVICE COMFYUI', kind: 'comfyui' };
+    return { logo: <N8nLogo size={22} />, label: 'SERVICE N8N', kind: 'n8n' };
+}
+
+function AgentNodeCard({ data, selected }: NodeProps<AgentNode>): React.JSX.Element {
+    const isSvc = data.sessionId.startsWith('svc/');
+    const svc = isSvc ? svcMeta(data.sessionId) : null;
     return (
         <div
-            className={'flow-node ' + data.tone + (selected ? ' selected' : '')}
+            className={'flow-node ' + data.tone + (isSvc ? ` svc svc-${svc!.kind}` : '') + (selected ? ' selected' : '')}
             onDragOver={(event) => {
                 if (event.dataTransfer.types.includes('application/x-hph-skill')
                     || event.dataTransfer.types.includes('application/x-hph-agent')
@@ -327,56 +292,49 @@ function AgentNodeCard({ id, data, selected }: NodeProps<AgentNode>): React.JSX.
         >
             <Handle type="target" position={Position.Left} id="target-left" title="Entrée latérale" />
             <Handle type="target" position={Position.Top} id="target-top" title="Entrée haute" />
+            {isSvc && (
+                <Handle
+                    type="source"
+                    position={Position.Top}
+                    id="tool"
+                    className="svc-tool-handle"
+                    title="Port outil — relie en pointillé à un agent ou à l'entrée : le résultat du workflow est injecté en contexte avant son étape"
+                />
+            )}
             <div className="flow-node-heading">
-                <span className="flow-node-kicker">{data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
+                <span className="flow-node-kicker">{isSvc ? svc!.label : data.isEntry ? 'ENTRÉE' : (data.external ? 'SESSION ACP' : 'AGENT')}</span>
                 <span className="flow-node-provider">{data.provider}</span>
-                <button
-                    type="button"
-                    className="flow-node-point"
-                    title={`Pointer ${data.title} vers l'agent référent`}
-                    onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
-                >⌖</button>
-                <button
-                    type="button"
-                    className="flow-node-point"
-                    title={(data.cardKind || (data.provider === 'antigravity-acp' ? 'agy' : data.provider === 'devin-cli' ? 'devin' : undefined)) === 'agy'
-                        ? "Attacher la fenêtre Antigravity à ce bloc"
-                        : (data.cardKind || (data.provider === 'devin-cli' ? 'devin' : undefined)) === 'devin'
-                            ? "Attacher la fenêtre Devin à ce bloc"
-                            : "Prendre la fenêtre active et l'attacher à ce bloc"}
-                    onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
-                >⤓</button>
+                {!isSvc && (
+                    <>
+                        <button
+                            type="button"
+                            className="flow-node-point"
+                            title={`Pointer ${data.title} vers l'agent référent`}
+                            onClick={(event) => { event.stopPropagation(); data.onPoint?.(); }}
+                        >⌖</button>
+                        <button
+                            type="button"
+                            className="flow-node-point"
+                            title={(data.cardKind || (data.provider === 'antigravity-acp' ? 'agy' : data.provider === 'devin-cli' ? 'devin' : undefined)) === 'agy'
+                                ? "Attacher la fenêtre Antigravity à ce bloc"
+                                : (data.cardKind || (data.provider === 'devin-cli' ? 'devin' : undefined)) === 'devin'
+                                    ? "Attacher la fenêtre Devin à ce bloc"
+                                    : "Prendre la fenêtre active et l'attacher à ce bloc"}
+                            onClick={(event) => { event.stopPropagation(); data.onBind?.(); }}
+                        >⤓</button>
+                    </>
+                )}
             </div>
-            {(()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
+            {isSvc
+                ? svc!.logo
+                : (()=>{const icon=agentIcon(data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:22,height:22,borderRadius:5,objectFit:"cover",marginRight:6,verticalAlign:"middle"}}/>:null;})()}<strong className="flow-node-title">{data.title}</strong>
             <span className="flow-node-model">{data.model}</span>
             {data.bound && <span className="flow-node-bound" title={`Carte associée à une fenêtre ${data.bound.kind === 'agy' ? 'Antigravity' : 'Devin'}`}>● associée</span>}
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
             {((data.skills || []).length + (data.mcps || []).length) > 0 && (
                 <div className="flow-node-skills">
-                    {(data.skills || []).map((skill) => (
-                        <span className="flow-node-skill" key={skill}>
-                            {skill}
-                            <button
-                                type="button"
-                                className="flow-node-skill-x nodrag"
-                                title={`Retirer ${skill}`}
-                                onMouseDown={(event) => event.stopPropagation()}
-                                onClick={(event) => { event.stopPropagation(); data.onSkillRemove?.(skill); }}
-                            >×</button>
-                        </span>
-                    ))}
-                    {(data.mcps || []).map((mcp) => (
-                        <span className="flow-node-skill flow-node-mcp" key={mcp} title={`MCP: ${mcp}`}>
-                            ⛁ {mcp}
-                            <button
-                                type="button"
-                                className="flow-node-skill-x nodrag"
-                                title={`Retirer ${mcp}`}
-                                onMouseDown={(event) => event.stopPropagation()}
-                                onClick={(event) => { event.stopPropagation(); data.onMcpRemove?.(mcp); }}
-                            >×</button>
-                        </span>
-                    ))}
+                    {(data.skills || []).map((skill) => <span className="flow-node-skill" key={skill}>{skill}</span>)}
+                    {(data.mcps || []).map((mcp) => <span className="flow-node-skill flow-node-mcp" key={mcp} title={`MCP: ${mcp}`}>⛁ {mcp}</span>)}
                 </div>
             )}
             <Handle type="source" position={Position.Right} id="source-right" title="Sortie latérale" />
@@ -423,11 +381,9 @@ function toStoredGraph(
     entryIsExplicit: boolean,
     activeSchema?: string,
     activeSchemaId?: string,
-    locked?: boolean,
 ): WorkflowGraph {
     const graph: WorkflowGraph = {
         version: 1,
-        locked: locked === true,
         name,
         entrySessionId: entryIsExplicit ? entrySessionId : null,
         nodes: nodes.map((node) => ({
@@ -445,12 +401,13 @@ function toStoredGraph(
             position: { x: Math.round(node.position.x), y: Math.round(node.position.y) },
             bound: node.data.bound,
         })),
-        edges: edges.map(({ id, source, target, sourceHandle, targetHandle }) => ({
+        edges: edges.map(({ id, source, target, sourceHandle, targetHandle, data }) => ({
             id,
             source,
             target,
             ...(sourceHandle ? { sourceHandle } : {}),
             ...(targetHandle ? { targetHandle } : {}),
+            ...(data?.kind === 'tool' ? { type: 'tool' } : {}),
         })),
     };
     if (activeSchema) graph.activeSchema = activeSchema;
@@ -459,22 +416,15 @@ function toStoredGraph(
 }
 
 function Workspace(): React.JSX.Element {
-    const nodes = useWfStore((s) => s.nodes);
-    const setNodes = useWfStore((s) => s.setNodes);
+    const [nodes, setNodes] = useNodesState<AgentNode>([]);
     const schemaLoadPending = useRef(true);
     const reactFlowRef = useRef<ReactFlowInstance<AgentNode, Edge> | null>(null);
-    const edges = useWfStore((s) => s.edges);
-    const setEdges = useWfStore((s) => s.setEdges);
-    const workflowName = useWfStore((s) => s.workflowName);
-    const setWorkflowName = (v: string) => { useWfStore.setState({ workflowName: v }); };
-    const activeSchema = useWfStore((s) => s.activeSchema);
-    const setActiveSchema = (v: string | undefined) => { useWfStore.setState({ activeSchema: v }); };
-    const activeSchemaId = useWfStore((s) => s.activeSchemaId);
-    const setActiveSchemaId = (v: string | undefined) => { useWfStore.setState({ activeSchemaId: v }); };
-    const entrySessionId = useWfStore((s) => s.entrySessionId);
-    const setEntrySessionId = (v: string | null) => { useWfStore.setState({ entrySessionId: v }); };
-    const entryIsExplicit = useWfStore((s) => s.entryIsExplicit);
-    const setEntryIsExplicit = (v: boolean) => { useWfStore.setState({ entryIsExplicit: v }); };
+    const [edges, setEdges] = useEdgesState<Edge>([]);
+    const [workflowName, setWorkflowName] = useState('Flux agents');
+    const [activeSchema, setActiveSchema] = useState<string | undefined>(undefined);
+    const [activeSchemaId, setActiveSchemaId] = useState<string | undefined>(undefined);
+    const [entrySessionId, setEntrySessionId] = useState<string | null>(null);
+    const [entryIsExplicit, setEntryIsExplicit] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
     const [skillQuery, setSkillQuery] = useState('');
@@ -486,18 +436,8 @@ function Workspace(): React.JSX.Element {
     const togglePalette = (key: string) => setCollapsed((c) => ({ ...c, [key]: !c[key] }));
     const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
     const [schemasCollapsed, setSchemasCollapsed] = useState(true);
-    const [schemas, setSchemas] = useState<SchemaListEntry[]>([]);
+    const [schemas, setSchemas] = useState<Array<{ id: string; name: string; workspace: string; savedAt: string; nodes: number; desc?: string; builtin?: boolean; mode?: 'council' }>>([]);
     const [showAllSchemas, setShowAllSchemas] = useState(false);
-    const showAllSchemasRef = useRef(showAllSchemas);
-    showAllSchemasRef.current = showAllSchemas;
-    // Reglages perso pousses par l'host (hephaistos.flow.*) — refs car le
-    // listener de messages n'est enregistre qu'une fois au montage.
-    const smartRefreshRef = useRef(true);
-    const preserveLocalPropsRef = useRef(true);
-    const alwaysFitViewRef = useRef(true);
-    // Derniers drags (2 s) : un workflow_state calcule AVANT le save du drag
-    // ne doit pas ecraser la position fraiche (race lost-update).
-    const recentDragsRef = useRef(new Map<string, { x: number; y: number; at: number }>());
     const [schemaName, setSchemaName] = useState('');
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -505,9 +445,6 @@ function Workspace(): React.JSX.Element {
     const [progress, setProgress] = useState<Record<string, Progress>>({});
     const [isRunning, setIsRunning] = useState(false);
     const [runSummary, setRunSummary] = useState('');
-    // Cadenas : lecture seule du canvas — persisté dans le graphe (roster).
-    const locked = useWfStore((s) => s.locked);
-    const setLocked = (v: boolean) => { useWfStore.setState({ locked: v }); };
     const [catalog, setCatalog] = useState<WorkflowCatalog>({ roles: [], skills: [], providers: [] });
     const [pageView, setPageView] = useState<'flow' | 'comfyui' | 'n8n'>('flow');
     // Outils chargés une fois à la 1re ouverture, puis gardés montés (sinon
@@ -524,13 +461,7 @@ function Workspace(): React.JSX.Element {
         }
     };
     const reloadTool = (v: 'flow' | 'comfyui' | 'n8n') => {
-        if (v === 'flow') {
-            // Refresh manuel = push force + recentrage : les noeuds peuvent
-            // etre revenus hors viewport apres un wipe transient.
-            schemaLoadPending.current = true;
-            vscode.postMessage({ type: 'refresh_state' });
-            return;
-        }
+        if (v === 'flow') { vscode.postMessage({ type: 'refresh_state' }); return; }
         setSvcState((s) => ({ ...s, [v]: 'checking' }));
         // ⟳ = recharger la VUE : remontage de l'iframe + connexion à
         // l'instance déjà démarrée. Jamais de kill/restart du service.
@@ -539,6 +470,7 @@ function Workspace(): React.JSX.Element {
     };
     const [newProvider, setNewProvider] = useState('devin-cli');
     const [iconTheme, setIconTheme] = useState('commando');
+    const [n8nWorkflows, setN8nWorkflows] = useState<N8nWorkflowItem[] | undefined>(undefined);
     const saveTimer = useRef<number | undefined>(undefined);
     const deleteTimer = useRef<number | undefined>(undefined);
 
@@ -551,11 +483,11 @@ function Workspace(): React.JSX.Element {
 
     useEffect(() => {
         const onMessage = (event: MessageEvent): void => {
-            const message = event.data as HostMessage | undefined;
+            const message = event.data;
             if (message?.type === 'service_state') {
-                const svc = message.service || '';
-                const ok = Boolean(message.ok);
-                const checking = Boolean(message.checking);
+                const svc = (message as { service?: string }).service || '';
+                const ok = Boolean((message as { ok?: boolean }).ok);
+                const checking = Boolean((message as { checking?: boolean }).checking);
                 if (checking) { setSvcState((s) => ({ ...s, [svc]: 'checking' })); return; }
                 // Remonter l'iframe seulement quand le service revient
                 // d'un état non-up : sinon chaque ping détruit la session.
@@ -571,10 +503,8 @@ function Workspace(): React.JSX.Element {
                 setSchemas(message.schemas || []);
                 return;
             }
-            if (message?.type === 'flow_settings') {
-                smartRefreshRef.current = message.smartRefresh !== false;
-                preserveLocalPropsRef.current = message.preserveLocalProps !== false;
-                alwaysFitViewRef.current = message.alwaysFitView !== false;
+            if (message?.type === 'n8n_workflows') {
+                setN8nWorkflows(Array.isArray(message.workflows) ? message.workflows : []);
                 return;
             }
             if (message?.type === 'icon_theme') {
@@ -590,100 +520,34 @@ function Workspace(): React.JSX.Element {
                 return;
             }
             if (message?.type === 'workflow_state') {
-                vscode.postMessage({ type: 'schemas_list', all: showAllSchemasRef.current });
-                const view = message.workflow;
-                // Cadenas persiste dans le graphe : l'etat roster fait foi.
-                const nextLocked = view?.graph?.locked === true;
-                setLocked(nextLocked);
-                stateRef.current = { ...stateRef.current, locked: nextLocked };
-                // Diagnostic : visible dans Webview DevTools > Console.
-                console.debug('[flow] workflow_state', view.nodes.length, 'noeuds,', view.edges.length, 'fils',
-                    '| local:', stateRef.current.nodes.length, 'noeuds,', stateRef.current.edges.length, 'fils');
-                // Si une édition locale est en attente de sauvegarde (timer 300ms)
-                // et que ce n'est pas un chargement explicite de schéma, ne pas
-                // écraser les nodes/edges locaux avec un état serveur antérieur.
-                if (saveTimer.current !== undefined && !schemaLoadPending.current) {
-                    return;
-                }
-                // fitView aussi quand le graphe repasse de vide a rempli : sans
-                // ca les noeuds reviennent rendus hors viewport = canvas vide.
-                const wasEmpty = stateRef.current.nodes.length === 0;
-                const isDragging = stateRef.current.nodes.some((node) => node.dragging);
-                const shouldFitView = !isDragging && (
-                    alwaysFitViewRef.current
-                    || schemaLoadPending.current
-                    || (wasEmpty && view.nodes.length > 0));
+                vscode.postMessage({ type: 'schemas_list', all: showAllSchemas });
+                const view = message.workflow as WorkflowView;
+                const shouldFitView = schemaLoadPending.current;
                 schemaLoadPending.current = false;
-                const preserve = preserveLocalPropsRef.current;
                 setNodes((current) => {
                     const byId = new Map(current.map((n) => [n.id, n]));
-                    const next = view.nodes.map((node) => {
-                        const prev = preserve ? byId.get(node.id) : undefined;
-                        const drag = recentDragsRef.current.get(node.id);
-                        const dragFresh = drag !== undefined && Date.now() - drag.at < 2000;
-                        if (drag && !dragFresh) recentDragsRef.current.delete(node.id);
+                    return view.nodes.map((node) => {
+                        const prev = byId.get(node.id);
                         return {
                             ...node,
                             selected: prev?.selected ?? node.selected,
                             dragging: prev?.dragging ?? node.dragging,
-                            position: (prev?.dragging || dragFresh) && prev ? prev.position : node.position,
+                            position: prev?.dragging ? prev.position : node.position,
                             data: {
                                 ...node.data,
-                                iconTheme: prev?.data?.iconTheme ?? node.data?.iconTheme,
                                 onSkillDrop: (skill: string) => assignSkill(node.id, skill),
                                 onMcpDrop: (mcp: string) => assignMcp(node.id, mcp),
                                 onAgentDrop: (agent: PaletteAgent) => {
                                     vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
                                 },
                                 onRoleDrop: (role: string) => assignRole(node.id, role),
-                                onSkillRemove: (skill: string) => removeSkill(node.id, skill),
-                                onMcpRemove: (mcp: string) => removeMcp(node.id, mcp),
                                 onPoint: () => pointAgent(node.id),
                                 onBind: () => bindActive(node.id, String(node.data?.provider || ''), node.data?.cardKind),
                             },
                         };
                     });
-                    // Meme graphe structurellement = meme reference -> React bail out,
-                    // fini le re-render global a chaque push du watcher.
-                    if (smartRefreshRef.current
-                        && next.length === current.length
-                        && next.every((node) => {
-                            const prev = byId.get(node.id);
-                            return prev !== undefined && sameNode(prev, node);
-                        })) {
-                        return current;
-                    }
-
-                    return next;
                 });
-                setEdges((current) => {
-                    const byId = new Map(current.map((e) => [e.id, e]));
-                    const next = view.edges.map((edge) => {
-                        const prev = preserve ? byId.get(edge.id) : undefined;
-                        // Props structurelles (source/target/handles) depuis le
-                        // serveur UNIQUEMENT — ...prev garderait un handle
-                        // obsolete (cle absente dans StoredEdge = non ecrasee)
-                        // et l'edge ne se rendrait plus. Seules les props
-                        // visuelles locales sont preservees.
-                        return {
-                            ...edge,
-                            selectable: true,
-                            type: prev?.type ?? edge.type ?? 'smoothstep',
-                            animated: prev?.animated ?? edge.animated,
-                            selected: prev?.selected ?? edge.selected,
-                        } as Edge;
-                    });
-                    if (smartRefreshRef.current
-                        && next.length === current.length
-                        && next.every((edge) => {
-                            const prev = byId.get(edge.id);
-                            return prev !== undefined && sameEdge(prev, edge);
-                        })) {
-                        return current;
-                    }
-
-                    return next;
-                });
+                setEdges(view.edges.map((e) => toFlowEdge(e as StoredEdge)));
                 setWorkflowName(view.graph.name);
                 setActiveSchema(view.graph.activeSchema);
                 setActiveSchemaId(view.graph.activeSchemaId);
@@ -710,7 +574,7 @@ function Workspace(): React.JSX.Element {
                 return;
             }
             if (message?.type === 'workflow_progress') {
-                const update = message.status;
+                const update = message.status as Progress;
                 setProgress((current) => ({ ...current, [update.sessionId]: update }));
                 if (update.state === 'running') setIsRunning(true);
                 if (update.state === 'failed' || update.state === 'blocked') setIsRunning(false);
@@ -721,8 +585,8 @@ function Workspace(): React.JSX.Element {
         return () => window.removeEventListener('message', onMessage);
     }, [setEdges, setNodes]);
 
-    const stateRef = wfRef;
-    
+    const stateRef = useRef({ nodes, edges, entrySessionId, workflowName, entryIsExplicit, activeSchema, activeSchemaId });
+    stateRef.current = { nodes, edges, entrySessionId, workflowName, entryIsExplicit, activeSchema, activeSchemaId };
 
     const postWorkflowSave = useCallback((
         nextNodes: AgentNode[],
@@ -730,29 +594,33 @@ function Workspace(): React.JSX.Element {
         nextEntry: string | null,
         nextName: string,
         nextEntryIsExplicit: boolean,
+        tagSchema?: string,
+        tagSchemaId?: string,
     ) => {
         const s = stateRef.current;
-        console.debug('[flow] save positions', nextNodes.map((n) => `${n.id}:${Math.round(n.position.x)},${Math.round(n.position.y)}`).join(' '));
+        // Le tag de schéma est celui capturé à la programmation du save : un
+        // workflow_state entrant entre-temps ne doit pas réétiqueter le graphe.
         vscode.postMessage({
             type: 'workflow_change',
-            graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit, s.activeSchema, s.activeSchemaId, s.locked),
+            graph: toStoredGraph(nextNodes, nextEdges, nextName, nextEntry, nextEntryIsExplicit, tagSchema ?? s.activeSchema, tagSchemaId ?? s.activeSchemaId),
         });
     }, []);
 
-    const sendSave = useCallback(() => {
+    const sendSave = useCallback((
+        nextNodes: AgentNode[] = nodes,
+        nextEdges: Edge[] = edges,
+        nextEntry: string | null = entrySessionId,
+        nextName = workflowName,
+        nextEntryIsExplicit = entryIsExplicit,
+    ) => {
+        const tagSchema = stateRef.current.activeSchema;
+        const tagSchemaId = stateRef.current.activeSchemaId;
         if (saveTimer.current !== undefined) window.clearTimeout(saveTimer.current);
         saveTimer.current = window.setTimeout(() => {
             saveTimer.current = undefined;
-            const current = stateRef.current;
-            postWorkflowSave(
-                current.nodes,
-                current.edges,
-                current.entrySessionId,
-                current.workflowName,
-                current.entryIsExplicit,
-            );
+            postWorkflowSave(nextNodes, nextEdges, nextEntry, nextName, nextEntryIsExplicit, tagSchema, tagSchemaId);
         }, 300);
-    }, [postWorkflowSave]);
+    }, [edges, entryIsExplicit, entrySessionId, nodes, postWorkflowSave, workflowName]);
 
     const flushSave = useCallback(() => {
         if (saveTimer.current !== undefined) {
@@ -783,95 +651,56 @@ function Workspace(): React.JSX.Element {
     }, [flushSave]);
 
     const onWorkflowNodesChange: OnNodesChange<AgentNode> = useCallback((changes) => {
-        // Cadenas : positions/suppressions/ajouts ignores — lecture seule.
-        const effective = stateRef.current.locked
-            ? changes.filter((c) => c.type !== 'position' && c.type !== 'remove' && c.type !== 'add')
-            : changes;
-        if (!effective.length) return;
         setNodes((current) => {
-            const nextNodes = applyNodeChanges(effective, current) as AgentNode[];
+            const nextNodes = applyNodeChanges(changes, current) as AgentNode[];
             const state = stateRef.current;
-
-            const hasPositionEnd = effective.some(
+            stateRef.current = { ...state, nodes: nextNodes };
+            const hasPositionEnd = changes.some(
                 (change) => (change.type === 'position' && change.dragging === false && change.position != null)
                     || change.type === 'remove',
             );
             if (hasPositionEnd) {
-                const anchored = repelOverlaps(nextNodes, new Set(
-                    effective.filter((c) => c.type === 'position').map((c) => c.id),
-                ));
-
                 if (saveTimer.current !== undefined) {
                     window.clearTimeout(saveTimer.current);
                     saveTimer.current = undefined;
                 }
-                postWorkflowSave(anchored, state.edges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
-                return anchored;
+                postWorkflowSave(nextNodes, state.edges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
             }
             return nextNodes;
         });
     }, [postWorkflowSave, setNodes]);
 
     const assignSkill = useCallback((id: string, skill: string) => {
-        if (stateRef.current.locked) return;
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, skills: [...new Set([...(n.data.skills || []), skill])] } }
                 : n);
             const s = stateRef.current;
-
+            stateRef.current = { ...s, nodes: next };
             postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
             return next;
         });
     }, [postWorkflowSave, setNodes]);
 
     const assignMcp = useCallback((id: string, mcp: string) => {
-        if (stateRef.current.locked) return;
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, mcps: [...new Set([...(n.data.mcps || []), mcp])].slice(0, 8) } }
                 : n);
             const s = stateRef.current;
-
-            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
-            return next;
-        });
-    }, [postWorkflowSave, setNodes]);
-
-    const removeSkill = useCallback((id: string, skill: string) => {
-        if (stateRef.current.locked) return;
-        setNodes((current) => {
-            const next = current.map((n) => n.id === id
-                ? { ...n, data: { ...n.data, skills: (n.data.skills || []).filter((item) => item !== skill) } }
-                : n);
-            const s = stateRef.current;
-
-            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
-            return next;
-        });
-    }, [postWorkflowSave, setNodes]);
-
-    const removeMcp = useCallback((id: string, mcp: string) => {
-        if (stateRef.current.locked) return;
-        setNodes((current) => {
-            const next = current.map((n) => n.id === id
-                ? { ...n, data: { ...n.data, mcps: (n.data.mcps || []).filter((item) => item !== mcp) } }
-                : n);
-            const s = stateRef.current;
-
+            stateRef.current = { ...s, nodes: next };
             postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
             return next;
         });
     }, [postWorkflowSave, setNodes]);
 
     const assignRole = useCallback((id: string, role: string) => {
-        if (stateRef.current.locked) return;
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, role } }
                 : n);
             const s = stateRef.current;
-
+            stateRef.current = { ...s, nodes: next };
             postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
             return next;
         });
@@ -883,7 +712,6 @@ function Workspace(): React.JSX.Element {
         // simplement la fenêtre focalisée. Sans type explicite ni provider
         // identifiable on n'envoie rien : un 'bleubite' déduit d'un provider
         // 'unknown' ferait refuser la fenêtre AGY/Devin à tort.
-        if (stateRef.current.locked) return;
         const kind = cardKind
             || (/server|herald|cerber|d2r2/i.test(provider) ? 'serveros' : /devin/i.test(provider) ? 'devin' : /antigravity|agy/i.test(provider) ? 'agy' : undefined);
         vscode.postMessage({ type: 'bind_active', sessionId, kind });
@@ -892,129 +720,162 @@ function Workspace(): React.JSX.Element {
         vscode.postMessage({ type: 'point_agent', sessionId });
     }, []);
 
-    const onConnect = useCallback((connection: Connection) => {
-        if (stateRef.current.locked) return;
-        setEdges((currentEdges) => {
-            const nextEdges = addEdge({ ...connection, type: 'smoothstep' }, currentEdges);
-            const state = stateRef.current;
-
-            postWorkflowSave(state.nodes, nextEdges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
-            return nextEdges;
-        });
-        setSelectedEdgeId(null);
-    }, [postWorkflowSave, setEdges]);
-
-    const onReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
-        if (stateRef.current.locked) return;
-        setEdges((currentEdges) => {
-            const nextEdges = addEdge(
-                { ...connection, type: 'smoothstep' },
-                currentEdges.filter((edge) => edge.id !== oldEdge.id),
-            );
-            const state = stateRef.current;
-
-            postWorkflowSave(state.nodes, nextEdges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
-            return nextEdges;
-        });
-        setSelectedEdgeId(null);
-    }, [postWorkflowSave, setEdges]);
-
-    const onEdgeChanges: OnEdgesChange = useCallback((changes) => {
-        // Cadenas : seule la selection de fil reste permise.
-        const effective = stateRef.current.locked
-            ? changes.filter((c) => c.type === 'select')
-            : changes;
-        if (!effective.length) return;
-        const hasStructuralChange = effective.some((c) => c.type !== 'select');
-        setEdges((currentEdges) => {
-            const nextEdges = applyEdgeChanges(effective, currentEdges);
-            const state = stateRef.current;
-
-            if (hasStructuralChange) {
-                if (saveTimer.current !== undefined) {
-                    window.clearTimeout(saveTimer.current);
-                    saveTimer.current = undefined;
-                }
-                postWorkflowSave(state.nodes, nextEdges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
-            }
-            return nextEdges;
-        });
-    }, [postWorkflowSave, setEdges]);
-
-    const updateNode = (id: string, values: Partial<AgentData>): void => {
-        if (stateRef.current.locked) return;
-        setNodes((currentNodes) => {
-            const nextNodes = currentNodes.map((node) => node.id === id
-                ? { ...node, data: { ...node.data, ...values } }
-                : node);
-
-            return nextNodes;
-        });
-        sendSave();
+    // Un lien refusé par le roster (doublon, self-loop, endpoint absent)
+    // échouait en silence au save : l'edge restait dessiné puis disparaissait
+    // au changement de schéma. On refuse donc AVANT de le dessiner.
+    const edgeRejection = (source: string, target: string, pool: Edge[], kind: string): string | null => {
+        if (source === target) return 'Connexion refusée : un bloc ne peut pas se lier à lui-même.';
+        if (pool.some((e) => e.source === source && e.target === target && (e.data?.kind || 'exec') === kind)) {
+            return 'Connexion refusée : ce lien existe déjà.';
+        }
+        return null;
     };
 
+    // Les boucles sont autorisées au dessin (orchestration libre) ; seul le
+    // lancement automatique les refuse. On le signale sans bloquer. Les edges
+    // 'tool' ne sont pas des dépendances : ils ne créent jamais de cycle.
+    const createsCycle = (source: string, target: string, pool: Edge[]): boolean => {
+        const bySource = new Map<string, string[]>();
+        for (const e of pool) {
+            if (e.data?.kind === 'tool') continue;
+            const list = bySource.get(e.source) || [];
+            list.push(e.target);
+            bySource.set(e.source, list);
+        }
+        const stack = [target];
+        const seen = new Set<string>();
+        while (stack.length) {
+            const cur = stack.pop() as string;
+            if (cur === source) return true;
+            if (seen.has(cur)) continue;
+            seen.add(cur);
+            for (const nxt of bySource.get(cur) || []) stack.push(nxt);
+        }
+        return false;
+    };
+
+    // Port 'tool' (cartes svc/*) → edge pointillé : le résultat du service
+    // est pré-fetché par le runner et injecté en contexte à l'agent cible.
+    const toolEdgeProps = (source: string) => ({
+        data: { kind: 'tool' }, style: toolEdgeStyle(source), animated: true, label: 'outil',
+    });
+
+    const onConnect = useCallback((connection: Connection) => {
+        const tool = connection.sourceHandle === 'tool';
+        if (tool && !String(connection.source || '').startsWith('svc/')) {
+            setRunSummary('Connexion refusée : le port outil ne part que des cartes service.');
+            return;
+        }
+        const rejected = connection.source && connection.target
+            ? edgeRejection(connection.source, connection.target, edges, tool ? 'tool' : 'exec')
+            : 'Connexion refusée : lien incomplet.';
+        if (rejected) {
+            setRunSummary(rejected);
+            return;
+        }
+        const cycled = !tool && connection.source && connection.target
+            ? createsCycle(connection.source, connection.target, edges)
+            : false;
+        const nextEdges = addEdge({ ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps(String(connection.source)) : {}) }, edges);
+        setEdges(nextEdges);
+        setSelectedEdgeId(null);
+        if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
+        sendSave(nodes, nextEdges);
+    }, [edges, nodes, sendSave, setEdges]);
+
+    const onReconnect = useCallback((oldEdge: Edge, connection: Connection) => {
+        const tool = oldEdge.data?.kind === 'tool' || connection.sourceHandle === 'tool';
+        if (tool && !String(connection.source || '').startsWith('svc/')) {
+            setRunSummary('Connexion refusée : le port outil ne part que des cartes service.');
+            return;
+        }
+        const pool = edges.filter((edge) => edge.id !== oldEdge.id);
+        const rejected = connection.source && connection.target
+            ? edgeRejection(connection.source, connection.target, pool, tool ? 'tool' : 'exec')
+            : 'Connexion refusée : lien incomplet.';
+        if (rejected) {
+            setRunSummary(rejected);
+            return;
+        }
+        const cycled = !tool && connection.source && connection.target
+            ? createsCycle(connection.source, connection.target, pool)
+            : false;
+        const nextEdges = addEdge(
+            { ...connection, type: 'smoothstep', ...(tool ? toolEdgeProps(String(connection.source)) : {}) },
+            pool,
+        );
+        setEdges(nextEdges);
+        setSelectedEdgeId(null);
+        if (cycled) setRunSummary('Boucle enregistrée — le lancement automatique refusera ce flux cyclique.');
+        sendSave(nodes, nextEdges);
+    }, [edges, nodes, sendSave, setEdges]);
+
+    const onEdgeChanges: OnEdgesChange = useCallback((changes) => {
+        const nextEdges = applyEdgeChanges(changes, edges);
+        setEdges(nextEdges);
+        sendSave(nodes, nextEdges);
+    }, [edges, nodes, sendSave, setEdges]);
+
+    const updateNode = (id: string, values: Partial<AgentData>): void => {
+        const nextNodes = nodes.map((node) => node.id === id
+            ? { ...node, data: { ...node.data, ...values } }
+            : node);
+        setNodes(nextNodes);
+        sendSave(nextNodes);
+    };
+
+    // Carte service n8n : le workflow choisi EST le sessionId (svc/n8n/<id>) —
+    // le runner le résout via l'allowlist. Renommer = réécrire les edges.
+    const setSvcWorkflow = (nodeId: string, wf: N8nWorkflowItem): void => {
+        const nextId = `svc/n8n/${wf.id}`;
+        if (nodes.some((n) => n.id === nextId && n.id !== nodeId)) {
+            setRunSummary(`Le workflow « ${wf.name} » est déjà placé sur ce schéma.`);
+            return;
+        }
+        const nextNodes = nodes.map((n) => n.id === nodeId
+            ? { ...n, id: nextId, data: { ...n.data, sessionId: nextId, title: `n8n · ${wf.name}` } }
+            : n);
+        const nextEdges = edges.map((e) => ({
+            ...e,
+            source: e.source === nodeId ? nextId : e.source,
+            target: e.target === nodeId ? nextId : e.target,
+        }));
+        setNodes(nextNodes);
+        setEdges(nextEdges);
+        setSelectedId(nextId);
+        sendSave(nextNodes, nextEdges);
+    };
+
+    // Liste des workflows n8n demandée au host (bridge :7478) quand une carte
+    // svc est sélectionnée — le webview ne peut pas fetch hors CSP.
+    const selectedIsSvc = !!selectedNode && selectedNode.data.sessionId.startsWith('svc/n8n/');
+    useEffect(() => {
+        if (selectedIsSvc && n8nWorkflows === undefined) {
+            vscode.postMessage({ type: 'n8n_workflows' });
+        }
+    }, [selectedIsSvc, n8nWorkflows]);
+
     const chooseEntry = (id: string): void => {
-        if (stateRef.current.locked) return;
-        const state = stateRef.current;
-        const isCurrentExplicitEntry = state.entryIsExplicit && state.entrySessionId === id;
+        const isCurrentExplicitEntry = entryIsExplicit && entrySessionId === id;
         const nextEntryIsExplicit = !isCurrentExplicitEntry;
-        const recommendedEntry = state.nodes.find((node) => node.data.provider === 'devin-cli')
-            || state.nodes.find((node) => node.data.provider === 'antigravity-acp');
+        const recommendedEntry = nodes.find((node) => node.data.provider === 'devin-cli')
+            || nodes.find((node) => node.data.provider === 'antigravity-acp');
         const nextEntry = nextEntryIsExplicit ? id : recommendedEntry?.id || null;
         setEntrySessionId(nextEntry);
         setEntryIsExplicit(nextEntryIsExplicit);
-        setNodes((currentNodes) => {
-            const nextNodes = currentNodes.map((node) => ({
-                ...node,
-                data: { ...node.data, isEntry: node.id === nextEntry },
-            }));
-            stateRef.current = {
-                ...stateRef.current,
-                nodes: nextNodes,
-                entrySessionId: nextEntry,
-                entryIsExplicit: nextEntryIsExplicit,
-            };
-            postWorkflowSave(nextNodes, stateRef.current.edges, nextEntry, stateRef.current.workflowName, nextEntryIsExplicit);
-            return nextNodes;
-        });
-    };
-
-    const alignSelection = (): void => {
-        if (stateRef.current.locked) return;
-        const sel = nodes.filter((n) => n.selected);
-        if (sel.length < 2) return;
-        const xs = sel.map((n) => n.position.x);
-        const ys = sel.map((n) => n.position.y);
-        const spreadX = Math.max(...xs) - Math.min(...xs);
-        const spreadY = Math.max(...ys) - Math.min(...ys);
-        const vertical = spreadY > spreadX;
-        const ordered = [...sel].sort((a, b) => vertical
-            ? a.position.y - b.position.y || a.position.x - b.position.x
-            : a.position.x - b.position.x || a.position.y - b.position.y);
-        const mean = (vs: number[]): number => vs.reduce((s, v) => s + v, 0) / vs.length;
-        const baseX = vertical ? snapGrid22(mean(xs)) : ordered[0].position.x;
-        const baseY = vertical ? ordered[0].position.y : snapGrid22(mean(ys));
-        const step = vertical ? CARD_H + CLEAR : CARD_W + CLEAR;
-        const aligned = new Map(ordered.map((n, i) => [n.id, vertical
-            ? { x: baseX, y: snapGrid22(baseY + i * step) }
-            : { x: snapGrid22(baseX + i * step), y: baseY }]));
-        setNodes((current) => {
-            const merged = current.map((n) => aligned.has(n.id) ? { ...n, position: aligned.get(n.id)! } : n);
-            const nextNodes = repelOverlaps(merged, new Set(sel.map((n) => n.id)));
-            const s = stateRef.current;
-
-            postWorkflowSave(nextNodes, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
-            return nextNodes;
-        });
+        const nextNodes = nodes.map((node) => ({
+            ...node,
+            data: { ...node.data, isEntry: node.id === nextEntry },
+        }));
+        setNodes(nextNodes);
+        sendSave(nextNodes, edges, nextEntry, workflowName, nextEntryIsExplicit);
     };
 
     const onNodeDragStop = (_event: MouseEvent | TouchEvent, moved: AgentNode): void => {
-        recentDragsRef.current.set(moved.id, { x: moved.position.x, y: moved.position.y, at: Date.now() });
         setNodes((current) => {
-            const merged = current.map((node) => node.id === moved.id ? moved : node);
-            const nextNodes = repelOverlaps(merged, new Set([moved.id]));
+            const nextNodes = current.map((node) => node.id === moved.id ? moved : node);
             const state = stateRef.current;
-
+            stateRef.current = { ...state, nodes: nextNodes };
             // Une sortie de workspace peut arriver avant le debounce de 300 ms.
             // Le dernier déplacement est donc écrit immédiatement.
             if (saveTimer.current !== undefined) {
@@ -1036,20 +897,14 @@ function Workspace(): React.JSX.Element {
     };
 
     const removeSelectedEdge = (): void => {
-        if (stateRef.current.locked || !selectedEdgeId) return;
-        const targetId = selectedEdgeId;
-        setEdges((currentEdges) => {
-            const nextEdges = currentEdges.filter((edge) => edge.id !== targetId);
-            const state = stateRef.current;
-
-            postWorkflowSave(state.nodes, nextEdges, state.entrySessionId, state.workflowName, state.entryIsExplicit);
-            return nextEdges;
-        });
+        if (!selectedEdgeId) return;
+        const nextEdges = edges.filter((edge) => edge.id !== selectedEdgeId);
+        setEdges(nextEdges);
         setSelectedEdgeId(null);
+        sendSave(nodes, nextEdges);
     };
 
     const hideFromWorkflow = (): void => {
-        if (stateRef.current.locked) return;
         if (!selectedId) return;
         vscode.postMessage({ type: 'hide_agent', sessionId: selectedId });
         setSelectedId(null);
@@ -1069,7 +924,7 @@ function Workspace(): React.JSX.Element {
             type: 'schema_save',
             name: targetName,
             all: showAllSchemas,
-            graph: toStoredGraph(s.nodes, s.edges, targetName, s.entrySessionId, s.entryIsExplicit, s.activeSchema, s.activeSchemaId, s.locked),
+            graph: toStoredGraph(s.nodes, s.edges, targetName, s.entrySessionId, s.entryIsExplicit, s.activeSchema, s.activeSchemaId),
         });
         setSchemaName('');
     };
@@ -1100,6 +955,16 @@ function Workspace(): React.JSX.Element {
         setRenamingId(null);
         if (name) vscode.postMessage({ type: 'schema_rename', id, name, all: showAllSchemas });
     };
+    const overwriteSchema = (schema: { id: string; name: string }): void => {
+        const s = stateRef.current;
+        vscode.postMessage({
+            type: 'schema_save',
+            id: schema.id,
+            name: schema.name,
+            all: showAllSchemas,
+            graph: toStoredGraph(s.nodes, s.edges, schema.name, s.entrySessionId, s.entryIsExplicit, s.activeSchema, s.activeSchemaId),
+        });
+    };
     const requestDeleteSchema = (id: string): void => {
         if (confirmDeleteId === id) {
             setConfirmDeleteId(null);
@@ -1127,18 +992,11 @@ function Workspace(): React.JSX.Element {
     };
 
     const addAgent = (): void => {
-        if (stateRef.current.locked) return;
+        if (newProvider === 'svc-n8n' || newProvider === 'svc-comfyui') {
+            vscode.postMessage({ type: 'add_svc', svc: { kind: newProvider.slice(4) } });
+            return;
+        }
         vscode.postMessage({ type: 'add_agent', provider: newProvider });
-    };
-
-    // Cadenas : lecture seule globale — drag, ajouts, liens et réglages.
-    // Persisté dans le graphe via postWorkflowSave (graph.locked).
-    const toggleLock = (): void => {
-        const next = !stateRef.current.locked;
-        setLocked(next);
-        const s = stateRef.current;
-        stateRef.current = { ...s, locked: next };
-        postWorkflowSave(s.nodes, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
     };
 
 
@@ -1153,10 +1011,8 @@ function Workspace(): React.JSX.Element {
                             aria-label="Nom du flux"
                             value={workflowName}
                             onChange={(event) => {
-                                const nextName = event.target.value;
-                                setWorkflowName(nextName);
-                                stateRef.current = { ...stateRef.current, workflowName: nextName };
-                                sendSave();
+                                setWorkflowName(event.target.value);
+                                sendSave(nodes, edges, entrySessionId, event.target.value);
                             }}
                         />
                         <p>Les connexions transmettent le résultat d’un agent au suivant.</p>
@@ -1196,20 +1052,6 @@ function Workspace(): React.JSX.Element {
                 </div>
                 <div className="workspace-actions">
                     <span className="node-count">{nodes.length} agents</span>
-                    <button
-                        type="button"
-                        className={`canvas-lock${locked ? ' locked' : ''}`}
-                        title={locked ? 'Déverrouiller : réactive drag, ajouts et réglages' : 'Verrouiller : lecture seule — la disposition ne bouge plus'}
-                        onClick={toggleLock}
-                    >{locked ? '🔒' : '🔓'}</button>
-                    {nodes.filter((n) => n.selected).length >= 2 && (
-                        <button
-                            type="button"
-                            className="align-selection"
-                            title="Aligne la sélection : colonne si étalée en hauteur, rangée si en largeur (espacement anti-collision)"
-                            onClick={alignSelection}
-                        >⊞ Aligner</button>
-                    )}
                     {selectedEdgeId && <button type="button" className="remove-edge" onClick={removeSelectedEdge}>Retirer le lien</button>}
                     <select
                         className="add-agent-provider"
@@ -1218,8 +1060,10 @@ function Workspace(): React.JSX.Element {
                         onChange={(event) => setNewProvider(event.target.value)}
                     >
                         {catalog.providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.label}</option>)}
+                        <option value="svc-n8n">⛁ Service n8n</option>
+                        <option value="svc-comfyui">◆ Service ComfyUI</option>
                     </select>
-                    <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc vide du type choisi, à rattacher ensuite avec ⤓">+ Bloc</button>
+                    <button type="button" className="add-agent" onClick={addAgent} title="Crée un bloc du type choisi — les cartes n8n se configurent ensuite dans le panneau">+ Bloc</button>
                 </div>
             </header>
             <div className="workspace-content">
@@ -1318,6 +1162,19 @@ function Workspace(): React.JSX.Element {
                                             </svg>
                                         </button>
                                         )}
+                                        {renamingId !== schema.id && (
+                                        <button
+                                            type="button"
+                                            className="schema-rename"
+                                            title="Écraser ce schéma avec le graphe courant"
+                                            aria-label={"Écraser " + schema.name}
+                                            onClick={() => overwriteSchema(schema)}
+                                        >
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                                <path fill="currentColor" d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm3-10H5V5h10v4Z"/>
+                                            </svg>
+                                        </button>
+                                        )}
                                         <button
                                             type="button"
                                             className={"schema-delete" + (confirmDeleteId === schema.id ? " schema-delete-confirm" : "")}
@@ -1370,10 +1227,8 @@ function Workspace(): React.JSX.Element {
                                 selectionOnDrag
                                 panOnDrag={[2]}
                                 selectionMode={SelectionMode.Partial}
-                                selectNodesOnDrag={!locked}
-                                elementsSelectable={!locked}
-                                nodesDraggable={!locked}
-                                nodesConnectable={!locked}
+                                selectNodesOnDrag
+                                elementsSelectable
                                 edgesFocusable
                                 nodes={nodes}
                                 edges={edges}
@@ -1382,7 +1237,7 @@ function Workspace(): React.JSX.Element {
                                 onEdgesChange={onEdgeChanges}
                                 onConnect={onConnect}
                                 onReconnect={onReconnect}
-                                edgesReconnectable={!locked}
+                                edgesReconnectable
                                 onNodeClick={(_event, node) => setSelectedId(node.id)}
                                 onNodeDoubleClick={(_event, node) => vscode.postMessage({ type: 'open_agent', sessionId: node.id })}
                                 onEdgeClick={(_event, edge) => {
@@ -1397,13 +1252,19 @@ function Workspace(): React.JSX.Element {
                                 onDragOver={(event) => {
                                     if (event.dataTransfer.types.includes('application/x-hph-role')
                                         || event.dataTransfer.types.includes('application/x-hph-agent')
-                                        || event.dataTransfer.types.includes('application/x-hph-card')) {
+                                        || event.dataTransfer.types.includes('application/x-hph-card')
+                                        || event.dataTransfer.types.includes('application/x-hph-svc')) {
                                         event.preventDefault();
                                         event.dataTransfer.dropEffect = 'copy';
                                     }
                                 }}
                                 onDrop={(event) => {
-                                    if (locked) return;
+                                    const svcRaw = event.dataTransfer.getData('application/x-hph-svc');
+                                    if (svcRaw) {
+                                        event.preventDefault();
+                                        try { vscode.postMessage({ type: 'add_svc', svc: JSON.parse(svcRaw) }); } catch { /* carte invalide */ }
+                                        return;
+                                    }
                                     const agentRaw = event.dataTransfer.getData('application/x-hph-agent');
                                     if (agentRaw) {
                                         event.preventDefault();
@@ -1430,10 +1291,10 @@ function Workspace(): React.JSX.Element {
                                 snapGrid={[22, 22]}
                                 minZoom={0.2}
                                 maxZoom={2}
-                                deleteKeyCode={locked ? null : ['Backspace', 'Delete']}
+                                deleteKeyCode={['Backspace', 'Delete']}
                             >
                                 <Background variant={BackgroundVariant.Dots} gap={22} size={1} />
-                                <Controls showInteractive={false} />
+                                <Controls />
                                 <MiniMap pannable zoomable />
                             </ReactFlow>
                             <div className="canvas-note">
@@ -1465,8 +1326,86 @@ function Workspace(): React.JSX.Element {
                                     Retirer du schéma
                                 </button>
                             </div>
-                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{(()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
+                            <h2 style={{display:"flex",alignItems:"center",gap:8}}>{selectedNode.data.sessionId.startsWith('svc/')
+                                ? svcMeta(selectedNode.data.sessionId).logo
+                                : (()=>{const icon=agentIcon(selectedNode.data.sessionId);return icon.src?<img src={icon.src} data-fbk={icon.fbk} onError={onAgentIconError} style={{width:32,height:32,borderRadius:7,objectFit:"cover",flexShrink:0}}/>:null;})()}<span>{selectedNode.data.title}</span></h2>
                             <p className="inspector-provider">{selectedNode.data.provider} · {selectedNode.data.model}</p>
+                            {selectedNode.data.sessionId.startsWith('svc/comfyui/') && (
+                                <>
+                                    <label className="field-label">Service ComfyUI</label>
+                                    <p className="inspector-provider">
+                                        Carte service ComfyUI — génération image/vidéo locale (:8190) ou distante (tunnel Kaggle).
+                                        Paramètres avancés (workflow, prompt, seed, modèle) à venir.
+                                    </p>
+                                    <p className="inspector-provider">
+                                        Port ⛁ outil (haut) → agent ou entrée : résultat injecté en contexte.
+                                        Ports droite/bas → étape d'exécution normale.
+                                    </p>
+                                    <label className="field-label" htmlFor="svc-task">Mission de ce service</label>
+                                    <textarea
+                                        id="svc-task"
+                                        className="inspector-textarea"
+                                        value={selectedNode.data.task}
+                                        onChange={(event) => updateNode(selectedNode.id, { task: event.target.value })}
+                                        placeholder="Ce que ce service fournit (contexte outil) ou exécute (étape)…"
+                                        maxLength={6000}
+                                    />
+                                    <div className="inspector-session">Node : <code>{selectedNode.data.sessionId}</code></div>
+                                </>
+                            )}
+                            {selectedNode.data.sessionId.startsWith('svc/n8n/') && (() => {
+                                const wfId = selectedNode.data.sessionId.split('/')[2] || '';
+                                const current = (n8nWorkflows || []).find((w) => w.id === wfId);
+                                return (
+                                    <>
+                                        <label className="field-label" htmlFor="svc-workflow">Workflow n8n</label>
+                                        <select
+                                            id="svc-workflow"
+                                            className="inspector-input"
+                                            title="Workflow n8n appelé par cette carte — résolu via l'allowlist de la bridge"
+                                            value={current ? wfId : ''}
+                                            onChange={(event) => {
+                                                const wf = (n8nWorkflows || []).find((w) => w.id === event.target.value);
+                                                if (wf) setSvcWorkflow(selectedNode.id, wf);
+                                            }}
+                                        >
+                                            <option value="">{n8nWorkflows === undefined ? '— chargement… —' : '— choisir un workflow —'}</option>
+                                            {(n8nWorkflows || []).map((wf) => (
+                                                <option key={wf.id} value={wf.id} disabled={!wf.callable}>
+                                                    {wf.name}{wf.callable ? '' : ' (non invocable)'}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            type="button"
+                                            className="schema-restore"
+                                            title="Recharger la liste des workflows depuis la bridge"
+                                            onClick={() => { setN8nWorkflows(undefined); vscode.postMessage({ type: 'n8n_workflows' }); }}
+                                        >⟳ Actualiser la liste</button>
+                                        {current?.callableContract && (
+                                            <p className="inspector-provider" title="Contrat d'entrée du webhook">contrat : {current.callableContract}</p>
+                                        )}
+                                        {current && !current.callable && (
+                                            <p className="inspector-provider">⚠ Non invocable — le runner refusera l'appel (allowlist bridge).</p>
+                                        )}
+                                        <p className="inspector-provider">
+                                            Port ⛁ outil (haut) → agent ou entrée : résultat injecté en contexte.
+                                            Ports droite/bas → étape d'exécution normale.
+                                        </p>
+                                        <label className="field-label" htmlFor="svc-task">Mission de ce service</label>
+                                        <textarea
+                                            id="svc-task"
+                                            className="inspector-textarea"
+                                            value={selectedNode.data.task}
+                                            onChange={(event) => updateNode(selectedNode.id, { task: event.target.value })}
+                                            placeholder="Ce que ce workflow fournit (contexte outil) ou exécute (étape)…"
+                                            maxLength={6000}
+                                        />
+                                        <div className="inspector-session">Node : <code>{selectedNode.data.sessionId}</code></div>
+                                    </>
+                                );
+                            })()}
+                            {!selectedNode.data.sessionId.startsWith('svc/') && (<>
                             <label className="field-label" htmlFor="icon-theme">Thème d'icônes</label>
                             <select
                                 id="icon-theme"
@@ -1542,6 +1481,7 @@ function Workspace(): React.JSX.Element {
                                     : 'Définir comme point d’entrée'}
                             </button>
                             <div className="inspector-session">Session : <code>{selectedNode.data.sessionId}</code></div>
+                            </>)}
                         </>
                     ) : (
                         <div className="inspector-empty">
@@ -1561,6 +1501,7 @@ function Workspace(): React.JSX.Element {
                     )}
                     {completedCount > 0 && <div className="run-summary">{completedCount} étape{completedCount > 1 ? 's' : ''} terminée{completedCount > 1 ? 's' : ''} dans cette exécution.</div>}
                     {([
+                        { key: 'services', label: 'SERVICES — glisser la carte n8n sur le canvas, puis choisir le workflow', query: '', setQuery: (_v: string) => undefined, placeholder: '' },
                         { key: 'cards', label: 'CARTES — glisser sur le canevas pour créer un bloc préconfiguré', query: cardQuery, setQuery: setCardQuery, placeholder: 'Filtrer les cartes…' },
                         { key: 'agents', label: 'AGENTS — glisser sur un bloc pour l\'éditer, sur le canvas pour l\'ajouter', query: agentQuery, setQuery: setAgentQuery, placeholder: 'Filtrer les agents…' },
                         { key: 'roles', label: 'RÔLES — glisser sur un bloc pour l\'éditer, sur le canvas pour créer', query: roleQuery, setQuery: setRoleQuery, placeholder: 'Filtrer les rôles…' },
@@ -1584,6 +1525,20 @@ function Workspace(): React.JSX.Element {
                                         onChange={(event) => palette.setQuery(event.target.value)}
                                     />
                                     <div className="skill-palette-list">
+                                        {palette.key === 'services' && (<>
+                                            <span
+                                                className="skill-chip draggable svc-chip"
+                                                title="Carte service n8n : pose-la, choisis le workflow dans le panneau, relie le port ⛁ outil à un agent ou à l'entrée"
+                                                draggable
+                                                onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-svc', JSON.stringify({ kind: 'n8n' })); event.dataTransfer.effectAllowed = 'copy'; }}
+                                            >⛁ Workflow n8n</span>
+                                            <span
+                                                className="skill-chip draggable svc-chip comfy-chip"
+                                                title="Carte service ComfyUI : pose-la, relie le port ⛁ outil à un agent ou à l'entrée — paramètres avancés à venir"
+                                                draggable
+                                                onDragStart={(event) => { event.dataTransfer.setData('application/x-hph-svc', JSON.stringify({ kind: 'comfyui' })); event.dataTransfer.effectAllowed = 'copy'; }}
+                                            >◆ ComfyUI</span>
+                                        </>)}
                                         {palette.key === 'competences' && (<>
                                             {catalog.skills.length === 0 && <span className="skill-empty">Aucun skill dans .agent/skills</span>}
                                             {catalog.skills.filter((skill) => !palette.query || skill.toLowerCase().includes(palette.query.toLowerCase())).map((skill) => (

@@ -1,0 +1,91 @@
+{
+  "reportType": "diagnostic-repairs",
+  "sourceDiagnosticId": "3f1f8468-ce9b-4eae-a61c-de92c10edc82",
+  "trackingTaskId": 850,
+  "state": "in_progress",
+  "verdict": "partial",
+  "checks": [
+    {
+      "id": "rest-health",
+      "status": "pass",
+      "repair": "Connexion IPC de sonde distincte du client partage des requetes normales ; connexion 250 ms, requete 500 ms, une tentative et borne totale 1 s. Une sonde sans reponse rend degraded, jamais healthy invente.",
+      "tests": { "nativeHealthTestsPassed": 2, "stalledProbeRegression": true },
+      "deployment": { "installedExecutable": "C:/Program Files/servers/hephaistos2-kit/extension/server/hphe-rest.exe", "previousPid": 9320, "newPid": 24332, "restartExplicitlyAuthorized": true },
+      "measurementsDuringIngestionMs": [42, 3, 2, 1, 1],
+      "latestProbe": { "httpStatus": 200, "status": "healthy", "durationMs": 58, "pipeConnected": true, "ingestBusy": false },
+      "limitation": "Correction et test de la sonde de sante ; ne certifie pas la latence de tous les outils REST ni la disparition de tout ralentissement du demon."
+    },
+    {
+      "id": "comms-jsonl-integrity",
+      "status": "pass",
+      "repair": "Ligne historique 2399 convertie en JSON apres autorisation explicite et sauvegarde integrale testee.",
+      "backupFile": "C:/Program Files/Projet-complet/hephaistos2-kit/.agent/reports/comms-before-repair-2399-3f1f8468.7z",
+      "finalComparison": { "unchangedArchivedLines": 2541, "extraLinesSinceBackup": 17, "malformed": 0, "messageAndConversationPreserved": true }
+    },
+    {
+      "id": "ide-ui-interaction",
+      "status": "pass",
+      "method": "Clic PyAutoGUI reel sur Diagnostic-Runtime-Comms et verification visuelle du changement de role et de mission dans inspecteur.",
+      "evidence": ["diagnostic-ui-before.png", "diagnostic-ui-after.png"],
+      "limitation": "Smoke test visuel effectue pendant cette session, pas certification exhaustive ni test automatique a chaque execution n8n."
+    },
+    {
+      "id": "cli-worker-execution",
+      "status": "pass",
+      "repairs": [
+        "Le routeur parcourt model_prefs dans leur ordre declare. Aucun changement des preferences enregistrees ni des modeles de fenetres.",
+        "Les informations de tache incluent workspace dans API canonique.",
+        "Le worker lit et cloture les taches par hphe-mcp ; suppression des acces SQL directs aux taches dans ce worker.",
+        "expected_artifact a priorite sur tout chemin incident du prompt ; un contrat manquant interdit les ecritures ; une tache texte-seul ignore ces chemins.",
+        "Confinement et liens symboliques controles avant ecriture ; fraicheur de l'artefact controlee avec timestamp UTC valide."
+      ],
+      "provider": "nvidia-nim",
+      "account": 1,
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "tasks": [
+        { "id": 849, "state": "failed", "cause": "Ancien choix Super renvoyant HTTP 404" },
+        { "id": 851, "state": "failed", "cause": "Defaut de destination de livrable ayant ecrase comms.js ; incident detaille ci-dessous" },
+        { "id": 852, "state": "completed", "artifact": "C:/Program Files/Projet-complet/hephaistos2-kit/.agent/reports/cli-smoke-850.txt" },
+        { "id": 854, "state": "completed", "artifact": "C:/Program Files/Projet-complet/hephaistos2-kit/.agent/reports/cli-smoke-850-final.txt", "contentVerified": "CLI-REPAIR-850-FINAL-OK" }
+      ],
+      "sourceUnchangedAfterFinalProbes": "git diff --exit-code sur .agent/agent-bridge/comms.js : succes"
+    },
+    {
+      "id": "cloud-and-external-services",
+      "status": "warn",
+      "colabLocalRepair": {
+        "cause": "UnicodeDecodeError dans python-dotenv : commentaire Windows-1252 du .env du workspace lu par webdriver_manager",
+        "encoding": "UTF-8",
+        "valuesPreserved": true,
+        "backupFile": "C:/Program Files/Projet-complet/hephaistos2-kit/.agent/reports/env-before-utf8-c4e3dbd2-6ddc-4bda-b70a-fdfa7de80eab.bak",
+        "importVerified": "COLAB_IMPORT_OK",
+        "checkAuthStatusResponds": true
+      },
+      "colabOAuth": { "status": "blocked", "error": "401 deleted_client", "authenticated": false, "requiredAction": "Restaurer le client OAuth dans le projet Google Cloud proprietaire ou fournir un nouveau client valide. Ni cette restauration ni une nouvelle configuration Google n'ont ete effectuees.", "runtimeExecutionVerified": false },
+      "kaggle": { "authenticatedReadVerified": true, "computeStarted": false },
+      "comfyui": { "defaultLocalEndpoint": "http://localhost:8188", "defaultEndpointResponded": false, "remoteCloudEndpointVerified": false, "computeStarted": false },
+      "limitation": "Acces cloud partiel. Aucun calcul GPU ni generation lance. Colab OAuth et le point ComfyUI distant ne sont pas declares repares."
+    }
+  ],
+  "incident": {
+    "taskId": 851,
+    "file": ".agent/agent-bridge/comms.js",
+    "effect": "Le worker a remplace le fichier par son texte de test avant de detecter que expected_artifact etait absent.",
+    "userNotifiedImmediately": true,
+    "recoverySource": "Index Git, blob fbcdd1ad705fde485b57f2a70a0c08319eb8c7b8 ; pas l'ancienne copie miroir qui ne contenait pas la persistance des paires.",
+    "recoveryVerification": "Fichier identique a l'index Git ; tests du binome reussis ; aucune nouvelle modification de ce fichier lors des sondes corrigees 852 et 854.",
+    "limitation": "Aucune affirmation d'absence de perte de messages pendant l'indisponibilite temporaire du script. Le journal JSONL final reste integralement parseable."
+  },
+  "verification": { "javascriptTestsPassed": 32, "nativeKitTestsPassed": 11, "nativeRestTestsPassed": 2, "releaseBuildSucceeded": true, "backupArchivesIgnoredByGit": true, "envBackupIgnoredByGit": true, "gitDiffCheckPassed": true },
+  "deployment": {
+    "nativeExecutablesInstalled": true,
+    "nativePreviousVersionsPreserved": ["hphe-mcp.previous-850.exe", "hphe-mcp.previous-850b.exe", "hphe-rest.previous-850.exe"],
+    "backupArchive": "C:/Program Files/Projet-complet/hephaistos2-kit/.agent/reports/native-before-repair-850.7z",
+    "workerScriptsUsedFromWorkspace": true,
+    "extensionSourcesChanged": false,
+    "vsixRequired": false,
+    "persistentMcpClientsRestarted": false,
+    "limitation": "Les preuves CLI utilisent de nouvelles instances de l'executable canonique installe. Les clients MCP stdio deja ouverts avant son remplacement conservent leur code tant qu'ils ne sont pas recharges."
+  },
+  "remaining": ["Restaurer ou remplacer le client OAuth Google supprime avec acces au projet proprietaire.", "Recharger les clients MCP persistants anterieurs au deploiement.", "Verifier le vrai point ComfyUI distant avant de declarer ce service cloud operationnel."]
+}

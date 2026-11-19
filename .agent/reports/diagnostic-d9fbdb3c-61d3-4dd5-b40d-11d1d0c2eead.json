@@ -1,0 +1,161 @@
+{
+  "diagnosticId": "d9fbdb3c-61d3-4dd5-b40d-11d1d0c2eead",
+  "collectedAt": "2026-11-15T19:22:34.263Z",
+  "activeSchemaId": "schema-swat-n8n",
+  "activeSchemaName": "swat-n8n",
+  "checks": [
+    {
+      "id": "roster-json",
+      "status": "pass",
+      "evidence": {
+        "activeSchemaId": "schema-swat-n8n",
+        "entrySessionId": "acp/devin-cli/ionian-helicopter",
+        "nodeCount": 4,
+        "edgeCount": 3
+      },
+      "durationMs": 1
+    },
+    {
+      "id": "chat-session-bindings",
+      "status": "pass",
+      "evidence": [
+        {
+          "sessionId": "chat-n8narchi",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-n8nops",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        },
+        {
+          "sessionId": "chat-n8nverif",
+          "present": true,
+          "hidden": false,
+          "providerMatches": true,
+          "modelMatches": true
+        }
+      ],
+      "limitation": "Presence et coherence disque uniquement ; pas une preuve de fenetre ouverte.",
+      "durationMs": 0
+    },
+    {
+      "id": "architecture-canonical-reference",
+      "status": "pass",
+      "evidence": {
+        "file": ".agent/ARCHITECTURE.md",
+        "sha256": "6ff4a732164a8b43bbcc6b3cfee6fd76b33b196a5a3df584b23fd09df32d4394"
+      },
+      "limitation": "Reference canonique presente ; pas une validation exhaustive de architecture.",
+      "durationMs": 1
+    },
+    {
+      "id": "n8n-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "ok"
+      },
+      "durationMs": 6
+    },
+    {
+      "id": "rest-health",
+      "status": "pass",
+      "evidence": {
+        "httpStatus": 200,
+        "status": "healthy",
+        "pipeConnected": true,
+        "ingestBusy": false
+      },
+      "durationMs": 3
+    },
+    {
+      "id": "bridge-websocket",
+      "status": "pass",
+      "evidence": {
+        "connected": true
+      },
+      "limitation": "Connexion du bridge ; pas un ACK de livraison agent."
+    },
+    {
+      "id": "native-acp-enumeration",
+      "status": "pass",
+      "evidence": {
+        "sessionCount": 152
+      },
+      "limitation": "Enumeration ACP native seulement : ne pas traiter les fenetres chat-* comme des ACP natifs manquants.",
+      "durationMs": 3598
+    },
+    {
+      "id": "canonical-mcp-health",
+      "status": "pass",
+      "evidence": {
+        "status": "healthy",
+        "pipeConnected": true
+      },
+      "limitation": "Sonde du serveur canonique, pas de tous ses outils.",
+      "durationMs": 51
+    },
+    {
+      "id": "orchestrator-task-state",
+      "status": "pass",
+      "evidence": {
+        "readable": true,
+        "taskCount": 131,
+        "states": {
+          "completed": 66,
+          "failed": 41,
+          "pending": 10,
+          "cancelled": 4,
+          "done": 10
+        }
+      },
+      "limitation": "Lecture seule : ne teste pas le spawn des workers CLI ni ne reconcilie les taches.",
+      "durationMs": 42
+    },
+    {
+      "id": "comms-jsonl-integrity",
+      "status": "fail",
+      "evidence": {
+        "entries": 2500,
+        "malformed": 1
+      },
+      "limitation": "Integrite du journal uniquement ; aucun contenu de message expose.",
+      "durationMs": 5
+    },
+    {
+      "id": "installed-extensions",
+      "status": "fail",
+      "evidence": "Command failed: C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\Administrator\\AppData\\Local\\Programs\\Devin\\bin\\devin-desktop.cmd\" --list-extensions --show-versions\"\n'\\\"\\\"C:\\Users\\Administrator\\AppData\\Local\\Programs\\Devin\\bin\\devin-desktop.cmd\\\" --list-extensions --show-versions\\\"' n'est pas reconnu en tant que commande interne\r\nou externe, un programme ex�cutable ou un fichier de commandes.\r\n",
+      "durationMs": 29
+    },
+    {
+      "id": "ide-ui-interaction",
+      "status": "not_tested",
+      "evidence": "Aucun clic utilisateur, association de carte ou affichage de panneau teste par cette sonde."
+    },
+    {
+      "id": "cli-worker-execution",
+      "status": "not_tested",
+      "evidence": "Aucun worker CLI lance : pas de consommation ni de modification pour simuler un test."
+    },
+    {
+      "id": "cloud-and-external-services",
+      "status": "not_tested",
+      "evidence": "Kaggle, Colab, ComfyUI et autres integrations externes non testes."
+    }
+  ],
+  "counts": {
+    "pass": 9,
+    "fail": 2,
+    "warn": 0,
+    "not_tested": 3
+  },
+  "verdict": "degraded",
+  "repairsPerformed": false
+}

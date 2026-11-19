@@ -5,7 +5,44 @@ const path = require('node:path');
 const { afterEach, test } = require('node:test');
 
 const roster = require('../../../.agent/agent-bridge/workspace-roster.js');
-const { buildWorkflowPrompt, preferredEntrySession, workflowOrder } = require('../out/workflow.js');
+const { buildWorkflowPrompt, preferredEntrySession, workflowOrder, focusedIdeSessionId, ideSessionChoices } = require('../out/workflow.js');
+
+test('IDE binding preserves the full Antigravity session identity', () => {
+    const sessionId = 'acp/antigravity-acp/exact-session';
+    assert.equal(focusedIdeSessionId('antigravity-acp', [
+        { providerId: 'antigravity-acp', sessionId, focused: true },
+    ]), sessionId);
+});
+
+test('IDE binding normalizes raw identities without selecting another conversation', () => {
+    assert.equal(focusedIdeSessionId('antigravity-acp', [
+        { providerId: 'antigravity-acp', sessionId: 'inactive', focused: false },
+        { providerId: 'antigravity-acp', sessionId: 'active', focused: true },
+    ]), 'acp/antigravity-acp/active');
+    assert.equal(focusedIdeSessionId('antigravity-acp', [
+        { providerId: 'antigravity-acp', sessionId: 'inactive', focused: false },
+    ]), '');
+    assert.equal(focusedIdeSessionId('antigravity-acp', [
+        { providerId: 'devin-cli', sessionId: 'acp/devin-cli/other', focused: true },
+    ]), '');
+    assert.equal(focusedIdeSessionId('antigravity-acp', [
+        { providerId: 'antigravity-acp', sessionId: 'acp/devin-cli/other', focused: true },
+    ]), '');
+});
+
+test('IDE binding exposes normalized choices when no session is marked focused', () => {
+    assert.deepEqual(
+        ideSessionChoices('antigravity-acp', [
+            { providerId: 'antigravity-acp', sessionId: 'acp/antigravity-acp/exact-session', title: 'Cascade exacte' },
+            { providerId: 'antigravity-acp', sessionId: 'raw-session', focused: true },
+            { providerId: 'antigravity-acp', sessionId: 'acp/devin-cli/wrong-provider' },
+        ]),
+        [
+            { providerId: 'antigravity-acp', sessionId: 'acp/antigravity-acp/raw-session', focused: true },
+            { providerId: 'antigravity-acp', sessionId: 'acp/antigravity-acp/exact-session', title: 'Cascade exacte' },
+        ],
+    );
+});
 
 const temporaryRoots = [];
 const schemaTempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hephaistos-schemas-'));
@@ -165,13 +202,16 @@ test('a chat agent is added to the roster and workflow once', () => {
     assert.equal(data.workflow.nodes[0].role, 'Devin');
 });
 
-test('workflow roster rejects cycles and removes links with a member', () => {
+test('workflow roster persists cycles and removes links with a member', () => {
     const root = makeRosterRoot();
     roster.upsertChatAgent(root, { sessionId: 'chat-one', model: 'model-a', role: 'Devin' });
     roster.upsertChatAgent(root, { sessionId: 'chat-two', model: 'model-b', role: 'Reviewer' });
     roster.connectWorkflowAgents(root, 'chat-one', 'chat-two');
 
-    assert.throws(() => roster.connectWorkflowAgents(root, 'chat-two', 'chat-one'), /cyclique/);
+    // Boucle autorisée au stockage : le lancement auto (workflowOrder) la
+    // refusera toujours, mais le graphe de l'utilisateur persiste.
+    const cyclic = roster.connectWorkflowAgents(root, 'chat-two', 'chat-one');
+    assert.equal(cyclic.edges.length, 2);
 
     const data = roster.removeChatAgent(root, 'chat-two');
     assert.equal(data.nodes.length, 1);
