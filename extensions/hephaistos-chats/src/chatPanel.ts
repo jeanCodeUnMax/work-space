@@ -1,4 +1,5 @@
 import { execFileSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -6,7 +7,7 @@ import { acpDispose } from './acpClient';
 import { chatHtml } from './chatHtml';
 import { completeTurn, loadProviderFlags, logRuntime, pingModels } from './runtime';
 import { SessionStore } from './sessionStore';
-import { AcpProvider, ChatMode, ChatSession, DEFAULT_ICON_THEME, iconThemeFiles, ListedModel, normalizeIconTheme, sessionTitle } from './types';
+import { AcpProvider, ChatDiscussion, ChatMode, ChatSession, DEFAULT_ICON_THEME, ensureDiscussionId, iconThemeFiles, ListedModel, normalizeIconTheme, sessionTitle } from './types';
 
 interface ReadyState {
     type: 'state';
@@ -15,7 +16,17 @@ interface ReadyState {
     models: ListedModel[];
     status: string;
     isGenerating: boolean;
-    allSessions: { id: string; title: string; model: string; provider: string; updatedAt: string }[];
+    allSessions: {
+        id: string;
+        codename?: string;
+        title: string;
+        model: string;
+        provider: string;
+        discussionId?: string;
+        acpSessionId?: string;
+        messageCount: number;
+        updatedAt: string;
+    }[];
 }
 
 export class ChatPanel {
@@ -26,6 +37,7 @@ export class ChatPanel {
     private models: ListedModel[] = [];
     private status = '';
     private isGenerating = false;
+    private disposed = false;
     private currentAbortController: AbortController | null = null;
 
     private constructor(
@@ -81,13 +93,14 @@ export class ChatPanel {
     /** Pré-remplit la saisie d'une fenêtre chat ouverte (puce de pointage ⌖). */
     static prefill(sessionId: string, text: string): void {
         const chat = ChatPanel.openById.get(sessionId);
-        if (chat) void chat.panel.webview.postMessage({ type: 'prefill', text });
+        if (chat && !chat.disposed) void chat.panel.webview.postMessage({ type: 'prefill', text });
     }
 
     /** Rebascule les URI d'icônes des chats ouverts sans recharger le HTML. */
     static refreshIcons(context: vscode.ExtensionContext): void {
         const theme = ChatPanel.iconTheme(context);
         for (const chat of ChatPanel.openById.values()) {
+            if (chat.disposed) continue;
             // Thème non peuplé → commando ; la liste des fichiers suit l'URI car
             // chaque thème nomme ses PNG différemment (pX-cYY vs icon-NN).
             let dir = theme;
@@ -201,8 +214,29 @@ export class ChatPanel {
             this.push();
             return;
         }
-        if (message.type === 'clear') {
+        if (message.type === 'clear' || message.type === 'new_discussion') {
+            this.archiveCurrentDiscussion();
+            this.session.discussionId = `disc-${randomUUID().slice(0, 8)}`;
             this.session.messages = [];
+            this.session.acpSessionId = undefined;
+            this.store.save(this.session);
+            this.onChange();
+            this.push();
+            return;
+        }
+        if (message.type === 'switch_discussion' && message.id) {
+            ensureDiscussionId(this.session);
+            if (message.id === this.session.discussionId) return;
+            const list = this.session.discussions || [];
+            const target = list.find((d) => d.id === message.id);
+            if (!target) return;
+            this.archiveCurrentDiscussion();
+            this.session.discussions = (this.session.discussions || []).filter((d) => d.id !== target.id);
+            this.session.discussionId = target.id;
+            this.session.messages = [...(target.messages || [])];
+            this.session.acpSessionId = target.acpSessionId;
+            if (target.provider) this.session.provider = target.provider;
+            if (target.model) this.session.model = target.model;
             this.store.save(this.session);
             this.onChange();
             this.push();
@@ -374,18 +408,44 @@ export class ChatPanel {
         }
     }
 
+    private archiveCurrentDiscussion(): void {
+        ensureDiscussionId(this.session);
+        if (!this.session.messages.length) return;
+        const discId = this.session.discussionId!;
+        const firstUser = this.session.messages.find((m) => m.role === 'user');
+        const autoTitle = firstUser
+            ? firstUser.text.trim().replace(/\s+/g, ' ').slice(0, 48)
+            : sessionTitle(this.session);
+        const entry: ChatDiscussion = {
+            id: discId,
+            title: autoTitle || `Discussion ${discId.slice(-6)}`,
+            provider: this.session.provider,
+            model: this.session.model,
+            acpSessionId: this.session.acpSessionId,
+            updatedAt: this.session.updatedAt || new Date().toISOString(),
+            messages: [...this.session.messages],
+        };
+        const rest = (this.session.discussions || []).filter((d) => d.id !== discId);
+        this.session.discussions = [entry, ...rest].slice(0, 50);
+    }
+
     private push(): void {
-        // Historique : uniquement les sessions du MÊME provider et du MÊME workspace
-        // que la fenêtre courante. Les sessions legacy sans workspace sont rattachées
-        // au workspace courant (le fichier sessions.json est déjà par-projet).
+        if (this.disposed) return;
+        ensureDiscussionId(this.session);
         const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const normWs = (p?: string): string => (p ? path.resolve(p).toLowerCase() : '');
+        const targetWs = normWs(ws);
         const allSessions = this.store.list()
-            .filter((s) => s.provider === this.session.provider && (s.workspace || ws) === ws)
+            .filter((s) => !s.workspace || !targetWs || normWs(s.workspace) === targetWs)
             .map((s) => ({
                 id: s.id,
+                codename: s.codename,
                 title: sessionTitle(s),
                 model: s.model,
                 provider: s.provider,
+                discussionId: s.discussionId,
+                acpSessionId: s.acpSessionId,
+                messageCount: s.messages?.length || 0,
                 updatedAt: s.updatedAt,
             }));
         const payload: ReadyState = {
@@ -411,6 +471,7 @@ export class ChatPanel {
     }
 
     private dispose(): void {
+        this.disposed = true;
         if (this.currentAbortController) {
             this.currentAbortController.abort();
             this.currentAbortController = null;

@@ -1,0 +1,4 @@
+{
+  "harness": "n8n",
+  "args": ["config", "test"]
+}

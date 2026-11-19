@@ -1,0 +1,254 @@
+{
+  "name": "swat-diagnostic-infra",
+  "desc": "Staff de diagnostic complet de l'architecture Hephaistos2-Kit : 6 sondes parallèles (MCP core, orchestrateur, roster/chats, bus comms, mémoire/recherche, n8n) puis synthèse Sentinelles, rapport Vault et capitalisation Beacon. À utiliser pour évaluer le bon fonctionnement de hephaistos-chats, de l'orchestrateur hphe-mcp, du roster et de l'infra dans son ensemble.",
+  "graph": {
+    "version": 1,
+    "name": "swat-diagnostic-infra",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Orchestrateur-Diag",
+        "task": "Cadrage diagnostic — équivalent du Schedule 5min + Webhook hphe-diag : lance les 6 sondes en parallèle via dispatch_task par rôle. Référence : node .agent/scripts/hphe-diag.mjs (probes canoniques) + workflow n8n hphe-architecture-healthcheck (OBommGsrTbJ19hQp).",
+        "skills": [
+          "orchestrator",
+          "hephaistos2-kit"
+        ],
+        "mcps": [],
+        "title": "ionian-helicopter",
+        "position": {
+          "x": -176,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Sonde-MCP-Core",
+        "task": "Sonde canal MCP & index — mêmes appels que n8n Probe Index : everything_index_stats via mux :5682/tools/call + hphe_health. Vérifie processus hphe-mcp/hphe-indexd. Verdict {ok, latence, detail} JSON.",
+        "skills": [
+          "hephaistos2-kit",
+          "observability-engineer"
+        ],
+        "mcps": [],
+        "title": "Sonde-MCP-Core",
+        "position": {
+          "x": 132,
+          "y": -484
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Sonde-Orchestrateur",
+        "task": "Sonde orchestrateur — mêmes appels que n8n Probe Agents + Probe Tasks : list_agents, list_tasks par état via mux :5682/tools/call, cycle témoin create_task→update_task, reconcile_tasks/reap_ghosts. Verdict {ok, agents, tasks, detail} JSON.",
+        "skills": [
+          "orchestrator",
+          "incident-responder"
+        ],
+        "mcps": [],
+        "title": "Sonde-Orchestrateur",
+        "position": {
+          "x": 132,
+          "y": -22
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sonde-Roster-Chats",
+        "task": "Sonde roster & sessions — mêmes appels que n8n Probe Sessions + Probe Roster : everything_search sessions.json + workspace-roster.json via mux :5682/tools/call, présence/fraîcheur des stores, roster verify. Verdict {ok, sessions, roster, detail} JSON.",
+        "skills": [
+          "hephaistos2-kit",
+          "devops-troubleshooter"
+        ],
+        "mcps": [],
+        "title": "Sonde-Roster-Chats",
+        "position": {
+          "x": 132,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Sonde-Bus-Flux",
+        "task": "Sonde bus, bridge & flux — même appel que n8n Probe Bridge : GET :7478/health (bearer ws-bridge.token) + smoke /ask. TCP :7477, comms.jsonl (dernier ts, task-notify/WAKE), tunnel ws. Verdict {ok, bridge, hub, comms, detail} JSON.",
+        "skills": [
+          "logs-analyst",
+          "incident-responder"
+        ],
+        "mcps": [],
+        "title": "Sonde-Bus-Flux",
+        "position": {
+          "x": 132,
+          "y": 44
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Sonde-Memoire-Recherche",
+        "task": "Sonde mémoire & recherche — mêmes appels que n8n Probe Memory + Probe Vec + Probe Content : memory_stats, vec_stats, content_search hphe via mux :5682/tools/call, memory_search smoke, fallback sqlite-node. Verdict {ok, memory, vec, content, detail} JSON.",
+        "skills": [
+          "agent-memory-systems",
+          "search-specialist"
+        ],
+        "mcps": [],
+        "title": "Sonde-Memoire-Recherche",
+        "position": {
+          "x": 132,
+          "y": -352
+        }
+      },
+      {
+        "sessionId": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "role": "Sonde-n8n-Gateways",
+        "task": "Sonde n8n & gateways — mêmes appels que n8n Probe n8n + Probe REST : GET :5678/healthz, GET :8792/health, état workflow hphe-architecture-healthcheck via cli-anything-n8n, omniroute :20128, ollama :11434. Verdict {ok, n8n, rest, gateways, detail} JSON.",
+        "skills": [
+          "cli-anything-n8n",
+          "n8n-workflow-patterns"
+        ],
+        "mcps": [],
+        "title": "Sonde-n8n-Gateways",
+        "position": {
+          "x": 132,
+          "y": -88
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle-Verdict",
+        "task": "Synthèse — mêmes fonctions que n8n Aggregate + Verdict + Read Prev/Store Latest : consolide les 6 sondes en verdict par composant (ok/degraded/down), compare au verdict précédent (memory_read diag/latest), alerte par create_task sur transition vers degraded/down — comme le nœud Alert? du workflow.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner"
+        ],
+        "mcps": [],
+        "title": "Sentinelle-Verdict",
+        "position": {
+          "x": 660,
+          "y": -220
+        }
+      },
+      {
+        "sessionId": "chat-mvflr6cn",
+        "role": "Documentaliste-Vault",
+        "task": "Rapport de diagnostic : fiche horodatée dans Rapport de dysfonctionnement et correction/ + note Obsidian 03_Sessions/ (verdicts, preuves, plan de correction).",
+        "skills": [
+          "obsidian",
+          "vault-ingest",
+          "docs-architect"
+        ],
+        "mcps": [],
+        "title": "Doc-Vault",
+        "position": {
+          "x": 1144,
+          "y": -352
+        }
+      },
+      {
+        "sessionId": "chat-mvp0beacon",
+        "role": "Feedback-Beacon-Knowledge",
+        "task": "Capitalisation — même fonction que n8n Store Latest : memory_write diag/latest (dernier verdict), ligne comms.jsonl diag-report, knowledge/decisions/ pour les dysfonctionnements retenus.",
+        "skills": [
+          "vault-ingest",
+          "agent-memory-mcp"
+        ],
+        "mcps": [],
+        "title": "Beacon-Knowledge",
+        "position": {
+          "x": 1144,
+          "y": -88
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "role": "Integrateur-Git",
+        "task": "Versionnement : commit des artefacts diagnostic (.agent/diagnostics/, schéma, workflow n8n) et double push sur origin et personal.",
+        "skills": [
+          "lint-and-validate",
+          "git-pushing"
+        ],
+        "mcps": [],
+        "title": "sugary-shoemaker",
+        "position": {
+          "x": 1144,
+          "y": -220
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:diag-orch->mcp",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:diag-orch->orch",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:diag-orch->roster",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:diag-orch->bus",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:diag-orch->memo",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:diag-orch->n8n",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3"
+      },
+      {
+        "id": "edge:diag-mcp->synthese",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-orch2->synthese",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-roster->synthese",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-bus->synthese",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-memo->synthese",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-n8n->synthese",
+        "source": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:diag-synthese->doc",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvflr6cn"
+      },
+      {
+        "id": "edge:diag-synthese->beacon",
+        "source": "chat-mvfqytbz",
+        "target": "chat-mvp0beacon"
+      },
+      {
+        "id": "edge:diag-synthese->git",
+        "source": "chat-mvfqytbz",
+        "target": "acp/devin-cli/sugary-shoemaker"
+      }
+    ]
+  }
+}

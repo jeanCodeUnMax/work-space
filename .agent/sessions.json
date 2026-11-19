@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "workspace": "hephaistos2-kit",
+  "updatedAt": "2026-11-16T19:49:00.000Z",
+  "sessions": [
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/trusted-robin",
+      "restore": "existing-only",
+      "role": "Devin",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/sugary-shoemaker",
+      "restore": "existing-only",
+      "role": "Integrateur-Git",
+      "hidden": true,
+      "title": "sugary-shoemaker"
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/ionian-helicopter",
+      "restore": "existing-only",
+      "role": "Orchestrateur",
+      "hidden": true,
+      "title": "ionian-helicopter"
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/speckled-enthusiasm",
+      "restore": "existing-only",
+      "role": "Devin",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/bloom-settee",
+      "restore": "existing-only",
+      "role": "Binome-ACP",
+      "hidden": true,
+      "title": "bloom-settee"
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/spectacled-dust",
+      "restore": "existing-only",
+      "role": "Devin",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/plain-bite",
+      "restore": "existing-only",
+      "role": "Devin",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/comfy-inventory",
+      "restore": "open-or-reveal",
+      "role": "Comfy-Inventaire",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/comfy-verify",
+      "restore": "open-or-reveal",
+      "role": "Comfy-Verificateur",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/faint-freon",
+      "restore": "existing-only",
+      "role": "Comfy-Inventaire",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/locrian-blender",
+      "restore": "existing-only",
+      "role": "Comfy-Verificateur",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/river-bougon",
+      "restore": "existing-only",
+      "role": "Comfy-Inventaire",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/axiomatic-path",
+      "restore": "existing-only",
+      "role": "Comfy-Verificateur",
+      "hidden": true
+    },
+    {
+      "providerId": "antigravity-acp",
+      "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+      "restore": "existing-only",
+      "role": "Antigravity",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/pebble-rhubarb",
+      "restore": "existing-only",
+      "role": "Relecteur-Modo",
+      "hidden": true,
+      "title": "Relecteur-Modo"
+    },
+    {
+      "providerId": "antigravity-acp",
+      "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+      "restore": "existing-only",
+      "role": "Redacteur",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/humdrum-cadet",
+      "restore": "existing-only",
+      "role": "Relecteur",
+      "hidden": true
+    },
+    {
+      "providerId": "nim",
+      "sessionId": "acp/nim/nim-7b9b96fd",
+      "restore": "existing-only",
+      "role": "Veilleur-Telegram",
+      "hidden": true
+    },
+    {
+      "providerId": "nim",
+      "sessionId": "acp/nim/nim-22c94649",
+      "restore": "existing-only",
+      "role": "Posteur-Telegram",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/booming-game",
+      "restore": "existing-only",
+      "role": "Integrateur-Git",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/slow-walnut",
+      "restore": "existing-only",
+      "role": "Redacteur",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/spiral-wanderer",
+      "restore": "existing-only",
+      "role": "Devin",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/better-iberis",
+      "restore": "existing-only",
+      "role": "Chairman-Concil",
+      "hidden": true
+    },
+    {
+      "providerId": "devin-cli",
+      "sessionId": "acp/devin-cli/polite-chips",
+      "restore": "existing-only",
+      "role": "Orchestrateur",
+      "hidden": true
+    },
+    {
+      "providerId": "antigravity-acp",
+      "sessionId": "acp/antigravity-acp/722b64c9-72d1-41fc-bf34-c7144f68b9a7",
+      "restore": "existing-only",
+      "role": "Architecte",
+      "hidden": true
+    },
+    {
+      "providerId": "cerberos",
+      "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
+      "restore": "existing-only",
+      "hidden": true
+    },
+    {
+      "providerId": "omniroute",
+      "sessionId": "chat-mvmw59wa",
+      "restore": "open-or-reveal",
+      "role": "Codeur",
+      "hidden": false,
+      "model": "groq/openai/gpt-oss-120b",
+      "title": "Sonde-MCP-Core"
+    },
+    {
+      "providerId": "omniroute",
+      "sessionId": "chat-mvmw5chd",
+      "restore": "open-or-reveal",
+      "role": "Outsider",
+      "hidden": false,
+      "model": "groq/openai/gpt-oss-20b",
+      "title": "Sonde-Memoire-Recherche"
+    },
+    {
+      "providerId": "nim",
+      "sessionId": "chat-mvmtldvy",
+      "restore": "open-or-reveal",
+      "role": "Auditeur-securite",
+      "hidden": false,
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "title": "Sonde-Orchestrateur"
+    },
+    {
+      "providerId": "omniroute",
+      "sessionId": "chat-mvfqytbz",
+      "restore": "open-or-reveal",
+      "role": "Sentinelle",
+      "hidden": false,
+      "model": "groq/openai/gpt-oss-20b",
+      "title": "Sentinelle-Verdict"
+    },
+    {
+      "providerId": "nim",
+      "sessionId": "chat-mvfj773t",
+      "restore": "open-or-reveal",
+      "role": "Verif-Submodules",
+      "hidden": true,
+      "model": "nvidia/nemotron-3.5-bolt-e4b",
+      "title": "xenial-agent"
+    },
+    {
+      "providerId": "omniroute",
+      "sessionId": "chat-mvflr6cn",
+      "restore": "open-or-reveal",
+      "role": "Documentaliste-Vault",
+      "hidden": true,
+      "model": "groq/openai/gpt-oss-20b",
+      "title": "Doc-Vault"
+    },
+    {
+      "providerId": "nim2",
+      "sessionId": "chat-mvfj8b4m",
+      "restore": "open-or-reveal",
+      "role": "Testeur",
+      "hidden": false,
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "title": "Sonde-Bus-Flux"
+    }
+  ]
+}

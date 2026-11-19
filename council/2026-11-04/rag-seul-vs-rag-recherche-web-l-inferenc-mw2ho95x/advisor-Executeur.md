@@ -1,0 +1,5 @@
+Stance: Le RAG seul produit une qualité d'inference supérieure, plus stable et moins sujette aux hallucinations que le RAG enrichi par la recherche web.
+A) Ancrage documentationnel : le RAG seul garantit que la réponse provient exclusivement des données d'entraînement certifiées, sans injection de bruit externe.
+B) Confiance & traçabilité : chaque extrait peut être tracé jusqu'à sa source documentée, facilitant la vérification par l'utilisateur.
+C) Stabilité de la qualité : suppression du facteur "pollution web" qui fait diverger la pertinence selon la requête.
+Assertion falsifiable : Si on exécute 100 requêtes identiques avec RAG seul et RAG+web sur des sujets techniques, le taux de "reponse jugée incorrecte ou hors-sujet" sera statistiquement supérieur de ≥15% pour le RAG+web (testé via évaluation humaine blindée).

@@ -37,7 +37,13 @@ export function chatHtml(webview: vscode.Webview, extensionUri: vscode.Uri, nonc
     <span class="chevron">▾</span>
   </button>
   <div id="historyMenu" class="dropdown-menu history-dropdown" hidden>
-    <div class="history-dropdown-header">Historique des sessions</div>
+    <div class="history-dropdown-header">
+      <span>Historique (session &amp; discussion)</span>
+      <button type="button" id="newDiscussionBtn" class="history-new-btn" title="Démarrer une nouvelle discussion dans cet agent">+ Nouvelle</button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="historySearch" placeholder="Filtrer par sessionId, discussionId ou titre..." autocomplete="off">
+    </div>
     <div id="historyList" class="history-scroll-list"></div>
   </div>
 </header>

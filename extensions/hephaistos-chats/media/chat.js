@@ -11,6 +11,8 @@
     }
     const historyMenu = document.getElementById('historyMenu');
     const historyList = document.getElementById('historyList');
+    const historySearch = document.getElementById('historySearch');
+    const newDiscussionBtn = document.getElementById('newDiscussionBtn');
 
     const draft = document.getElementById('draft');
     const sendBtn = document.getElementById('send');
@@ -330,35 +332,93 @@
         renderHistoryList();
     }
 
-    function renderHistoryList() {
+    function renderHistoryList(filter = '') {
         historyList.replaceChildren();
-        const sessions = state.allSessions || [];
-        if (!sessions.length) {
+        const search = (filter || (historySearch ? historySearch.value : '') || '').toLowerCase().trim();
+        const cur = state.session;
+        const fmtTime = (iso) => iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+
+        if (cur) {
+            const activeDiscId = cur.discussionId || cur.acpSessionId || 'active';
+            const firstUser = (cur.messages || []).find((m) => m.role === 'user');
+            const activeTitle = firstUser ? firstUser.text.trim().replace(/\s+/g, ' ').slice(0, 48) : (cur.title || 'Discussion active');
+            const discussions = [
+                {
+                    id: activeDiscId,
+                    title: activeTitle,
+                    provider: cur.provider,
+                    model: cur.model,
+                    acpSessionId: cur.acpSessionId,
+                    updatedAt: cur.updatedAt,
+                    messages: cur.messages || [],
+                    active: true,
+                },
+                ...((cur.discussions || []).map((d) => ({ ...d, active: false }))),
+            ].filter((d) => !search || `${d.id} ${d.acpSessionId || ''} ${d.title || ''} ${d.provider} ${d.model} ${cur.id}`.toLowerCase().includes(search));
+
+            if (discussions.length) {
+                const hdr = document.createElement('div');
+                hdr.className = 'history-section-label';
+                hdr.textContent = `Cet agent (${cur.codename || cur.id.slice(-8)}) · ${cur.id.slice(-8)}`;
+                historyList.appendChild(hdr);
+
+                discussions.forEach((d) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = `history-item ${d.active ? 'active' : ''}`;
+                    const msgCount = (d.messages || []).length;
+                    const acpTag = d.acpSessionId ? ` · acp:${d.acpSessionId.slice(-6)}` : '';
+                    btn.innerHTML = `
+                        <span class="history-item-title">${escapeHtml(d.title || d.id)}</span>
+                        <span class="history-item-meta">disc:${escapeHtml(d.id)}${escapeHtml(acpTag)} · ${msgCount} msg · ${fmtTime(d.updatedAt)}</span>
+                    `;
+                    btn.onclick = () => {
+                        closeMenus();
+                        if (!d.active) {
+                            vscode.postMessage({ type: 'switch_discussion', id: d.id });
+                        }
+                    };
+                    historyList.appendChild(btn);
+                });
+            }
+        }
+
+        const sessions = (state.allSessions || []).filter((s) =>
+            !search || `${s.id} ${s.codename || ''} ${s.discussionId || ''} ${s.acpSessionId || ''} ${s.title || ''} ${s.provider} ${s.model}`.toLowerCase().includes(search));
+
+        if (sessions.length) {
+            const hdr = document.createElement('div');
+            hdr.className = 'history-section-label';
+            hdr.textContent = `Sessions du workspace (${sessions.length})`;
+            historyList.appendChild(hdr);
+
+            sessions.forEach((s) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `history-item ${s.id === cur?.id ? 'active' : ''}`;
+                const discTag = s.discussionId ? ` · disc:${s.discussionId}` : '';
+                const msgTag = typeof s.messageCount === 'number' ? ` · ${s.messageCount} msg` : '';
+                btn.innerHTML = `
+                    <span class="history-item-title">${escapeHtml(s.codename || s.title || s.model)} <span style="opacity:.6">(${escapeHtml(s.id.slice(-8))})</span></span>
+                    <span class="history-item-meta">${escapeHtml(s.provider)}${escapeHtml(discTag)}${escapeHtml(msgTag)} · ${fmtTime(s.updatedAt)}</span>
+                `;
+                btn.onclick = () => {
+                    closeMenus();
+                    if (s.id !== cur?.id) {
+                        vscode.postMessage({ type: 'switch_session', id: s.id });
+                    }
+                };
+                historyList.appendChild(btn);
+            });
+        }
+
+        if (!historyList.children.length) {
             const empty = document.createElement('div');
             empty.className = 'history-item-meta';
             empty.style.padding = '8px';
-            empty.textContent = 'Aucune autre conversation.';
+            empty.textContent = 'Aucune conversation correspondante.';
             historyList.appendChild(empty);
-            return;
         }
-
-        sessions.forEach((s) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = `history-item ${s.id === state.session?.id ? 'active' : ''}`;
-            const timeStr = s.updatedAt ? new Date(s.updatedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-            btn.innerHTML = `
-                <span class="history-item-title">${escapeHtml(s.title || s.model)}</span>
-                <span class="history-item-meta">${escapeHtml(s.provider)} · ${timeStr}</span>
-            `;
-            btn.onclick = () => {
-                closeMenus();
-                if (s.id !== state.session?.id) {
-                    vscode.postMessage({ type: 'switch_session', id: s.id });
-                }
-            };
-            historyList.appendChild(btn);
-        });
     }
 
     function renderFilteredModels(filter) {
@@ -574,9 +634,25 @@
         closeMenus();
         if (!isOpen) {
             historyMenu.hidden = false;
-            renderHistoryList();
+            if (historySearch) {
+                historySearch.value = '';
+                historySearch.focus();
+            }
+            renderHistoryList('');
         }
     };
+
+    if (historySearch) {
+        historySearch.oninput = (e) => renderHistoryList(e.target.value);
+    }
+
+    if (newDiscussionBtn) {
+        newDiscussionBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeMenus();
+            vscode.postMessage({ type: 'new_discussion' });
+        };
+    }
 
     modeBtn.onclick = (e) => {
         e.stopPropagation();

@@ -160,7 +160,7 @@ function proxyScript(workspaceRoot: string, name: string): string {
 
 /**
  * Auto-launch des services embarqués quand l'onglet est ouvert/rechargé :
- * comfyui → :8188, n8n → :5678 + proxy :5680, mail-api :5681.
+ * comfyui → :8000, n8n → :5678 + proxy :5680, mail-api :5681.
  * Jamais de doublon : on ne spawn que si ni le port ni le processus ne répondent.
  */
 async function ensureServiceOnce(workspaceRoot: string, svc: string): Promise<boolean> {
@@ -245,7 +245,7 @@ async function killPort(port: number): Promise<void> {
 }
 
 async function restartService(workspaceRoot: string, svc: string): Promise<boolean> {
-    if (svc === 'comfyui') await killPort(8188);
+    if (svc === 'comfyui') await killPort(8000);
     if (svc === 'n8n') { await killPort(5678); await killPort(5680); }
     return ensureService(workspaceRoot, svc);
 }
@@ -1015,6 +1015,17 @@ export function activate(context: vscode.ExtensionContext): void {
         }
     }
 
+function findFreeNodePosition(existingNodes: { position?: { x: number; y: number } }[]): { x: number; y: number } {
+    for (let slot = 0; slot < 200; slot++) {
+        const x = 100 + (slot % 4) * 300;
+        const y = 100 + Math.floor(slot / 4) * 240;
+        const overlaps = existingNodes.some((n) => n.position && Math.abs(n.position.x - x) < 260 && Math.abs(n.position.y - y) < 200);
+        if (!overlaps) return { x, y };
+    }
+    const idx = existingNodes.length;
+    return { x: 100 + (idx % 4) * 300, y: 100 + Math.floor(idx / 4) * 240 };
+}
+
     async function onWorkflowMessage(message: {
         type: string;
         graph?: WorkflowGraph;
@@ -1038,11 +1049,14 @@ export function activate(context: vscode.ExtensionContext): void {
                     }
                 }
                 const graph = workflowStore.save(message.graph);
+                console.log('[workflow] save OK:', graph.nodes.length, 'noeuds,', graph.edges.length, 'fils |',
+                    graph.nodes.map((n) => `${n.sessionId}:${Math.round(n.position.x)},${Math.round(n.position.y)}`).join(' '));
                 // Ne pas repousser workflow_state vers le webview émetteur :
                 // le canvas possède déjà cet état exact et un écho asynchrone
                 // écraserait un drag ou une saisie en cours.
                 FlowWorkspacePanel.syncCache(view(graph));
             } catch (error) {
+                console.warn('[workflow] save ECHEC:', String(error));
                 FlowWorkspacePanel.error(String(error));
             }
             return;
@@ -1070,7 +1084,7 @@ export function activate(context: vscode.ExtensionContext): void {
                             title: card.title || card.id,
                             provider: card.provider || '',
                             cardKind: (card.kind as 'devin' | 'agy' | 'bleubite' | 'serveros') || 'bleubite',
-                            position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                            position: findFreeNodePosition(graph.nodes),
                         });
                     }
                     FlowWorkspacePanel.update(view(workflowStore.save(graph)));
@@ -1096,7 +1110,7 @@ export function activate(context: vscode.ExtensionContext): void {
                             task: '',
                             skills: [],
                             title: agent.title,
-                            position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                            position: findFreeNodePosition(graph.nodes),
                         });
                     }
                     FlowWorkspacePanel.update(view(workflowStore.save(graph)));
@@ -1105,21 +1119,51 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
                 return;
             }
-            // Dropdown "+ Bloc" : crée un bloc VIDE du type choisi — jamais de
-            // fenêtre chat (un openNew ici spawnait un bleubite fantôme). Le
-            // bloc attend ensuite le bouton ⤓ pour être rattaché.
+            // Dropdown "+ Bloc". Deux familles de blocs :
+            // - bleubite = VRAIE session chat créée dans le store (codename
+            //   auto = son nom) : ouvrable au double-clic, aucune fenêtre
+            //   fantôme n'est ouverte — la carte est née avec son chat.
+            // - devin/agy/serveros = bloc vide du type choisi, qui attend le
+            //   bouton ⤓ pour être rattaché à la fenêtre live.
             const provider = String((message as { provider?: string }).provider || 'bleubite');
-            const blockTypes: Record<string, { kind: 'devin' | 'agy' | 'bleubite' | 'serveros'; label: string; role: string }> = {
-                'devin-cli': { kind: 'devin', label: 'Devin', role: 'Devin' },
-                'antigravity-acp': { kind: 'agy', label: 'Antigravity', role: 'Antigravity' },
-                'cerberos': { kind: 'serveros', label: 'Cerber — HeraldOS', role: 'Server OS' },
-                'd2r2': { kind: 'serveros', label: 'CerberOS — D2R2', role: 'Server OS' },
-            };
-            const t = blockTypes[provider] || { kind: 'bleubite' as const, label: 'Bleubite', role: 'Bleubite' };
             try {
+                if (!agent && provider === 'bleubite') {
+                    const session = store.create('openrouter', defaultModelForProvider('openrouter'));
+                    workflowStore.upsertSession(session);
+                    const graph = workflowStore.load(store.list());
+                    let node = graph.nodes.find((n) => n.sessionId === session.id);
+                    const role = (message as { role?: string }).role || 'Bleubite';
+                    if (!node) {
+                        node = {
+                            sessionId: session.id,
+                            role,
+                            task: '',
+                            skills: ['bleubite'],
+                            title: session.codename || session.id,
+                            provider: session.provider,
+                            cardKind: 'bleubite',
+                            position: findFreeNodePosition(graph.nodes),
+                        };
+                        graph.nodes.push(node);
+                    } else {
+                        node.title = session.codename || node.title;
+                        node.role = role;
+                        node.skills = [...new Set([...(node.skills || []), 'bleubite'])];
+                        (node as { cardKind?: string }).cardKind = 'bleubite';
+                        (node as { provider?: string }).provider = session.provider;
+                    }
+                    FlowWorkspacePanel.update(view(workflowStore.save(graph)));
+                    return;
+                }
+                const blockTypes: Record<string, { kind: 'devin' | 'agy' | 'bleubite' | 'serveros'; label: string; role: string }> = {
+                    'devin-cli': { kind: 'devin', label: 'Devin', role: 'Devin' },
+                    'antigravity-acp': { kind: 'agy', label: 'Antigravity', role: 'Antigravity' },
+                    'cerberos': { kind: 'serveros', label: 'Cerber — HeraldOS', role: 'Server OS' },
+                    'd2r2': { kind: 'serveros', label: 'CerberOS — D2R2', role: 'Server OS' },
+                };
+                const t = blockTypes[provider] || { kind: 'bleubite' as const, label: 'Bleubite', role: 'Bleubite' };
                 const graph = workflowStore.load(store.list());
                 const sessionId = `card-${provider}-${Date.now().toString(36)}`;
-                const idx = graph.nodes.length;
                 graph.nodes.push({
                     sessionId,
                     role: (message as { role?: string }).role || t.role,
@@ -1128,7 +1172,7 @@ export function activate(context: vscode.ExtensionContext): void {
                     title: t.label,
                     provider,
                     cardKind: t.kind,
-                    position: { x: 120 + (idx % 4) * 260, y: 120 + Math.floor(idx / 4) * 160 },
+                    position: findFreeNodePosition(graph.nodes),
                 });
                 FlowWorkspacePanel.update(view(workflowStore.save(graph)));
             } catch (error) {
@@ -1237,6 +1281,14 @@ export function activate(context: vscode.ExtensionContext): void {
                 }
                 node.sessionId = newId;
                 (node as { bound?: { at: number; kind: string } }).bound = { at: Date.now(), kind };
+                // Le nom du bloc = nom de la fenêtre attachée, pas la fonction
+                // (« Bleubite », « Agent »…). Titre du store si la session est
+                // déclarée, sinon le tail de l'identifiant ACP.
+                const GENERIC_TITLES = new Set(['', 'Devin', 'Antigravity', 'Bleubite', 'Server OS', 'Agent']);
+                const tail = newId.split('/').pop() || '';
+                const sessTitle = store.get(newId)?.title || store.get(tail)?.title || '';
+                if (sessTitle) node.title = sessTitle;
+                else if (GENERIC_TITLES.has(String(node.title || '')) && tail) node.title = tail;
                 if (kind === 'devin') {
                     // Confirmation locale dans le composer Devin : saisie, JAMAIS soumise.
                     const note = `Carte associée : ${node.title || 'bloc'} est rattachée à cette conversation (message local, à supprimer).`;

@@ -1,0 +1,7 @@
+Stance : La comparaison entre RAG seul et RAG + recherche web repose sur des hypothèses non explicites – que le web apporte toujours de l’information pertinente et que le RAG interne est exhaustif. Cette dualité masque le vrai problème : comment garantir la cohérence et la fiabilité de l’ensemble des sources.
+
+Argument 1 : Le web introduit un bruit lexical et factuel (fake‑news, désinformation) qui peut diluer la précision des réponses générées, surtout quand le modèle ne possède pas de filtre de crédibilité.
+Argument 2 : Un RAG bien entraîné offre une base contrôlée et vérifiable ; l’ajout d’une couche web crée une dépendance à la disponibilité et à la variabilité du contenu en ligne, augmentant le risque de dissonance.
+Argument 3 : La qualité de l’inférence dépend davantage du mécanisme de fusion (ranking, pondération) que de la simple présence d’une source externe ; un mauvais merging peut amplifier les contradictions.
+
+Assertion falsifiable : En mesurant la précision factuelle (F1) sur un jeu de questions factuelles, un système RAG + web avec filtrage de crédibilité atteindra une précision supérieure d’au moins 5 % à celle d’un RAG seul sans filtrage, sinon la combinaison ne justifie pas son coût.

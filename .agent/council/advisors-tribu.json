@@ -1,0 +1,28 @@
+{
+ "protocol": "calumet-sequentiel",
+ "description": "Tribu — variante du concil SWAT. Le Grand Chef passe le calumet a chaque advisor dans l'ordre: chacun parle EN ENTENDANT les paroles deja prononcees. Debattre, contredire, completer. Puis le Grand Chef tranche.",
+ "grandChef": {
+  "agent": "daring-agent",
+  "session": "acp/devin-cli/ionian-helicopter",
+  "role": "Grand-Chef",
+  "nom": "Aigle-qui-Veille-sur-la-Vallee",
+  "powers": ["ordre de passage du calumet", "droit de parole", "tranchage final"]
+ },
+ "advisors": [
+  {"agent":"keen-agent","session":"chat-mvmw59wa","role":"Premiers-Principes","nom":"Grande-Racine","lens":"Deconstruis la question depuis le sol. Resout-on le bon probleme ?"},
+  {"agent":"urban-agent","session":"chat-mvmtldvy","role":"Expansionniste","nom":"Eclaireur-des-Horizons","lens":"Cherche l'upside rate : potentiel, effets de bord positifs, opportunites adjacentes."},
+  {"agent":"steady-agent","session":"chat-mvpfinfra","role":"Executeur","nom":"Coup-de-Hache-au-Lever","lens":"Que fait-on lundi matin ? Faisabilite, premier pas concret."},
+  {"agent":"amber-agent","session":"chat-mvmw5chd","role":"Outsider","nom":"Petit-Comanche-derriere-la-Colline","lens":"Zero contexte. Detecte la malediction du savoir."},
+  {"agent":"kens-mmm","session":"chat-de8acfde-0423-4480-ad11-aa4519daeee6","role":"Contrariant","nom":"Corbeau-qui-Annonce-l-Orage","lens":"Chasse le defaut fatal. Suppose que ca va echouer et trouve pourquoi."},
+  {"agent":"brave-llm","session":"chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3","role":"Empirique","nom":"Pisteur-aux-Empreintes","lens":"Donnees, mesures, precedents. Ce qui est prouve contre ce qui est affirme."}
+ ],
+ "vocabulaire": {
+  "concil": "tipi / cercle de parole",
+  "transcript": "calumet (baton de parole)",
+  "dispatch": "envoyer un guetteur",
+  "livrable": "parole gravee sur l-ecorce",
+  "failover": "la torche passe au voisin",
+  "verdict final": "la parole du Grand Chef",
+  "question": "question du feu"
+ }
+}

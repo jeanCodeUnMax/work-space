@@ -1,4 +1,4 @@
-import { ensureCodename } from './types';
+import { ensureCodename, ensureDiscussionId } from './types';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -16,7 +16,10 @@ export class SessionStore {
 
     constructor(private readonly context: vscode.ExtensionContext) {
         this.sessions = context.workspaceState.get<ChatSession[]>(STORAGE_KEY, []);
-        this.sessions.forEach((sess) => ensureCodename(sess));
+        this.sessions.forEach((sess) => {
+            ensureCodename(sess);
+            ensureDiscussionId(sess);
+        });
         this.persistToDisk();
         this.tryRestoreFromDisk();
     }
@@ -44,7 +47,10 @@ export class SessionStore {
                 const raw = fs.readFileSync(indexFile, 'utf8');
                 const diskSessions = JSON.parse(raw) as ChatSession[];
                 if (Array.isArray(diskSessions)) {
-                    for (const session of diskSessions) ensureCodename(session);
+                    for (const session of diskSessions) {
+                        ensureCodename(session);
+                        ensureDiscussionId(session);
+                    }
                     const merged = new Map(diskSessions.map((session) => [session.id, session]));
                     for (const session of this.sessions) {
                         const diskSession = merged.get(session.id);
@@ -115,6 +121,7 @@ export class SessionStore {
     create(provider = 'openrouter', model = 'liquid/lfm-2.5-2.6b:free'): ChatSession {
         const session: ChatSession = {
             id: `chat-${randomUUID()}`,
+            discussionId: `disc-${randomUUID().slice(0, 8)}`,
             mode: 'agent',
             provider,
             model,
@@ -123,6 +130,7 @@ export class SessionStore {
             workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
         };
         ensureCodename(session);
+        ensureDiscussionId(session);
         this.save(session);
         return session;
     }
@@ -139,6 +147,7 @@ export class SessionStore {
             workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
         };
         ensureCodename(session);
+        ensureDiscussionId(session);
         this.save(session);
         return session;
     }

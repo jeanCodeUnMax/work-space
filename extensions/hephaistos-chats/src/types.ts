@@ -21,6 +21,16 @@ export interface ChatMessage {
     tools?: ChatTool[];
 }
 
+export interface ChatDiscussion {
+    id: string;
+    title: string;
+    provider: string;
+    model: string;
+    acpSessionId?: string;
+    updatedAt: string;
+    messages: ChatMessage[];
+}
+
 export interface ChatSession {
     id: string;
     title?: string;
@@ -31,6 +41,10 @@ export interface ChatSession {
     model: string;
     messages: ChatMessage[];
     updatedAt: string;
+    /** Identifiant de la discussion active dans cette session. */
+    discussionId?: string;
+    /** Historique des discussions archivées de cette session (par discussionId). */
+    discussions?: ChatDiscussion[];
     /** sessionId renvoyé par l'agent ACP (session/new) — permet session/load après respawn. */
     acpSessionId?: string;
     /** Racine du workspace propriétaire — l'historique n'apparaît que dans son projet. */
@@ -115,6 +129,14 @@ export function ensureCodename(session: ChatSession): boolean {
     let hash = 0;
     for (const ch of session.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
     session.codename = CODENAME_ADJ[hash % CODENAME_ADJ.length] + '-' + (CODENAME_NOUN[(hash >> 5) % CODENAME_NOUN.length] || 'agent');
+    return true;
+}
+
+export function ensureDiscussionId(session: ChatSession): boolean {
+    if (session.discussionId && session.discussionId.trim()) return false;
+    let hash = 0;
+    for (const ch of session.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    session.discussionId = `disc-${hash.toString(36).padStart(6, '0')}`;
     return true;
 }
 

@@ -2,7 +2,7 @@
   "name": "hephaistos-chats",
   "displayName": "Hephaistos Chats",
   "description": "Onglets de chat Hephaistos + espace de travail React Flow : orchestration manuelle des agents du roster (roles, skills, missions, chaines de travail).",
-  "version": "0.3.46",
+  "version": "0.3.47",
   "icon": "media/icon.png",
   "publisher": "hephaistos",
   "engines": {
@@ -64,7 +64,27 @@
         "command": "hephaistosChats.openChat",
         "key": "ctrl+alt+h"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Hephaistos Chats — Espace de travail",
+      "properties": {
+        "hephaistos.flow.smartRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Ignore les pushes de workflow structurellement identiques (anti-flicker, anti re-render global)."
+        },
+        "hephaistos.flow.preserveLocalProps": {
+          "type": "boolean",
+          "default": true,
+          "description": "Preserve les props locales des noeuds/edges (selected, type, animated, iconTheme) lors des refresh serveur."
+        },
+        "hephaistos.flow.alwaysFitView": {
+          "type": "boolean",
+          "default": true,
+          "description": "Recentre la vue generale (fitView) a chaque refresh du workflow, sauf pendant un drag de noeud."
+        }
+      }
+    }
   },
   "scripts": {
     "build:workspace": "esbuild webview/workspace.tsx --bundle --format=iife --platform=browser --target=es2020 --outdir=out/webview --entry-names=workspace --minify",

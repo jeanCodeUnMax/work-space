@@ -1,0 +1,328 @@
+{
+  "name": "SWAT - Telegram Hub",
+  "description": null,
+  "active": true,
+  "activeVersionId": "dd855039-0bda-4227-a6bb-a0bd4b9bf21f",
+  "isArchived": false,
+  "versionCounter": 3,
+  "sourceWorkflowId": null,
+  "triggerCount": 1,
+  "nodes": [
+    {
+      "id": "55f05dad-1ff9-4fa8-b5f6-09e328e0c9e7",
+      "name": "Webhook",
+      "webhookId": "swat-telegram-hub",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        80
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "swat-telegram-hub",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "e716cc09-d379-46fb-b7ee-5ce58f554d24",
+      "name": "Build Args",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        80
+      ],
+      "parameters": {
+        "jsCode": "const b = $json.body || $json;\nconst a = (b.action || 'send').toLowerCase();\nconst chat = String(b.chat || b.contact || 'team-webman');\nif (a === 'image' || a === 'photo') {\n  return [{ json: { route: 'file', imageUrl: b.imageUrl || b.url || '', caption: b.caption || b.text || '', chat } }];\n}\nconst args = ['--chat', chat];\nif (a === 'send') args.push('send', '--text', b.text || '');\nelse if (a === 'send-file') args.push('send-file', '--path', b.path || '', '--caption', b.caption || '', '--kind', b.kind || 'photo');\nelse if (a === 'pin') args.push('pin', String(b.messageId));\nelse if (a === 'unpin') args.push('unpin', String(b.messageId || 'all'));\nelse if (a === 'poll') args.push('poll', '--question', b.question || '', '--options', (b.options || []).join(','));\nelse if (a === 'delete') args.push('delete', String(b.messageId));\nelse if (a === 'edit') args.push('edit', String(b.messageId), '--text', b.text || '');\nelse if (a === 'admins') args.push('admins');\nelse if (a === 'members') args.push('members');\nelse if (a === 'stats') args.push('stats');\nelse if (a === 'chat') args.push('chat');\nelse if (a === 'topics') args.push('topics', 'list');\nelse if (a === 'history') args.push('history', '--limit', String(b.limit || 10));\nelse if (a === 'read') args.push('read', '--limit', String(b.limit || 10));\nelse if (a === 'search') args.push('search', '--query', b.query || '', '--limit', String(b.limit || 10));\nelse if (a === 'updates') args.push('updates');\nelse args.push('send', '--text', '[hub] action inconnue: ' + a);\nif (b.topic) args.push('--topic', String(b.topic));\nif (b.reply) args.push('--reply', String(b.reply));\nreturn [{ json: { route: 'cli', command: 'cli-anything-telegram', args, timeoutMs: 60000 } }];"
+      }
+    },
+    {
+      "id": "705143c0-a418-479c-b733-db2663335453",
+      "name": "Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        448,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.route }}",
+              "rightValue": "file",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "971dda75-e74e-4a42-81d9-0eb003b28d29",
+      "name": "Send File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5680/x-send-file",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({imageUrl:$json.imageUrl,caption:$json.caption,chat:$json.chat}) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "0e8235c5-f209-449c-88d7-c510bce57675",
+      "name": "Exec CLI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        672,
+        160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:5680/x-run",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({command:$json.command,args:$json.args,timeoutMs:$json.timeoutMs}) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Args",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Args": {
+      "main": [
+        [
+          {
+            "node": "Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route": {
+      "main": [
+        [
+          {
+            "node": "Send File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exec CLI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "nodeGroups": [],
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "pinData": {},
+  "meta": null,
+  "tags": [],
+  "activeVersion": {
+    "versionId": "dd855039-0bda-4227-a6bb-a0bd4b9bf21f",
+    "workflowId": "WKFVQx5pDQWaNxiV",
+    "nodes": [
+      {
+        "id": "55f05dad-1ff9-4fa8-b5f6-09e328e0c9e7",
+        "name": "Webhook",
+        "webhookId": "swat-telegram-hub",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          80
+        ],
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "swat-telegram-hub",
+          "responseMode": "lastNode",
+          "options": {}
+        }
+      },
+      {
+        "id": "e716cc09-d379-46fb-b7ee-5ce58f554d24",
+        "name": "Build Args",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          224,
+          80
+        ],
+        "parameters": {
+          "jsCode": "const b = $json.body || $json;\nconst a = (b.action || 'send').toLowerCase();\nconst chat = String(b.chat || b.contact || 'team-webman');\nif (a === 'image' || a === 'photo') {\n  return [{ json: { route: 'file', imageUrl: b.imageUrl || b.url || '', caption: b.caption || b.text || '', chat } }];\n}\nconst args = ['--chat', chat];\nif (a === 'send') args.push('send', '--text', b.text || '');\nelse if (a === 'send-file') args.push('send-file', '--path', b.path || '', '--caption', b.caption || '', '--kind', b.kind || 'photo');\nelse if (a === 'pin') args.push('pin', String(b.messageId));\nelse if (a === 'unpin') args.push('unpin', String(b.messageId || 'all'));\nelse if (a === 'poll') args.push('poll', '--question', b.question || '', '--options', (b.options || []).join(','));\nelse if (a === 'delete') args.push('delete', String(b.messageId));\nelse if (a === 'edit') args.push('edit', String(b.messageId), '--text', b.text || '');\nelse if (a === 'admins') args.push('admins');\nelse if (a === 'members') args.push('members');\nelse if (a === 'stats') args.push('stats');\nelse if (a === 'chat') args.push('chat');\nelse if (a === 'topics') args.push('topics', 'list');\nelse if (a === 'history') args.push('history', '--limit', String(b.limit || 10));\nelse if (a === 'read') args.push('read', '--limit', String(b.limit || 10));\nelse if (a === 'search') args.push('search', '--query', b.query || '', '--limit', String(b.limit || 10));\nelse if (a === 'updates') args.push('updates');\nelse args.push('send', '--text', '[hub] action inconnue: ' + a);\nif (b.topic) args.push('--topic', String(b.topic));\nif (b.reply) args.push('--reply', String(b.reply));\nreturn [{ json: { route: 'cli', command: 'cli-anything-telegram', args, timeoutMs: 60000 } }];"
+        }
+      },
+      {
+        "id": "705143c0-a418-479c-b733-db2663335453",
+        "name": "Route",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          448,
+          80
+        ],
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.route }}",
+                "rightValue": "file",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        }
+      },
+      {
+        "id": "971dda75-e74e-4a42-81d9-0eb003b28d29",
+        "name": "Send File",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          672,
+          0
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5680/x-send-file",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({imageUrl:$json.imageUrl,caption:$json.caption,chat:$json.chat}) }}",
+          "options": {}
+        }
+      },
+      {
+        "id": "0e8235c5-f209-449c-88d7-c510bce57675",
+        "name": "Exec CLI",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          672,
+          160
+        ],
+        "parameters": {
+          "method": "POST",
+          "url": "http://127.0.0.1:5680/x-run",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({command:$json.command,args:$json.args,timeoutMs:$json.timeoutMs}) }}",
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Build Args",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Build Args": {
+        "main": [
+          [
+            {
+              "node": "Route",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Route": {
+        "main": [
+          [
+            {
+              "node": "Send File",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Exec CLI",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "jean-seb webman",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "createdAt": "2026-11-01T01:40:38.074Z",
+    "updatedAt": "2026-11-01T01:40:38.074Z",
+    "workflowPublishHistory": [
+      {
+        "id": 12,
+        "workflowId": "WKFVQx5pDQWaNxiV",
+        "versionId": "dd855039-0bda-4227-a6bb-a0bd4b9bf21f",
+        "event": "activated",
+        "userId": "06971afe-6f0e-4b3d-9d22-1f92d9231996",
+        "createdAt": "2026-11-01T01:40:38.182Z"
+      }
+    ]
+  },
+  "parentFolder": null
+}

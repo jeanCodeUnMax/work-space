@@ -1,0 +1,229 @@
+{
+  "name": "swat-n8n-fanout",
+  "desc": "Pipeline n8n visible : n8n-Fanout -> 6 sondes (resultats injectes par carte) -> Sentinelle-Verdict -> Devin gamy-freighter. Workflow OBommGsrTbJ19hQp.",
+  "graph": {
+    "name": "swat-n8n-fanout",
+    "nodes": [
+      {
+        "sessionId": "chat-n8nfanout",
+        "role": "n8n-Trigger",
+        "task": "Workflow hphe-architecture-healthcheck (n8n OBommGsrTbJ19hQp) — Schedule 5min + webhook /webhook/hphe-diag. Fan-out : chaque sonde est injectee dans la carte correspondante via POST :7478/ask, verdict final vers Devin gamy-freighter.",
+        "skills": [
+          "cli-anything-n8n",
+          "n8n-workflow-patterns"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "n8n-Fanout",
+        "position": {
+          "x": -520,
+          "y": -420
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Sonde-MCP-Core",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Index a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "hephaistos2-kit",
+          "observability-engineer"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-MCP-Core",
+        "position": {
+          "x": -520,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Sonde-Orchestrateur",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Agents + Tasks a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "orchestrator",
+          "incident-responder"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Orchestrateur",
+        "position": {
+          "x": -260,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sonde-Roster-Chats",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Sessions + Roster a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "hephaistos2-kit",
+          "devops-troubleshooter"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Roster-Chats",
+        "position": {
+          "x": 0,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Sonde-Bus-Flux",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Bridge :7478 a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "logs-analyst",
+          "incident-responder"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Bus-Flux",
+        "position": {
+          "x": 260,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Sonde-Memoire-Recherche",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Memory + Vec + Content a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "agent-memory-systems",
+          "search-specialist"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Memoire-Recherche",
+        "position": {
+          "x": 520,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "role": "Sonde-n8n-Gateways",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe n8n + REST a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "cli-anything-n8n",
+          "n8n-workflow-patterns"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-n8n-Gateways",
+        "position": {
+          "x": 780,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle-Verdict",
+        "task": "Recoit [VERDICT n8n] a chaque run — meme fonction que n8n Aggregate+Verdict+Alert? : ok/degraded/down, create_task sur transition.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sentinelle-Verdict",
+        "position": {
+          "x": 130,
+          "y": 40
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/gamy-freighter",
+        "role": "Devin-Final",
+        "task": "Destination finale du fanout : le verdict HEALTHCHECK n8n arrive ici dans Devin (gamy-freighter) a chaque run.",
+        "skills": [
+          "orchestrator"
+        ],
+        "mcps": [],
+        "title": "Devin — Reponse Finale",
+        "position": {
+          "x": 390,
+          "y": 220
+        },
+        "cardKind": "devin"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:n8n->0",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmw59wa"
+      },
+      {
+        "id": "edge:n8n->1",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmtldvy"
+      },
+      {
+        "id": "edge:n8n->2",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvpfinfra"
+      },
+      {
+        "id": "edge:n8n->3",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvfj8b4m"
+      },
+      {
+        "id": "edge:n8n->4",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmw5chd"
+      },
+      {
+        "id": "edge:n8n->5",
+        "source": "chat-n8nfanout",
+        "target": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3"
+      },
+      {
+        "id": "edge:s0->verdict",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s1->verdict",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s2->verdict",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s3->verdict",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s4->verdict",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s5->verdict",
+        "source": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:verdict->devin",
+        "source": "chat-mvfqytbz",
+        "target": "acp/devin-cli/gamy-freighter"
+      }
+    ],
+    "version": 1,
+    "entrySessionId": "chat-n8nfanout"
+  }
+}

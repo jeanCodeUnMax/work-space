@@ -4,14 +4,14 @@
  * Portabilite : l'extension iframes toujours http://127.0.0.1:8190, jamais
  * l'URL directe — c'est ce proxy qui choisit le backend par requete :
  *   1. COMFYUI_BACKEND explicite (ex. https://comfi.exemple.fr distant),
- *   2. ComfyUI local 127.0.0.1:8188 s'il repond,
+ *   2. ComfyUI local 127.0.0.1:8000 s'il repond,
  *   3. COMFYUI_REMOTE en repli (tunnel distant, optionnel).
  *
  * HTTP : forward generique (headers preserves, Set-Cookie reecrit en path=/).
  * WS   : upgrade TCP brut — le /ws de ComfyUI (queue, progress, previews)
  *        traverse le proxy comme un vrai socket, pas de polling.
  *
- * Env : COMFYUI_PROXY_PORT (def. 8190), COMFYUI_LOCAL (def. http://127.0.0.1:8188),
+ * Env : COMFYUI_PROXY_PORT (def. 8190), COMFYUI_LOCAL (def. http://127.0.0.1:8000),
  *       COMFYUI_BACKEND, COMFYUI_REMOTE.
  */
 import http from 'node:http';
@@ -57,7 +57,7 @@ const server = http.createServer(async (req, res) => {
     const backend = await pickBackend();
     if (!backend) {
         res.writeHead(503, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: 'Aucun backend ComfyUI joignable (local :8188 KO, COMFYUI_REMOTE absent).' }));
+        res.end(JSON.stringify({ ok: false, error: 'Aucun backend ComfyUI joignable (local :8000 KO, COMFYUI_REMOTE absent).' }));
         return;
     }
     const target = new URL(req.url, backend);

@@ -64,6 +64,7 @@ dispatch_task(title, task_type, context, files, workspace, [agent_name], [priori
 
 ## Règles d'Exécution et Tolérance Zéro Déchets
 
+- **Exécution externe = orchestrateur uniquement** : toute délégation passe par `dispatch_task` ; jamais d'appel direct aux providers externes (`agy --print`, `hermes -z`, `kilo run`, `opencode run`, API NIM/OpenRouter/Ollama en direct). Orchestrateur down → réparer ou escalader, pas contourner.
 - **Modèles gratuits uniquement** pour les délégations CLI (sauf `agy` : abonnement inclus).
 - **Jamais de SQL direct** sur orchestrator.db — uniquement les outils MCP.
 - **`full_prompt:true`** dans la config agent = le CLI reçoit le prompt complet (ex: `agy --print`).

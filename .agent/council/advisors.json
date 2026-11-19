@@ -1,0 +1,74 @@
+{
+ "chairman": {
+  "agent": "daring-agent",
+  "session": "acp/devin-cli/ionian-helicopter",
+  "role": "Chairman-Concil",
+  "skills": [
+   "orchestrator",
+   "llm-council"
+  ]
+ },
+ "advisors": [
+  {
+   "agent": "keen-agent",
+   "session": "chat-mvmw59wa",
+   "role": "Premiers-Principes",
+   "lens": "Deconstruis la question depuis le sol. Remets en cause la question elle-meme : resout-on le bon probleme ? Nu les hypotheses implicites.",
+   "skills": [
+    "architecture",
+    "api-patterns"
+   ]
+  },
+  {
+   "agent": "urban-agent",
+   "session": "chat-mvmtldvy",
+   "role": "Expansionniste",
+   "lens": "Cherche l'upside rate : potentiel, effets de bord positifs, opportunites adjacentes, amplification possible.",
+   "skills": [
+    "vulnerability-scanner",
+    "mcp-security-audit"
+   ]
+  },
+  {
+   "agent": "steady-agent",
+   "session": "chat-mvpfinfra",
+   "role": "Executeur",
+   "lens": "Que fait-on lundi matin ? Faisabilite, premier pas concret, chemin le plus court vers un resultat.",
+   "skills": [
+    "plan-writing",
+    "solid-workflow"
+   ]
+  },
+  {
+   "agent": "amber-agent",
+   "session": "chat-mvmw5chd",
+   "role": "Outsider",
+   "lens": "Reponds avec zero contexte. Detecte la malediction du savoir : evident pour l-initie, opaque pour les autres.",
+   "skills": []
+  },
+  {
+   "agent": "kens-mmm",
+   "session": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+   "role": "Contrariant",
+   "lens": "Chasse le defaut fatal. Suppose que ca va echouer et trouve pourquoi.",
+   "skills": [
+    "systematic-debugging",
+    "explainability-expert"
+   ]
+  },
+  {
+   "agent": "brave-llm",
+   "session": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+   "role": "Empirique",
+   "lens": "Avocat de la preuve : exige donnees, mesures, precedents, tests falsifiables.",
+   "skills": [
+    "testing-patterns",
+    "database-design"
+   ]
+  }
+ ],
+ "bus": ".agent/comms.jsonl",
+ "artifactsDir": "council/<YYYY-MM-DD>/<session>",
+ "skillPath": ".agent/skills/llm-council/SKILL.md",
+ "protocolPath": ".agent/council/PROTOCOL.md"
+}

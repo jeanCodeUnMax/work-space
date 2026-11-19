@@ -1,0 +1,1 @@
+cli-anything-n8n status

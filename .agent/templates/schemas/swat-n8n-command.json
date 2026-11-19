@@ -1,0 +1,105 @@
+{
+  "name": "swat-n8n-command",
+  "desc": "Escouade de commande n8n : Commandant -> 5 operateurs specialises (Pilot/Builder/Watcher/Medic/Scribe) — chaque carte possede ses tools n8n__* via le mux :5682, re-injection via webhook swat-n8n-bridge, rapport final vers Devin.",
+  "graph": {
+    "name": "swat-n8n-command",
+    "nodes": [
+      {
+        "sessionId": "chat-n8ncmd",
+        "role": "Commandant",
+        "title": "n8n-Commandant",
+        "task": "POINT D'ENTREE — recoit les ordres et route via webhook :5678/webhook/swat-n8n-bridge {action:say|fanout|dispatch,card:<carte>,text}. Peut appeler n8n__* via mux :5682.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": -520,
+          "y": 60
+        }
+      },
+      {
+        "sessionId": "chat-n8npilot",
+        "role": "Pilote-Execution",
+        "title": "Cmd-n8n-Pilot",
+        "task": "execute_workflow, test_workflow, publish_workflow, unpublish_workflow, archive_workflow, prepare_workflow_pin_data, get_workflow_execution.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": -240,
+          "y": 240
+        }
+      },
+      {
+        "sessionId": "chat-n8nbuild",
+        "role": "Builder-Workflows",
+        "title": "Cmd-n8n-Builder",
+        "task": "create_workflow_from_code, update_workflow, validate_workflow, validate_node_config, get_node_types, search_nodes, explore_node_resources, get_workflow_best_practices, get_workflow_sdk_reference, get_workflow_versions_diff, restore_workflow_version.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 0,
+          "y": 340
+        }
+      },
+      {
+        "sessionId": "chat-n8nwatch",
+        "role": "Watcher-Executions",
+        "title": "Cmd-n8n-Watcher",
+        "task": "search_workflow_executions, get_workflow_execution, get_instance_activity, expand_instance_activity, search_workflows, get_workflow_details, get_workflow_history, list_workflow_tags.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 240,
+          "y": 240
+        }
+      },
+      {
+        "sessionId": "chat-n8nmedic",
+        "role": "Medic-Instance",
+        "title": "Cmd-n8n-Medic",
+        "task": "list_credentials, get_instance_context, verify_agent_mcp_server, list_n8n_gateway_services, search_projects, search_folders, create_folder, move_workflows_to_folder.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 480,
+          "y": 60
+        }
+      },
+      {
+        "sessionId": "chat-n8nscribe",
+        "role": "Scribe-Rapports",
+        "title": "Cmd-n8n-Scribe",
+        "task": "search_workflows, get_workflow_details, list_credentials (metadata only), search_data_tables, get_data_table_rows — produit les tableaux de bord, envoie le rapport final a Devin via /ask.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 0,
+          "y": -140
+        }
+      }
+    ]
+  }
+}

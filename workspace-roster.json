@@ -1,0 +1,16 @@
+{
+  "workers": [
+    {
+      "id": "worker-1",
+      "type": "cli",
+      "status": "available",
+      "assigned_to": "agent-1"
+    },
+    {
+      "id": "worker-2", 
+      "type": "cli",
+      "status": "busy",
+      "assigned_to": "agent-2"
+    }
+  ]
+}

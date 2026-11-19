@@ -1,0 +1,171 @@
+{
+  "name": "calumet-indien",
+  "mode": "council",
+  "desc": "La Tribu : deliberation sequentielle calumet de la paix. Le Grand Chef passe le calumet a chaque advisor dans l'ordre — chacun parle EN ENTENDANT les paroles deja prononcees (accorde, contredit, complete), puis le Grand Chef tranche.",
+  "graph": {
+    "version": 1,
+    "name": "calumet-indien",
+    "mode": "council",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Grand-Chef",
+        "task": "ROLE: Grand Chef de la Tribu. Tu recois la problematique soumise par Devin (champ question du noeud ou dernier message de ta session). Tu la reformules en prompt neutre, puis tu passes le calumet a chaque membre dans l'ordre fixe : Premiers-Principes, Expansionniste, Executeur, Outsider, Contrariant, Empirique. Chacun entend les paroles deja prononcees avant de parler. Tu presides : tu coupes les digressions, tu fais respecter l'ordre. Quand le calumet te revient, tu rends le verdict en 5 sections : Consensus, Desaccords, Angles morts, Recommandation, Premier pas concret.",
+        "skills": [
+          "orchestrator",
+          "llm-council"
+        ],
+        "mcps": [],
+        "provider": "devin-cli",
+        "cardKind": "devin",
+        "title": "daring-agent",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Premiers-Principes",
+        "task": "ROLE: Le calumet t'arrive du Grand Chef — tu parles le premier, personne n'a encore pris la parole. Quelle que soit la problematique soumise, tu ignores la question de surface : quel probleme resout-on vraiment ? Tu deconstruis les hypotheses implicites et reconstruis le probleme depuis le sol.",
+        "skills": [
+          "architecture",
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "keen-agent",
+        "position": {
+          "x": 0,
+          "y": -264
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Expansionniste",
+        "task": "ROLE: Le calumet t'arrive apres Premiers-Principes — tu as entendu sa parole dans les messages precedents. Accorde, contredis ou complete : tu cherches le potentiel que les autres ratent, les opportunites adjacentes, la valeur sous-estimee.",
+        "skills": [
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "urban-agent",
+        "position": {
+          "x": 220,
+          "y": -132
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Executeur",
+        "task": "ROLE: Le calumet t'arrive apres Expansionniste — tu as entendu les paroles deja prononcees. Une seule question compte : est-ce faisable et quel est le chemin le plus court ? Que fait-on lundi matin ?",
+        "skills": [
+          "plan-writing",
+          "tdd-workflow",
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "steady-agent",
+        "position": {
+          "x": 220,
+          "y": 132
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Outsider",
+        "task": "ROLE: Le calumet t'arrive apres Executeur — tu as entendu les paroles deja prononcees. Tu reagis en zero contexte : tu detectes le biais du specialiste, ce qui est evident pour nous mais confus pour tout le monde.",
+        "skills": [
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "amber-agent",
+        "position": {
+          "x": 0,
+          "y": 264
+        }
+      },
+      {
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "role": "Contrariant",
+        "task": "ROLE: Le calumet t'arrive apres Outsider — tu as entendu TOUT ce qui a ete dit. Tu chasses le defaut fatal : tu supposes que ca va echouer et tu creuses jusqu'a trouver pourquoi. Pas un pessimiste : l'ami qui pose les questions qu'on evite.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner",
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "kens-mmm",
+        "position": {
+          "x": -220,
+          "y": 132
+        }
+      },
+      {
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "role": "Empirique",
+        "task": "ROLE: Le calumet t'arrive en dernier — tu cloture le cercle. Tu es l'avocat de la preuve : tu n'acceptes que ce qui est observable, mesurable, precedente. Tu demontes les raisonnements purs et les promesses sans verification.",
+        "skills": [
+          "testing-patterns",
+          "explainability-expert",
+          "llm-council"
+        ],
+        "mcps": [],
+        "cardKind": "bleubite",
+        "title": "brave-llm",
+        "position": {
+          "x": -220,
+          "y": -132
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:calumet-0->1",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-1->2",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-2->3",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-3->4",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvmw5chd",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-4->5",
+        "source": "chat-mvmw5chd",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-5->6",
+        "source": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      }
+    ]
+  }
+}

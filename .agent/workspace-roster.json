@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "workspace": "hephaistos2-kit",
   "template": "hephaistos-swat-base",
-  "updatedAt": "2026-11-03T18:09:50.009Z",
+  "updatedAt": "2026-11-17T03:16:48.288676",
   "core": {
     "devin": [
       {
@@ -25,8 +25,8 @@
         "sessionId": "acp/devin-cli/ionian-helicopter",
         "restore": "existing-only",
         "role": "Orchestrateur",
-        "hidden": false,
-        "title": "daring-agent"
+        "hidden": true,
+        "title": "ionian-helicopter"
       },
       {
         "providerId": "devin-cli",
@@ -111,14 +111,14 @@
         "restore": "existing-only",
         "role": "Antigravity",
         "title": "Antigravity",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
         "sessionId": "acp/devin-cli/pebble-rhubarb",
         "restore": "existing-only",
         "role": "Relecteur-Modo",
-        "hidden": false,
+        "hidden": true,
         "title": "Relecteur-Modo"
       },
       {
@@ -143,7 +143,7 @@
         "restore": "existing-only",
         "role": "Veilleur-Telegram",
         "title": "Veilleur-Telegram",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim",
@@ -151,7 +151,7 @@
         "restore": "existing-only",
         "role": "Posteur-Telegram",
         "title": "Posteur-Telegram",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "devin-cli",
@@ -167,7 +167,38 @@
         "restore": "existing-only",
         "role": "Redacteur",
         "title": "Redacteur",
-        "hidden": false
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/spiral-wanderer",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/better-iberis",
+        "restore": "existing-only",
+        "role": "Chairman-Concil",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/polite-chips",
+        "restore": "existing-only",
+        "role": "Orchestrateur",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/722b64c9-72d1-41fc-bf34-c7144f68b9a7",
+        "restore": "existing-only",
+        "role": "Architecte",
+        "title": "Architecte",
+        "hidden": true
       }
     ],
     "cerberos": [
@@ -180,40 +211,40 @@
     ],
     "bleubites": [
       {
-        "providerId": "nim2",
+        "providerId": "omniroute",
         "sessionId": "chat-mvmw59wa",
         "restore": "open-or-reveal",
         "role": "Codeur",
-        "hidden": true,
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "keen-agent"
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-120b",
+        "title": "Sonde-MCP-Core"
       },
       {
         "providerId": "omniroute",
         "sessionId": "chat-mvmw5chd",
         "restore": "open-or-reveal",
-        "role": "Reviewer",
-        "hidden": true,
-        "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
-        "title": "amber-agent"
+        "role": "Outsider",
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-20b",
+        "title": "Sonde-Memoire-Recherche"
       },
       {
         "providerId": "nim",
         "sessionId": "chat-mvmtldvy",
         "restore": "open-or-reveal",
         "role": "Auditeur-securite",
-        "hidden": true,
+        "hidden": false,
         "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-        "title": "urban-agent"
+        "title": "Sonde-Orchestrateur"
       },
       {
         "providerId": "omniroute",
         "sessionId": "chat-mvfqytbz",
         "restore": "open-or-reveal",
         "role": "Sentinelle",
-        "hidden": true,
-        "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
-        "title": "keen-agent"
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-20b",
+        "title": "Sentinelle-Verdict"
       },
       {
         "providerId": "nim",
@@ -230,24 +261,24 @@
         "restore": "open-or-reveal",
         "role": "Documentaliste-Vault",
         "hidden": true,
-        "model": "openrouter/google/gemma-4-31b-it:free",
-        "title": "rapid-agent"
+        "model": "groq/openai/gpt-oss-20b",
+        "title": "Doc-Vault"
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-mvfj8b4m",
         "restore": "open-or-reveal",
         "role": "Testeur",
-        "hidden": true,
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "zealous-agent"
+        "hidden": false,
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "title": "Sonde-Bus-Flux"
       },
       {
         "providerId": "omniroute",
         "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
         "restore": "open-or-reveal",
         "model": "auto/best-fast",
-        "role": "Avocat-du-Diable",
+        "role": "Contrariant",
         "hidden": true,
         "title": "keen-nova"
       },
@@ -257,17 +288,17 @@
         "restore": "open-or-reveal",
         "role": "Feedback-Beacon-Knowledge",
         "hidden": true,
-        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "onyx-agent"
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "title": "Beacon-Knowledge"
       },
       {
         "providerId": "nim2",
         "sessionId": "chat-mvpfinfra",
         "restore": "open-or-reveal",
-        "role": "Sentinelle-Infra-Perf",
-        "hidden": true,
+        "role": "Executeur",
+        "hidden": false,
         "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "title": "steady-agent"
+        "title": "Sonde-Roster-Chats"
       },
       {
         "providerId": "openrouter",
@@ -300,7 +331,7 @@
         "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
         "restore": "open-or-reveal",
         "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
-        "role": "Expert-Faisabilite-Implementation",
+        "role": "Empirique",
         "title": "brave-ibis",
         "hidden": true
       },
@@ -584,7 +615,7 @@
         "restore": "open-or-reveal",
         "role": "Orchestrateur",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -592,7 +623,7 @@
         "restore": "open-or-reveal",
         "role": "Antigravity",
         "title": "rapid-tide",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "nim",
@@ -627,7 +658,7 @@
         "restore": "open-or-reveal",
         "role": "Orchestrateur",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -635,7 +666,7 @@
         "restore": "open-or-reveal",
         "role": "Antigravity",
         "title": "Antigravity",
-        "hidden": false
+        "hidden": true
       },
       {
         "providerId": "hephaistos",
@@ -643,7 +674,104 @@
         "restore": "open-or-reveal",
         "role": "NVIDIA NIM 2",
         "title": "daring-agent",
-        "hidden": false
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-1010d864-e811-436a-92ea-3663597251e6",
+        "restore": "open-or-reveal",
+        "role": "Reviewer",
+        "title": "hardy-lantern",
+        "hidden": true,
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-devin-cli-mwe6ypim",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "role": "OpenRouter",
+        "hidden": false,
+        "title": "Sonde-n8n-Gateways"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-63a8b47e-245b-4aac-83ff-658d948e6251",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-n8nfanout",
+        "restore": false,
+        "role": "n8n-Trigger",
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-120b",
+        "title": "n8n-Fanout"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-n8ncmd",
+        "restore": "open-or-reveal",
+        "role": "Commandant",
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-120b",
+        "title": "n8n-Commandant"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-n8npilot",
+        "restore": "open-or-reveal",
+        "role": "Pilote-Execution",
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-120b",
+        "title": "Cmd-n8n-Pilot"
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-n8nbuild",
+        "restore": "open-or-reveal",
+        "role": "Builder-Workflows",
+        "hidden": false,
+        "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "title": "Cmd-n8n-Builder"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-n8nwatch",
+        "restore": "open-or-reveal",
+        "role": "Watcher-Executions",
+        "hidden": false,
+        "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+        "title": "Cmd-n8n-Watcher"
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-n8nmedic",
+        "restore": "open-or-reveal",
+        "role": "Medic-Instance",
+        "hidden": false,
+        "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+        "title": "Cmd-n8n-Medic"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-n8nscribe",
+        "restore": "open-or-reveal",
+        "role": "Scribe-Rapports",
+        "hidden": false,
+        "model": "groq/openai/gpt-oss-20b",
+        "title": "Cmd-n8n-Scribe"
       }
     ],
     "antigravity": [
@@ -979,167 +1107,326 @@
   },
   "workflow": {
     "version": 1,
-    "name": "flux-telegram",
-    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "name": "swat-n8n-fanout",
+    "entrySessionId": "chat-n8nfanout",
     "nodes": [
       {
-        "sessionId": "acp/devin-cli/ionian-helicopter",
-        "role": "Orchestrateur",
-        "task": "Entree du flux SWAT Telegram (Devin associe). Recoit la demande, choisit chat/topic/action, dispatche : Veilleur (lecture canal), Redacteur (contenu), Relecteur-Modo (validation + moderation), Posteur (publication n8n). Arbitre GO/NO-GO. Ne poste jamais soi-meme.",
+        "sessionId": "chat-n8nfanout",
+        "role": "n8n-Trigger",
+        "task": "Workflow hphe-architecture-healthcheck (n8n OBommGsrTbJ19hQp) — Schedule 5min + webhook /webhook/hphe-diag. Fan-out : chaque sonde est injectee dans la carte correspondante via POST :7478/ask, verdict final vers Devin gamy-freighter.",
         "skills": [
-          "flux",
-          "jointes",
-          "binome"
+          "cli-anything-n8n",
+          "n8n-workflow-patterns"
         ],
         "mcps": [
           "Hephaistos-everything-search"
         ],
-        "title": "daring-agent",
+        "title": "n8n-Fanout",
         "position": {
-          "x": -264,
-          "y": -22
-        },
-        "provider": "unknown",
-        "bound": {
-          "at": 1793500508218,
-          "kind": "devin"
+          "x": -520,
+          "y": -420
         }
       },
       {
-        "sessionId": "acp/nim/nim-7b9b96fd",
-        "role": "Veilleur-Telegram",
-        "task": "Veille du canal : historique, messages recents, recherche, stats, topics, membres via node .agent/flux/telegram.mjs read|history|search|stats|topics|updates|members|admins --chat <caverne|canal|id>. Ne publie rien : produit des syntheses pour le Redacteur et l Orchestrateur.",
+        "sessionId": "chat-mvmw59wa",
+        "role": "Sonde-MCP-Core",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Index a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
         "skills": [
-          "cli-anything-telegram"
+          "hephaistos2-kit",
+          "observability-engineer"
         ],
-        "mcps": [],
-        "title": "Veilleur-Telegram",
-        "position": {
-          "x": 616,
-          "y": -66
-        },
-        "provider": "nim"
-      },
-      {
-        "sessionId": "acp/devin-cli/slow-walnut",
-        "role": "Redacteur",
-        "task": "Prepare le post Telegram : redige le texte final, choisit action (send|image|poll|pin|edit), chat cible (caverne|canal|id numerique) et topic si forum. Sortie structuree JSON : {\"action\",\"chat\",\"topic\",\"text\",\"imageUrl\",\"caption\",\"question\",\"options\"}. Transmet au Relecteur-Modo.",
-        "skills": [
-          "redaction",
-          "telegram"
+        "mcps": [
+          "Hephaistos-everything-search"
         ],
-        "mcps": [],
-        "title": "Redacteur",
+        "title": "Sonde-MCP-Core",
         "position": {
-          "x": 110,
-          "y": 264
-        },
-        "provider": "devin-cli",
-        "bound": {
-          "at": 1793298552769,
-          "kind": "devin"
+          "x": -520,
+          "y": -200
         }
       },
       {
-        "sessionId": "acp/devin-cli/pebble-rhubarb",
-        "role": "Relecteur-Modo",
-        "task": "Double casquette : (a) valide le brouillon du Redacteur (ton, secrets, donnees personnelles, conformite) -> GO + version finale ou NO-GO + correction ; (b) moderation via telegram.mjs : pin|unpin|delete|edit|topics|members|admins sur demande de l Orchestrateur.",
+        "sessionId": "chat-mvmtldvy",
+        "role": "Sonde-Orchestrateur",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Agents + Tasks a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
         "skills": [
-          "review",
-          "cli-anything-telegram"
+          "orchestrator",
+          "incident-responder"
         ],
-        "mcps": [],
-        "title": "Relecteur-Modo",
-        "position": {
-          "x": 506,
-          "y": 352
-        },
-        "provider": "devin-cli"
-      },
-      {
-        "sessionId": "acp/nim/nim-22c94649",
-        "role": "Posteur-Telegram",
-        "task": "Posteur terminal. Recoit le contenu valide (GO du Relecteur-Modo) et publie via le hub n8n : node .agent/flux/telegram.mjs <action> [--chat X] [--text T] [--imageUrl U] [--caption C] [--topic N] [--reply N]. Webhook : POST http://127.0.0.1:5678/webhook/swat-telegram-hub. Actions : send|image|send-file|pin|unpin|poll|delete|edit|admins|members|stats|chat|topics|history|read|search|updates. Si exec impossible, emettre [POST] {\"action\":...} pour que l orchestrateur execute. Rapporter le message id.",
-        "skills": [
-          "cli-anything-telegram"
+        "mcps": [
+          "Hephaistos-everything-search"
         ],
-        "mcps": [],
-        "title": "Posteur-Telegram",
+        "title": "Sonde-Orchestrateur",
         "position": {
-          "x": 860,
-          "y": 160
-        },
-        "provider": "nim",
-        "bound": {
-          "at": 1793288415171,
-          "kind": "devin"
+          "x": -260,
+          "y": -200
         }
       },
       {
-        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "role": "Antigravity",
-        "task": "",
-        "skills": [],
-        "mcps": [],
-        "title": "Antigravity",
+        "sessionId": "chat-mvpfinfra",
+        "role": "Sonde-Roster-Chats",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Sessions + Roster a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "hephaistos2-kit",
+          "devops-troubleshooter"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Roster-Chats",
         "position": {
-          "x": 154,
-          "y": -110
+          "x": 0,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvfj8b4m",
+        "role": "Sonde-Bus-Flux",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Bridge :7478 a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "logs-analyst",
+          "incident-responder"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Bus-Flux",
+        "position": {
+          "x": 260,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Sonde-Memoire-Recherche",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe Memory + Vec + Content a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "agent-memory-systems",
+          "search-specialist"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-Memoire-Recherche",
+        "position": {
+          "x": 520,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "role": "Sonde-n8n-Gateways",
+        "task": "Cible du fanout n8n — recoit le resultat de Probe n8n + REST a chaque execution (message [SONDE n8n ...]). Double-clic = chat live.",
+        "skills": [
+          "cli-anything-n8n",
+          "n8n-workflow-patterns"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sonde-n8n-Gateways",
+        "position": {
+          "x": 780,
+          "y": -200
+        }
+      },
+      {
+        "sessionId": "chat-mvfqytbz",
+        "role": "Sentinelle-Verdict",
+        "task": "Recoit [VERDICT n8n] a chaque run — meme fonction que n8n Aggregate+Verdict+Alert? : ok/degraded/down, create_task sur transition.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "title": "Sentinelle-Verdict",
+        "position": {
+          "x": 130,
+          "y": 40
+        }
+      },
+      {
+        "sessionId": "acp/devin-cli/gamy-freighter",
+        "role": "Devin-Final",
+        "task": "Destination finale du fanout : le verdict HEALTHCHECK n8n arrive ici dans Devin (gamy-freighter) a chaque run.",
+        "skills": [
+          "orchestrator"
+        ],
+        "mcps": [],
+        "title": "Devin — Reponse Finale",
+        "position": {
+          "x": 390,
+          "y": 220
         },
-        "provider": "antigravity-acp",
-        "cardKind": "agy",
-        "bound": {
-          "at": 1793500492735,
-          "kind": "agy"
+        "cardKind": "devin"
+      },
+      {
+        "sessionId": "chat-n8ncmd",
+        "role": "Commandant",
+        "title": "n8n-Commandant",
+        "task": "n8n-Commandant (vex-marble) — SWAT n8n-command. POINT D'ENTREE — recoit les ordres et route via webhook :5678/webhook/swat-n8n-bridge {action:say|fanout|dispatch,card:<carte>,text}. Peut a",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": -520,
+          "y": 60
+        }
+      },
+      {
+        "sessionId": "chat-n8npilot",
+        "role": "Pilote-Execution",
+        "title": "Cmd-n8n-Pilot",
+        "task": "Cmd-n8n-Pilot (pilot-laser) — SWAT n8n-command. execute_workflow, test_workflow, publish_workflow, unpublish_workflow, archive_workflow, prepare_workflow_pin_data, get_workflow_execution.",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": -240,
+          "y": 240
+        }
+      },
+      {
+        "sessionId": "chat-n8nbuild",
+        "role": "Builder-Workflows",
+        "title": "Cmd-n8n-Builder",
+        "task": "Cmd-n8n-Builder (forge-havoc) — SWAT n8n-command. create_workflow_from_code, update_workflow, validate_workflow, validate_node_config, get_node_types, search_nodes, explore_node_resources, g",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 0,
+          "y": 340
+        }
+      },
+      {
+        "sessionId": "chat-n8nwatch",
+        "role": "Watcher-Executions",
+        "title": "Cmd-n8n-Watcher",
+        "task": "Cmd-n8n-Watcher (hawk-iris) — SWAT n8n-command. search_workflow_executions, get_workflow_execution, get_instance_activity, expand_instance_activity, search_workflows, get_workflow_details,",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 240,
+          "y": 240
+        }
+      },
+      {
+        "sessionId": "chat-n8nmedic",
+        "role": "Medic-Instance",
+        "title": "Cmd-n8n-Medic",
+        "task": "Cmd-n8n-Medic (pulse-suture) — SWAT n8n-command. list_credentials, get_instance_context, verify_agent_mcp_server, list_n8n_gateway_services, search_projects, search_folders, create_folder, ",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 480,
+          "y": 60
+        }
+      },
+      {
+        "sessionId": "chat-n8nscribe",
+        "role": "Scribe-Rapports",
+        "title": "Cmd-n8n-Scribe",
+        "task": "Cmd-n8n-Scribe (ink-sable) — SWAT n8n-command. search_workflows, get_workflow_details, list_credentials (metadata only), search_data_tables, get_data_table_rows — produit les tableaux de ",
+        "skills": [
+          "cli-anything-n8n"
+        ],
+        "mcps": [
+          "Hephaistos-everything-search"
+        ],
+        "position": {
+          "x": 0,
+          "y": -140
         }
       }
     ],
     "edges": [
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-right-acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605etarget-left",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "edge:n8n->0",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmw59wa"
       },
       {
-        "id": "xy-edge__acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605esource-right-acp/nim/nim-7b9b96fdtarget-left",
-        "source": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
-        "target": "acp/nim/nim-7b9b96fd",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "edge:n8n->1",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmtldvy"
       },
       {
-        "id": "xy-edge__acp/devin-cli/ionian-helicoptersource-bottom-acp/devin-cli/slow-walnuttarget-left",
-        "source": "acp/devin-cli/ionian-helicopter",
-        "target": "acp/devin-cli/slow-walnut",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-left"
+        "id": "edge:n8n->2",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvpfinfra"
       },
       {
-        "id": "xy-edge__acp/nim/nim-7b9b96fdsource-bottom-acp/devin-cli/slow-walnuttarget-top",
-        "source": "acp/nim/nim-7b9b96fd",
-        "target": "acp/devin-cli/slow-walnut",
-        "sourceHandle": "source-bottom",
-        "targetHandle": "target-top"
+        "id": "edge:n8n->3",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvfj8b4m"
       },
       {
-        "id": "xy-edge__acp/devin-cli/slow-walnutsource-right-acp/devin-cli/pebble-rhubarbtarget-left",
-        "source": "acp/devin-cli/slow-walnut",
-        "target": "acp/devin-cli/pebble-rhubarb",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "edge:n8n->4",
+        "source": "chat-n8nfanout",
+        "target": "chat-mvmw5chd"
       },
       {
-        "id": "xy-edge__acp/devin-cli/pebble-rhubarbsource-right-acp/nim/nim-22c94649target-left",
-        "source": "acp/devin-cli/pebble-rhubarb",
-        "target": "acp/nim/nim-22c94649",
-        "sourceHandle": "source-right",
-        "targetHandle": "target-left"
+        "id": "edge:n8n->5",
+        "source": "chat-n8nfanout",
+        "target": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3"
+      },
+      {
+        "id": "edge:s0->verdict",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s1->verdict",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s2->verdict",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s3->verdict",
+        "source": "chat-mvfj8b4m",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s4->verdict",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:s5->verdict",
+        "source": "chat-2dca1141-dfd6-4ae2-863f-72fea217eee3",
+        "target": "chat-mvfqytbz"
+      },
+      {
+        "id": "edge:verdict->devin",
+        "source": "chat-mvfqytbz",
+        "target": "acp/devin-cli/gamy-freighter"
       }
     ],
-    "activeSchema": "flux-telegram",
-    "activeSchemaId": "schema-mvr09niq-8yor8"
+    "activeSchema": "swat-n8n-fanout",
+    "activeSchemaId": "schema-mwiihh5z-2cx6e"
   },
   "bleubiteRootsSource": ".mcp-access [bleubite]"
 }

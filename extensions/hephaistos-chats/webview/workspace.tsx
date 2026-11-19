@@ -43,6 +43,8 @@ export interface AgentData extends Record<string, unknown> {
     onMcpDrop?: (mcp: string) => void;
     onAgentDrop?: (agent: PaletteAgent) => void;
     onRoleDrop?: (role: string) => void;
+    onSkillRemove?: (skill: string) => void;
+    onMcpRemove?: (mcp: string) => void;
     onPoint?: () => void;
     onBind?: () => void;
     /** Re-rendu des blocs quand le thème d'icônes change (window.__agentsUri rebasé). */
@@ -151,7 +153,7 @@ type HostMessage =
     | { type: 'flow_settings'; smartRefresh?: boolean; preserveLocalProps?: boolean; alwaysFitView?: boolean };
 
 /** Props injectees par le webview — exclues de la comparaison structurelle. */
-const CALLBACK_PROPS = new Set(['onSkillDrop', 'onMcpDrop', 'onAgentDrop', 'onRoleDrop', 'onPoint', 'onBind']);
+const CALLBACK_PROPS = new Set(['onSkillDrop', 'onMcpDrop', 'onAgentDrop', 'onRoleDrop', 'onSkillRemove', 'onMcpRemove', 'onPoint', 'onBind']);
 const dataFingerprint = (data: AgentData | undefined): string => {
     if (!data) return '';
     const rest: Record<string, unknown> = {};
@@ -351,8 +353,30 @@ function AgentNodeCard({ id, data, selected }: NodeProps<AgentNode>): React.JSX.
             {(!data.external || (data.role !== 'Devin' && data.role !== 'Antigravity')) && <span className="flow-node-role">{data.role}</span>}
             {((data.skills || []).length + (data.mcps || []).length) > 0 && (
                 <div className="flow-node-skills">
-                    {(data.skills || []).map((skill) => <span className="flow-node-skill" key={skill}>{skill}</span>)}
-                    {(data.mcps || []).map((mcp) => <span className="flow-node-skill flow-node-mcp" key={mcp} title={`MCP: ${mcp}`}>⛁ {mcp}</span>)}
+                    {(data.skills || []).map((skill) => (
+                        <span className="flow-node-skill" key={skill}>
+                            {skill}
+                            <button
+                                type="button"
+                                className="flow-node-skill-x nodrag"
+                                title={`Retirer ${skill}`}
+                                onMouseDown={(event) => event.stopPropagation()}
+                                onClick={(event) => { event.stopPropagation(); data.onSkillRemove?.(skill); }}
+                            >×</button>
+                        </span>
+                    ))}
+                    {(data.mcps || []).map((mcp) => (
+                        <span className="flow-node-skill flow-node-mcp" key={mcp} title={`MCP: ${mcp}`}>
+                            ⛁ {mcp}
+                            <button
+                                type="button"
+                                className="flow-node-skill-x nodrag"
+                                title={`Retirer ${mcp}`}
+                                onMouseDown={(event) => event.stopPropagation()}
+                                onClick={(event) => { event.stopPropagation(); data.onMcpRemove?.(mcp); }}
+                            >×</button>
+                        </span>
+                    ))}
                 </div>
             )}
             <Handle type="source" position={Position.Right} id="source-right" title="Sortie latérale" />
@@ -612,6 +636,8 @@ function Workspace(): React.JSX.Element {
                                     vscode.postMessage({ type: 'assign_agent', sessionId: node.id, agent });
                                 },
                                 onRoleDrop: (role: string) => assignRole(node.id, role),
+                                onSkillRemove: (skill: string) => removeSkill(node.id, skill),
+                                onMcpRemove: (mcp: string) => removeMcp(node.id, mcp),
                                 onPoint: () => pointAgent(node.id),
                                 onBind: () => bindActive(node.id, String(node.data?.provider || ''), node.data?.cardKind),
                             },
@@ -804,6 +830,32 @@ function Workspace(): React.JSX.Element {
         setNodes((current) => {
             const next = current.map((n) => n.id === id
                 ? { ...n, data: { ...n.data, mcps: [...new Set([...(n.data.mcps || []), mcp])].slice(0, 8) } }
+                : n);
+            const s = stateRef.current;
+
+            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
+            return next;
+        });
+    }, [postWorkflowSave, setNodes]);
+
+    const removeSkill = useCallback((id: string, skill: string) => {
+        if (stateRef.current.locked) return;
+        setNodes((current) => {
+            const next = current.map((n) => n.id === id
+                ? { ...n, data: { ...n.data, skills: (n.data.skills || []).filter((item) => item !== skill) } }
+                : n);
+            const s = stateRef.current;
+
+            postWorkflowSave(next, s.edges, s.entrySessionId, s.workflowName, s.entryIsExplicit);
+            return next;
+        });
+    }, [postWorkflowSave, setNodes]);
+
+    const removeMcp = useCallback((id: string, mcp: string) => {
+        if (stateRef.current.locked) return;
+        setNodes((current) => {
+            const next = current.map((n) => n.id === id
+                ? { ...n, data: { ...n.data, mcps: (n.data.mcps || []).filter((item) => item !== mcp) } }
                 : n);
             const s = stateRef.current;
 

@@ -17,6 +17,7 @@ export class FlowWorkspacePanel {
     private static iconTheme: string = DEFAULT_ICON_THEME;
     private workflow: WorkflowView;
     private handler: MessageHandler;
+    private disposed = false;
 
     private constructor(
         private readonly panel: vscode.WebviewPanel,
@@ -34,6 +35,7 @@ export class FlowWorkspacePanel {
             this.handler(message);
         });
         panel.onDidDispose(() => {
+            this.disposed = true;
             if (FlowWorkspacePanel.current === this) FlowWorkspacePanel.current = undefined;
         });
         panel.webview.html = this.render(panel.webview, this.extensionUri);
@@ -124,6 +126,7 @@ export class FlowWorkspacePanel {
     private lastWorkflowJson = '';
 
     private sendWorkflow(force = false): void {
+        if (this.disposed) return;
         const json = JSON.stringify(this.workflow);
         // Dedup : le watcher roster repousse souvent le meme etat — skip
         // pour eviter le flicker et les artefacts au changement de schema.
@@ -131,6 +134,18 @@ export class FlowWorkspacePanel {
         this.lastWorkflowJson = json;
         void this.panel.webview.postMessage({ type: 'workflow_state', workflow: this.workflow });
         this.sendIconTheme();
+        this.sendFlowSettings();
+    }
+
+    /** Reglages perso (settings.json > hephaistos.flow.*) pousses au webview. */
+    private sendFlowSettings(): void {
+        const cfg = vscode.workspace.getConfiguration('hephaistos.flow');
+        void this.panel.webview.postMessage({
+            type: 'flow_settings',
+            smartRefresh: cfg.get<boolean>('smartRefresh', true),
+            preserveLocalProps: cfg.get<boolean>('preserveLocalProps', true),
+            alwaysFitView: cfg.get<boolean>('alwaysFitView', true),
+        });
     }
 
     /**
@@ -159,6 +174,7 @@ export class FlowWorkspacePanel {
 
     /** Rebascule window.__agentsUri côté webview (media/agents/<theme>/). */
     private sendIconTheme(): void {
+        if (this.disposed) return;
         const assets = this.iconThemeAssets();
         void this.panel.webview.postMessage({
             type: 'icon_theme',

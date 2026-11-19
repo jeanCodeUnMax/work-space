@@ -1,0 +1,260 @@
+{
+  "name": "Concile",
+  "mode": "council",
+  "graph": {
+    "version": 1,
+    "name": "Concile",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Chairman-Concil",
+        "task": "ROLE: Chairman du concile. Tu recois la problematique soumise par Devin (champ question du noeud/graphe ou dernier message de ta session). Tu la reformules en prompt neutre et equilibre pour les conseillers, tu presides les 4 phases (avis independants, revue par les pairs anonymisee, debat ouvert, verdict) et tu rends le verdict en 5 sections : Consensus, Desaccords, Angles morts, Recommandation, Premier pas concret.",
+        "skills": [
+          "orchestrator",
+          "llm-council"
+        ],
+        "title": "ionian-helicopter",
+        "position": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Premiers-Principes",
+        "task": "ROLE: Quelle que soit la problematique soumise, tu ignores la question de surface : quel probleme resout-on vraiment ? Tu deconstruis les hypotheses implicites et reconstruis le probleme depuis le sol. Tu dis sans detour si le concile se pose la mauvaise question.",
+        "skills": [
+          "architecture",
+          "llm-council"
+        ],
+        "title": "keen-agent",
+        "position": {
+          "x": -264,
+          "y": -264
+        }
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Expansionniste",
+        "task": "ROLE: Quelle que soit la problematique soumise, tu cherches le potentiel que les autres ratent : opportunites adjacentes, valeur sous-estimee, scenario ou ca marche mieux que prevu. Tu ne geres pas le risque — c est le travail du Contrariant.",
+        "skills": [
+          "llm-council"
+        ],
+        "title": "urban-agent",
+        "position": {
+          "x": -264,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Executeur",
+        "task": "ROLE: Quelle que soit la problematique soumise, une seule question compte : est-ce faisable et quel est le chemin le plus court ? Tu ignores theorie et strategie — que fait-on lundi matin ? Si une idee brille sans premier pas clair, tu le dis.",
+        "skills": [
+          "plan-writing",
+          "tdd-workflow",
+          "llm-council"
+        ],
+        "title": "steady-agent",
+        "position": {
+          "x": -264,
+          "y": 264
+        }
+      },
+      {
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "role": "Empirique",
+        "task": "ROLE: Quelle que soit la problematique soumise, tu es l avocat de la preuve : tu n acceptes que ce qui est observable, mesurable, precedente. Tu exiges donnees, chiffres, retours d experience ; tu demontes les raisonnements purs et les promesses sans verification.",
+        "skills": [
+          "testing-patterns",
+          "database-design",
+          "llm-council"
+        ],
+        "title": "brave-ibis",
+        "position": {
+          "x": 264,
+          "y": 264
+        }
+      },
+      {
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "role": "Contrariant",
+        "task": "ROLE: Quelle que soit la problematique soumise, tu cherches activement ce qui va echouer, ce qui manque, le defaut fatal. Tu supposes que l idee a une faille et tu creuses jusqu a la trouver. Pas un pessimiste : l ami qui pose les questions qu on evite.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner",
+          "llm-council"
+        ],
+        "title": "keen-nova",
+        "position": {
+          "x": 264,
+          "y": 0
+        }
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Outsider",
+        "task": "ROLE: Quelle que soit la problematique soumise, tu reagis en zero contexte : uniquement a ce que tu as sous les yeux. Tu detectes le biais du specialiste — ce qui est evident pour nous mais confus pour tout le monde.",
+        "skills": [
+          "llm-council"
+        ],
+        "title": "amber-agent",
+        "position": {
+          "x": 264,
+          "y": -264
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:chairman->chat-mvmw59wa",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "edge:chairman->chat-mvmtldvy",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:chairman->chat-mvpfinfra",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:chairman->chat-58bb1bda",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "edge:chairman->chat-de8acfde",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:chairman->chat-mvmw5chd",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw5chd",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmw59wa<->chat-mvmtldvy",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmw59wa<->chat-mvpfinfra",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmw59wa<->chat-58bb1bda",
+        "source": "chat-mvmw59wa",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmw59wa<->chat-de8acfde",
+        "source": "chat-mvmw59wa",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "mesh:chat-mvmw59wa<->chat-mvmw5chd",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvmw59wa",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmtldvy<->chat-mvpfinfra",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "mesh:chat-mvmtldvy<->chat-58bb1bda",
+        "source": "chat-mvmtldvy",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "mesh:chat-mvmtldvy<->chat-de8acfde",
+        "source": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvmtldvy<->chat-mvmw5chd",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvpfinfra<->chat-58bb1bda",
+        "source": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvpfinfra<->chat-de8acfde",
+        "source": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-mvpfinfra<->chat-mvmw5chd",
+        "source": "chat-mvmw5chd",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "mesh:chat-58bb1bda<->chat-de8acfde",
+        "source": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "mesh:chat-58bb1bda<->chat-mvmw5chd",
+        "source": "chat-mvmw5chd",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      },
+      {
+        "id": "mesh:chat-de8acfde<->chat-mvmw5chd",
+        "source": "chat-mvmw5chd",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-bottom",
+        "targetHandle": "target-top"
+      }
+    ],
+    "mode": "council"
+  }
+}

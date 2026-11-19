@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concil — Forcer l'orchestrateur à pousser ses agents</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #f7f7f8; color: #1a1a1e; line-height: 1.55; padding: 32px 16px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { margin-bottom: 24px; }
+  .kicker { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; }
+  h1 { font-size: 22px; margin: 6px 0 4px; }
+  .q { background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid #6366f1; border-radius: 8px; padding: 14px 16px; font-style: italic; color: #374151; margin: 12px 0 24px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: #111; margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; }
+  .verdict { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; margin-bottom: 8px; }
+  .verdict ul { margin: 8px 0 0 20px; }
+  .verdict li { margin-bottom: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+  .adv { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; font-size: 12px; }
+  .adv b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .adv .pos { font-size: 11px; padding: 2px 8px; border-radius: 999px; display: inline-block; margin-top: 4px; }
+  .agree { background: #dcfce7; color: #166534; }
+  .clash { background: #fee2e2; color: #991b1b; }
+  .mid { background: #fef3c7; color: #92400e; }
+  .strong { background: #dbeafe; color: #1e40af; }
+  details { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; }
+  summary { padding: 12px 16px; cursor: pointer; font-weight: 600; font-size: 14px; }
+  summary .tag { font-weight: 400; font-size: 12px; color: #6b7280; margin-left: 8px; }
+  details .body { padding: 0 16px 14px; font-size: 14px; color: #374151; white-space: pre-wrap; }
+  .first { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 16px 20px; margin-top: 24px; }
+  .first b { color: #3730a3; }
+  footer { margin-top: 32px; font-size: 12px; color: #9ca3af; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Concil LLM · 2026-11-05 · 5 conseillers + revue croisée</div>
+    <h1>Forcer l'orchestrateur à suivre, pousser et obliger ses agents</h1>
+  </header>
+
+  <div class="q">Dans l'écosystème Hephaistos (hphe-mcp unique, workers CLI/ACP, <code>create_task</code> qui ne notifie pas → polling obligatoire), quels mécanismes FORCENT réellement les agents à suivre, exécuter, prouver leur livraison et rendre compte — sans violer la loi du canal unique ?</div>
+
+  <h2>Verdict du Chairman</h2>
+  <div class="verdict">
+    <b>La discipline morale est un leurre — on ne « force » pas un LLM, on rend la triche structurellement impossible.</b>
+    <ul>
+      <li><b>La preuve doit être émise côté serveur</b>, jamais auto-signée par le worker (delivered:true + fichier + ligne bus sont tous falsifiables par le suspect).</li>
+      <li><b>~80 % de la machine existe déjà</b> : <code>expected_artifact</code>/<code>verify_expected_artifact</code>, <code>task_heartbeat</code>/<code>reconcile_dead_tasks</code> (600 s), <code>discipline_agent</code> (score /100, probation/quarantaine/euthanasia), <code>watchdog.ps1</code>, <code>supervise.mjs</code>. Le défaut : tout est <i>optionnel ou non câblé</i>.</li>
+      <li><b>L'escalade = requeue/redispatch</b> vers un autre worker, bornée (×2) → dead-letter → sortie vers l'humain. Jamais un rappel moral, jamais une escalade qui reste dans la boucle agentique.</li>
+      <li><b>L'autorité se mécanise</b> : ACL sur <code>dispatch_task</code> (devin/agy/orchestrateur) + audit de la colonne <code>dispatcher</code> — les règles markdown seules sont violées.</li>
+    </ul>
+  </div>
+
+  <h2>Carte des positions</h2>
+  <div class="grid">
+    <div class="adv"><b>Contrarian</b><span class="pos strong">★ Plus forte (3/5)</span><br>Théâtre de conformité si le forçage transite par les agents défaillants. Preuve auto-signée, push inexistant sur stdio, canal unique = SPOF.</div>
+    <div class="adv"><b>First Principles</b><span class="pos agree">Bail, pas message</span><br>Tâche = lease (TTL + heartbeat + preuve). Tout existe mais est optionnel → rendre obligatoire : gate, requeue, ACL.</div>
+    <div class="adv"><b>Expansionist</b><span class="pos mid">Upside max</span><br>Kernel d'agent OS : score → provider_prefs = marché de réputation, flotte auto-réparatrice, DLQ → Telegram.</div>
+    <div class="adv"><b>Outsider</b><span class="pos clash">Règle la plus faible</span><br>Fusionner create/dispatch pour tuer le polling — élégant mais impossible pour les sessions ACP déjà ouvertes.</div>
+    <div class="adv"><b>Executor</b><span class="pos agree">Exécutable lundi</span><br>watchdog.ps1 passe d'observateur à acteur : nudge ladder bornée, re-vérif des completed, audit dispatcher. Zéro Rust.</div>
+  </div>
+
+  <h2>Désaccords réels</h2>
+  <div class="verdict"><ul>
+    <li><b>Où vit le bail ?</b> Dans l'orchestrateur Rust (lease universel — FirstPrinciples/Outsider) vs dans watchdog.ps1 (Executor, livrable lundi). Les deux se complètent : watchdog agit aujourd'hui, le lease migre dans le Rust ensuite.</li>
+    <li><b>Fusionner create_task/dispatch_task ?</b> Outsider : oui, le polling disparaît par construction. Contrarian + 2 reviewers : non — les Bleubites ACP sont des sessions stdio déjà ouvertes, non spawnables. Deux classes de transport coexistent.</li>
+    <li><b>Score → routage ?</b> Expansionist : marché de réputation via provider_prefs. Reviewer : scores falsifiables tant que les preuves restent auto-signées — viable seulement APRÈS la preuve serveur.</li>
+  </ul></div>
+
+  <h2>Angles morts attrapés en revue croisée</h2>
+  <div class="verdict"><ul>
+    <li><b>Fencing tokens / epoch</b> — détecté par 3 reviewers indépendants : le worker « mort » qui se réveille après redispatch écrase l'artefact du remplaçant. Epoch par dispatch ; l'orchestrateur rejette toute écriture d'epoch périmé.</li>
+    <li><b>Effets de bord non-fichiers</b> : git push, appels API — ni vérifiables par artefact ni annulables → clés d'idempotence + transactions compensables.</li>
+    <li><b>Validation sémantique</b> : fichier non vide ≠ contenu correct → critère d'acceptation défini à <code>create_task</code> par le dispatcher.</li>
+    <li><b>Le forçage non testé est du théâtre</b> : injection de faute (tuer un worker → vérifier reap → redispatch → preuve) + métriques de calibration des seuils.</li>
+    <li><b>Qui surveille les surveillants ?</b> hphe-mcp / hphe-taskwatch eux-mêmes = SPOF non surveillé.</li>
+  </ul></div>
+
+  <h2>Recommandation — le bail vérifié serveur</h2>
+  <div class="verdict"><ul>
+    <li><b>1. Gate</b> : <code>create_task</code> exige <code>expected_artifact</code> + critère d'acceptation → rejet sinon.</li>
+    <li><b>2. Lease</b> : heartbeat + TTL + <b>epoch fencing</b> ; reconcile fauche → redispatch auto (×2 → dead-letter → humain).</li>
+    <li><b>3. Preuve contractuelle</b> : <code>update_task(completed)</code> refusé sans artefact vérifié serveur (mtime/hash, sémantique si définie).</li>
+    <li><b>4. Autorité</b> : ACL <code>dispatch_task</code> ∈ {devin, agy, orchestrateur} + audit colonne <code>dispatcher</code>.</li>
+    <li><b>5. Watchdog acteur</b> : échelle nudge (inject ACP via roster / re-spawn CLI → discipline −10 → fail+re-route → rapport + alerte humain).</li>
+    <li><b>6. Réputation</b> : score → provider_prefs, seulement après preuve serveur.</li>
+    <li><b>7. Test du forçeur</b> : fault injection périodique.</li>
+  </ul></div>
+
+  <div class="first"><b>La chose à faire en premier :</b> modifier <code>watchdog.ps1</code> — généraliser l'inject ACP au-delà de <code>devin</code> (résolution via <code>workspace-roster.json</code> + <code>acp-inject.js</code>) et y ajouter l'échelle de relance bornée. Un fichier, zéro Rust, tout via <code>Invoke-McpJson</code> — canal unique intact.</div>
+
+  <h2>Réponses complètes des conseillers</h2>
+  <details><summary>Contrarian <span class="tag">— élu plus forte réponse par 3/5 reviewers</span></summary><div class="body">Le vrai défaut : ce système repose sur l'obéissance d'agents dont on sait déjà qu'ils désobéissent. 1. La preuve de livraison est auto-signée (delivered:true, fichier, ligne bus — tous produits par le worker). 2. Le push n'existe pas : hphe-mcp est stdio, on ne pousse pas vers un processus mort ; seul dispatch_task a un levier réel. 3. Relances automatiques = fork bomb en attente → dead-letter après 2 relances. 4. Escalade vers devin/AGY = boucle sur les mêmes LLMs → sortie humaine requise. 5. « Aucun worker hors orchestrateur » est une règle markdown, pas un mécanisme. 6. Canal unique = SPOF ; qui surveille hphe-taskwatch ? Recommandation : l'orchestrateur détient tout le cycle de vie (spawn → watchdog → exit code → validation serveur), relances bornées, escalade hors-boucle.</div></details>
+  <details><summary>First Principles Thinker <span class="tag">— le bail (lease)</span></summary><div class="body">« Forcer » un LLM = anthropomorphisme : on ne discipline pas un processus éphémère, on conçoit un système où sa fiabilité n'a pas d'importance. Une tâche n'est pas un message, c'est un bail : TTL + heartbeat + transition conditionnée à une preuve. verify_expected_artifact (orch.rs:483) et task_heartbeat/reconcile_dead_tasks existent — le vrai défaut : tout est optionnel. Trois corrections : 1. Gate : create_task sans expected_artifact → rejeté. 2. Bail expirant : sans heartbeat → failed puis redispatch auto (l'escalade est un requeue, pas un rappel moral). 3. Autorité : auto-dispatch bloqué par ACL. La fiabilité émerge quand mentir coûte plus cher que livrer.</div></details>
+  <details><summary>Expansionist <span class="tag">— kernel d'agent OS</span></summary><div class="body">Les primitives existent : watchdog.ps1, discipline_agent (score /100, probation &lt;80, quarantaine &lt;50, euthanasia &lt;20), supervise.mjs. Pièce manquante = boucle fermée : alertes watchdog → discipline_agent = conséquence automatique. Coup de génie : score → provider_prefs = marché de réputation (les bons mangent, les euthanized reroutés) — plus besoin d'engueulade, l'économie le fait. Rendre update_task(completed) contractuel. Adjacent : euthanized → respawn = flotte auto-réparatrice ; discipline → KG → routing prédictif ; DLQ → telegram = escalade humaine. Vous livrez un scheduler de processus pour agents.</div></details>
+  <details><summary>Outsider <span class="tag">— file d'attente inversée</span></summary><div class="body">Vous avez construit une file où le travailleur doit se souvenir d'aller chercher du travail — aucune queue normale ne marche ainsi (SQS, Celery). Le polling « n'oubliez pas » est une rustine sur un défaut de conception. Fusionnez create_task/dispatch_task : toute création passe par le chemin qui notifie/spawne — l'agent qui oublie de poller disparaît par construction. On n'engueule pas une machine : heartbeat obligatoire → reprise, timeout de visibilité, retry, réassignation, escalade humaine. hphe-taskwatch = embryon à généraliser en lease/heartbeat dans l'orchestrateur. Ne croyez jamais la déclaration : le livrable vérifiable EST la preuve.</div></details>
+  <details><summary>Executor <span class="tag">— plan 3 jours, zéro Rust</span></summary><div class="body">80 % de la machine existe — du câblage, pas du neuf. Jour 1 : watchdog acteur via Invoke-McpJson — inject ACP câblé en dur sur devin (watchdog.ps1:491) → généraliser via workspace-roster.json + acp-inject.js ; dispatch_task pour les CLI. Échelle : nudge → discipline_agent −10 → update_task failed → dispatch_task re-route (pick_agent_by_skill, circuit breaker FR-07) → rapport + alerte humain. Jour 2 : re-vérifier tout completed (artefact/bus → in_progress + sanction). Jour 3 : audit colonne dispatcher (∉ {devin,agy,orchestrateur} → discipline + annulation). Reaper FR-08 tourne déjà. On commence par UN fichier : watchdog.ps1.</div></details>
+
+  <h2>Revues croisées (extraits)</h2>
+  <details><summary>5 peer reviews — synthèse</summary><div class="body">Plus forte réponse : Contrarian (3/5), Executor (1/5), Expansionist (1/5).
+Angle mort le plus cité : Outsider (fusion create/dispatch impossible pour ACP ; théorie générique de queues).
+Détecté par 3 reviewers indépendants : FENCING TOKENS — worker zombie qui écrit après redispatch.
+Aussi manqué partout : idempotence des effets de bord, validation sémantique de l'artefact, test par injection de faute, budget tokens des respawns, surveillance des surveillants (SPOF).
+Vérification code (reviewer 5) : claims de C/D/E/B tous exacts — verify_expected_artifact optionnel, reconcile 600 s, seuils discipline, watchdog.ps1:491 sur devin, aucune ACL sur dispatch_task.</div></details>
+
+  <footer>Concil LLM — méthodo Karpathy (5 advisors → peer review anonyme → chairman) · Hephaistos2-Kit · 2026-11-05 · transcript : transcript.md</footer>
+</div>
+</body>
+</html>

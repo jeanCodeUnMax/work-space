@@ -112,14 +112,18 @@ button, input, textarea {
     position: absolute !important;
     top: 36px !important;
     bottom: auto !important;
-    right: 12px !important;
+    right: 8px !important;
     left: auto !important;
-    width: 300px !important;
-    max-height: 380px !important;
+    width: min(340px, calc(100vw - 16px)) !important;
+    max-height: min(440px, calc(100vh - 56px)) !important;
     z-index: 200 !important;
 }
 
 .history-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     padding: 8px 10px;
     font-size: 11px;
     font-weight: 600;
@@ -129,9 +133,35 @@ button, input, textarea {
     letter-spacing: .04em;
 }
 
+.history-new-btn {
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    border-radius: 4px;
+    border: 1px solid var(--vscode-button-border, #3a3a3a);
+    background: var(--vscode-button-secondaryBackground, #2d2d2d);
+    color: var(--vscode-button-secondaryForeground, #e0e0e0);
+    cursor: pointer;
+}
+
+.history-new-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground, #3a3a3a);
+}
+
+.history-section-label {
+    padding: 6px 8px 2px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground, #8c8c8c);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
 .history-scroll-list {
     overflow-y: auto;
-    max-height: 260px;
+    max-height: 320px;
     padding: 4px;
 }
 

@@ -1,0 +1,1180 @@
+{
+  "schemaVersion": 1,
+  "workspace": "hephaistos2-kit",
+  "template": "hephaistos-swat-base",
+  "updatedAt": "2026-11-13T00:35:45.648Z",
+  "core": {
+    "devin": [
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/trusted-robin",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/sugary-shoemaker",
+        "restore": "existing-only",
+        "role": "Integrateur-Git",
+        "hidden": true,
+        "title": "sugary-shoemaker"
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "restore": "existing-only",
+        "role": "Grand-Chef",
+        "hidden": false,
+        "title": "daring-agent"
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/speckled-enthusiasm",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/bloom-settee",
+        "restore": "existing-only",
+        "role": "Binome-ACP",
+        "hidden": true,
+        "title": "bloom-settee"
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/spectacled-dust",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/plain-bite",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/comfy-inventory",
+        "restore": "open-or-reveal",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/comfy-verify",
+        "restore": "open-or-reveal",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/faint-freon",
+        "restore": "existing-only",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/locrian-blender",
+        "restore": "existing-only",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/river-bougon",
+        "restore": "existing-only",
+        "role": "Comfy-Inventaire",
+        "title": "comfy-inventory",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/axiomatic-path",
+        "restore": "existing-only",
+        "role": "Comfy-Verificateur",
+        "title": "comfy-verify",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "restore": "existing-only",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/pebble-rhubarb",
+        "restore": "existing-only",
+        "role": "Relecteur-Modo",
+        "hidden": true,
+        "title": "Relecteur-Modo"
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/7f0aa3fb-9e17-4a4f-8c4f-b6ce12157dd3",
+        "restore": "existing-only",
+        "role": "Redacteur",
+        "title": "Redacteur",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/humdrum-cadet",
+        "restore": "existing-only",
+        "role": "Relecteur",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "acp/nim/nim-7b9b96fd",
+        "restore": "existing-only",
+        "role": "Veilleur-Telegram",
+        "title": "Veilleur-Telegram",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "acp/nim/nim-22c94649",
+        "restore": "existing-only",
+        "role": "Posteur-Telegram",
+        "title": "Posteur-Telegram",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/booming-game",
+        "restore": "existing-only",
+        "role": "Integrateur-Git",
+        "title": "sugary-shoemaker",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/slow-walnut",
+        "restore": "existing-only",
+        "role": "Redacteur",
+        "title": "Redacteur",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/spiral-wanderer",
+        "restore": "existing-only",
+        "role": "Devin",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "acp/devin-cli/better-iberis",
+        "restore": "existing-only",
+        "role": "Chairman-Concil",
+        "title": "daring-agent",
+        "hidden": true
+      }
+    ],
+    "cerberos": [
+      {
+        "providerId": "cerberos",
+        "sessionId": "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4",
+        "restore": "existing-only",
+        "hidden": true
+      }
+    ],
+    "bleubites": [
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mvmw59wa",
+        "restore": "open-or-reveal",
+        "role": "Premiers-Principes",
+        "hidden": false,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "title": "keen-agent"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-mvmw5chd",
+        "restore": "open-or-reveal",
+        "role": "Outsider",
+        "hidden": false,
+        "model": "openrouter/nvidia/nemotron-3.5-lightning:free",
+        "title": "amber-agent"
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-mvmtldvy",
+        "restore": "open-or-reveal",
+        "role": "Expansionniste",
+        "hidden": false,
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "title": "urban-agent"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-mvfqytbz",
+        "restore": "open-or-reveal",
+        "role": "Synthese-Faisabilite",
+        "hidden": true,
+        "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+        "title": "keen-agent"
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-mvfj773t",
+        "restore": "open-or-reveal",
+        "role": "Verif-Submodules",
+        "hidden": true,
+        "model": "nvidia/nemotron-3.5-bolt-e4b",
+        "title": "xenial-agent"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-mvflr6cn",
+        "restore": "open-or-reveal",
+        "role": "Documentaliste-Vault",
+        "hidden": true,
+        "model": "openrouter/google/gemma-4-31b-it:free",
+        "title": "rapid-agent"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mvfj8b4m",
+        "restore": "open-or-reveal",
+        "role": "Testeur",
+        "hidden": true,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "title": "zealous-agent"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "restore": "open-or-reveal",
+        "model": "auto/best-fast",
+        "role": "Contrariant",
+        "hidden": false,
+        "title": "keen-nova"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mvp0beacon",
+        "restore": "open-or-reveal",
+        "role": "Feedback-Beacon-Knowledge",
+        "hidden": true,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "title": "beacon-agent"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-mvpfinfra",
+        "restore": "open-or-reveal",
+        "role": "Executeur",
+        "hidden": false,
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "title": "ionic-orbit"
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "OpenRouter",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-d27b8084-7202-4e0e-bff4-45d60f123788",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "brave-mesa",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-b8b87e8a-8954-4c29-ae3e-d44e1d132244",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "gpt-oss-120b",
+        "hidden": true
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "restore": "open-or-reveal",
+        "model": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
+        "role": "Empirique",
+        "title": "brave-ibis",
+        "hidden": false
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "OpenRouter",
+        "title": "xenial-yew",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-fabb4d20-ebda-4e32-8da7-07392590dabe",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "Codeur",
+        "title": "brave-willow",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "OpenRouter",
+        "title": "young-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "OpenRouter",
+        "title": "amber-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "Codeur",
+        "title": "quiet-vault",
+        "hidden": true
+      },
+      {
+        "providerId": "openrouter",
+        "sessionId": "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "OpenRouter",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-82eefc00",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Posteur-Telegram",
+        "hidden": true,
+        "title": "calm-harbor"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-n8narchi",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "N8N-Architecte",
+        "title": "n8n-Architecte",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-n8nops",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "N8N-Operate",
+        "title": "n8n-Operate",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-n8nverif",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "N8N-Verificateur",
+        "title": "n8n-Verificateur",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-anim",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Hermes-Animateur",
+        "hidden": true,
+        "title": "hermes-animateur"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-arch",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Hermes-Archiviste",
+        "hidden": true,
+        "title": "hermes-archiviste"
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-hermes-mod",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "role": "Hermes-Moderateur",
+        "hidden": true,
+        "title": "hermes-moderateur"
+      },
+      {
+        "providerId": "omniroute",
+        "sessionId": "chat-025fa1a3-deb7-466d-8db0-ab14b6325096",
+        "restore": "open-or-reveal",
+        "model": "groq/openai/gpt-oss-120b",
+        "role": "OmniRoute",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-architecte-mvtahr6f",
+        "restore": "open-or-reveal",
+        "role": "Antigravity-Tango",
+        "title": "Architecte",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-05992cca-4d7b-4947-927e-1443b3209709",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "trusted-comet",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-227ae762-4302-4d76-b165-ca6f01eb8238",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "mighty-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbp5gb",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "ionian-helicopter",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbpvxc",
+        "restore": "open-or-reveal",
+        "role": "Antigravity-Tango",
+        "title": "Architecte",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtbqehr",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "mighty-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-743d1cf0-ab2d-4948-a64c-a12a6eeb8282",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "amber-tide",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-703a5a8d-6dcc-4bfd-b075-a9e662bef337",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-b33e6e23-c376-49a9-b82c-e23e0b15c686",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "NVIDIA NIM",
+        "title": "hardy-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-df34581e-9652-4069-9c76-cf309c2f0586",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "warm-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-63b4fed9-370b-4e0d-9743-114d19d97e97",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "devin-cli",
+        "sessionId": "chat-d3d5f458-b208-48ba-9d59-d2a7d7b3440a",
+        "restore": "open-or-reveal",
+        "model": "swe-2-high",
+        "role": "Devin",
+        "title": "jolly-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-ebec625e-2d2b-4194-883b-46d1cff4cd2b",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "NVIDIA NIM",
+        "title": "gentle-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-3e680e09-8587-4a3c-9e54-f59f09c39187",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "Antigravity",
+        "title": "hardy-ember",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvk6pl",
+        "restore": "open-or-reveal",
+        "role": "Codeur",
+        "title": "jolly-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-6aebbfd4-aee1-4904-a5e2-05081899de90",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "Antigravity",
+        "title": "lunar-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "chat-3a971008-c75f-4a54-a8ce-8ece3fb465ca",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-ultra-550b-a55b",
+        "role": "Antigravity",
+        "title": "rapid-tide",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvpb8k",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvtvpu1g",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "rapid-tide",
+        "hidden": true
+      },
+      {
+        "providerId": "nim",
+        "sessionId": "chat-8a35b80c-bed0-4e01-95e8-f3903c1d53ee",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM",
+        "title": "young-ibis",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-c58d1a34-9b3b-4cdc-9b52-9c00b34aff8e",
+        "restore": "open-or-reveal",
+        "model": "opencode/nemotron-3-ultra-free",
+        "role": "NVIDIA NIM 2",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "nim2",
+        "sessionId": "chat-38bb399c-f180-41d3-a3a4-5f92697edb3d",
+        "restore": "open-or-reveal",
+        "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+        "role": "NVIDIA NIM 2",
+        "title": "onyx-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvx7t748",
+        "restore": "open-or-reveal",
+        "role": "Orchestrateur",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-antigravity-acp-mvx7vkc0",
+        "restore": "open-or-reveal",
+        "role": "Antigravity",
+        "title": "Antigravity",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-detached-mvx7w8xm",
+        "restore": "open-or-reveal",
+        "role": "NVIDIA NIM 2",
+        "title": "daring-agent",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "chat-1010d864-e811-436a-92ea-3663597251e6",
+        "restore": "open-or-reveal",
+        "role": "Reviewer",
+        "title": "hardy-lantern",
+        "hidden": true
+      },
+      {
+        "providerId": "hephaistos",
+        "sessionId": "card-devin-cli-mwe6ypim",
+        "restore": "open-or-reveal",
+        "role": "Devin",
+        "title": "Devin",
+        "hidden": true
+      }
+    ],
+    "antigravity": [
+      {
+        "providerId": "antigravity-acp",
+        "sessionId": "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "cascadeId": "2d2e0c5d-3160-44b2-a5cf-fb246e3a605e",
+        "role": "Antigravity-Tango",
+        "title": "Tango (Antigravity)",
+        "model": "gemini-3.8-flash-high",
+        "restore": "open-or-reveal",
+        "hidden": false
+      }
+    ]
+  },
+  "restorePolicy": {
+    "neverDuplicate": true,
+    "requireExactSessionId": true,
+    "verifyWorkspace": true,
+    "pingAfterRestore": true
+  },
+  "verification": {
+    "lastPing": "2026-10-28T19:54:46.277Z",
+    "results": {
+      "acp/devin-cli/trusted-robin": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "chat-mvlpm7vh": "session-missing",
+      "chat-mvlpi4qj": "session-missing",
+      "acp/devin-cli/sugary-shoemaker": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/ionian-helicopter": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/speckled-enthusiasm": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/bloom-settee": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/spectacled-dust": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/plain-bite": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/comfy-inventory": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/comfy-verify": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/faint-freon": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/locrian-blender": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/river-bougon": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/devin-cli/axiomatic-path": {
+        "transport": "wake_acp_agent",
+        "status": "failed",
+        "delivered": false
+      },
+      "acp/antigravity-acp/2d2e0c5d-3160-44b2-a5cf-fb246e3a605e": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "session 2d2e0c5d-3160-44b2-a5cf-fb246e3a605e non attachable (session/load: Session not found in the current GEMINI_HOME ; session/resume: Session not found in the current GEMINI_HOME)"
+      },
+      "local-ad12cf9876a0e0a92f61873534155b6bcd2c07d4d3921928b00f108d50883ff4": {
+        "transport": "acp-inject",
+        "delivered": true,
+        "stopReason": "end_turn",
+        "reply": "**État des lieux**\n\n- **MCP Obsidian Live** : le harnais `obsidian` est bien installé dans l'environnement CLI‑Anything (voir `list_harnesses`).  \n- **Vault loc",
+        "pong": true,
+        "error": null
+      },
+      "chat-mvmw59wa": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-mvmw5chd": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvmtldvy": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim"
+      },
+      "chat-mvfqytbz": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvfj773t": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim"
+      },
+      "chat-mvflr6cn": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvfj8b4m": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-de8acfde-0423-4480-ad11-aa4519daeee6": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-mvp0beacon": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-mvpfinfra": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-47cb1a18-0a1a-4c78-a259-cb76ef040c3b": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-d27b8084-7202-4e0e-bff4-45d60f123788": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-b8b87e8a-8954-4c29-ae3e-d44e1d132244": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      },
+      "chat-7f30ed35-715c-489b-9db2-9e070a60d2b3": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-fabb4d20-ebda-4e32-8da7-07392590dabe": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-ca9fd6e9-fbb4-4949-840a-5e354c9bb92f": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-144f9dd8-0b48-45ae-ab52-533cc73adf4d": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-c46a5003-2598-4ec8-91f8-81fe9dcb86e0": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-f459cd59-4a65-49b8-91a4-e7c1d9a6b539": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: openrouter"
+      },
+      "chat-82eefc00": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8narchi": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8nops": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-n8nverif": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-anim": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-arch": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-hermes-mod": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: nim2"
+      },
+      "chat-025fa1a3-deb7-466d-8db0-ab14b6325096": {
+        "transport": "acp-inject",
+        "delivered": false,
+        "stopReason": null,
+        "reply": null,
+        "pong": false,
+        "error": "provider ACP non injectable: omniroute"
+      }
+    }
+  },
+  "workflow": {
+    "version": 1,
+    "name": "calumet-indien",
+    "entrySessionId": "acp/devin-cli/ionian-helicopter",
+    "nodes": [
+      {
+        "sessionId": "acp/devin-cli/ionian-helicopter",
+        "role": "Grand-Chef",
+        "task": "ROLE: Grand Chef de la Tribu. Tu recois la problematique soumise par Devin (champ question du noeud ou dernier message de ta session). Tu la reformules en prompt neutre, puis tu passes le calumet a chaque membre dans l'ordre fixe : Premiers-Principes, Expansionniste, Executeur, Outsider, Contrariant, Empirique. Chacun entend les paroles deja prononcees avant de parler. Tu presides : tu coupes les digressions, tu fais respecter l'ordre. Quand le calumet te revient, tu rends le verdict en 5 sections : Consensus, Desaccords, Angles morts, Recommandation, Premier pas concret.",
+        "skills": [
+          "orchestrator",
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "daring-agent",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "provider": "devin-cli",
+        "cardKind": "devin"
+      },
+      {
+        "sessionId": "chat-mvmw59wa",
+        "role": "Premiers-Principes",
+        "task": "ROLE: Le calumet t'arrive du Grand Chef — tu parles le premier, personne n'a encore pris la parole. Quelle que soit la problematique soumise, tu ignores la question de surface : quel probleme resout-on vraiment ? Tu deconstruis les hypotheses implicites et reconstruis le probleme depuis le sol.",
+        "skills": [
+          "architecture",
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "keen-agent",
+        "position": {
+          "x": -242,
+          "y": -88
+        },
+        "cardKind": "bleubite"
+      },
+      {
+        "sessionId": "chat-mvmtldvy",
+        "role": "Expansionniste",
+        "task": "ROLE: Le calumet t'arrive apres Premiers-Principes — tu as entendu sa parole dans les messages precedents. Accorde, contredis ou complete : tu cherches le potentiel que les autres ratent, les opportunites adjacentes, la valeur sous-estimee.",
+        "skills": [
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "urban-agent",
+        "position": {
+          "x": 22,
+          "y": -88
+        },
+        "cardKind": "bleubite"
+      },
+      {
+        "sessionId": "chat-mvpfinfra",
+        "role": "Executeur",
+        "task": "ROLE: Le calumet t'arrive apres Expansionniste — tu as entendu les paroles deja prononcees. Une seule question compte : est-ce faisable et quel est le chemin le plus court ? Que fait-on lundi matin ?",
+        "skills": [
+          "plan-writing",
+          "tdd-workflow",
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "ionic-orbit",
+        "position": {
+          "x": 308,
+          "y": -88
+        },
+        "cardKind": "bleubite"
+      },
+      {
+        "sessionId": "chat-mvmw5chd",
+        "role": "Outsider",
+        "task": "ROLE: Le calumet t'arrive apres Executeur — tu as entendu les paroles deja prononcees. Tu reagis en zero contexte : tu detectes le biais du specialiste, ce qui est evident pour nous mais confus pour tout le monde.",
+        "skills": [
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "amber-agent",
+        "position": {
+          "x": 594,
+          "y": -88
+        },
+        "cardKind": "bleubite"
+      },
+      {
+        "sessionId": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "role": "Contrariant",
+        "task": "ROLE: Le calumet t'arrive apres Outsider — tu as entendu TOUT ce qui a ete dit. Tu chasses le defaut fatal : tu supposes que ca va echouer et tu creuses jusqu'a trouver pourquoi. Pas un pessimiste : l'ami qui pose les questions qu'on evite.",
+        "skills": [
+          "systematic-debugging",
+          "vulnerability-scanner",
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "keen-nova",
+        "position": {
+          "x": -220,
+          "y": 132
+        },
+        "cardKind": "bleubite"
+      },
+      {
+        "sessionId": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "role": "Empirique",
+        "task": "ROLE: Le calumet t'arrive en dernier — tu cloture le cercle. Tu es l'avocat de la preuve : tu n'acceptes que ce qui est observable, mesurable, precedente. Tu demontes les raisonnements purs et les promesses sans verification.",
+        "skills": [
+          "testing-patterns",
+          "explainability-expert",
+          "llm-council"
+        ],
+        "mcps": [],
+        "title": "brave-ibis",
+        "position": {
+          "x": -220,
+          "y": -132
+        },
+        "cardKind": "bleubite"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge:calumet-0->1",
+        "source": "acp/devin-cli/ionian-helicopter",
+        "target": "chat-mvmw59wa",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-1->2",
+        "source": "chat-mvmw59wa",
+        "target": "chat-mvmtldvy",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-2->3",
+        "source": "chat-mvmtldvy",
+        "target": "chat-mvpfinfra",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-3->4",
+        "source": "chat-mvpfinfra",
+        "target": "chat-mvmw5chd",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-4->5",
+        "source": "chat-mvmw5chd",
+        "target": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      },
+      {
+        "id": "edge:calumet-5->6",
+        "source": "chat-de8acfde-0423-4480-ad11-aa4519daeee6",
+        "target": "chat-58bb1bda-11b7-4f4d-9ade-5b9bf43820e3",
+        "sourceHandle": "source-right",
+        "targetHandle": "target-left"
+      }
+    ],
+    "activeSchema": "calumet-indien",
+    "activeSchemaId": "schema-mw4bo5pr-younq",
+    "mode": "council"
+  },
+  "bleubiteRootsSource": ".mcp-access [bleubite]"
+}
